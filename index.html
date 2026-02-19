@@ -12,7 +12,12 @@
       theme: {
         extend: {
           fontFamily: { sans: ['"Plus Jakarta Sans"', 'sans-serif'] },
-          colors: { brand: { 50: '#eff6ff', 100: '#dbeafe', 500: '#3b82f6', 600: '#2563eb', 900: '#1e3a8a' } }
+          colors: { brand: { 50: '#eff6ff', 100: '#dbeafe', 500: '#3b82f6', 600: '#2563eb', 900: '#1e3a8a' } },
+          animation: { 'fade-in': 'fadeIn 0.3s ease-out', 'slide-up': 'slideUp 0.4s ease-out' },
+          keyframes: {
+            fadeIn: { '0%': { opacity: '0' }, '100%': { opacity: '1' } },
+            slideUp: { '0%': { transform: 'translateY(20px)', opacity: '0' }, '100%': { transform: 'translateY(0)', opacity: '1' } }
+          }
         }
       }
     };
@@ -25,65 +30,123 @@
       <div class="w-8 h-8 bg-brand-600 rounded-lg flex items-center justify-center text-white font-bold">A</div>
       <span class="font-bold text-xl tracking-tight text-gray-900">Alumni<span class="text-brand-600">Connect</span></span>
     </div>
+
     <div class="hidden md:flex items-center gap-6" id="nav-links">
       <button onclick="router.navigate('directory')" class="text-gray-500 hover:text-brand-600 font-medium transition" id="nav-dir">Directorio</button>
-      <button onclick="router.navigate('profile')" class="text-gray-500 hover:text-brand-600 font-medium transition" id="nav-profile">Perfil</button>
+      <button onclick="router.navigate('news')" class="text-gray-500 hover:text-brand-600 font-medium transition" id="nav-news">Novedades</button>
+      <button onclick="router.navigate('messages')" class="text-gray-500 hover:text-brand-600 font-medium transition" id="nav-msg">Mensajes</button>
     </div>
+
     <div class="flex items-center gap-4">
+      <div class="relative">
+        <button onclick="uiLogic.toggleNotifications()" class="relative p-2 text-gray-500 hover:bg-gray-100 rounded-full transition">
+          <i class="ph ph-bell text-xl"></i>
+          <span id="notif-badge" class="absolute top-1 right-1 h-2.5 w-2.5 bg-red-500 rounded-full border-2 border-white"></span>
+        </button>
+        <div id="notif-panel" class="hidden absolute right-0 mt-3 w-80 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden z-50 animate-fade-in">
+          <div class="p-3 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
+            <span class="font-semibold text-sm">Notificaciones</span>
+            <span class="text-xs text-brand-600 cursor-pointer" onclick="document.getElementById('notif-badge').classList.add('hidden')">Marcar leídas</span>
+          </div>
+          <div class="max-h-64 overflow-y-auto">
+            <div class="p-3 hover:bg-gray-50 border-b border-gray-100 cursor-pointer flex gap-3 transition">
+              <div class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center shrink-0"><i class="ph ph-user-plus"></i></div>
+              <div>
+                <p class="text-sm font-medium">Nueva solicitud</p>
+                <p class="text-xs text-gray-500">Ana García quiere conectar contigo.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
       <button onclick="router.navigate('profile')" class="h-9 w-9 rounded-full bg-gray-200 overflow-hidden ring-2 ring-transparent hover:ring-brand-200 transition">
         <img src="https://ui-avatars.com/api/?name=Yo&background=0D8ABC&color=fff" alt="Perfil" class="object-cover w-full h-full" id="header-avatar" />
       </button>
     </div>
   </nav>
 
+  <div id="approval-banner" class="hidden mt-16 bg-amber-50 border-b border-amber-200 px-4 py-3 items-center justify-center gap-3 text-amber-900 text-sm animate-fade-in">
+    <i class="ph-fill ph-warning-circle text-amber-500 text-lg"></i>
+    <span><strong>Cuenta en revisión:</strong> Tu perfil está siendo validado. Algunas funciones están limitadas.</span>
+  </div>
+
   <main id="app-content" class="flex-1 pt-20 pb-8 px-4 overflow-y-auto relative scroll-smooth bg-gray-50">
-    <section id="view-home" class="min-h-[80vh] flex flex-col items-center justify-center text-center">
-      <div class="w-16 h-16 bg-brand-100 text-brand-600 rounded-3xl flex items-center justify-center mb-6">
-        <i class="ph-duotone ph-graduation-cap text-4xl"></i>
-      </div>
-      <h1 class="text-4xl md:text-6xl font-extrabold text-gray-900 mb-6 tracking-tight">Conecta con tu <br /><span class="text-brand-600">comunidad global.</span></h1>
+    <section id="view-home" class="min-h-[80vh] flex flex-col items-center justify-center text-center animate-fade-in">
+      <div class="w-16 h-16 bg-brand-100 text-brand-600 rounded-3xl flex items-center justify-center mb-6"><i class="ph-duotone ph-graduation-cap text-4xl"></i></div>
+      <h1 class="text-4xl md:text-6xl font-extrabold text-gray-900 mb-6 tracking-tight">Conecta con tu <br><span class="text-brand-600">comunidad global.</span></h1>
       <p class="text-lg text-gray-500 max-w-2xl mb-10">La plataforma oficial para egresados. Encuentra colegas, mentores y oportunidades laborales exclusivas.</p>
       <div class="flex gap-4">
-        <button onclick="router.navigate('directory')" class="px-8 py-3.5 bg-brand-600 text-white font-bold rounded-xl">Explorar Directorio</button>
-        <button onclick="uiLogic.toggleAuthModal()" class="px-8 py-3.5 bg-white text-gray-700 font-bold rounded-xl border border-gray-200">Ingresar</button>
+        <button onclick="router.navigate('directory')" class="px-8 py-3.5 bg-brand-600 text-white font-bold rounded-xl shadow-lg hover:bg-brand-700 transition">Explorar Directorio</button>
+        <button onclick="uiLogic.toggleAuthModal()" class="px-8 py-3.5 bg-white text-gray-700 font-bold rounded-xl border border-gray-200 hover:bg-gray-50 transition">Ingresar</button>
       </div>
     </section>
 
-    <div id="view-auth" class="hidden min-h-[80vh] flex items-center justify-center">
+    <div id="view-auth" class="hidden min-h-[80vh] flex items-center justify-center animate-fade-in">
       <div class="bg-white p-8 rounded-3xl shadow-xl border border-gray-100 w-full max-w-md">
-        <h1 class="text-2xl font-bold text-gray-900 text-center mb-6">Iniciar sesión</h1>
+        <div class="text-center mb-8">
+          <div class="w-14 h-14 bg-brand-600 rounded-2xl flex items-center justify-center text-white text-3xl font-bold mx-auto mb-4">A</div>
+          <h1 class="text-2xl font-bold text-gray-900">Bienvenido de nuevo</h1>
+          <p class="text-gray-500 text-sm mt-2">Red exclusiva de egresados</p>
+        </div>
         <form onsubmit="authLogic.login(event)" class="space-y-5">
-          <div>
-            <label class="input-label">Email Institucional</label>
-            <input id="login-email" type="email" required placeholder="tu.nombre@universidad.edu" class="input-field" />
-          </div>
-          <div>
-            <label class="input-label">Contraseña</label>
-            <input id="login-password" type="password" required placeholder="••••••••" class="input-field" />
-          </div>
-          <button type="submit" class="w-full py-3.5 bg-brand-600 text-white font-bold rounded-xl">Ingresar con Email</button>
+          <div><label class="input-label">Email Institucional</label><input id="login-email" type="email" required placeholder="tu.nombre@universidad.edu" class="input-field"></div>
+          <div><label class="input-label">Contraseña</label><input id="login-password" type="password" required placeholder="••••••••" class="input-field"></div>
+          <button type="submit" class="w-full py-3.5 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-xl">Ingresar con Email</button>
         </form>
-        <button onclick="authLogic.loginWithGoogle()" class="w-full py-3.5 mt-3 bg-white text-gray-700 font-bold rounded-xl border border-gray-200 flex items-center justify-center gap-2">
-          <i class="ph ph-google-logo text-lg"></i>
-          Ingresar con Google
+        <button onclick="authLogic.loginWithGoogle()" class="w-full py-3.5 mt-3 bg-white text-gray-700 font-bold rounded-xl border border-gray-200 flex items-center justify-center gap-2 hover:bg-gray-50">
+          <i class="ph ph-google-logo text-lg"></i> Ingresar con Google
         </button>
-        <p id="auth-feedback" class="text-sm mt-4 text-center text-gray-500"></p>
+        <p id="auth-feedback" class="text-xs text-gray-500 mt-4 text-center"></p>
       </div>
     </div>
 
-    <div id="view-directory" class="hidden max-w-7xl mx-auto pb-10">
-      <h2 class="text-3xl font-bold text-gray-900 mb-6">Directorio</h2>
-      <div id="directory-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+    <div id="view-directory" class="hidden max-w-7xl mx-auto animate-slide-up pb-10">
+      <div class="flex justify-between items-end mb-8 gap-4 px-2"><div><h2 class="text-3xl font-bold text-gray-900 tracking-tight">Directorio</h2></div></div>
+      <div id="directory-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"></div>
     </div>
 
-    <div id="view-profile" class="hidden max-w-4xl mx-auto pb-20">
+    <div id="view-news" class="hidden max-w-5xl mx-auto animate-slide-up pb-10">
+      <div class="mb-10"><h2 class="text-3xl font-bold text-gray-900 mb-2">Novedades y Eventos</h2><p class="text-gray-500">Mantente al día con lo que sucede en tu comunidad.</p></div>
+      <div id="news-feed" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"></div>
+    </div>
+
+    <div id="view-messages" class="hidden h-[calc(100vh-8rem)] max-w-6xl mx-auto bg-white rounded-3xl shadow-xl border border-gray-200 overflow-hidden flex animate-fade-in">
+      <div class="w-full md:w-80 lg:w-96 border-r border-gray-100 flex flex-col bg-gray-50/50">
+        <div class="p-5 border-b border-gray-100"><h2 class="text-lg font-bold text-gray-900">Mensajes</h2></div>
+        <div class="flex-1 overflow-y-auto" id="chat-list"></div>
+      </div>
+      <div class="hidden md:flex flex-1 flex-col bg-white" id="active-chat-area">
+        <div class="p-4 border-b border-gray-100 flex items-center justify-between bg-white z-10">
+          <div class="flex items-center gap-3"><img id="chat-header-img" src="" class="w-10 h-10 rounded-full object-cover border border-gray-100"><h3 id="chat-header-name" class="font-bold text-gray-900 text-sm">Selecciona un chat</h3></div>
+        </div>
+        <div id="chat-body" class="flex-1 overflow-y-auto p-6 space-y-4 bg-gray-50/30"></div>
+        <div class="p-4 bg-white border-t border-gray-100"><form onsubmit="chatLogic.send(event)" class="flex gap-2 items-center"><input id="chat-input" type="text" placeholder="Escribe un mensaje..." class="flex-1 bg-gray-100 border-0 rounded-full px-5 py-3"><button type="submit" class="p-3 bg-brand-600 text-white rounded-full"><i class="ph-fill ph-paper-plane-right"></i></button></form></div>
+      </div>
+    </div>
+
+    <div id="view-profile" class="hidden max-w-4xl mx-auto animate-slide-up pb-20">
       <div class="bg-white rounded-3xl shadow-sm border border-gray-200 overflow-hidden mb-6 p-8">
-        <h2 id="display-name" class="text-3xl font-bold text-gray-900">Tu Nombre</h2>
-        <p id="display-role" class="text-brand-600 font-medium mb-6">Tu Cargo</p>
-        <button onclick="authLogic.logout()" class="text-red-500 font-bold text-sm">Cerrar Sesión</button>
+        <h2 class="text-3xl font-bold text-gray-900" id="display-name">Tu Nombre</h2>
+        <p class="text-brand-600 font-medium" id="display-role">Tu Cargo</p>
+        <button onclick="profileLogic.save()" id="btn-save-profile" class="bg-brand-600 text-white px-8 py-3 rounded-xl font-bold mt-4">Guardar Cambios</button>
+        <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div><label class="input-label">Nombres</label><input type="text" id="p-name" class="input-field"></div>
+          <div><label class="input-label">Apellidos</label><input type="text" id="p-lastname" class="input-field"></div>
+        </div>
+        <div class="flex justify-center pt-6 border-t border-gray-100 mt-6">
+          <button onclick="authLogic.logout()" class="text-red-500 font-bold text-sm hover:text-red-700 flex items-center gap-2 transition px-4 py-2 rounded-lg hover:bg-red-50"><i class="ph-bold ph-sign-out"></i> Cerrar Sesión</button>
+        </div>
       </div>
     </div>
   </main>
+
+  <div id="modal-news" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm bg-black/40">
+    <div class="bg-white rounded-3xl w-full max-w-2xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden animate-fade-in relative">
+      <button onclick="uiLogic.closeNewsModal()" class="absolute top-4 right-4 bg-white/50 hover:bg-white p-2 rounded-full"><i class="ph-bold ph-x text-xl"></i></button>
+      <div class="h-64 relative shrink-0"><img id="news-modal-img" src="" class="w-full h-full object-cover"></div>
+      <div class="p-8 overflow-y-auto"><h2 id="news-modal-title" class="text-2xl font-bold"></h2><p id="news-modal-body" class="text-gray-600 mt-4"></p></div>
+    </div>
+  </div>
 
   <script type="module" src="app.js"></script>
 </body>

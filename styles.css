@@ -1,4 +1,9 @@
 .glass-nav { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(12px); border-bottom: 1px solid #e5e7eb; }
+.hide-scrollbar::-webkit-scrollbar { display: none; }
+.hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 .input-label { font-size: 0.75rem; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: .06em; margin-bottom: .5rem; display: block; }
 .input-field { width: 100%; padding: .75rem 1rem; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: .75rem; outline: none; font-size: .875rem; }
 .input-field:focus { box-shadow: 0 0 0 2px #3b82f6; background: white; }
+.chat-bubble { max-width: 75%; padding: 0.75rem 1rem; border-radius: 1rem; font-size: 0.95rem; line-height: 1.4; }
+.chat-me { background-color: #2563eb; color: white; border-bottom-right-radius: 0.25rem; margin-left: auto; }
+.chat-them { background-color: #f3f4f6; color: #1f2937; border-bottom-left-radius: 0.25rem; margin-right: auto; }
