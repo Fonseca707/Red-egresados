@@ -378,18 +378,14 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore-compat.js"></script>
+    <script src="./firebase-config.js"></script>
 
     <!-- JAVASCRIPT LOGIC -->
     <script>
-        const firebaseConfig = {
-          apiKey: "AIzaSyBoVTqroZ7zR-3a5QGy5CzK19a4422t0Rg",
-          authDomain: "red-egresados-65a1a.firebaseapp.com",
-          projectId: "red-egresados-65a1a",
-          storageBucket: "red-egresados-65a1a.firebasestorage.app",
-          messagingSenderId: "874010522484",
-          appId: "1:874010522484:web:28881821d110defd3b7221",
-          measurementId: "G-85C6M45M7N"
-        };
+        const firebaseConfig = window.FIREBASE_CONFIG;
+        if (!firebaseConfig) {
+            throw new Error('FIREBASE_CONFIG no encontrado. Crea firebase-config.js desde firebase-config.example.js');
+        }
 
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
@@ -397,7 +393,8 @@
 
         const artifactsRoot = db.collection('artifacts').doc(firebaseConfig.appId);
         const alumniCollection = artifactsRoot.collection('public').doc('data').collection('alumni');
-        const chatsCollection = artifactsRoot.collection('public').doc('data').collection('chats');
+        const userChatsCollection = (uid) => artifactsRoot.collection('users').doc(uid).collection('chats');
+        const userChatMessagesCollection = (uid, chatId) => userChatsCollection(uid).doc(chatId).collection('messages');
 
         const state = {
             user: null,
@@ -433,6 +430,7 @@
                     state.guestMode = false;
                     await auth.signInWithEmailAndPassword(email, password);
                     feedback.textContent = '';
+                    router.navigate('directory');
                 } catch (error) {
                     feedback.textContent = `Error de acceso: ${error.message}`;
                 }
@@ -524,30 +522,18 @@
 
         async function loadChatsForUser(uid) {
             try {
-                const snap = await chatsCollection.where('members', 'array-contains', uid).get();
-                state.data.chats = [];
-                for (const doc of snap.docs) {
-                const d = doc.data();
-                const otherId = (d.members || []).find((m) => m !== uid) || uid;
-                let other = { name: 'Contacto', img: `https://ui-avatars.com/api/?name=Contacto&background=random` };
-                try {
-                    const alum = await alumniCollection.doc(otherId).get();
-                    if (alum.exists) {
-                        const ad = alum.data();
-                        other = {
-                            name: `${ad.firstName || ''} ${ad.lastName || ''}`.trim() || 'Contacto',
-                            img: ad.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent((ad.firstName || 'Contacto') + ' ' + (ad.lastName || ''))}&background=random`
-                        };
-                    }
-                } catch (e) {}
-                state.data.chats.push({
-                    id: doc.id,
-                    name: other.name,
-                    img: other.img,
-                    lastMsg: d.lastMessage || 'Sin mensajes',
-                    time: d.lastMessageAt ? 'Reciente' : 'Nuevo'
+                const snap = await userChatsCollection(uid).get();
+                state.data.chats = snap.docs.map((doc) => {
+                    const d = doc.data();
+                    return {
+                        id: doc.id,
+                        name: d.otherName || 'Contacto',
+                        img: d.otherImg || 'https://ui-avatars.com/api/?name=Contacto&background=random',
+                        lastMsg: d.lastMessage || 'Sin mensajes',
+                        time: d.lastMessageAt ? 'Reciente' : 'Nuevo',
+                        otherId: d.otherId || null
+                    };
                 });
-                }
             } catch (error) {
                 state.data.chats = [];
             }
@@ -555,7 +541,7 @@
 
         async function loadMessagesForChat(chatId) {
             try {
-                const snap = await chatsCollection.doc(chatId).collection('messages').orderBy('createdAt', 'asc').get();
+                const snap = await userChatMessagesCollection(state.user.uid, chatId).orderBy('createdAt', 'asc').get();
                 state.messagesByChat[chatId] = snap.docs.map((doc) => {
                     const d = doc.data();
                     return { text: d.text || '', sender: d.senderId === state.user?.uid ? 'me' : 'them', createdAt: d.createdAt || null };
@@ -667,28 +653,27 @@
                 if (targetUserId === state.user.uid) return;
 
                 try {
-                    const snap = await chatsCollection.where('members', 'array-contains', state.user.uid).get();
-                    let chatId = null;
-                    snap.docs.forEach((doc) => {
-                        const m = doc.data().members || [];
-                        if (m.includes(targetUserId)) chatId = doc.id;
-                    });
-
+                    const existing = state.data.chats.find((c) => c.otherId === targetUserId);
+                    let chatId = existing?.id;
                     if (!chatId) {
-                        const ref = await chatsCollection.add({
-                            members: [state.user.uid, targetUserId],
+                        const target = state.data.alumni.find((a) => String(a.id) === String(targetUserId));
+                        const chatRef = userChatsCollection(state.user.uid).doc();
+                        await chatRef.set({
+                            otherId: targetUserId,
+                            otherName: target?.name || 'Contacto',
+                            otherImg: target?.img || 'https://ui-avatars.com/api/?name=Contacto&background=random',
                             createdAt: firebase.firestore.FieldValue.serverTimestamp(),
                             lastMessage: '',
                             lastMessageAt: firebase.firestore.FieldValue.serverTimestamp()
                         });
-                        chatId = ref.id;
+                        chatId = chatRef.id;
                     }
 
                     await loadChatsForUser(state.user.uid);
                     router.navigate('messages');
                     await chatLogic.openChat(chatId);
                 } catch (error) {
-                    alert('No fue posible crear el chat. Revisa reglas de Firestore para /public/data/chats.');
+                    alert('No fue posible crear el chat. Verifica reglas en /users/{userId}/...');
                 }
             },
             openChat: async (id) => {
@@ -719,12 +704,12 @@
                 if(!text) return;
 
                 try {
-                    await chatsCollection.doc(state.activeChatId).collection('messages').add({
+                    await userChatMessagesCollection(state.user.uid, state.activeChatId).add({
                         senderId: state.user.uid,
                         text,
                         createdAt: firebase.firestore.FieldValue.serverTimestamp()
                     });
-                    await chatsCollection.doc(state.activeChatId).set({
+                    await userChatsCollection(state.user.uid).doc(state.activeChatId).set({
                         lastMessage: text,
                         lastMessageAt: firebase.firestore.FieldValue.serverTimestamp()
                     }, { merge: true });
