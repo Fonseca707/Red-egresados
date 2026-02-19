@@ -1,0 +1,1019 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AlumniConnect | Red de Egresados</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Fuentes y Iconos -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+    <!-- Configuración Tailwind -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['"Plus Jakarta Sans"', 'sans-serif'] },
+                    colors: { 
+                        brand: { 50: '#eff6ff', 100: '#dbeafe', 500: '#3b82f6', 600: '#2563eb', 900: '#1e3a8a' }
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.3s ease-out',
+                        'slide-up': 'slideUp 0.4s ease-out',
+                        'slide-in-right': 'slideInRight 0.4s cubic-bezier(0.16, 1, 0.3, 1)'
+                    },
+                    keyframes: {
+                        fadeIn: { '0%': { opacity: '0' }, '100%': { opacity: '1' } },
+                        slideUp: { '0%': { transform: 'translateY(20px)', opacity: '0' }, '100%': { transform: 'translateY(0)', opacity: '1' } },
+                        slideInRight: { '0%': { transform: 'translateX(100%)' }, '100%': { transform: 'translateX(0)' } }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        .glass-nav { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(12px); border-bottom: 1px solid #e5e7eb; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .section-card { @apply bg-white p-6 md:p-8 rounded-2xl border border-gray-100 shadow-sm mb-6; }
+        .input-label { @apply text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 block; }
+        .input-field { @apply w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition-all text-sm font-medium; }
+        
+        /* Chat bubbles */
+        .chat-bubble { max-width: 75%; padding: 0.75rem 1rem; border-radius: 1rem; position: relative; font-size: 0.95rem; line-height: 1.4; }
+        .chat-me { background-color: #2563eb; color: white; border-bottom-right-radius: 0.25rem; margin-left: auto; }
+        .chat-them { background-color: #f3f4f6; color: #1f2937; border-bottom-left-radius: 0.25rem; margin-right: auto; }
+        .detail-row { @apply flex items-start gap-3 py-3 border-b border-gray-50 last:border-0; }
+        .detail-icon { @apply w-8 h-8 rounded-full bg-brand-50 text-brand-600 flex items-center justify-center shrink-0 text-lg; }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans h-screen flex flex-col overflow-hidden">
+
+    <!-- 1. NOTIFICACIONES & NAVBAR -->
+    <nav class="glass-nav fixed w-full z-40 top-0 h-16 flex items-center justify-between px-4 lg:px-8">
+        <div class="flex items-center gap-3 cursor-pointer" onclick="router.navigate('home')">
+            <div class="w-8 h-8 bg-brand-600 rounded-lg flex items-center justify-center text-white font-bold">A</div>
+            <span class="font-bold text-xl tracking-tight text-gray-900">Alumni<span class="text-brand-600">Connect</span></span>
+        </div>
+
+        <div class="hidden md:flex items-center gap-6" id="nav-links">
+            <button onclick="router.navigate('directory')" class="text-gray-500 hover:text-brand-600 font-medium transition" id="nav-dir">Directorio</button>
+            <button onclick="router.navigate('news')" class="text-gray-500 hover:text-brand-600 font-medium transition" id="nav-news">Novedades</button>
+            <button onclick="router.navigate('messages')" class="text-gray-500 hover:text-brand-600 font-medium transition" id="nav-msg">Mensajes</button>
+        </div>
+
+        <div class="flex items-center gap-4">
+            <!-- Dropdown Notificaciones -->
+            <div class="relative">
+                <button onclick="uiLogic.toggleNotifications()" class="relative p-2 text-gray-500 hover:bg-gray-100 rounded-full transition">
+                    <i class="ph ph-bell text-xl"></i>
+                    <span id="notif-badge" class="absolute top-1 right-1 h-2.5 w-2.5 bg-red-500 rounded-full border-2 border-white"></span>
+                </button>
+                <!-- Panel de Notificaciones -->
+                <div id="notif-panel" class="hidden absolute right-0 mt-3 w-80 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden z-50 animate-fade-in">
+                    <div class="p-3 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
+                        <span class="font-semibold text-sm">Notificaciones</span>
+                        <span class="text-xs text-brand-600 cursor-pointer" onclick="document.getElementById('notif-badge').classList.add('hidden')">Marcar leídas</span>
+                    </div>
+                    <div class="max-h-64 overflow-y-auto">
+                        <div class="p-3 hover:bg-gray-50 border-b border-gray-100 cursor-pointer flex gap-3 transition">
+                            <div class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center shrink-0"><i class="ph ph-user-plus"></i></div>
+                            <div>
+                                <p class="text-sm font-medium">Nueva solicitud</p>
+                                <p class="text-xs text-gray-500">Ana García quiere conectar contigo.</p>
+                            </div>
+                        </div>
+                        <div class="p-3 hover:bg-gray-50 border-b border-gray-100 cursor-pointer flex gap-3 transition">
+                            <div class="w-8 h-8 rounded-full bg-green-100 text-green-600 flex items-center justify-center shrink-0"><i class="ph ph-check-circle"></i></div>
+                            <div>
+                                <p class="text-sm font-medium">Perfil Aprobado</p>
+                                <p class="text-xs text-gray-500">Tu cuenta ha sido verificada.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Avatar Usuario -->
+            <button onclick="router.navigate('profile')" class="h-9 w-9 rounded-full bg-gray-200 overflow-hidden ring-2 ring-transparent hover:ring-brand-200 transition focus:outline-none">
+                <img src="https://ui-avatars.com/api/?name=Yo&background=0D8ABC&color=fff" alt="Perfil" class="object-cover w-full h-full" id="header-avatar">
+            </button>
+        </div>
+    </nav>
+
+    <!-- 2. BANNER DE ESTADO -->
+    <div id="approval-banner" class="hidden mt-16 bg-amber-50 border-b border-amber-200 px-4 py-3 flex items-center justify-center gap-3 text-amber-900 text-sm animate-fade-in">
+        <i class="ph-fill ph-warning-circle text-amber-500 text-lg"></i>
+        <span><strong>Cuenta en revisión:</strong> Tu perfil está siendo validado. Algunas funciones están limitadas.</span>
+    </div>
+
+    <!-- MAIN CONTENT AREA -->
+    <main id="app-content" class="flex-1 pt-20 pb-8 px-4 overflow-y-auto relative scroll-smooth bg-gray-50">
+        
+        <!-- VISTA: HOME (Landing) -->
+        <section id="view-home" class="min-h-[80vh] flex flex-col items-center justify-center text-center animate-fade-in">
+            <div class="w-16 h-16 bg-brand-100 text-brand-600 rounded-3xl flex items-center justify-center mb-6">
+                <i class="ph-duotone ph-graduation-cap text-4xl"></i>
+            </div>
+            <h1 class="text-4xl md:text-6xl font-extrabold text-gray-900 mb-6 tracking-tight">
+                Conecta con tu <br><span class="text-brand-600">comunidad global.</span>
+            </h1>
+            <p class="text-lg text-gray-500 max-w-2xl mb-10">La plataforma oficial para egresados. Encuentra colegas, mentores y oportunidades laborales exclusivas.</p>
+            <div class="flex gap-4">
+                <button onclick="router.navigate('directory')" class="px-8 py-3.5 bg-brand-600 text-white font-bold rounded-xl shadow-lg hover:bg-brand-700 transition transform hover:-translate-y-1">Explorar Directorio</button>
+                <button onclick="uiLogic.toggleAuthModal()" class="px-8 py-3.5 bg-white text-gray-700 font-bold rounded-xl border border-gray-200 hover:bg-gray-50 transition">Ingresar</button>
+            </div>
+        </section>
+
+        <!-- VISTA: LOGIN -->
+        <div id="view-auth" class="hidden min-h-[80vh] flex items-center justify-center animate-fade-in">
+            <div class="bg-white p-8 rounded-3xl shadow-xl border border-gray-100 w-full max-w-md">
+                <div class="text-center mb-8">
+                    <div class="w-14 h-14 bg-brand-600 rounded-2xl flex items-center justify-center text-white text-3xl font-bold mx-auto mb-4 shadow-lg shadow-brand-500/30">A</div>
+                    <h1 class="text-2xl font-bold text-gray-900">Bienvenido de nuevo</h1>
+                    <p class="text-gray-500 text-sm mt-2">Red exclusiva de egresados</p>
+                </div>
+                
+                <form onsubmit="authLogic.login(event)" class="space-y-5">
+                    <div>
+                        <label class="input-label">Email Institucional</label>
+                        <input id="login-email" type="email" required placeholder="tu.nombre@universidad.edu" class="input-field">
+                    </div>
+                    <div>
+                        <label class="input-label">Contraseña</label>
+                        <input id="login-password" type="password" required placeholder="••••••••" class="input-field">
+                    </div>
+                    <button type="submit" class="w-full py-3.5 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-xl shadow-lg shadow-brand-500/30 transition transform hover:scale-[1.02]">
+                        Ingresar
+                    </button>
+                </form>
+                <button onclick="authLogic.loginWithGoogle()" class="w-full py-3.5 mt-3 bg-white text-gray-700 font-bold rounded-xl border border-gray-200 hover:bg-gray-50 transition flex items-center justify-center gap-2">
+                    <i class="ph ph-google-logo"></i> Continuar con Google
+                </button>
+                <p id="auth-feedback" class="text-xs text-gray-500 mt-3 text-center"></p>
+                
+                <div class="mt-8 text-center border-t border-gray-100 pt-6 space-y-2">
+                    <button onclick="authLogic.registerWithEmail()" class="text-sm text-brand-600 font-bold hover:underline">Crear cuenta con email</button>
+                    <button onclick="authLogic.browseAsGuest()" class="block w-full text-sm text-gray-600 font-semibold hover:text-brand-600 transition">Revisar la red como invitado</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- VISTA: DIRECTORIO -->
+        <div id="view-directory" class="hidden max-w-7xl mx-auto animate-slide-up pb-10">
+            <div class="flex flex-col md:flex-row justify-between items-end mb-8 gap-4 px-2">
+                <div>
+                    <h2 class="text-3xl font-bold text-gray-900 tracking-tight">Directorio</h2>
+                    <p class="text-gray-500 mt-1 text-sm">Conecta con compañeros de tu generación.</p>
+                </div>
+                <div class="flex gap-3 w-full md:w-auto">
+                    <div class="relative flex-1 md:w-72">
+                        <i class="ph ph-magnifying-glass absolute left-3 top-3.5 text-gray-400"></i>
+                        <input type="text" id="directory-search" placeholder="Buscar por nombre, cargo, empresa..." class="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100 transition shadow-sm" onkeyup="directoryLogic.filter()">
+                    </div>
+                    <button class="bg-white p-3 border border-gray-200 rounded-xl hover:bg-gray-50 text-gray-600 shadow-sm transition"><i class="ph ph-sliders text-lg"></i></button>
+                </div>
+            </div>
+
+            <div id="directory-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                <!-- Cards renderizadas via JS -->
+            </div>
+        </div>
+
+        <!-- VISTA: NOVEDADES -->
+        <div id="view-news" class="hidden max-w-5xl mx-auto animate-slide-up pb-10">
+            <div class="mb-10 text-center md:text-left">
+                <h2 class="text-3xl font-bold text-gray-900 mb-2">Novedades y Eventos</h2>
+                <p class="text-gray-500">Mantente al día con lo que sucede en tu comunidad.</p>
+            </div>
+
+            <div id="news-feed" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Feed renderizado via JS -->
+            </div>
+        </div>
+
+        <!-- VISTA: MENSAJES -->
+        <div id="view-messages" class="hidden h-[calc(100vh-8rem)] max-w-6xl mx-auto bg-white rounded-3xl shadow-xl border border-gray-200 overflow-hidden flex animate-fade-in">
+            <!-- Lista de Chats -->
+            <div class="w-full md:w-80 lg:w-96 border-r border-gray-100 flex flex-col bg-gray-50/50">
+                <div class="p-5 border-b border-gray-100">
+                    <h2 class="text-lg font-bold text-gray-900">Mensajes</h2>
+                    <div class="mt-3 relative">
+                        <i class="ph ph-magnifying-glass absolute left-3 top-2.5 text-gray-400 text-sm"></i>
+                        <input type="text" placeholder="Buscar conversación..." class="w-full pl-9 pr-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-brand-500 transition">
+                    </div>
+                </div>
+                <div class="flex-1 overflow-y-auto" id="chat-list">
+                    <!-- Items de chat -->
+                </div>
+            </div>
+
+            <!-- Chat Activo -->
+            <div class="hidden md:flex flex-1 flex-col bg-white" id="active-chat-area">
+                <!-- Header -->
+                <div class="p-4 border-b border-gray-100 flex items-center justify-between bg-white z-10">
+                    <div class="flex items-center gap-3">
+                        <div class="relative">
+                            <img id="chat-header-img" src="" class="w-10 h-10 rounded-full object-cover border border-gray-100">
+                            <span class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-white rounded-full"></span>
+                        </div>
+                        <div>
+                            <h3 id="chat-header-name" class="font-bold text-gray-900 text-sm">Selecciona un chat</h3>
+                            <p class="text-xs text-gray-500">En línea</p>
+                        </div>
+                    </div>
+                    <button class="text-gray-400 hover:text-gray-600 p-2 rounded-full hover:bg-gray-100 transition"><i class="ph ph-dots-three-vertical text-xl"></i></button>
+                </div>
+
+                <!-- Cuerpo -->
+                <div id="chat-body" class="flex-1 overflow-y-auto p-6 space-y-4 bg-gray-50/30">
+                    <div class="flex flex-col items-center justify-center h-full text-gray-400">
+                        <i class="ph ph-chats-circle text-4xl mb-2"></i>
+                        <p class="text-sm">Envía un mensaje para comenzar</p>
+                    </div>
+                </div>
+
+                <!-- Input -->
+                <div class="p-4 bg-white border-t border-gray-100">
+                    <form onsubmit="chatLogic.send(event)" class="flex gap-2 items-center">
+                        <button type="button" class="p-2 text-gray-400 hover:text-brand-600 transition"><i class="ph ph-paperclip text-xl"></i></button>
+                        <input id="chat-input" type="text" placeholder="Escribe un mensaje..." class="flex-1 bg-gray-100 border-0 rounded-full px-5 py-3 focus:ring-2 focus:ring-brand-500 focus:bg-white transition outline-none text-sm">
+                        <button type="submit" class="p-3 bg-brand-600 hover:bg-brand-700 text-white rounded-full transition shadow-md flex items-center justify-center"><i class="ph-fill ph-paper-plane-right"></i></button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- VISTA: PERFIL DETALLADO -->
+        <div id="view-profile" class="hidden max-w-4xl mx-auto animate-slide-up pb-20">
+            <div class="bg-white rounded-3xl shadow-sm border border-gray-200 overflow-hidden mb-6">
+                <!-- Portada -->
+                <div class="h-40 bg-gradient-to-r from-brand-600 to-indigo-900 relative group">
+                    <button class="absolute top-4 right-4 bg-black/20 text-white px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-black/30 backdrop-blur-sm transition opacity-0 group-hover:opacity-100 flex items-center gap-2">
+                        <i class="ph-bold ph-camera"></i> Editar portada
+                    </button>
+                </div>
+                
+                <!-- Info Principal -->
+                <div class="px-8 pb-8">
+                    <div class="relative flex flex-col md:flex-row md:items-end gap-6 -mt-12 mb-8">
+                        <div class="relative">
+                            <img src="https://ui-avatars.com/api/?name=Yo&background=0D8ABC&color=fff" class="w-32 h-32 rounded-3xl border-[6px] border-white shadow-lg bg-white object-cover" id="profile-avatar">
+                            <input id="profile-avatar-file" type="file" accept="image/*" class="hidden" onchange="profileLogic.uploadPhoto(event)">
+                            <button type="button" onclick="document.getElementById('profile-avatar-file').click()" class="absolute -bottom-2 -right-2 bg-white border border-gray-200 rounded-xl px-3 py-1.5 text-xs font-bold text-gray-700 shadow-sm hover:bg-gray-50">
+                                Cambiar foto
+                            </button>
+                        </div>
+                        <div class="flex-1 mt-2 md:mt-0">
+                            <h2 class="text-3xl font-bold text-gray-900" id="display-name">Tu Nombre</h2>
+                            <p class="text-brand-600 font-medium" id="display-role">Tu Cargo</p>
+                        </div>
+                        <button onclick="profileLogic.save()" id="btn-save-profile" class="bg-brand-600 text-white px-8 py-3 rounded-xl font-bold shadow-lg shadow-brand-500/30 hover:bg-brand-700 transition flex items-center gap-2">
+                            <i class="ph-bold ph-floppy-disk"></i> Guardar Cambios
+                        </button>
+                    </div>
+
+                    <form id="profileForm" class="space-y-8">
+                        <!-- 1. INFORMACIÓN BÁSICA -->
+                        <div class="section-card">
+                            <h3 class="text-lg font-bold mb-6 flex items-center gap-2 text-gray-900 border-b border-gray-100 pb-3">
+                                <i class="ph-duotone ph-user-circle text-brand-600 text-2xl"></i> Información Personal
+                            </h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label class="input-label">Nombres</label>
+                                    <input type="text" id="p-name" class="input-field" placeholder="Ej: Juan">
+                                </div>
+                                <div>
+                                    <label class="input-label">Apellidos</label>
+                                    <input type="text" id="p-lastname" class="input-field" placeholder="Ej: Pérez">
+                                </div>
+                                <div>
+                                    <label class="input-label">Promoción (Año)</label>
+                                    <input type="text" id="p-year" class="input-field" placeholder="Ej: 2020">
+                                </div>
+                                <div>
+                                    <label class="input-label">Ubicación (Ciudad, País)</label>
+                                    <input type="text" id="p-location" class="input-field" placeholder="Ej: Medellín, Colombia">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 2. PERFIL ACADÉMICO -->
+                        <div class="section-card">
+                            <h3 class="text-lg font-bold mb-6 flex items-center gap-2 text-gray-900 border-b border-gray-100 pb-3">
+                                <i class="ph-duotone ph-student text-brand-600 text-2xl"></i> Perfil Académico y Profesional
+                            </h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div class="md:col-span-2">
+                                    <label class="input-label">Situación Actual</label>
+                                    <select id="p-status" class="input-field">
+                                        <option value="trabajando">Trabajando</option>
+                                        <option value="estudiando">Estudiando</option>
+                                        <option value="buscando">En búsqueda activa</option>
+                                        <option value="emprendiendo">Emprendiendo</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="input-label">Puesto / Rol Actual</label>
+                                    <input type="text" id="p-role" class="input-field" placeholder="Ej: Gerente de Ventas">
+                                </div>
+                                <div>
+                                    <label class="input-label">Área de Interés</label>
+                                    <input type="text" id="p-area" class="input-field" placeholder="Ej: Tecnología, Finanzas">
+                                </div>
+                                <div class="md:col-span-2">
+                                    <label class="input-label">Estudios Recientes</label>
+                                    <input type="text" id="p-studies" class="input-field" placeholder="Ej: Maestría en Marketing Digital">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 3. ESPECIALIZACIÓN -->
+                        <div class="section-card">
+                            <h3 class="text-lg font-bold mb-6 flex items-center gap-2 text-gray-900 border-b border-gray-100 pb-3">
+                                <i class="ph-duotone ph-star text-brand-600 text-2xl"></i> Especialización
+                            </h3>
+                            <div class="space-y-6">
+                                <div>
+                                    <label class="input-label">Extracto / Bio (Breve descripción)</label>
+                                    <textarea id="p-bio" class="input-field h-24 resize-none" placeholder="Cuéntanos sobre tu experiencia y objetivos..."></textarea>
+                                </div>
+                                <div>
+                                    <label class="input-label">Habilidades Clave (Separadas por comas)</label>
+                                    <input type="text" id="p-skills" class="input-field" placeholder="Ej: Liderazgo, Python, Negociación">
+                                </div>
+                                <div>
+                                    <label class="input-label">Intereses de Conexión</label>
+                                    <input type="text" id="p-topics" class="input-field" placeholder="Ej: Mentoria, Inversiones, Proyectos">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 4. CONTACTO -->
+                        <div class="section-card">
+                            <h3 class="text-lg font-bold mb-6 flex items-center gap-2 text-gray-900 border-b border-gray-100 pb-3">
+                                <i class="ph-duotone ph-share-network text-brand-600 text-2xl"></i> Redes de Contacto
+                            </h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label class="input-label">Celular / WhatsApp</label>
+                                    <div class="relative">
+                                        <i class="ph ph-whatsapp-logo absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-lg"></i>
+                                        <input type="text" id="p-phone" class="input-field pl-11" placeholder="+57 300 123 4567">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="input-label">LinkedIn (URL)</label>
+                                    <div class="relative">
+                                        <i class="ph ph-linkedin-logo absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-lg"></i>
+                                        <input type="text" id="p-linkedin" class="input-field pl-11" placeholder="linkedin.com/in/usuario">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                    
+                    <div class="flex justify-center pt-6 border-t border-gray-100">
+                        <button onclick="authLogic.logout()" class="text-red-500 font-bold text-sm hover:text-red-700 flex items-center gap-2 transition px-4 py-2 rounded-lg hover:bg-red-50">
+                            <i class="ph-bold ph-sign-out"></i> Cerrar Sesión
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- 3. MODAL DE NOTICIAS -->
+    <div id="modal-news" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm bg-black/40">
+        <div class="bg-white rounded-3xl w-full max-w-2xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden animate-fade-in relative">
+            <button onclick="uiLogic.closeNewsModal()" class="absolute top-4 right-4 bg-white/50 hover:bg-white p-2 rounded-full backdrop-blur-md transition z-10"><i class="ph-bold ph-x text-xl"></i></button>
+            <div class="h-64 relative shrink-0">
+                <img id="news-modal-img" src="" class="w-full h-full object-cover">
+                <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+                <div class="absolute bottom-6 left-6 right-6 text-white">
+                    <span id="news-modal-cat" class="px-3 py-1 bg-brand-600 rounded-lg text-xs font-bold uppercase tracking-wide mb-2 inline-block">Categoría</span>
+                    <h2 id="news-modal-title" class="text-2xl md:text-3xl font-bold leading-tight">Título</h2>
+                </div>
+            </div>
+            <div class="p-8 overflow-y-auto">
+                <div class="flex items-center gap-4 text-sm text-gray-500 mb-6 border-b border-gray-100 pb-4">
+                    <span class="flex items-center gap-1"><i class="ph-bold ph-calendar"></i> <span id="news-modal-date">Fecha</span></span>
+                    <span class="flex items-center gap-1"><i class="ph-bold ph-user"></i> Admin</span>
+                </div>
+                <p id="news-modal-body" class="text-gray-600 leading-relaxed text-lg">Contenido...</p>
+                <div class="mt-8 pt-6 border-t border-gray-100 flex justify-end">
+                    <button onclick="uiLogic.closeNewsModal()" class="px-6 py-2.5 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. SLIDE PANEL DE PERFIL PÚBLICO -->
+    <div id="slide-panel-overlay" class="fixed inset-0 z-[60] hidden">
+        <div class="absolute inset-0 bg-black/20 backdrop-blur-sm transition-opacity" onclick="directoryLogic.closeProfile()"></div>
+        <div id="slide-panel-content" class="absolute right-0 top-0 h-full w-full max-w-md bg-white shadow-2xl overflow-y-auto animate-slide-in-right flex flex-col">
+            <div class="relative h-40 bg-gradient-to-r from-brand-600 to-brand-900 shrink-0">
+                <button onclick="directoryLogic.closeProfile()" class="absolute top-4 left-4 text-white hover:bg-white/20 p-2 rounded-full transition z-10"><i class="ph-bold ph-arrow-right text-xl"></i></button>
+            </div>
+            <div class="px-6 -mt-16 pb-10 flex-1">
+                <div class="flex justify-between items-end mb-4">
+                    <img id="sp-img" src="" class="w-28 h-28 rounded-2xl border-[4px] border-white shadow-lg bg-white object-cover">
+                    <span id="sp-year" class="mb-2 px-3 py-1 bg-brand-50 text-brand-600 rounded-lg text-xs font-bold border border-brand-100">Promoción</span>
+                </div>
+                <div class="mb-6">
+                    <h2 id="sp-name" class="text-2xl font-bold text-gray-900 leading-tight">Nombre Usuario</h2>
+                    <p id="sp-role" class="text-lg text-brand-600 font-medium mt-1">Cargo / Puesto</p>
+                    <div class="flex items-center gap-2 text-gray-500 text-sm mt-2"><i class="ph-fill ph-map-pin"></i> <span id="sp-location">Ubicación</span></div>
+                </div>
+                <div class="flex gap-3 mb-8">
+                    <button onclick="router.navigate('messages')" class="flex-1 bg-brand-600 text-white font-bold py-2.5 rounded-xl shadow-md shadow-brand-500/30 hover:bg-brand-700 transition flex justify-center items-center gap-2"><i class="ph-bold ph-chat-circle-text"></i> Mensaje</button>
+                    <a id="sp-linkedin-btn" href="#" target="_blank" class="hidden w-12 flex items-center justify-center bg-blue-50 text-[#0077b5] rounded-xl border border-blue-100 hover:bg-blue-100 transition"><i class="ph-bold ph-linkedin-logo text-xl"></i></a>
+                    <a id="sp-whatsapp-btn" href="#" target="_blank" class="hidden w-12 flex items-center justify-center bg-green-50 text-[#25D366] rounded-xl border border-green-100 hover:bg-green-100 transition"><i class="ph-bold ph-whatsapp-logo text-xl"></i></a>
+                </div>
+                <div class="space-y-6">
+                    <div>
+                        <h4 class="text-sm font-bold text-gray-900 uppercase tracking-wide mb-3">Sobre mí</h4>
+                        <p id="sp-bio" class="text-gray-600 text-sm leading-relaxed bg-gray-50 p-4 rounded-xl border border-gray-100">Sin información disponible.</p>
+                    </div>
+                    <div>
+                        <h4 class="text-sm font-bold text-gray-900 uppercase tracking-wide mb-3">Información Académica</h4>
+                        <div class="detail-row"><div class="detail-icon"><i class="ph-duotone ph-student"></i></div><div><p class="text-xs text-gray-500 font-semibold uppercase">Estudios</p><p id="sp-studies" class="text-gray-900 font-medium text-sm">No especificado</p></div></div>
+                        <div class="detail-row"><div class="detail-icon"><i class="ph-duotone ph-briefcase"></i></div><div><p class="text-xs text-gray-500 font-semibold uppercase">Área / Sector</p><p id="sp-area" class="text-gray-900 font-medium text-sm">No especificado</p></div></div>
+                    </div>
+                    <div>
+                        <h4 class="text-sm font-bold text-gray-900 uppercase tracking-wide mb-3">Habilidades</h4>
+                        <div id="sp-skills" class="flex flex-wrap gap-2"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase (compat para script clásico) -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-storage-compat.js"></script>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        const firebaseConfig = {
+          apiKey: "AIzaSyBoVTqroZ7zR-3a5QGy5CzK19a4422t0Rg",
+          authDomain: "red-egresados-65a1a.firebaseapp.com",
+          projectId: "red-egresados-65a1a",
+          storageBucket: "red-egresados-65a1a.firebasestorage.app",
+          messagingSenderId: "874010522484",
+          appId: "1:874010522484:web:28881821d110defd3b7221",
+          measurementId: "G-85C6M45M7N"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+        const storage = firebase.storage();
+
+        const artifactsRoot = db
+          .collection('artifacts')
+          .doc(firebaseConfig.appId);
+
+        const alumniCollection = artifactsRoot
+          .collection('public')
+          .doc('data')
+          .collection('alumni');
+
+        const userMessagesCollection = (uid) => artifactsRoot
+          .collection('users')
+          .doc(uid)
+          .collection('messages');
+
+        const state = {
+            user: null,
+            view: 'home',
+            data: {
+                alumni: [],
+                news: [
+                    { id: 1, title: "Encuentro Anual de Egresados 2024", category: "Evento", date: "15 Oct", summary: "Únete a nosotros para una noche de networking y celebración.", img: "https://placehold.co/600x400/1e3a8a/FFF?text=Evento" },
+                    { id: 2, title: "Senior Developer Vacancy", category: "Empleo", date: "Hace 2h", summary: "Empresa aliada busca desarrollador Full Stack con experiencia.", img: "https://placehold.co/600x400/2563eb/FFF?text=Empleo" },
+                ],
+                chats: [
+                    { id: 1, name: "Sofia Ramirez", img: "https://ui-avatars.com/api/?name=Sofia+Ramirez&background=random", lastMsg: "¡Claro! Hablemos mañana.", time: "10:30 AM", messages: [] },
+                    { id: 2, name: "Carlos Mendez", img: "https://ui-avatars.com/api/?name=Carlos+Mendez&background=random", lastMsg: "Gracias por conectar.", time: "Ayer", messages: [] }
+                ]
+            },
+            profile: {
+                firstName: "", lastName: "", graduationYear: "", location: "",
+                status: "trabajando", role: "", area: "", studies: "",
+                bio: "", skills: "", topics: "", phone: "", linkedin: ""
+            },
+            guestMode: false,
+            activeChatId: null,
+            messagesByChat: {}
+        };
+
+        const authLogic = {
+            login: async (e) => {
+                e.preventDefault();
+                const email = document.getElementById('login-email').value.trim();
+                const password = document.getElementById('login-password').value;
+                const feedback = document.getElementById('auth-feedback');
+
+                try {
+                    state.guestMode = false;
+                    await auth.signInWithEmailAndPassword(email, password);
+                    feedback.textContent = '';
+                } catch (error) {
+                    feedback.textContent = `Error de acceso: ${error.message}`;
+                }
+            },
+            registerWithEmail: async () => {
+                const email = document.getElementById('login-email').value.trim();
+                const password = document.getElementById('login-password').value;
+                const feedback = document.getElementById('auth-feedback');
+
+                if (!email || !password) {
+                    feedback.textContent = 'Ingresa email y contraseña para registrarte.';
+                    return;
+                }
+
+                if (password.length < 6) {
+                    feedback.textContent = 'La contraseña debe tener al menos 6 caracteres.';
+                    return;
+                }
+
+                try {
+                    state.guestMode = false;
+                    await auth.createUserWithEmailAndPassword(email, password);
+                    feedback.textContent = 'Cuenta creada correctamente.';
+                } catch (error) {
+                    feedback.textContent = `Error de registro: ${error.message}`;
+                }
+            },
+            loginWithGoogle: async () => {
+                const feedback = document.getElementById('auth-feedback');
+                const provider = new firebase.auth.GoogleAuthProvider();
+                try {
+                    state.guestMode = false;
+                    await auth.signInWithPopup(provider);
+                    feedback.textContent = '';
+                } catch (error) {
+                    feedback.textContent = `Error Google: ${error.message}`;
+                }
+            },
+            browseAsGuest: async () => {
+                state.guestMode = true;
+                state.user = { uid: 'guest-view', displayName: 'Invitado' };
+                await loadAlumni();
+                router.navigate('directory');
+            },
+            logout: async () => {
+                if (!state.guestMode) {
+                    await auth.signOut();
+                }
+                state.guestMode = false;
+                state.user = null;
+                router.navigate('auth');
+            }
+        };
+
+        async function loadAlumni() {
+            try {
+                const snapshot = await alumniCollection.get();
+                state.data.alumni = snapshot.docs.map((doc) => {
+                const d = doc.data();
+                return {
+                    id: doc.id,
+                    name: `${d.firstName || ''} ${d.lastName || ''}`.trim() || 'Sin nombre',
+                    role: d.role || 'Sin rol',
+                    company: d.studies || 'Egresado',
+                    img: d.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent((d.firstName || 'Egresado') + ' ' + (d.lastName || ''))}&background=random`,
+                    tags: [d.area || 'General', d.status || 'Egresado'].filter(Boolean),
+                    fullStudies: d.studies || 'No especificado',
+                    location: d.location || 'Ubicación no disponible',
+                    bio: d.bio || 'Sin biografía disponible.',
+                    year: d.graduationYear || '---',
+                    area: d.area || 'General',
+                    skills: Array.isArray(d.skills) ? d.skills : (d.skills ? String(d.skills).split(',') : []),
+                    phone: d.phone || '',
+                    linkedin: d.linkedin || ''
+                };
+                });
+            } catch (error) {
+                state.data.alumni = state.data.alumni.length ? state.data.alumni : [];
+            }
+        }
+
+        async function loadProfile(uid) {
+            const doc = await alumniCollection.doc(uid).get();
+            if (!doc.exists) {
+                state.profile = {
+                    firstName: state.user?.displayName?.split(' ')[0] || '',
+                    lastName: state.user?.displayName?.split(' ').slice(1).join(' ') || '',
+                    graduationYear: '',
+                    location: '',
+                    status: 'trabajando',
+                    role: '',
+                    area: '',
+                    studies: '',
+                    bio: '',
+                    skills: '',
+                    topics: '',
+                    phone: '',
+                    linkedin: ''
+                };
+                return;
+            }
+            const d = doc.data();
+            state.profile = {
+                firstName: d.firstName || '',
+                lastName: d.lastName || '',
+                graduationYear: d.graduationYear || '',
+                location: d.location || '',
+                status: d.status || 'trabajando',
+                role: d.role || '',
+                area: d.area || '',
+                studies: d.studies || '',
+                bio: d.bio || '',
+                skills: Array.isArray(d.skills) ? d.skills.join(', ') : (d.skills || ''),
+                topics: d.topics || '',
+                phone: d.phone || '',
+                linkedin: d.linkedin || '',
+                photoURL: d.photoURL || ''
+            };
+        }
+
+        async function loadMessagesForUser(uid) {
+            const snap = await userMessagesCollection(uid).orderBy('createdAt', 'asc').get();
+            state.messagesByChat = {};
+            snap.docs.forEach((doc) => {
+                const d = doc.data();
+                const key = String(d.chatId || 'general');
+                if (!state.messagesByChat[key]) state.messagesByChat[key] = [];
+                state.messagesByChat[key].push({
+                    text: d.text || '',
+                    sender: d.sender || 'me',
+                    createdAt: d.createdAt,
+                });
+            });
+        }
+
+        const router = {
+            navigate: (viewId) => {
+                if (viewId !== 'auth' && viewId !== 'home' && !state.user) { authLogic.logout(); return; }
+
+                const views = ['view-home', 'view-auth', 'view-directory', 'view-news', 'view-messages', 'view-profile'];
+                views.forEach(id => {
+                    const el = document.getElementById(id);
+                    if(el) el.classList.add('hidden');
+                });
+
+                const nav = document.querySelector('nav');
+                if (viewId === 'auth') {
+                    nav.classList.add('hidden');
+                } else {
+                    nav.classList.remove('hidden');
+                    const navButtons = { 'directory': 'nav-dir', 'news': 'nav-news', 'messages': 'nav-msg' };
+                    Object.values(navButtons).forEach(btnId => {
+                        const btn = document.getElementById(btnId);
+                        if(btn) btn.classList.remove('text-brand-600', 'bg-brand-50');
+                    });
+                    if (navButtons[viewId]) {
+                        const activeBtn = document.getElementById(navButtons[viewId]);
+                        if(activeBtn) activeBtn.classList.add('text-brand-600', 'bg-brand-50');
+                    }
+                }
+
+                const targetView = document.getElementById(`view-${viewId}`);
+                if (targetView) {
+                    targetView.classList.remove('hidden');
+                    window.scrollTo(0,0);
+                } else {
+                    return;
+                }
+
+                if(viewId === 'directory') directoryLogic.render();
+                if(viewId === 'news') newsLogic.render();
+                if(viewId === 'messages') chatLogic.renderList();
+                if(viewId === 'profile') profileLogic.populate();
+            }
+        };
+
+        const directoryLogic = {
+            render: (items = state.data.alumni) => {
+                const grid = document.getElementById('directory-grid');
+                grid.innerHTML = items.map(alum => `
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition group cursor-pointer h-full flex flex-col" onclick="directoryLogic.openProfile('${alum.id}')">
+                        <div class="flex items-start justify-between">
+                            <div class="flex gap-4">
+                                <img src="${alum.img}" class="w-14 h-14 rounded-xl object-cover shadow-sm group-hover:scale-105 transition">
+                                <div>
+                                    <h3 class="font-bold text-gray-900 group-hover:text-brand-600 transition">${alum.name}</h3>
+                                    <p class="text-xs text-brand-600 font-semibold uppercase tracking-wide mt-0.5">${alum.company}</p>
+                                    <p class="text-sm text-gray-500 mt-1 line-clamp-1">${alum.role}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-4 flex gap-2 flex-wrap mb-4 flex-1 content-start">
+                            ${(alum.tags || []).slice(0,3).map(t => `<span class="px-2 py-1 bg-gray-50 text-gray-600 text-xs rounded-md font-medium border border-gray-100">${t}</span>`).join('')}
+                        </div>
+                        <div class="pt-4 border-t border-gray-50">
+                            <span class="w-full px-4 py-2 bg-gray-50 text-gray-600 text-xs font-bold rounded-lg hover:bg-brand-50 hover:text-brand-600 transition flex justify-center items-center gap-2"><i class="ph-bold ph-user-list"></i> Ver Perfil Completo</span>
+                        </div>
+                    </div>
+                `).join('');
+            },
+            openProfile: (id) => {
+                const user = state.data.alumni.find(u => String(u.id) === String(id));
+                if(!user) return;
+                document.getElementById('sp-img').src = user.img;
+                document.getElementById('sp-name').innerText = user.name;
+                document.getElementById('sp-role').innerText = user.role;
+                document.getElementById('sp-location').innerText = user.location;
+                document.getElementById('sp-year').innerText = `Promoción ${user.year}`;
+                document.getElementById('sp-bio').innerText = user.bio;
+                document.getElementById('sp-studies').innerText = user.fullStudies;
+                document.getElementById('sp-area').innerText = user.area;
+                const skillsContainer = document.getElementById('sp-skills');
+                if (user.skills && user.skills.length > 0) {
+                    skillsContainer.innerHTML = user.skills.map(s => `<span class="px-3 py-1 bg-brand-50 text-brand-700 rounded-full text-xs font-bold border border-brand-100">${String(s).trim()}</span>`).join('');
+                } else {
+                    skillsContainer.innerHTML = '<span class="text-gray-400 text-xs italic">No especificadas</span>';
+                }
+                const waBtn = document.getElementById('sp-whatsapp-btn');
+                if (user.phone) {
+                    waBtn.classList.remove('hidden');
+                    waBtn.href = `https://wa.me/${String(user.phone).replace(/[^0-9]/g, '')}`;
+                } else { waBtn.classList.add('hidden'); }
+                const liBtn = document.getElementById('sp-linkedin-btn');
+                if (user.linkedin) {
+                    liBtn.classList.remove('hidden');
+                    liBtn.href = user.linkedin.startsWith('http') ? user.linkedin : `https://${user.linkedin}`;
+                } else { liBtn.classList.add('hidden'); }
+                document.getElementById('slide-panel-overlay').classList.remove('hidden');
+            },
+            closeProfile: () => {
+                document.getElementById('slide-panel-overlay').classList.add('hidden');
+            },
+            filter: () => {
+                const term = document.getElementById('directory-search').value.toLowerCase().trim();
+                const filtered = state.data.alumni.filter(u =>
+                    u.name.toLowerCase().includes(term) ||
+                    (u.role || '').toLowerCase().includes(term) ||
+                    (u.company || '').toLowerCase().includes(term)
+                );
+                directoryLogic.render(filtered);
+            }
+        };
+
+        const newsLogic = {
+            render: () => {
+                const feed = document.getElementById('news-feed');
+                feed.innerHTML = state.data.news.map((item, idx) => `
+                    <div class="bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-lg transition cursor-pointer group" onclick="uiLogic.openNewsModal(${idx})">
+                        <div class="h-48 overflow-hidden relative">
+                            <img src="${item.img}" class="w-full h-full object-cover transition duration-500 group-hover:scale-105">
+                            <span class="absolute top-4 left-4 bg-white/90 backdrop-blur text-xs font-bold px-3 py-1 rounded-lg shadow-sm">${item.category}</span>
+                        </div>
+                        <div class="p-6">
+                            <div class="text-xs font-bold text-brand-600 mb-2 uppercase">${item.date}</div>
+                            <h3 class="font-bold text-lg text-gray-900 mb-3 leading-tight group-hover:text-brand-600 transition">${item.title}</h3>
+                            <p class="text-sm text-gray-500 line-clamp-2">${item.summary}</p>
+                            <button class="mt-4 text-sm font-bold text-gray-900 flex items-center gap-1 group-hover:gap-2 transition-all">Leer más <i class="ph-bold ph-arrow-right"></i></button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        };
+
+        const chatLogic = {
+            renderList: () => {
+                const list = document.getElementById('chat-list');
+                list.innerHTML = state.data.chats.map(chat => `
+                    <div onclick="chatLogic.openChat(${chat.id})" class="p-4 hover:bg-white cursor-pointer border-b border-gray-100 flex gap-3 transition">
+                        <div class="relative">
+                            <img src="${chat.img}" class="w-12 h-12 rounded-full object-cover">
+                            <span class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></span>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex justify-between items-baseline mb-1">
+                                <h4 class="font-bold text-sm text-gray-900 truncate">${chat.name}</h4>
+                                <span class="text-xs text-gray-400">${chat.time}</span>
+                            </div>
+                            <p class="text-xs text-gray-500 truncate">${chat.lastMsg}</p>
+                        </div>
+                    </div>
+                `).join('');
+            },
+            openChat: (id) => {
+                const chat = state.data.chats.find(c => c.id === id);
+                if (!chat) return;
+                state.activeChatId = String(id);
+                document.getElementById('chat-header-img').src = chat.img;
+                document.getElementById('chat-header-name').innerText = chat.name;
+
+                const body = document.getElementById('chat-body');
+                const messages = state.messagesByChat[state.activeChatId] || [];
+                if (messages.length === 0) {
+                    body.innerHTML = `
+                        <div class="flex flex-col items-center justify-center py-6">
+                            <span class="text-xs bg-gray-100 px-3 py-1 rounded-full text-gray-500">Sin mensajes</span>
+                        </div>
+                    `;
+                    return;
+                }
+
+                body.innerHTML = messages.map((m) => `
+                    <div class="flex flex-col ${m.sender === 'me' ? 'items-end' : 'items-start'}">
+                        <div class="chat-bubble ${m.sender === 'me' ? 'chat-me' : 'chat-them'}">${m.text}</div>
+                        <span class="text-[10px] text-gray-400 mt-1 ${m.sender === 'me' ? 'mr-1' : 'ml-1'}">${m.createdAt ? 'Guardado' : 'Ahora'}</span>
+                    </div>
+                `).join('');
+                body.scrollTop = body.scrollHeight;
+            },
+            send: async (e) => {
+                e.preventDefault();
+                if (!state.activeChatId) {
+                    const fallback = state.data.chats[0]?.id;
+                    if (!fallback) return;
+                    chatLogic.openChat(fallback);
+                }
+
+                const input = document.getElementById('chat-input');
+                const text = input.value.trim();
+                if(!text) return;
+
+                if (!state.messagesByChat[state.activeChatId]) state.messagesByChat[state.activeChatId] = [];
+                state.messagesByChat[state.activeChatId].push({ text, sender: 'me', createdAt: new Date() });
+
+                if (state.user && !state.guestMode) {
+                    await userMessagesCollection(state.user.uid).add({
+                        chatId: state.activeChatId,
+                        text,
+                        sender: 'me',
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                }
+
+                input.value = '';
+                chatLogic.openChat(Number(state.activeChatId));
+            }
+        };
+
+        const profileLogic = {
+            populate: () => {
+                const p = state.profile;
+                document.getElementById('display-name').innerText = `${p.firstName} ${p.lastName}`.trim() || 'Tu Nombre';
+                document.getElementById('display-role').innerText = p.role || 'Tu Cargo';
+                document.getElementById('p-name').value = p.firstName || '';
+                document.getElementById('p-lastname').value = p.lastName || '';
+                document.getElementById('p-year').value = p.graduationYear || '';
+                document.getElementById('p-location').value = p.location || '';
+                document.getElementById('p-status').value = p.status || 'trabajando';
+                document.getElementById('p-role').value = p.role || '';
+                document.getElementById('p-area').value = p.area || '';
+                document.getElementById('p-studies').value = p.studies || '';
+                document.getElementById('p-bio').value = p.bio || '';
+                document.getElementById('p-skills').value = p.skills || '';
+                document.getElementById('p-topics').value = p.topics || '';
+                document.getElementById('p-phone').value = p.phone || '';
+                document.getElementById('p-linkedin').value = p.linkedin || '';
+                if (p.photoURL) {
+                    document.getElementById('profile-avatar').src = p.photoURL;
+                    document.getElementById('header-avatar').src = p.photoURL;
+                }
+            },
+            uploadPhoto: async (event) => {
+                if (!state.user) return;
+                const file = event.target.files?.[0];
+                if (!file) return;
+                try {
+                    const path = `avatars/${state.user.uid}/${Date.now()}-${file.name}`;
+                    const ref = storage.ref(path);
+                    await ref.put(file);
+                    const url = await ref.getDownloadURL();
+                    await alumniCollection.doc(state.user.uid).set({
+                        photoURL: url,
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    }, { merge: true });
+                    state.profile.photoURL = url;
+                    document.getElementById('profile-avatar').src = url;
+                    document.getElementById('header-avatar').src = url;
+                    await loadAlumni();
+                } catch (error) {
+                    alert('No se pudo subir la foto. Revisa reglas de Storage.');
+                } finally {
+                    event.target.value = '';
+                }
+            },
+            save: async () => {
+                if (!state.user) return;
+                const btn = document.getElementById('btn-save-profile');
+                const original = btn.innerHTML;
+                btn.disabled = true;
+                btn.innerHTML = `<i class="ph-bold ph-spinner animate-spin"></i> Guardando...`;
+
+                const payload = {
+                    firstName: document.getElementById('p-name').value.trim(),
+                    lastName: document.getElementById('p-lastname').value.trim(),
+                    graduationYear: document.getElementById('p-year').value.trim(),
+                    location: document.getElementById('p-location').value.trim(),
+                    status: document.getElementById('p-status').value,
+                    role: document.getElementById('p-role').value.trim(),
+                    area: document.getElementById('p-area').value.trim(),
+                    studies: document.getElementById('p-studies').value.trim(),
+                    bio: document.getElementById('p-bio').value.trim(),
+                    skills: document.getElementById('p-skills').value.split(',').map(s => s.trim()).filter(Boolean),
+                    topics: document.getElementById('p-topics').value.trim(),
+                    phone: document.getElementById('p-phone').value.trim(),
+                    linkedin: document.getElementById('p-linkedin').value.trim(),
+                    email: state.user.email || '',
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                };
+
+                try {
+                    const docRef = alumniCollection.doc(state.user.uid);
+                    const exists = (await docRef.get()).exists;
+                    if (!exists) payload.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+                    await docRef.set(payload, { merge: true });
+
+                    state.profile = {
+                        ...state.profile,
+                        ...payload,
+                        skills: (payload.skills || []).join(', ')
+                    };
+
+                    document.getElementById('display-name').innerText = `${state.profile.firstName} ${state.profile.lastName}`;
+                    document.getElementById('display-role').innerText = state.profile.role;
+                    await loadAlumni();
+
+                    btn.className = btn.className.replace('bg-brand-600', 'bg-green-600');
+                    btn.innerHTML = `<i class="ph-bold ph-check"></i> ¡Guardado!`;
+                } catch (error) {
+                    btn.className = btn.className.replace('bg-brand-600', 'bg-red-600');
+                    btn.innerHTML = `<i class="ph-bold ph-warning-circle"></i> Error`; 
+                }
+
+                setTimeout(() => {
+                    btn.className = btn.className.replace('bg-green-600', 'bg-brand-600').replace('bg-red-600', 'bg-brand-600');
+                    btn.innerHTML = original;
+                    btn.disabled = false;
+                }, 2000);
+            }
+        };
+
+        const uiLogic = {
+            toggleNotifications: () => {
+                const panel = document.getElementById('notif-panel');
+                panel.classList.toggle('hidden');
+                if(!panel.classList.contains('hidden')) document.getElementById('notif-badge').classList.add('hidden');
+            },
+            openNewsModal: (idx) => {
+                const item = state.data.news[idx];
+                document.getElementById('news-modal-img').src = item.img;
+                document.getElementById('news-modal-cat').innerText = item.category;
+                document.getElementById('news-modal-title').innerText = item.title;
+                document.getElementById('news-modal-date').innerText = item.date;
+                document.getElementById('news-modal-body').innerText = item.summary + " Aquí iría el contenido completo del artículo, descripción detallada del evento o requisitos de la vacante...";
+                document.getElementById('modal-news').classList.remove('hidden');
+            },
+            closeNewsModal: () => document.getElementById('modal-news').classList.add('hidden'),
+            toggleAuthModal: () => router.navigate('auth')
+        };
+
+        window.router = router;
+        window.authLogic = authLogic;
+        window.directoryLogic = directoryLogic;
+        window.newsLogic = newsLogic;
+        window.chatLogic = chatLogic;
+        window.profileLogic = profileLogic;
+        window.uiLogic = uiLogic;
+
+        auth.onAuthStateChanged(async (user) => {
+            if (state.guestMode) return;
+            state.user = user;
+            if (user) {
+                await loadProfile(user.uid);
+                await loadAlumni();
+                await loadMessagesForUser(user.uid);
+                router.navigate('directory');
+            } else {
+                state.data.alumni = [];
+                state.messagesByChat = {};
+                state.profile = { firstName: '', lastName: '', graduationYear: '', location: '', status: 'trabajando', role: '', area: '', studies: '', bio: '', skills: '', topics: '', phone: '', linkedin: '' };
+                router.navigate('home');
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            router.navigate('home');
+        });
+
+    </script>
+</body>
+</html>
