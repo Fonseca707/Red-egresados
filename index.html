@@ -433,7 +433,7 @@
                     <div class="flex items-center gap-2 text-gray-500 text-sm mt-2"><i class="ph-fill ph-map-pin"></i> <span id="sp-location">Ubicación</span></div>
                 </div>
                 <div class="flex gap-3 mb-8">
-                    <button onclick="router.navigate('messages')" class="flex-1 bg-brand-600 text-white font-bold py-2.5 rounded-xl shadow-md shadow-brand-500/30 hover:bg-brand-700 transition flex justify-center items-center gap-2"><i class="ph-bold ph-chat-circle-text"></i> Mensaje</button>
+                    <button onclick="chatLogic.startChatFromDirectory()" class="flex-1 bg-brand-600 text-white font-bold py-2.5 rounded-xl shadow-md shadow-brand-500/30 hover:bg-brand-700 transition flex justify-center items-center gap-2"><i class="ph-bold ph-chat-circle-text"></i> Mensaje</button>
                     <a id="sp-linkedin-btn" href="#" target="_blank" class="hidden w-12 flex items-center justify-center bg-blue-50 text-[#0077b5] rounded-xl border border-blue-100 hover:bg-blue-100 transition"><i class="ph-bold ph-linkedin-logo text-xl"></i></a>
                     <a id="sp-whatsapp-btn" href="#" target="_blank" class="hidden w-12 flex items-center justify-center bg-green-50 text-[#25D366] rounded-xl border border-green-100 hover:bg-green-100 transition"><i class="ph-bold ph-whatsapp-logo text-xl"></i></a>
                 </div>
@@ -488,9 +488,13 @@
           .doc('data')
           .collection('alumni');
 
-        const userMessagesCollection = (uid) => artifactsRoot
+        const userChatsCollection = (uid) => artifactsRoot
           .collection('users')
           .doc(uid)
+          .collection('chats');
+
+        const userChatMessagesCollection = (uid, chatId) => userChatsCollection(uid)
+          .doc(chatId)
           .collection('messages');
 
         const state = {
@@ -502,10 +506,7 @@
                     { id: 1, title: "Encuentro Anual de Egresados 2024", category: "Evento", date: "15 Oct", summary: "Únete a nosotros para una noche de networking y celebración.", img: "https://placehold.co/600x400/1e3a8a/FFF?text=Evento" },
                     { id: 2, title: "Senior Developer Vacancy", category: "Empleo", date: "Hace 2h", summary: "Empresa aliada busca desarrollador Full Stack con experiencia.", img: "https://placehold.co/600x400/2563eb/FFF?text=Empleo" },
                 ],
-                chats: [
-                    { id: 1, name: "Sofia Ramirez", img: "https://ui-avatars.com/api/?name=Sofia+Ramirez&background=random", lastMsg: "¡Claro! Hablemos mañana.", time: "10:30 AM", messages: [] },
-                    { id: 2, name: "Carlos Mendez", img: "https://ui-avatars.com/api/?name=Carlos+Mendez&background=random", lastMsg: "Gracias por conectar.", time: "Ayer", messages: [] }
-                ]
+                chats: []
             },
             profile: {
                 firstName: "", lastName: "", graduationYear: "", location: "",
@@ -514,7 +515,8 @@
             },
             guestMode: false,
             activeChatId: null,
-            messagesByChat: {}
+            messagesByChat: {},
+            selectedDirectoryUserId: null
         };
 
         const authLogic = {
@@ -648,19 +650,44 @@
             };
         }
 
-        async function loadMessagesForUser(uid) {
-            const snap = await userMessagesCollection(uid).orderBy('createdAt', 'asc').get();
-            state.messagesByChat = {};
-            snap.docs.forEach((doc) => {
-                const d = doc.data();
-                const key = String(d.chatId || 'general');
-                if (!state.messagesByChat[key]) state.messagesByChat[key] = [];
-                state.messagesByChat[key].push({
-                    text: d.text || '',
-                    sender: d.sender || 'me',
-                    createdAt: d.createdAt,
+        function formatChatTime(ts) {
+            if (!ts || typeof ts.toDate !== 'function') return '';
+            return ts.toDate().toLocaleString('es-CO', { hour: '2-digit', minute: '2-digit' });
+        }
+
+        async function loadChatsForUser(uid) {
+            try {
+                const snap = await userChatsCollection(uid).orderBy('updatedAt', 'desc').get();
+                state.data.chats = snap.docs.map((doc) => {
+                    const d = doc.data();
+                    return {
+                        id: doc.id,
+                        peerId: d.peerId || '',
+                        name: d.peerName || 'Usuario',
+                        img: d.peerPhotoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(d.peerName || 'Usuario')}&background=random`,
+                        lastMsg: d.lastMsg || 'Sin mensajes',
+                        time: formatChatTime(d.updatedAt)
+                    };
                 });
-            });
+            } catch (error) {
+                state.data.chats = [];
+            }
+        }
+
+        async function loadMessagesForChat(uid, chatId) {
+            try {
+                const snap = await userChatMessagesCollection(uid, chatId).orderBy('createdAt', 'asc').get();
+                state.messagesByChat[chatId] = snap.docs.map((doc) => {
+                    const d = doc.data();
+                    return {
+                        text: d.text || '',
+                        sender: d.senderId === uid ? 'me' : 'them',
+                        createdAt: d.createdAt,
+                    };
+                });
+            } catch (error) {
+                state.messagesByChat[chatId] = [];
+            }
         }
 
         const router = {
@@ -730,6 +757,7 @@
             },
             openProfile: (id) => {
                 const user = state.data.alumni.find(u => String(u.id) === String(id));
+                state.selectedDirectoryUserId = String(id);
                 if(!user) return;
                 document.getElementById('sp-img').src = user.img;
                 document.getElementById('sp-name').innerText = user.name;
@@ -794,8 +822,12 @@
         const chatLogic = {
             renderList: () => {
                 const list = document.getElementById('chat-list');
+                if (!state.data.chats.length) {
+                    list.innerHTML = '<div class="p-4 text-sm text-gray-500">Sin conversaciones aún. Abre un perfil en Directorio y pulsa "Mensaje".</div>';
+                    return;
+                }
                 list.innerHTML = state.data.chats.map(chat => `
-                    <div onclick="chatLogic.openChat(${chat.id})" class="p-4 hover:bg-white cursor-pointer border-b border-gray-100 flex gap-3 transition">
+                    <div onclick="chatLogic.openChat('${chat.id}')" class="p-4 hover:bg-white cursor-pointer border-b border-gray-100 flex gap-3 transition">
                         <div class="relative">
                             <img src="${chat.img}" class="w-12 h-12 rounded-full object-cover">
                             <span class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></span>
@@ -803,22 +835,64 @@
                         <div class="flex-1 min-w-0">
                             <div class="flex justify-between items-baseline mb-1">
                                 <h4 class="font-bold text-sm text-gray-900 truncate">${chat.name}</h4>
-                                <span class="text-xs text-gray-400">${chat.time}</span>
+                                <span class="text-xs text-gray-400">${chat.time || ''}</span>
                             </div>
-                            <p class="text-xs text-gray-500 truncate">${chat.lastMsg}</p>
+                            <p class="text-xs text-gray-500 truncate">${chat.lastMsg || 'Sin mensajes'}</p>
                         </div>
                     </div>
                 `).join('');
             },
-            openChat: (id) => {
-                const chat = state.data.chats.find(c => c.id === id);
+            startChatFromDirectory: async () => {
+                const user = state.data.alumni.find(u => String(u.id) === String(state.selectedDirectoryUserId));
+                if (!user || !state.user || state.guestMode) return;
+                await chatLogic.startChatWithUser(user);
+            },
+            startChatWithUser: async (targetUser) => {
+                const myUid = state.user?.uid;
+                if (!myUid || !targetUser?.id || String(targetUser.id) === String(myUid)) return;
+                const chatId = [myUid, String(targetUser.id)].sort().join('__');
+                const myName = `${state.profile.firstName || ''} ${state.profile.lastName || ''}`.trim() || state.user.displayName || 'Usuario';
+                const myPhoto = state.profile.photoURL || document.getElementById('header-avatar').src;
+                const meChatRef = userChatsCollection(myUid).doc(chatId);
+                const otherChatRef = userChatsCollection(String(targetUser.id)).doc(chatId);
+                try {
+                    await Promise.all([
+                        meChatRef.set({
+                            peerId: String(targetUser.id),
+                            peerName: targetUser.name,
+                            peerPhotoURL: targetUser.img,
+                            lastMsg: 'Sin mensajes',
+                            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                        }, { merge: true }),
+                        otherChatRef.set({
+                            peerId: myUid,
+                            peerName: myName,
+                            peerPhotoURL: myPhoto,
+                            lastMsg: 'Sin mensajes',
+                            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                        }, { merge: true })
+                    ]);
+                    state.selectedDirectoryUserId = String(targetUser.id);
+                    await loadChatsForUser(myUid);
+                    router.navigate('messages');
+                    await chatLogic.openChat(chatId);
+                    directoryLogic.closeProfile();
+                } catch (error) {
+                    alert('No se pudo iniciar el chat. Revisa tus reglas de Firestore.');
+                }
+            },
+            openChat: async (id) => {
+                const chatId = String(id);
+                const chat = state.data.chats.find(c => String(c.id) === chatId);
                 if (!chat) return;
-                state.activeChatId = String(id);
+                state.activeChatId = chatId;
                 document.getElementById('chat-header-img').src = chat.img;
                 document.getElementById('chat-header-name').innerText = chat.name;
-
+                if (!state.messagesByChat[chatId] && state.user && !state.guestMode) {
+                    await loadMessagesForChat(state.user.uid, chatId);
+                }
                 const body = document.getElementById('chat-body');
-                const messages = state.messagesByChat[state.activeChatId] || [];
+                const messages = state.messagesByChat[chatId] || [];
                 if (messages.length === 0) {
                     body.innerHTML = `
                         <div class="flex flex-col items-center justify-center py-6">
@@ -838,30 +912,57 @@
             },
             send: async (e) => {
                 e.preventDefault();
-                if (!state.activeChatId) {
-                    const fallback = state.data.chats[0]?.id;
-                    if (!fallback) return;
-                    chatLogic.openChat(fallback);
-                }
-
+                if (!state.user || state.guestMode || !state.activeChatId) return;
                 const input = document.getElementById('chat-input');
                 const text = input.value.trim();
                 if(!text) return;
 
+                const chat = state.data.chats.find(c => String(c.id) === String(state.activeChatId));
+                if (!chat?.peerId) return;
+
                 if (!state.messagesByChat[state.activeChatId]) state.messagesByChat[state.activeChatId] = [];
                 state.messagesByChat[state.activeChatId].push({ text, sender: 'me', createdAt: new Date() });
+                chat.lastMsg = text;
+                chat.time = 'Ahora';
+                chatLogic.renderList();
 
-                if (state.user && !state.guestMode) {
-                    await userMessagesCollection(state.user.uid).add({
-                        chatId: state.activeChatId,
-                        text,
-                        sender: 'me',
-                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                    });
+                const msgId = userChatMessagesCollection(state.user.uid, state.activeChatId).doc().id;
+                const payload = {
+                    text,
+                    senderId: state.user.uid,
+                    recipientId: chat.peerId,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                };
+                const chatMetaForMe = {
+                    peerId: chat.peerId,
+                    peerName: chat.name,
+                    peerPhotoURL: chat.img,
+                    lastMsg: text,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                };
+                const myName = `${state.profile.firstName || ''} ${state.profile.lastName || ''}`.trim() || state.user.displayName || 'Usuario';
+                const myPhoto = state.profile.photoURL || document.getElementById('header-avatar').src;
+                const chatMetaForOther = {
+                    peerId: state.user.uid,
+                    peerName: myName,
+                    peerPhotoURL: myPhoto,
+                    lastMsg: text,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                };
+
+                try {
+                    const batch = db.batch();
+                    batch.set(userChatMessagesCollection(state.user.uid, state.activeChatId).doc(msgId), payload);
+                    batch.set(userChatMessagesCollection(chat.peerId, state.activeChatId).doc(msgId), payload);
+                    batch.set(userChatsCollection(state.user.uid).doc(state.activeChatId), chatMetaForMe, { merge: true });
+                    batch.set(userChatsCollection(chat.peerId).doc(state.activeChatId), chatMetaForOther, { merge: true });
+                    await batch.commit();
+                } catch (error) {
+                    alert('No se pudo enviar. Revisa reglas de Firestore para chats.');
                 }
 
                 input.value = '';
-                chatLogic.openChat(Number(state.activeChatId));
+                await chatLogic.openChat(state.activeChatId);
             }
         };
 
@@ -1000,11 +1101,14 @@
             if (user) {
                 await loadProfile(user.uid);
                 await loadAlumni();
-                await loadMessagesForUser(user.uid);
+                await loadChatsForUser(user.uid);
                 router.navigate('directory');
             } else {
                 state.data.alumni = [];
+                state.data.chats = [];
+                state.activeChatId = null;
                 state.messagesByChat = {};
+                state.selectedDirectoryUserId = null;
                 state.profile = { firstName: '', lastName: '', graduationYear: '', location: '', status: 'trabajando', role: '', area: '', studies: '', bio: '', skills: '', topics: '', phone: '', linkedin: '' };
                 router.navigate('home');
             }
