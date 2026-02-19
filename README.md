@@ -1,39 +1,51 @@
 # Red de Egresados (AlumniConnect)
 
-La app quedó conectada a Firebase manteniendo el estilo original de tu HTML.
+La app está conectada a Firebase manteniendo el estilo original del HTML.
 
 ## Funcionalidades implementadas
 
-- Inicio de sesión con **Email/Password**.
-- Inicio de sesión con **Google**.
-- Opción **"Revisar la red como invitado"** (solo lectura del directorio).
-- Opción de **registro normal** con email/contraseña desde la misma vista de login.
-- Lectura/edición del perfil de egresado en Firestore.
-- Mensajes básicos persistidos en Firebase por usuario autenticado.
+- Login con Email/Password.
+- Login con Google.
+- Registro normal con email/contraseña.
+- Modo invitado para navegar directorio.
+- Perfil de egresado guardado en Firestore.
+- Chat 1:1 base: creación desde Directorio (solo usuario registrado) y persistencia de mensajes.
+- Notificaciones removidas del navbar.
 
 ## Firestore usado
 
-Rutas alineadas con tus reglas:
+- Perfiles/directorio:
+  - `artifacts/{appId}/public/data/alumni/{userId}`
+- Chats 1:1:
+  - `artifacts/{appId}/public/data/chats/{chatId}`
+  - `artifacts/{appId}/public/data/chats/{chatId}/messages/{messageId}`
 
-- Perfil y directorio: `artifacts/{appId}/public/data/alumni/{userId}`
-- Mensajes por usuario: `artifacts/{appId}/users/{userId}/messages/{messageId}`
+## Recomendación de reglas para invitado + chats
 
-## Campos de perfil guardados
+Para que invitado vea directorio, la lectura de `alumni` debe ser pública.
 
-- `firstName`, `lastName`
-- `graduationYear`
-- `location`
-- `status`
-- `area`
-- `studies`
-- `role`
-- `bio`
-- `skills` (array)
-- `topics`
-- `phone`
-- `linkedin`
-- `email`
-- `createdAt`, `updatedAt`
+```txt
+match /artifacts/{appId}/public/data/alumni/{userId} {
+  allow read: if true;
+  allow write: if request.auth != null && request.auth.uid == userId;
+}
+
+match /artifacts/{appId}/public/data/chats/{chatId} {
+  allow read: if request.auth != null && (
+    request.auth.token.admin == true || request.auth.uid in resource.data.members
+  );
+  allow create: if request.auth != null;
+  allow update: if request.auth != null && (
+    request.auth.token.admin == true || request.auth.uid in resource.data.members
+  );
+
+  match /messages/{messageId} {
+    allow read, create: if request.auth != null && (
+      request.auth.token.admin == true || request.auth.uid in get(/databases/$(database)/documents/artifacts/$(appId)/public/data/chats/$(chatId)).data.members
+    );
+  }
+}
+```
 
 ## Ejecutar local
 
@@ -42,9 +54,3 @@ python3 -m http.server 4173
 ```
 
 Abrir en `http://localhost:4173`.
-
-## Qué faltaría para producción completa
-
-- Reglas para chat 1:1 real entre dos usuarios (hoy cada usuario guarda su propia copia de mensajes).
-- Gestión de roles admin (publicación de novedades, moderación).
-- Validaciones más estrictas de formularios y manejo de errores amigable.
