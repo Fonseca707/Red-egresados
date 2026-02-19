@@ -523,9 +523,10 @@
         }
 
         async function loadChatsForUser(uid) {
-            const snap = await chatsCollection.where('members', 'array-contains', uid).get();
-            state.data.chats = [];
-            for (const doc of snap.docs) {
+            try {
+                const snap = await chatsCollection.where('members', 'array-contains', uid).get();
+                state.data.chats = [];
+                for (const doc of snap.docs) {
                 const d = doc.data();
                 const otherId = (d.members || []).find((m) => m !== uid) || uid;
                 let other = { name: 'Contacto', img: `https://ui-avatars.com/api/?name=Contacto&background=random` };
@@ -546,15 +547,22 @@
                     lastMsg: d.lastMessage || 'Sin mensajes',
                     time: d.lastMessageAt ? 'Reciente' : 'Nuevo'
                 });
+                }
+            } catch (error) {
+                state.data.chats = [];
             }
         }
 
         async function loadMessagesForChat(chatId) {
-            const snap = await chatsCollection.doc(chatId).collection('messages').orderBy('createdAt', 'asc').get();
-            state.messagesByChat[chatId] = snap.docs.map((doc) => {
-                const d = doc.data();
-                return { text: d.text || '', sender: d.senderId === state.user?.uid ? 'me' : 'them', createdAt: d.createdAt || null };
-            });
+            try {
+                const snap = await chatsCollection.doc(chatId).collection('messages').orderBy('createdAt', 'asc').get();
+                state.messagesByChat[chatId] = snap.docs.map((doc) => {
+                    const d = doc.data();
+                    return { text: d.text || '', sender: d.senderId === state.user?.uid ? 'me' : 'them', createdAt: d.createdAt || null };
+                });
+            } catch (error) {
+                state.messagesByChat[chatId] = state.messagesByChat[chatId] || [];
+            }
         }
 
         const router = {
@@ -658,26 +666,30 @@
                 }
                 if (targetUserId === state.user.uid) return;
 
-                const snap = await chatsCollection.where('members', 'array-contains', state.user.uid).get();
-                let chatId = null;
-                snap.docs.forEach((doc) => {
-                    const m = doc.data().members || [];
-                    if (m.includes(targetUserId)) chatId = doc.id;
-                });
-
-                if (!chatId) {
-                    const ref = await chatsCollection.add({
-                        members: [state.user.uid, targetUserId],
-                        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-                        lastMessage: '',
-                        lastMessageAt: firebase.firestore.FieldValue.serverTimestamp()
+                try {
+                    const snap = await chatsCollection.where('members', 'array-contains', state.user.uid).get();
+                    let chatId = null;
+                    snap.docs.forEach((doc) => {
+                        const m = doc.data().members || [];
+                        if (m.includes(targetUserId)) chatId = doc.id;
                     });
-                    chatId = ref.id;
-                }
 
-                await loadChatsForUser(state.user.uid);
-                router.navigate('messages');
-                await chatLogic.openChat(chatId);
+                    if (!chatId) {
+                        const ref = await chatsCollection.add({
+                            members: [state.user.uid, targetUserId],
+                            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                            lastMessage: '',
+                            lastMessageAt: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                        chatId = ref.id;
+                    }
+
+                    await loadChatsForUser(state.user.uid);
+                    router.navigate('messages');
+                    await chatLogic.openChat(chatId);
+                } catch (error) {
+                    alert('No fue posible crear el chat. Revisa reglas de Firestore para /public/data/chats.');
+                }
             },
             openChat: async (id) => {
                 const chat = state.data.chats.find(c => String(c.id) === String(id));
@@ -706,15 +718,20 @@
                 const text = input.value.trim();
                 if(!text) return;
 
-                await chatsCollection.doc(state.activeChatId).collection('messages').add({
-                    senderId: state.user.uid,
-                    text,
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                });
-                await chatsCollection.doc(state.activeChatId).set({
-                    lastMessage: text,
-                    lastMessageAt: firebase.firestore.FieldValue.serverTimestamp()
-                }, { merge: true });
+                try {
+                    await chatsCollection.doc(state.activeChatId).collection('messages').add({
+                        senderId: state.user.uid,
+                        text,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    await chatsCollection.doc(state.activeChatId).set({
+                        lastMessage: text,
+                        lastMessageAt: firebase.firestore.FieldValue.serverTimestamp()
+                    }, { merge: true });
+                } catch (error) {
+                    alert('No fue posible enviar el mensaje. Revisa permisos de Firestore para chats/messages.');
+                    return;
+                }
 
                 state.messagesByChat[state.activeChatId] = state.messagesByChat[state.activeChatId] || [];
                 state.messagesByChat[state.activeChatId].push({ text, sender: 'me', createdAt: new Date() });
@@ -818,9 +835,13 @@
             if (state.guestMode) return;
             state.user = user;
             if (user) {
-                await loadProfile(user.uid);
-                await loadAlumni();
-                await loadChatsForUser(user.uid);
+                try {
+                    await loadProfile(user.uid);
+                    await loadAlumni();
+                    await loadChatsForUser(user.uid);
+                } catch (error) {
+                    // Evitar que un error de permisos en Firestore rompa el login.
+                }
                 state.messagesByChat = {};
                 router.navigate('directory');
             } else {
