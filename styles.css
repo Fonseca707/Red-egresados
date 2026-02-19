@@ -1,0 +1,4 @@
+.glass-nav { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(12px); border-bottom: 1px solid #e5e7eb; }
+.input-label { font-size: 0.75rem; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: .06em; margin-bottom: .5rem; display: block; }
+.input-field { width: 100%; padding: .75rem 1rem; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: .75rem; outline: none; font-size: .875rem; }
+.input-field:focus { box-shadow: 0 0 0 2px #3b82f6; background: white; }

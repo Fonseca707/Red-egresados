@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AlumniConnect | Red de Egresados</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['"Plus Jakarta Sans"', 'sans-serif'] },
+          colors: { brand: { 50: '#eff6ff', 100: '#dbeafe', 500: '#3b82f6', 600: '#2563eb', 900: '#1e3a8a' } }
+        }
+      }
+    };
+  </script>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans h-screen flex flex-col overflow-hidden">
+  <nav class="glass-nav fixed w-full z-40 top-0 h-16 flex items-center justify-between px-4 lg:px-8">
+    <div class="flex items-center gap-3 cursor-pointer" onclick="router.navigate('home')">
+      <div class="w-8 h-8 bg-brand-600 rounded-lg flex items-center justify-center text-white font-bold">A</div>
+      <span class="font-bold text-xl tracking-tight text-gray-900">Alumni<span class="text-brand-600">Connect</span></span>
+    </div>
+    <div class="hidden md:flex items-center gap-6" id="nav-links">
+      <button onclick="router.navigate('directory')" class="text-gray-500 hover:text-brand-600 font-medium transition" id="nav-dir">Directorio</button>
+      <button onclick="router.navigate('news')" class="text-gray-500 hover:text-brand-600 font-medium transition" id="nav-news">Novedades</button>
+      <button onclick="router.navigate('messages')" class="text-gray-500 hover:text-brand-600 font-medium transition" id="nav-msg">Mensajes</button>
+    </div>
+    <div class="flex items-center gap-4">
+      <button onclick="router.navigate('profile')" class="h-9 w-9 rounded-full bg-gray-200 overflow-hidden ring-2 ring-transparent hover:ring-brand-200 transition">
+        <img src="https://ui-avatars.com/api/?name=Yo&background=0D8ABC&color=fff" alt="Perfil" class="object-cover w-full h-full" id="header-avatar" />
+      </button>
+    </div>
+  </nav>
+
+  <main id="app-content" class="flex-1 pt-20 pb-8 px-4 overflow-y-auto relative scroll-smooth bg-gray-50">
+    <section id="view-home" class="min-h-[80vh] flex flex-col items-center justify-center text-center">
+      <div class="w-16 h-16 bg-brand-100 text-brand-600 rounded-3xl flex items-center justify-center mb-6">
+        <i class="ph-duotone ph-graduation-cap text-4xl"></i>
+      </div>
+      <h1 class="text-4xl md:text-6xl font-extrabold text-gray-900 mb-6 tracking-tight">Conecta con tu <br /><span class="text-brand-600">comunidad global.</span></h1>
+      <p class="text-lg text-gray-500 max-w-2xl mb-10">La plataforma oficial para egresados. Encuentra colegas, mentores y oportunidades laborales exclusivas.</p>
+      <div class="flex gap-4">
+        <button onclick="router.navigate('directory')" class="px-8 py-3.5 bg-brand-600 text-white font-bold rounded-xl">Explorar Directorio</button>
+        <button onclick="uiLogic.toggleAuthModal()" class="px-8 py-3.5 bg-white text-gray-700 font-bold rounded-xl border border-gray-200">Ingresar</button>
+      </div>
+    </section>
+
+    <div id="view-auth" class="hidden min-h-[80vh] flex items-center justify-center">
+      <div class="bg-white p-8 rounded-3xl shadow-xl border border-gray-100 w-full max-w-md">
+        <h1 class="text-2xl font-bold text-gray-900 text-center mb-6">Iniciar sesión</h1>
+        <form onsubmit="authLogic.login(event)" class="space-y-5">
+          <div>
+            <label class="input-label">Email Institucional</label>
+            <input id="login-email" type="email" required placeholder="tu.nombre@universidad.edu" class="input-field" />
+          </div>
+          <div>
+            <label class="input-label">Contraseña</label>
+            <input id="login-password" type="password" required placeholder="••••••••" class="input-field" />
+          </div>
+          <button type="submit" class="w-full py-3.5 bg-brand-600 text-white font-bold rounded-xl">Ingresar</button>
+        </form>
+        <p id="auth-feedback" class="text-sm mt-4 text-center text-gray-500"></p>
+      </div>
+    </div>
+
+    <div id="view-directory" class="hidden max-w-7xl mx-auto pb-10">
+      <h2 class="text-3xl font-bold text-gray-900 mb-6">Directorio</h2>
+      <div id="directory-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+    </div>
+
+    <div id="view-profile" class="hidden max-w-4xl mx-auto pb-20">
+      <div class="bg-white rounded-3xl shadow-sm border border-gray-200 overflow-hidden mb-6 p-8">
+        <h2 id="display-name" class="text-3xl font-bold text-gray-900">Tu Nombre</h2>
+        <p id="display-role" class="text-brand-600 font-medium mb-6">Tu Cargo</p>
+        <button onclick="authLogic.logout()" class="text-red-500 font-bold text-sm">Cerrar Sesión</button>
+      </div>
+    </div>
+  </main>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
