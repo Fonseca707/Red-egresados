@@ -138,16 +138,20 @@
                 <form onsubmit="authLogic.login(event)" class="space-y-5">
                     <div>
                         <label class="input-label">Email Institucional</label>
-                        <input type="email" required placeholder="tu.nombre@universidad.edu" class="input-field">
+                        <input id="login-email" type="email" required placeholder="tu.nombre@universidad.edu" class="input-field">
                     </div>
                     <div>
                         <label class="input-label">Contraseña</label>
-                        <input type="password" required placeholder="••••••••" class="input-field">
+                        <input id="login-password" type="password" required placeholder="••••••••" class="input-field">
                     </div>
                     <button type="submit" class="w-full py-3.5 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-xl shadow-lg shadow-brand-500/30 transition transform hover:scale-[1.02]">
                         Ingresar
                     </button>
                 </form>
+                <button onclick="authLogic.loginWithGoogle()" class="w-full py-3.5 mt-3 bg-white text-gray-700 font-bold rounded-xl border border-gray-200 hover:bg-gray-50 transition flex items-center justify-center gap-2">
+                    <i class="ph ph-google-logo"></i> Continuar con Google
+                </button>
+                <p id="auth-feedback" class="text-xs text-gray-500 mt-3 text-center"></p>
                 
                 <div class="mt-8 text-center border-t border-gray-100 pt-6">
                     <p class="text-xs text-gray-400">¿No tienes cuenta? <a href="#" class="text-brand-600 font-bold hover:underline">Solicitar acceso</a></p>
@@ -400,18 +404,39 @@
         </div>
     </div>
 
+    <!-- Firebase (compat para script clásico) -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore-compat.js"></script>
+
     <!-- JAVASCRIPT LOGIC -->
     <script>
-        // --- ESTADO GLOBAL (MOCK) ---
+        const firebaseConfig = {
+          apiKey: "AIzaSyBoVTqroZ7zR-3a5QGy5CzK19a4422t0Rg",
+          authDomain: "red-egresados-65a1a.firebaseapp.com",
+          projectId: "red-egresados-65a1a",
+          storageBucket: "red-egresados-65a1a.firebasestorage.app",
+          messagingSenderId: "874010522484",
+          appId: "1:874010522484:web:28881821d110defd3b7221",
+          measurementId: "G-85C6M45M7N"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        const alumniCollection = db
+          .collection('artifacts')
+          .doc(firebaseConfig.appId)
+          .collection('public')
+          .doc('data')
+          .collection('alumni');
+
         const state = {
             user: null,
             view: 'home',
             data: {
-                alumni: [
-                    { id: 1, name: "Sofia Ramirez", role: "UX Designer", company: "Google", img: "https://ui-avatars.com/api/?name=Sofia+Ramirez&background=random", tags: ["Diseño", "Tech"] },
-                    { id: 2, name: "Carlos Mendez", role: "Project Manager", company: "Constructora Bolivar", img: "https://ui-avatars.com/api/?name=Carlos+Mendez&background=random", tags: ["Ingeniería", "Gestión"] },
-                    { id: 3, name: "Laura Torres", role: "Marketing Lead", company: "Rappi", img: "https://ui-avatars.com/api/?name=Laura+Torres&background=random", tags: ["Marketing", "Startups"] },
-                ],
+                alumni: [],
                 news: [
                     { id: 1, title: "Encuentro Anual de Egresados 2024", category: "Evento", date: "15 Oct", summary: "Únete a nosotros para una noche de networking y celebración.", img: "https://placehold.co/600x400/1e3a8a/FFF?text=Evento" },
                     { id: 2, title: "Senior Developer Vacancy", category: "Empleo", date: "Hace 2h", summary: "Empresa aliada busca desarrollador Full Stack con experiencia.", img: "https://placehold.co/600x400/2563eb/FFF?text=Empleo" },
@@ -421,82 +446,131 @@
                     { id: 2, name: "Carlos Mendez", img: "https://ui-avatars.com/api/?name=Carlos+Mendez&background=random", lastMsg: "Gracias por conectar.", time: "Ayer", messages: [] }
                 ]
             },
-            profile: { // Datos por defecto para el formulario
-                firstName: "", lastName: "", year: "", location: "",
+            profile: {
+                firstName: "", lastName: "", graduationYear: "", location: "",
                 status: "trabajando", role: "", area: "", studies: "",
-                bio: "", skills: [], topics: "", phone: "", linkedin: ""
+                bio: "", skills: "", topics: "", phone: "", linkedin: ""
             }
         };
 
-        // --- AUTH & ROUTER ---
         const authLogic = {
-            login: (e) => {
+            login: async (e) => {
                 e.preventDefault();
-                // Simular login
-                state.user = { uid: 'guest1', name: 'Usuario Demo', email: 'demo@uni.edu', status: 'approved' };
-                // Poblar perfil inicial
-                state.profile = { 
-                    firstName: "Usuario", lastName: "Demo", year: "2023", location: "Bogotá", 
-                    role: "Desarrollador", bio: "Perfil de prueba generado automáticamente.", 
-                    skills: ["Javascript", "HTML"], phone: "+57 300..."
-                };
-                router.navigate('directory');
+                const email = document.getElementById('login-email').value.trim();
+                const password = document.getElementById('login-password').value;
+                const feedback = document.getElementById('auth-feedback');
+
+                try {
+                    await auth.signInWithEmailAndPassword(email, password);
+                    feedback.textContent = '';
+                } catch (error) {
+                    feedback.textContent = `Error de acceso: ${error.message}`;
+                }
             },
-            logout: () => {
+            loginWithGoogle: async () => {
+                const feedback = document.getElementById('auth-feedback');
+                const provider = new firebase.auth.GoogleAuthProvider();
+                try {
+                    await auth.signInWithPopup(provider);
+                    feedback.textContent = '';
+                } catch (error) {
+                    feedback.textContent = `Error Google: ${error.message}`;
+                }
+            },
+            logout: async () => {
+                await auth.signOut();
                 state.user = null;
                 router.navigate('auth');
             }
         };
 
+        async function loadAlumni() {
+            const snapshot = await alumniCollection.get();
+            state.data.alumni = snapshot.docs.map((doc) => {
+                const d = doc.data();
+                return {
+                    id: doc.id,
+                    name: `${d.firstName || ''} ${d.lastName || ''}`.trim() || 'Sin nombre',
+                    role: d.role || 'Sin rol',
+                    company: d.studies || 'Egresado',
+                    img: d.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent((d.firstName || 'Egresado') + ' ' + (d.lastName || ''))}&background=random`,
+                    tags: [d.area || 'General', d.status || 'Egresado'].filter(Boolean)
+                };
+            });
+        }
+
+        async function loadProfile(uid) {
+            const doc = await alumniCollection.doc(uid).get();
+            if (!doc.exists) {
+                state.profile = {
+                    firstName: state.user?.displayName?.split(' ')[0] || '',
+                    lastName: state.user?.displayName?.split(' ').slice(1).join(' ') || '',
+                    graduationYear: '',
+                    location: '',
+                    status: 'trabajando',
+                    role: '',
+                    area: '',
+                    studies: '',
+                    bio: '',
+                    skills: '',
+                    topics: '',
+                    phone: '',
+                    linkedin: ''
+                };
+                return;
+            }
+            const d = doc.data();
+            state.profile = {
+                firstName: d.firstName || '',
+                lastName: d.lastName || '',
+                graduationYear: d.graduationYear || '',
+                location: d.location || '',
+                status: d.status || 'trabajando',
+                role: d.role || '',
+                area: d.area || '',
+                studies: d.studies || '',
+                bio: d.bio || '',
+                skills: Array.isArray(d.skills) ? d.skills.join(', ') : (d.skills || ''),
+                topics: d.topics || '',
+                phone: d.phone || '',
+                linkedin: d.linkedin || ''
+            };
+        }
+
         const router = {
             navigate: (viewId) => {
                 if (viewId !== 'auth' && viewId !== 'home' && !state.user) { authLogic.logout(); return; }
-                
-                // 1. Ocultar todas las vistas usando la clase hidden (seguro)
+
                 const views = ['view-home', 'view-auth', 'view-directory', 'view-news', 'view-messages', 'view-profile'];
                 views.forEach(id => {
                     const el = document.getElementById(id);
                     if(el) el.classList.add('hidden');
                 });
-                
-                // 2. Gestionar la Navbar
+
                 const nav = document.querySelector('nav');
                 if (viewId === 'auth') {
                     nav.classList.add('hidden');
                 } else {
                     nav.classList.remove('hidden');
-                    
-                    // Resetear estilos de botones
-                    const navButtons = {
-                        'directory': 'nav-dir',
-                        'news': 'nav-news',
-                        'messages': 'nav-msg'
-                    };
-                    
-                    // Limpiar estilos activos
+                    const navButtons = { 'directory': 'nav-dir', 'news': 'nav-news', 'messages': 'nav-msg' };
                     Object.values(navButtons).forEach(btnId => {
                         const btn = document.getElementById(btnId);
                         if(btn) btn.classList.remove('text-brand-600', 'bg-brand-50');
                     });
-
-                    // Activar botón actual si existe
                     if (navButtons[viewId]) {
                         const activeBtn = document.getElementById(navButtons[viewId]);
                         if(activeBtn) activeBtn.classList.add('text-brand-600', 'bg-brand-50');
                     }
                 }
 
-                // 3. Mostrar la vista seleccionada (seguro)
                 const targetView = document.getElementById(`view-${viewId}`);
                 if (targetView) {
                     targetView.classList.remove('hidden');
                     window.scrollTo(0,0);
                 } else {
-                    console.error("Vista no encontrada:", viewId);
-                    return; // Detener si la vista no existe
+                    return;
                 }
-                
-                // 4. Renderizar contenido dinámico
+
                 if(viewId === 'directory') directoryLogic.render();
                 if(viewId === 'news') newsLogic.render();
                 if(viewId === 'messages') chatLogic.renderList();
@@ -504,7 +578,6 @@
             }
         };
 
-        // --- LOGICA DE DIRECTORIO ---
         const directoryLogic = {
             render: () => {
                 const grid = document.getElementById('directory-grid');
@@ -521,7 +594,7 @@
                             </div>
                         </div>
                         <div class="mt-4 flex gap-2 flex-wrap">
-                            ${alum.tags.map(t => `<span class="px-2 py-1 bg-gray-50 text-gray-600 text-xs rounded-md font-medium border border-gray-100">${t}</span>`).join('')}
+                            ${(alum.tags || []).map(t => `<span class="px-2 py-1 bg-gray-50 text-gray-600 text-xs rounded-md font-medium border border-gray-100">${t}</span>`).join('')}
                         </div>
                         <div class="mt-5 pt-4 border-t border-gray-50 flex justify-between items-center">
                             <button onclick="router.navigate('messages')" class="w-full px-4 py-2.5 bg-gray-900 text-white text-sm font-bold rounded-xl hover:bg-brand-600 transition shadow-sm flex justify-center items-center gap-2">
@@ -531,10 +604,9 @@
                     </div>
                 `).join('');
             },
-            filter: () => { /* Logica de filtro pendiente de implementar con datos reales */ }
+            filter: () => {}
         };
 
-        // --- LOGICA DE NOTICIAS ---
         const newsLogic = {
             render: () => {
                 const feed = document.getElementById('news-feed');
@@ -555,7 +627,6 @@
             }
         };
 
-        // --- LOGICA DE CHAT ---
         const chatLogic = {
             renderList: () => {
                 const list = document.getElementById('chat-list');
@@ -577,10 +648,9 @@
             },
             openChat: (id) => {
                 const chat = state.data.chats.find(c => c.id === id);
+                if (!chat) return;
                 document.getElementById('chat-header-img').src = chat.img;
                 document.getElementById('chat-header-name').innerText = chat.name;
-                
-                // Renderizar burbujas (Demo)
                 const body = document.getElementById('chat-body');
                 body.innerHTML = `
                     <div class="flex flex-col items-center justify-center py-6">
@@ -606,47 +676,81 @@
             }
         };
 
-        // --- LOGICA DE PERFIL ---
         const profileLogic = {
             populate: () => {
                 const p = state.profile;
-                document.getElementById('display-name').innerText = `${p.firstName} ${p.lastName}`;
-                document.getElementById('display-role').innerText = p.role;
-                
-                // Llenar inputs
-                document.getElementById('p-name').value = p.firstName;
-                document.getElementById('p-lastname').value = p.lastName;
-                document.getElementById('p-year').value = p.year;
-                document.getElementById('p-location').value = p.location;
-                // ... llenar resto de campos
+                document.getElementById('display-name').innerText = `${p.firstName} ${p.lastName}`.trim() || 'Tu Nombre';
+                document.getElementById('display-role').innerText = p.role || 'Tu Cargo';
+                document.getElementById('p-name').value = p.firstName || '';
+                document.getElementById('p-lastname').value = p.lastName || '';
+                document.getElementById('p-year').value = p.graduationYear || '';
+                document.getElementById('p-location').value = p.location || '';
+                document.getElementById('p-status').value = p.status || 'trabajando';
+                document.getElementById('p-role').value = p.role || '';
+                document.getElementById('p-area').value = p.area || '';
+                document.getElementById('p-studies').value = p.studies || '';
+                document.getElementById('p-bio').value = p.bio || '';
+                document.getElementById('p-skills').value = p.skills || '';
+                document.getElementById('p-topics').value = p.topics || '';
+                document.getElementById('p-phone').value = p.phone || '';
+                document.getElementById('p-linkedin').value = p.linkedin || '';
             },
-            save: () => {
+            save: async () => {
+                if (!state.user) return;
                 const btn = document.getElementById('btn-save-profile');
                 const original = btn.innerHTML;
                 btn.disabled = true;
                 btn.innerHTML = `<i class="ph-bold ph-spinner animate-spin"></i> Guardando...`;
-                
-                // Simulación API
-                setTimeout(() => {
-                    // Actualizar estado local
-                    state.profile.firstName = document.getElementById('p-name').value;
-                    state.profile.lastName = document.getElementById('p-lastname').value;
-                    // Actualizar UI
+
+                const payload = {
+                    firstName: document.getElementById('p-name').value.trim(),
+                    lastName: document.getElementById('p-lastname').value.trim(),
+                    graduationYear: document.getElementById('p-year').value.trim(),
+                    location: document.getElementById('p-location').value.trim(),
+                    status: document.getElementById('p-status').value,
+                    role: document.getElementById('p-role').value.trim(),
+                    area: document.getElementById('p-area').value.trim(),
+                    studies: document.getElementById('p-studies').value.trim(),
+                    bio: document.getElementById('p-bio').value.trim(),
+                    skills: document.getElementById('p-skills').value.split(',').map(s => s.trim()).filter(Boolean),
+                    topics: document.getElementById('p-topics').value.trim(),
+                    phone: document.getElementById('p-phone').value.trim(),
+                    linkedin: document.getElementById('p-linkedin').value.trim(),
+                    email: state.user.email || '',
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                };
+
+                try {
+                    const docRef = alumniCollection.doc(state.user.uid);
+                    const exists = (await docRef.get()).exists;
+                    if (!exists) payload.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+                    await docRef.set(payload, { merge: true });
+
+                    state.profile = {
+                        ...state.profile,
+                        ...payload,
+                        skills: (payload.skills || []).join(', ')
+                    };
+
                     document.getElementById('display-name').innerText = `${state.profile.firstName} ${state.profile.lastName}`;
-                    
+                    document.getElementById('display-role').innerText = state.profile.role;
+                    await loadAlumni();
+
                     btn.className = btn.className.replace('bg-brand-600', 'bg-green-600');
                     btn.innerHTML = `<i class="ph-bold ph-check"></i> ¡Guardado!`;
-                    
-                    setTimeout(() => {
-                        btn.className = btn.className.replace('bg-green-600', 'bg-brand-600');
-                        btn.innerHTML = original;
-                        btn.disabled = false;
-                    }, 2000);
-                }, 1000);
+                } catch (error) {
+                    btn.className = btn.className.replace('bg-brand-600', 'bg-red-600');
+                    btn.innerHTML = `<i class="ph-bold ph-warning-circle"></i> Error`; 
+                }
+
+                setTimeout(() => {
+                    btn.className = btn.className.replace('bg-green-600', 'bg-brand-600').replace('bg-red-600', 'bg-brand-600');
+                    btn.innerHTML = original;
+                    btn.disabled = false;
+                }, 2000);
             }
         };
 
-        // --- UI UTILS ---
         const uiLogic = {
             toggleNotifications: () => {
                 const panel = document.getElementById('notif-panel');
@@ -666,9 +770,28 @@
             toggleAuthModal: () => router.navigate('auth')
         };
 
-        // Init
+        window.router = router;
+        window.authLogic = authLogic;
+        window.directoryLogic = directoryLogic;
+        window.newsLogic = newsLogic;
+        window.chatLogic = chatLogic;
+        window.profileLogic = profileLogic;
+        window.uiLogic = uiLogic;
+
+        auth.onAuthStateChanged(async (user) => {
+            state.user = user;
+            if (user) {
+                await loadProfile(user.uid);
+                await loadAlumni();
+                router.navigate('directory');
+            } else {
+                state.data.alumni = [];
+                state.profile = { firstName: '', lastName: '', graduationYear: '', location: '', status: 'trabajando', role: '', area: '', studies: '', bio: '', skills: '', topics: '', phone: '', linkedin: '' };
+                router.navigate('home');
+            }
+        });
+
         document.addEventListener('DOMContentLoaded', () => {
-            // Empezar en Home (Landing)
             router.navigate('home');
         });
 
