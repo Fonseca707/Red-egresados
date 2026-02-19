@@ -153,8 +153,9 @@
                 </button>
                 <p id="auth-feedback" class="text-xs text-gray-500 mt-3 text-center"></p>
                 
-                <div class="mt-8 text-center border-t border-gray-100 pt-6">
-                    <p class="text-xs text-gray-400">¿No tienes cuenta? <a href="#" class="text-brand-600 font-bold hover:underline">Solicitar acceso</a></p>
+                <div class="mt-8 text-center border-t border-gray-100 pt-6 space-y-2">
+                    <button onclick="authLogic.registerWithEmail()" class="text-sm text-brand-600 font-bold hover:underline">Crear cuenta con email</button>
+                    <button onclick="authLogic.browseAsGuest()" class="block w-full text-sm text-gray-600 font-semibold hover:text-brand-600 transition">Revisar la red como invitado</button>
                 </div>
             </div>
         </div>
@@ -425,12 +426,19 @@
         const auth = firebase.auth();
         const db = firebase.firestore();
 
-        const alumniCollection = db
+        const artifactsRoot = db
           .collection('artifacts')
-          .doc(firebaseConfig.appId)
+          .doc(firebaseConfig.appId);
+
+        const alumniCollection = artifactsRoot
           .collection('public')
           .doc('data')
           .collection('alumni');
+
+        const userMessagesCollection = (uid) => artifactsRoot
+          .collection('users')
+          .doc(uid)
+          .collection('messages');
 
         const state = {
             user: null,
@@ -450,7 +458,10 @@
                 firstName: "", lastName: "", graduationYear: "", location: "",
                 status: "trabajando", role: "", area: "", studies: "",
                 bio: "", skills: "", topics: "", phone: "", linkedin: ""
-            }
+            },
+            guestMode: false,
+            activeChatId: null,
+            messagesByChat: {}
         };
 
         const authLogic = {
@@ -461,32 +472,67 @@
                 const feedback = document.getElementById('auth-feedback');
 
                 try {
+                    state.guestMode = false;
                     await auth.signInWithEmailAndPassword(email, password);
                     feedback.textContent = '';
                 } catch (error) {
                     feedback.textContent = `Error de acceso: ${error.message}`;
                 }
             },
+            registerWithEmail: async () => {
+                const email = document.getElementById('login-email').value.trim();
+                const password = document.getElementById('login-password').value;
+                const feedback = document.getElementById('auth-feedback');
+
+                if (!email || !password) {
+                    feedback.textContent = 'Ingresa email y contraseña para registrarte.';
+                    return;
+                }
+
+                if (password.length < 6) {
+                    feedback.textContent = 'La contraseña debe tener al menos 6 caracteres.';
+                    return;
+                }
+
+                try {
+                    state.guestMode = false;
+                    await auth.createUserWithEmailAndPassword(email, password);
+                    feedback.textContent = 'Cuenta creada correctamente.';
+                } catch (error) {
+                    feedback.textContent = `Error de registro: ${error.message}`;
+                }
+            },
             loginWithGoogle: async () => {
                 const feedback = document.getElementById('auth-feedback');
                 const provider = new firebase.auth.GoogleAuthProvider();
                 try {
+                    state.guestMode = false;
                     await auth.signInWithPopup(provider);
                     feedback.textContent = '';
                 } catch (error) {
                     feedback.textContent = `Error Google: ${error.message}`;
                 }
             },
+            browseAsGuest: async () => {
+                state.guestMode = true;
+                state.user = { uid: 'guest-view', displayName: 'Invitado' };
+                await loadAlumni();
+                router.navigate('directory');
+            },
             logout: async () => {
-                await auth.signOut();
+                if (!state.guestMode) {
+                    await auth.signOut();
+                }
+                state.guestMode = false;
                 state.user = null;
                 router.navigate('auth');
             }
         };
 
         async function loadAlumni() {
-            const snapshot = await alumniCollection.get();
-            state.data.alumni = snapshot.docs.map((doc) => {
+            try {
+                const snapshot = await alumniCollection.get();
+                state.data.alumni = snapshot.docs.map((doc) => {
                 const d = doc.data();
                 return {
                     id: doc.id,
@@ -496,7 +542,10 @@
                     img: d.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent((d.firstName || 'Egresado') + ' ' + (d.lastName || ''))}&background=random`,
                     tags: [d.area || 'General', d.status || 'Egresado'].filter(Boolean)
                 };
-            });
+                });
+            } catch (error) {
+                state.data.alumni = state.data.alumni.length ? state.data.alumni : [];
+            }
         }
 
         async function loadProfile(uid) {
@@ -535,6 +584,21 @@
                 phone: d.phone || '',
                 linkedin: d.linkedin || ''
             };
+        }
+
+        async function loadMessagesForUser(uid) {
+            const snap = await userMessagesCollection(uid).orderBy('createdAt', 'asc').get();
+            state.messagesByChat = {};
+            snap.docs.forEach((doc) => {
+                const d = doc.data();
+                const key = String(d.chatId || 'general');
+                if (!state.messagesByChat[key]) state.messagesByChat[key] = [];
+                state.messagesByChat[key].push({
+                    text: d.text || '',
+                    sender: d.sender || 'me',
+                    createdAt: d.createdAt,
+                });
+            });
         }
 
         const router = {
@@ -649,30 +713,55 @@
             openChat: (id) => {
                 const chat = state.data.chats.find(c => c.id === id);
                 if (!chat) return;
+                state.activeChatId = String(id);
                 document.getElementById('chat-header-img').src = chat.img;
                 document.getElementById('chat-header-name').innerText = chat.name;
+
                 const body = document.getElementById('chat-body');
-                body.innerHTML = `
-                    <div class="flex flex-col items-center justify-center py-6">
-                        <span class="text-xs bg-gray-100 px-3 py-1 rounded-full text-gray-500">Hoy</span>
+                const messages = state.messagesByChat[state.activeChatId] || [];
+                if (messages.length === 0) {
+                    body.innerHTML = `
+                        <div class="flex flex-col items-center justify-center py-6">
+                            <span class="text-xs bg-gray-100 px-3 py-1 rounded-full text-gray-500">Sin mensajes</span>
+                        </div>
+                    `;
+                    return;
+                }
+
+                body.innerHTML = messages.map((m) => `
+                    <div class="flex flex-col ${m.sender === 'me' ? 'items-end' : 'items-start'}">
+                        <div class="chat-bubble ${m.sender === 'me' ? 'chat-me' : 'chat-them'}">${m.text}</div>
+                        <span class="text-[10px] text-gray-400 mt-1 ${m.sender === 'me' ? 'mr-1' : 'ml-1'}">${m.createdAt ? 'Guardado' : 'Ahora'}</span>
                     </div>
-                    <div class="flex flex-col items-start"><div class="chat-bubble chat-them">Hola, ¿cómo estás?</div><span class="text-[10px] text-gray-400 mt-1 ml-1">10:00 AM</span></div>
-                    <div class="flex flex-col items-end"><div class="chat-bubble chat-me">¡Hola! Todo muy bien, gracias por preguntar.</div><span class="text-[10px] text-gray-400 mt-1 mr-1">10:05 AM</span></div>
-                `;
-            },
-            send: (e) => {
-                e.preventDefault();
-                const input = document.getElementById('chat-input');
-                if(!input.value.trim()) return;
-                const body = document.getElementById('chat-body');
-                body.innerHTML += `
-                    <div class="flex flex-col items-end animate-fade-in">
-                        <div class="chat-bubble chat-me">${input.value}</div>
-                        <span class="text-[10px] text-gray-400 mt-1 mr-1">Ahora</span>
-                    </div>
-                `;
-                input.value = '';
+                `).join('');
                 body.scrollTop = body.scrollHeight;
+            },
+            send: async (e) => {
+                e.preventDefault();
+                if (!state.activeChatId) {
+                    const fallback = state.data.chats[0]?.id;
+                    if (!fallback) return;
+                    chatLogic.openChat(fallback);
+                }
+
+                const input = document.getElementById('chat-input');
+                const text = input.value.trim();
+                if(!text) return;
+
+                if (!state.messagesByChat[state.activeChatId]) state.messagesByChat[state.activeChatId] = [];
+                state.messagesByChat[state.activeChatId].push({ text, sender: 'me', createdAt: new Date() });
+
+                if (state.user && !state.guestMode) {
+                    await userMessagesCollection(state.user.uid).add({
+                        chatId: state.activeChatId,
+                        text,
+                        sender: 'me',
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                }
+
+                input.value = '';
+                chatLogic.openChat(Number(state.activeChatId));
             }
         };
 
@@ -779,13 +868,16 @@
         window.uiLogic = uiLogic;
 
         auth.onAuthStateChanged(async (user) => {
+            if (state.guestMode) return;
             state.user = user;
             if (user) {
                 await loadProfile(user.uid);
                 await loadAlumni();
+                await loadMessagesForUser(user.uid);
                 router.navigate('directory');
             } else {
                 state.data.alumni = [];
+                state.messagesByChat = {};
                 state.profile = { firstName: '', lastName: '', graduationYear: '', location: '', status: 'trabajando', role: '', area: '', studies: '', bio: '', skills: '', topics: '', phone: '', linkedin: '' };
                 router.navigate('home');
             }

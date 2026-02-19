@@ -1,27 +1,29 @@
 # Red de Egresados (AlumniConnect)
 
-La app ahora está conectada a **Firebase Authentication + Cloud Firestore** directamente desde `index.html`.
+La app quedó conectada a Firebase manteniendo el estilo original de tu HTML.
 
-## Lo implementado
+## Funcionalidades implementadas
 
-- Login con **Email/Password**.
-- Login con **Google**.
-- Lectura del directorio desde Firestore.
-- Guardado/edición del perfil de egresado en Firestore.
-- Mantiene el estilo y flujo visual original del HTML base.
+- Inicio de sesión con **Email/Password**.
+- Inicio de sesión con **Google**.
+- Opción **"Revisar la red como invitado"** (solo lectura del directorio).
+- Opción de **registro normal** con email/contraseña desde la misma vista de login.
+- Lectura/edición del perfil de egresado en Firestore.
+- Mensajes básicos persistidos en Firebase por usuario autenticado.
 
-## Estructura de datos usada (Firestore)
+## Firestore usado
 
-Se usa la ruta compatible con tus reglas:
+Rutas alineadas con tus reglas:
 
-- `artifacts/{appId}/public/data/alumni/{userId}`
+- Perfil y directorio: `artifacts/{appId}/public/data/alumni/{userId}`
+- Mensajes por usuario: `artifacts/{appId}/users/{userId}/messages/{messageId}`
 
-Campos guardados por egresado:
+## Campos de perfil guardados
 
 - `firstName`, `lastName`
 - `graduationYear`
 - `location`
-- `status` (`estudiando`, `trabajando`, `estudiando y trabajando`, `emprendiendo`)
+- `status`
 - `area`
 - `studies`
 - `role`
@@ -39,10 +41,10 @@ Campos guardados por egresado:
 python3 -m http.server 4173
 ```
 
-Abrir en navegador:
+Abrir en `http://localhost:4173`.
 
-- `http://localhost:4173`
+## Qué faltaría para producción completa
 
-## Reglas Firestore
-
-El código está alineado a reglas de lectura/escritura por usuario autenticado en la colección de `alumni` dentro de `artifacts/{appId}`.
+- Reglas para chat 1:1 real entre dos usuarios (hoy cada usuario guarda su propia copia de mensajes).
+- Gestión de roles admin (publicación de novedades, moderación).
+- Validaciones más estrictas de formularios y manejo de errores amigable.
