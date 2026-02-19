@@ -34,3 +34,10 @@
   - `artifacts/{appId}/users/{userId}/chats/{chatId}/messages/{messageId}`
 
 > Nota: con estas reglas, el chat queda guardado por cada usuario. Para chat compartido 1:1 real se necesita ampliar reglas/estructura.
+
+
+## Solución de fallos comunes
+
+- Si ves `FIREBASE_CONFIG no encontrado`, crea `firebase-config.js` desde el ejemplo.
+- Si el login no avanza, revisa credenciales y que el proveedor Email/Password esté activo en Firebase Auth.
+- Si mensajes no crean chat, revisa reglas en `artifacts/{appId}/users/{userId}/chats/...`.

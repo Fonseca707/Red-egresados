@@ -382,19 +382,27 @@
 
     <!-- JAVASCRIPT LOGIC -->
     <script>
-        const firebaseConfig = window.FIREBASE_CONFIG;
-        if (!firebaseConfig) {
-            throw new Error('FIREBASE_CONFIG no encontrado. Crea firebase-config.js desde firebase-config.example.js');
+        const firebaseConfig = window.FIREBASE_CONFIG || null;
+        const firebaseReady = Boolean(firebaseConfig);
+
+        let auth = null;
+        let db = null;
+        let artifactsRoot = null;
+        let alumniCollection = null;
+        let userChatsCollection = null;
+        let userChatMessagesCollection = null;
+
+        if (firebaseReady) {
+            firebase.initializeApp(firebaseConfig);
+            auth = firebase.auth();
+            db = firebase.firestore();
+            artifactsRoot = db.collection('artifacts').doc(firebaseConfig.appId);
+            alumniCollection = artifactsRoot.collection('public').doc('data').collection('alumni');
+            userChatsCollection = (uid) => artifactsRoot.collection('users').doc(uid).collection('chats');
+            userChatMessagesCollection = (uid, chatId) => userChatsCollection(uid).doc(chatId).collection('messages');
+        } else {
+            console.warn('Firebase config no encontrada. Ejecutando en modo demo local.');
         }
-
-        firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
-        const db = firebase.firestore();
-
-        const artifactsRoot = db.collection('artifacts').doc(firebaseConfig.appId);
-        const alumniCollection = artifactsRoot.collection('public').doc('data').collection('alumni');
-        const userChatsCollection = (uid) => artifactsRoot.collection('users').doc(uid).collection('chats');
-        const userChatMessagesCollection = (uid, chatId) => userChatsCollection(uid).doc(chatId).collection('messages');
 
         const state = {
             user: null,
@@ -426,6 +434,17 @@
                 const email = document.getElementById('login-email').value.trim();
                 const password = document.getElementById('login-password').value;
                 const feedback = document.getElementById('auth-feedback');
+
+                if (!firebaseReady) {
+                    state.guestMode = false;
+                    state.user = { uid: 'demo-user', email, displayName: 'Usuario Demo' };
+                    feedback.textContent = 'Modo demo: sesión local iniciada.';
+                    await loadAlumni();
+                    await loadChatsForUser(state.user.uid);
+                    router.navigate('directory');
+                    return;
+                }
+
                 try {
                     state.guestMode = false;
                     await auth.signInWithEmailAndPassword(email, password);
@@ -447,6 +466,12 @@
                     feedback.textContent = 'La contraseña debe tener al menos 6 caracteres.';
                     return;
                 }
+
+                if (!firebaseReady) {
+                    feedback.textContent = 'Registro no disponible sin firebase-config.js.';
+                    return;
+                }
+
                 try {
                     state.guestMode = false;
                     await auth.createUserWithEmailAndPassword(email, password);
@@ -457,6 +482,10 @@
             },
             loginWithGoogle: async () => {
                 const feedback = document.getElementById('auth-feedback');
+                if (!firebaseReady) {
+                    feedback.textContent = 'Google login no disponible sin firebase-config.js.';
+                    return;
+                }
                 try {
                     state.guestMode = false;
                     await auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
@@ -474,7 +503,7 @@
                 router.navigate('directory');
             },
             logout: async () => {
-                if (!state.guestMode) await auth.signOut();
+                if (firebaseReady && !state.guestMode) await auth.signOut();
                 state.guestMode = false;
                 state.user = null;
                 router.navigate('auth');
@@ -482,6 +511,10 @@
         };
 
         async function loadAlumni() {
+            if (!firebaseReady || state.guestMode) {
+                state.data.alumni = [...state.mockAlumni];
+                return;
+            }
             try {
                 const snapshot = await alumniCollection.get();
                 state.data.alumni = snapshot.docs.map((doc) => {
@@ -496,31 +529,30 @@
                     };
                 });
             } catch (error) {
-                if (state.guestMode) state.data.alumni = [...state.mockAlumni];
+                state.data.alumni = [...state.mockAlumni];
             }
         }
 
         async function loadProfile(uid) {
-            const doc = await alumniCollection.doc(uid).get();
-            if (!doc.exists) {
+            if (!firebaseReady || state.guestMode) return;
+            try {
+                const doc = await alumniCollection.doc(uid).get();
+                if (!doc.exists) return;
+                const d = doc.data();
                 state.profile = {
-                    firstName: state.user?.displayName?.split(' ')[0] || '',
-                    lastName: state.user?.displayName?.split(' ').slice(1).join(' ') || '',
-                    graduationYear: '', location: '', status: 'trabajando', role: '', area: '', studies: '',
-                    bio: '', skills: '', topics: '', phone: '', linkedin: ''
+                    firstName: d.firstName || '', lastName: d.lastName || '', graduationYear: d.graduationYear || '',
+                    location: d.location || '', status: d.status || 'trabajando', role: d.role || '', area: d.area || '',
+                    studies: d.studies || '', bio: d.bio || '', skills: Array.isArray(d.skills) ? d.skills.join(', ') : (d.skills || ''),
+                    topics: d.topics || '', phone: d.phone || '', linkedin: d.linkedin || ''
                 };
-                return;
-            }
-            const d = doc.data();
-            state.profile = {
-                firstName: d.firstName || '', lastName: d.lastName || '', graduationYear: d.graduationYear || '',
-                location: d.location || '', status: d.status || 'trabajando', role: d.role || '', area: d.area || '',
-                studies: d.studies || '', bio: d.bio || '', skills: Array.isArray(d.skills) ? d.skills.join(', ') : (d.skills || ''),
-                topics: d.topics || '', phone: d.phone || '', linkedin: d.linkedin || ''
-            };
+            } catch (e) {}
         }
 
         async function loadChatsForUser(uid) {
+            if (!firebaseReady || state.guestMode) {
+                state.data.chats = [];
+                return;
+            }
             try {
                 const snap = await userChatsCollection(uid).get();
                 state.data.chats = snap.docs.map((doc) => {
@@ -540,6 +572,10 @@
         }
 
         async function loadMessagesForChat(chatId) {
+            if (!firebaseReady || state.guestMode || !state.user) {
+                state.messagesByChat[chatId] = state.messagesByChat[chatId] || [];
+                return;
+            }
             try {
                 const snap = await userChatMessagesCollection(state.user.uid, chatId).orderBy('createdAt', 'asc').get();
                 state.messagesByChat[chatId] = snap.docs.map((doc) => {
@@ -652,6 +688,17 @@
                 }
                 if (targetUserId === state.user.uid) return;
 
+                if (!firebaseReady) {
+                    const target = state.data.alumni.find((a) => String(a.id) === String(targetUserId));
+                    const chatId = `demo-${targetUserId}`;
+                    if (!state.data.chats.find((c) => c.id === chatId)) {
+                        state.data.chats.push({ id: chatId, name: target?.name || 'Contacto', img: target?.img || 'https://ui-avatars.com/api/?name=Contacto&background=random', lastMsg: 'Sin mensajes', time: 'Nuevo', otherId: targetUserId });
+                    }
+                    router.navigate('messages');
+                    await chatLogic.openChat(chatId);
+                    return;
+                }
+
                 try {
                     const existing = state.data.chats.find((c) => c.otherId === targetUserId);
                     let chatId = existing?.id;
@@ -668,7 +715,6 @@
                         });
                         chatId = chatRef.id;
                     }
-
                     await loadChatsForUser(state.user.uid);
                     router.navigate('messages');
                     await chatLogic.openChat(chatId);
@@ -682,10 +728,7 @@
                 state.activeChatId = String(id);
                 document.getElementById('chat-header-img').src = chat.img;
                 document.getElementById('chat-header-name').innerText = chat.name;
-
-                if (!state.messagesByChat[state.activeChatId]) {
-                    await loadMessagesForChat(state.activeChatId);
-                }
+                if (!state.messagesByChat[state.activeChatId]) await loadMessagesForChat(state.activeChatId);
                 const messages = state.messagesByChat[state.activeChatId] || [];
                 const body = document.getElementById('chat-body');
                 body.innerHTML = messages.length ? messages.map((m) => `
@@ -703,16 +746,17 @@
                 const text = input.value.trim();
                 if(!text) return;
 
+                if (!firebaseReady) {
+                    state.messagesByChat[state.activeChatId] = state.messagesByChat[state.activeChatId] || [];
+                    state.messagesByChat[state.activeChatId].push({ text, sender: 'me', createdAt: new Date() });
+                    input.value = '';
+                    await chatLogic.openChat(state.activeChatId);
+                    return;
+                }
+
                 try {
-                    await userChatMessagesCollection(state.user.uid, state.activeChatId).add({
-                        senderId: state.user.uid,
-                        text,
-                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                    });
-                    await userChatsCollection(state.user.uid).doc(state.activeChatId).set({
-                        lastMessage: text,
-                        lastMessageAt: firebase.firestore.FieldValue.serverTimestamp()
-                    }, { merge: true });
+                    await userChatMessagesCollection(state.user.uid, state.activeChatId).add({ senderId: state.user.uid, text, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+                    await userChatsCollection(state.user.uid).doc(state.activeChatId).set({ lastMessage: text, lastMessageAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
                 } catch (error) {
                     alert('No fue posible enviar el mensaje. Revisa permisos de Firestore para chats/messages.');
                     return;
@@ -746,7 +790,7 @@
                 document.getElementById('p-linkedin').value = p.linkedin || '';
             },
             save: async () => {
-                if (!state.user || state.guestMode) return;
+                if (!state.user || state.guestMode || !firebaseReady) return;
                 const btn = document.getElementById('btn-save-profile');
                 const original = btn.innerHTML;
                 btn.disabled = true;
@@ -816,27 +860,26 @@
         window.profileLogic = profileLogic;
         window.uiLogic = uiLogic;
 
-        auth.onAuthStateChanged(async (user) => {
-            if (state.guestMode) return;
-            state.user = user;
-            if (user) {
-                try {
+        if (firebaseReady) {
+            auth.onAuthStateChanged(async (user) => {
+                if (state.guestMode) return;
+                state.user = user;
+                if (user) {
                     await loadProfile(user.uid);
                     await loadAlumni();
                     await loadChatsForUser(user.uid);
-                } catch (error) {
-                    // Evitar que un error de permisos en Firestore rompa el login.
+                    state.messagesByChat = {};
+                    router.navigate('directory');
+                } else {
+                    state.data.alumni = [];
+                    state.data.chats = [];
+                    state.messagesByChat = {};
+                    router.navigate('home');
                 }
-                state.messagesByChat = {};
-                router.navigate('directory');
-            } else {
-                state.data.alumni = [];
-                state.data.chats = [];
-                state.messagesByChat = {};
-                state.profile = { firstName: '', lastName: '', graduationYear: '', location: '', status: 'trabajando', role: '', area: '', studies: '', bio: '', skills: '', topics: '', phone: '', linkedin: '' };
-                router.navigate('home');
-            }
-        });
+            });
+        } else {
+            router.navigate('home');
+        }
 
         document.addEventListener('DOMContentLoaded', () => {
             router.navigate('home');
