@@ -1,43 +1,50 @@
 # Red de Egresados (AlumniConnect)
 
-## Seguridad de Firebase config (importante)
+La app quedó conectada a Firebase manteniendo el estilo original de tu HTML.
 
-- En apps web **no se puede ocultar completamente** `apiKey` del cliente.
-- Lo que sí protege tu proyecto son las **reglas de Firestore/Auth**, dominios autorizados y App Check.
-- Para no dejarla hardcodeada en el HTML, ahora se carga desde `firebase-config.js` (ignorado por git).
+## Funcionalidades implementadas
 
-### Configuración local
+- Inicio de sesión con **Email/Password**.
+- Inicio de sesión con **Google**.
+- Opción **"Revisar la red como invitado"** (solo lectura del directorio).
+- Opción de **registro normal** con email/contraseña desde la misma vista de login.
+- Lectura/edición del perfil de egresado en Firestore.
+- Mensajes básicos persistidos en Firebase por usuario autenticado.
 
-1. Copia el ejemplo:
-   ```bash
-   cp firebase-config.example.js firebase-config.js
-   ```
-2. Pega tu configuración real en `window.FIREBASE_CONFIG`.
-3. Corre:
-   ```bash
-   python3 -m http.server 4173
-   ```
+## Firestore usado
 
-## Funcionalidades
+Rutas alineadas con tus reglas:
 
-- Login Email/Password, Google y registro por email.
-- Modo invitado para ver directorio.
-- Perfil guardado en Firestore.
-- Mensajes persistentes por usuario autenticado bajo rutas compatibles con tus reglas actuales.
+- Perfil y directorio: `artifacts/{appId}/public/data/alumni/{userId}`
+- Mensajes por usuario: `artifacts/{appId}/users/{userId}/messages/{messageId}`
 
-## Rutas Firestore usadas actualmente
+## Campos de perfil guardados
 
-- Perfiles/directorio:
-  - `artifacts/{appId}/public/data/alumni/{userId}`
-- Chats por usuario:
-  - `artifacts/{appId}/users/{userId}/chats/{chatId}`
-  - `artifacts/{appId}/users/{userId}/chats/{chatId}/messages/{messageId}`
+- `firstName`, `lastName`
+- `graduationYear`
+- `location`
+- `status`
+- `area`
+- `studies`
+- `role`
+- `bio`
+- `skills` (array)
+- `topics`
+- `phone`
+- `linkedin`
+- `email`
+- `createdAt`, `updatedAt`
 
-> Nota: con estas reglas, el chat queda guardado por cada usuario. Para chat compartido 1:1 real se necesita ampliar reglas/estructura.
+## Ejecutar local
 
+```bash
+python3 -m http.server 4173
+```
 
-## Solución de fallos comunes
+Abrir en `http://localhost:4173`.
 
-- Si ves `FIREBASE_CONFIG no encontrado`, crea `firebase-config.js` desde el ejemplo.
-- Si el login no avanza, revisa credenciales y que el proveedor Email/Password esté activo en Firebase Auth.
-- Si mensajes no crean chat, revisa reglas en `artifacts/{appId}/users/{userId}/chats/...`.
+## Qué faltaría para producción completa
+
+- Reglas para chat 1:1 real entre dos usuarios (hoy cada usuario guarda su propia copia de mensajes).
+- Gestión de roles admin (publicación de novedades, moderación).
+- Validaciones más estrictas de formularios y manejo de errores amigable.
