@@ -27,8 +27,7 @@
     </div>
     <div class="hidden md:flex items-center gap-6" id="nav-links">
       <button onclick="router.navigate('directory')" class="text-gray-500 hover:text-brand-600 font-medium transition" id="nav-dir">Directorio</button>
-      <button onclick="router.navigate('news')" class="text-gray-500 hover:text-brand-600 font-medium transition" id="nav-news">Novedades</button>
-      <button onclick="router.navigate('messages')" class="text-gray-500 hover:text-brand-600 font-medium transition" id="nav-msg">Mensajes</button>
+      <button onclick="router.navigate('profile')" class="text-gray-500 hover:text-brand-600 font-medium transition" id="nav-profile">Perfil</button>
     </div>
     <div class="flex items-center gap-4">
       <button onclick="router.navigate('profile')" class="h-9 w-9 rounded-full bg-gray-200 overflow-hidden ring-2 ring-transparent hover:ring-brand-200 transition">
@@ -62,8 +61,12 @@
             <label class="input-label">Contraseña</label>
             <input id="login-password" type="password" required placeholder="••••••••" class="input-field" />
           </div>
-          <button type="submit" class="w-full py-3.5 bg-brand-600 text-white font-bold rounded-xl">Ingresar</button>
+          <button type="submit" class="w-full py-3.5 bg-brand-600 text-white font-bold rounded-xl">Ingresar con Email</button>
         </form>
+        <button onclick="authLogic.loginWithGoogle()" class="w-full py-3.5 mt-3 bg-white text-gray-700 font-bold rounded-xl border border-gray-200 flex items-center justify-center gap-2">
+          <i class="ph ph-google-logo text-lg"></i>
+          Ingresar con Google
+        </button>
         <p id="auth-feedback" class="text-sm mt-4 text-center text-gray-500"></p>
       </div>
     </div>

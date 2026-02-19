@@ -1,5 +1,12 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js';
-import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js';
+import {
+  getAuth,
+  signInWithEmailAndPassword,
+  signInWithPopup,
+  GoogleAuthProvider,
+  signOut,
+  onAuthStateChanged
+} from 'https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js';
 import { getFirestore, collection, getDocs } from 'https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js';
 
 let firebaseConfig;
@@ -11,18 +18,24 @@ try {
 }
 
 const mockAlumni = [
-  { id: 1, name: 'Sofia Ramirez', role: 'UX Designer', company: 'Google', img: 'https://ui-avatars.com/api/?name=Sofia+Ramirez&background=random', tags: ['Diseño', 'Tech'] },
-  { id: 2, name: 'Carlos Mendez', role: 'Project Manager', company: 'Constructora Bolivar', img: 'https://ui-avatars.com/api/?name=Carlos+Mendez&background=random', tags: ['Ingeniería', 'Gestión'] }
+  { id: 1, name: 'Sofia Ramirez', role: 'UX Designer', company: 'Google', img: 'https://ui-avatars.com/api/?name=Sofia+Ramirez&background=random' },
+  { id: 2, name: 'Carlos Mendez', role: 'Project Manager', company: 'Constructora Bolivar', img: 'https://ui-avatars.com/api/?name=Carlos+Mendez&background=random' }
 ];
 
-const state = { user: null, alumni: [...mockAlumni], firebaseEnabled: Boolean(firebaseConfig) };
+const state = {
+  user: null,
+  alumni: [...mockAlumni],
+  firebaseEnabled: Boolean(firebaseConfig)
+};
 
 let auth;
 let db;
+let googleProvider;
 if (firebaseConfig) {
   const app = initializeApp(firebaseConfig);
   auth = getAuth(app);
   db = getFirestore(app);
+  googleProvider = new GoogleAuthProvider();
 }
 
 const router = {
@@ -48,7 +61,8 @@ const directoryLogic = {
   render() {
     const grid = document.getElementById('directory-grid');
     grid.innerHTML = state.alumni
-      .map((alum) => `
+      .map(
+        (alum) => `
         <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
           <div class="flex gap-4">
             <img src="${alum.img}" class="w-14 h-14 rounded-xl object-cover" />
@@ -59,7 +73,8 @@ const directoryLogic = {
             </div>
           </div>
         </div>
-      `)
+      `
+      )
       .join('');
   }
 };
@@ -90,9 +105,29 @@ const authLogic = {
       feedback.textContent = '';
       router.navigate('directory');
     } catch (error) {
-      feedback.textContent = `Error de acceso: ${error.message}`;
+      feedback.textContent = `Error de acceso email: ${error.message}`;
     }
   },
+
+  async loginWithGoogle() {
+    const feedback = document.getElementById('auth-feedback');
+
+    if (!state.firebaseEnabled) {
+      state.user = { email: 'demo.google@alumni.test', displayName: 'Demo Google User' };
+      feedback.textContent = 'Modo demo: Google login simulado.';
+      router.navigate('directory');
+      return;
+    }
+
+    try {
+      await signInWithPopup(auth, googleProvider);
+      feedback.textContent = '';
+      router.navigate('directory');
+    } catch (error) {
+      feedback.textContent = `Error de acceso Google: ${error.message}`;
+    }
+  },
+
   async logout() {
     if (state.firebaseEnabled) {
       await signOut(auth);
@@ -102,7 +137,9 @@ const authLogic = {
   }
 };
 
-const uiLogic = { toggleAuthModal: () => router.navigate('auth') };
+const uiLogic = {
+  toggleAuthModal: () => router.navigate('auth')
+};
 
 async function loadAlumni() {
   if (!state.firebaseEnabled) return;
