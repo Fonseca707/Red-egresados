@@ -68,37 +68,6 @@
         </div>
 
         <div class="flex items-center gap-4">
-            <!-- Dropdown Notificaciones -->
-            <div class="relative">
-                <button onclick="uiLogic.toggleNotifications()" class="relative p-2 text-gray-500 hover:bg-gray-100 rounded-full transition">
-                    <i class="ph ph-bell text-xl"></i>
-                    <span id="notif-badge" class="absolute top-1 right-1 h-2.5 w-2.5 bg-red-500 rounded-full border-2 border-white"></span>
-                </button>
-                <!-- Panel de Notificaciones -->
-                <div id="notif-panel" class="hidden absolute right-0 mt-3 w-80 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden z-50 animate-fade-in">
-                    <div class="p-3 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
-                        <span class="font-semibold text-sm">Notificaciones</span>
-                        <span class="text-xs text-brand-600 cursor-pointer" onclick="document.getElementById('notif-badge').classList.add('hidden')">Marcar leídas</span>
-                    </div>
-                    <div class="max-h-64 overflow-y-auto">
-                        <div class="p-3 hover:bg-gray-50 border-b border-gray-100 cursor-pointer flex gap-3 transition">
-                            <div class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center shrink-0"><i class="ph ph-user-plus"></i></div>
-                            <div>
-                                <p class="text-sm font-medium">Nueva solicitud</p>
-                                <p class="text-xs text-gray-500">Ana García quiere conectar contigo.</p>
-                            </div>
-                        </div>
-                        <div class="p-3 hover:bg-gray-50 border-b border-gray-100 cursor-pointer flex gap-3 transition">
-                            <div class="w-8 h-8 rounded-full bg-green-100 text-green-600 flex items-center justify-center shrink-0"><i class="ph ph-check-circle"></i></div>
-                            <div>
-                                <p class="text-sm font-medium">Perfil Aprobado</p>
-                                <p class="text-xs text-gray-500">Tu cuenta ha sido verificada.</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
             <!-- Avatar Usuario -->
             <button onclick="router.navigate('profile')" class="h-9 w-9 rounded-full bg-gray-200 overflow-hidden ring-2 ring-transparent hover:ring-brand-200 transition focus:outline-none">
                 <img src="https://ui-avatars.com/api/?name=Yo&background=0D8ABC&color=fff" alt="Perfil" class="object-cover w-full h-full" id="header-avatar">
@@ -264,10 +233,6 @@
                     <div class="relative flex flex-col md:flex-row md:items-end gap-6 -mt-12 mb-8">
                         <div class="relative">
                             <img src="https://ui-avatars.com/api/?name=Yo&background=0D8ABC&color=fff" class="w-32 h-32 rounded-3xl border-[6px] border-white shadow-lg bg-white object-cover" id="profile-avatar">
-                            <input id="profile-avatar-file" type="file" accept="image/*" class="hidden" onchange="profileLogic.uploadPhoto(event)">
-                            <button type="button" onclick="document.getElementById('profile-avatar-file').click()" class="absolute -bottom-2 -right-2 bg-white border border-gray-200 rounded-xl px-3 py-1.5 text-xs font-bold text-gray-700 shadow-sm hover:bg-gray-50">
-                                Cambiar foto
-                            </button>
                         </div>
                         <div class="flex-1 mt-2 md:mt-0">
                             <h2 class="text-3xl font-bold text-gray-900" id="display-name">Tu Nombre</h2>
@@ -460,7 +425,6 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-storage-compat.js"></script>
 
     <!-- JAVASCRIPT LOGIC -->
     <script>
@@ -477,7 +441,6 @@
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
         const db = firebase.firestore();
-        const storage = typeof firebase.storage === 'function' ? firebase.storage() : null;
 
         const artifactsRoot = db
           .collection('artifacts')
@@ -609,6 +572,10 @@
             } catch (error) {
                 state.data.alumni = state.data.alumni.length ? state.data.alumni : [];
             }
+        }
+
+        function buildAvatarUrl(name = 'Usuario') {
+            return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=0D8ABC&color=fff`;
         }
 
         async function loadProfile(uid) {
@@ -984,38 +951,10 @@
                 document.getElementById('p-topics').value = p.topics || '';
                 document.getElementById('p-phone').value = p.phone || '';
                 document.getElementById('p-linkedin').value = p.linkedin || '';
-                if (p.photoURL) {
-                    document.getElementById('profile-avatar').src = p.photoURL;
-                    document.getElementById('header-avatar').src = p.photoURL;
-                }
-            },
-            uploadPhoto: async (event) => {
-                if (!state.user) return;
-                const file = event.target.files?.[0];
-                if (!file) return;
-                if (!storage) {
-                    alert('Firebase Storage no está habilitado para este proyecto.');
-                    event.target.value = '';
-                    return;
-                }
-                try {
-                    const path = `avatars/${state.user.uid}/${Date.now()}-${file.name}`;
-                    const ref = storage.ref(path);
-                    await ref.put(file);
-                    const url = await ref.getDownloadURL();
-                    await alumniCollection.doc(state.user.uid).set({
-                        photoURL: url,
-                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                    }, { merge: true });
-                    state.profile.photoURL = url;
-                    document.getElementById('profile-avatar').src = url;
-                    document.getElementById('header-avatar').src = url;
-                    await loadAlumni();
-                } catch (error) {
-                    alert(`No se pudo subir la foto: ${error.code || error.message || 'error desconocido'}`);
-                } finally {
-                    event.target.value = '';
-                }
+                const fullName = `${p.firstName || ''} ${p.lastName || ''}`.trim() || 'Yo';
+                const avatar = p.photoURL || buildAvatarUrl(fullName);
+                document.getElementById('profile-avatar').src = avatar;
+                document.getElementById('header-avatar').src = avatar;
             },
             save: async () => {
                 if (!state.user) return;
@@ -1056,6 +995,9 @@
 
                     document.getElementById('display-name').innerText = `${state.profile.firstName} ${state.profile.lastName}`;
                     document.getElementById('display-role').innerText = state.profile.role;
+                    const avatar = state.profile.photoURL || buildAvatarUrl(`${state.profile.firstName} ${state.profile.lastName}`.trim() || 'Yo');
+                    document.getElementById('profile-avatar').src = avatar;
+                    document.getElementById('header-avatar').src = avatar;
                     await loadAlumni();
 
                     btn.className = btn.className.replace('bg-brand-600', 'bg-green-600');
@@ -1074,11 +1016,6 @@
         };
 
         const uiLogic = {
-            toggleNotifications: () => {
-                const panel = document.getElementById('notif-panel');
-                panel.classList.toggle('hidden');
-                if(!panel.classList.contains('hidden')) document.getElementById('notif-badge').classList.add('hidden');
-            },
             openNewsModal: (idx) => {
                 const item = state.data.news[idx];
                 document.getElementById('news-modal-img').src = item.img;
