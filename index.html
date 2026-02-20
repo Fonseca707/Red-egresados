@@ -477,7 +477,7 @@
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
         const db = firebase.firestore();
-        const storage = firebase.storage();
+        const storage = typeof firebase.storage === 'function' ? firebase.storage() : null;
 
         const artifactsRoot = db
           .collection('artifacts')
@@ -878,7 +878,7 @@
                     await chatLogic.openChat(chatId);
                     directoryLogic.closeProfile();
                 } catch (error) {
-                    alert('No se pudo iniciar el chat. Revisa tus reglas de Firestore.');
+                    alert(`No se pudo iniciar el chat: ${error.code || error.message || 'error desconocido'}`);
                 }
             },
             openChat: async (id) => {
@@ -958,7 +958,7 @@
                     batch.set(userChatsCollection(chat.peerId).doc(state.activeChatId), chatMetaForOther, { merge: true });
                     await batch.commit();
                 } catch (error) {
-                    alert('No se pudo enviar. Revisa reglas de Firestore para chats.');
+                    alert(`No se pudo enviar el mensaje: ${error.code || error.message || 'error desconocido'}`);
                 }
 
                 input.value = '';
@@ -993,6 +993,11 @@
                 if (!state.user) return;
                 const file = event.target.files?.[0];
                 if (!file) return;
+                if (!storage) {
+                    alert('Firebase Storage no está habilitado para este proyecto.');
+                    event.target.value = '';
+                    return;
+                }
                 try {
                     const path = `avatars/${state.user.uid}/${Date.now()}-${file.name}`;
                     const ref = storage.ref(path);
@@ -1007,7 +1012,7 @@
                     document.getElementById('header-avatar').src = url;
                     await loadAlumni();
                 } catch (error) {
-                    alert('No se pudo subir la foto. Revisa reglas de Storage.');
+                    alert(`No se pudo subir la foto: ${error.code || error.message || 'error desconocido'}`);
                 } finally {
                     event.target.value = '';
                 }

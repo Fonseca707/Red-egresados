@@ -16,7 +16,8 @@ La app quedó conectada a Firebase manteniendo el estilo original de tu HTML.
 Rutas alineadas con tus reglas:
 
 - Perfil y directorio: `artifacts/{appId}/public/data/alumni/{userId}`
-- Mensajes por usuario: `artifacts/{appId}/users/{userId}/messages/{messageId}`
+- Chats por usuario: `artifacts/{appId}/users/{userId}/chats/{chatId}`
+- Mensajes por chat: `artifacts/{appId}/users/{userId}/chats/{chatId}/messages/{messageId}`
 
 ## Campos de perfil guardados
 
