@@ -258,6 +258,49 @@
             </div>
         </div>
 
+        <!-- VISTA: REGISTRO -->
+        <div id="view-register" class="hidden min-h-[80vh] flex items-center justify-center animate-fade-in">
+            <div class="bg-white p-8 md:p-10 rounded-[2.5rem] shadow-[0_20px_50px_rgb(0,0,0,0.08)] border border-gray-100 w-full max-w-md relative overflow-hidden">
+                <div class="text-center mb-8">
+                    <div class="w-14 h-14 bg-brand-600 rounded-2xl flex items-center justify-center text-white text-3xl font-bold mx-auto mb-4 shadow-lg shadow-brand-500/30">A</div>
+                    <h1 class="text-2xl font-bold text-gray-900">Crear cuenta</h1>
+                    <p class="text-gray-500 text-sm mt-2">Primer ingreso a AlumniConnect</p>
+                </div>
+
+                <form onsubmit="authLogic.submitRegister(event)" class="space-y-4">
+                    <div>
+                        <label class="input-label">Email</label>
+                        <input id="register-email" type="email" required placeholder="tu.nombre@email.com" class="input-field">
+                    </div>
+                    <div>
+                        <label class="input-label">Contraseña</label>
+                        <input id="register-password" type="password" required minlength="6" placeholder="••••••••" class="input-field">
+                    </div>
+                    <div>
+                        <label class="input-label">Confirmar contraseña</label>
+                        <input id="register-password-confirm" type="password" required minlength="6" placeholder="••••••••" class="input-field">
+                    </div>
+
+                    <label class="flex items-start gap-3 text-sm text-gray-600">
+                        <input id="register-privacy" type="checkbox" required class="mt-1 h-4 w-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500">
+                        <span>Autorizo el tratamiento de mis datos personales conforme a la Política de Tratamiento de Datos Personales de CONNECTING y declaro haberla leído y aceptado.</span>
+                    </label>
+
+                    <label class="flex items-start gap-3 text-sm text-gray-600">
+                        <input id="register-newsletter" type="checkbox" class="mt-1 h-4 w-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500">
+                        <span>Deseo recibir novedades de la red de egresados.</span>
+                    </label>
+
+                    <button type="submit" class="w-full py-3.5 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-xl shadow-lg shadow-brand-500/30 transition">Crear cuenta</button>
+                </form>
+                <p id="register-feedback" class="text-xs text-gray-500 mt-3 text-center"></p>
+
+                <div class="mt-6 text-center border-t border-gray-100 pt-4">
+                    <button onclick="router.navigate('auth')" class="text-sm text-brand-600 font-bold hover:underline">Ya tengo cuenta</button>
+                </div>
+            </div>
+        </div>
+
         <!-- VISTA: ONBOARDING (Formulario primer ingreso) -->
         <div id="view-onboarding" class="hidden min-h-[80vh] flex items-center justify-center animate-fade-in">
             <div class="bg-white p-8 md:p-12 rounded-[2.5rem] shadow-[0_20px_50px_rgb(0,0,0,0.08)] border border-gray-100 w-full max-w-2xl relative overflow-hidden">
@@ -655,7 +698,8 @@
             guestMode: false,
             activeChatId: null,
             messagesByChat: {},
-            selectedDirectoryUserId: null
+            selectedDirectoryUserId: null,
+            directoryLoading: false
         };
 
         const authLogic = {
@@ -674,23 +718,47 @@
                 }
             },
             registerWithEmail: async () => {
-                const email = document.getElementById('login-email').value.trim();
-                const password = document.getElementById('login-password').value;
-                const feedback = document.getElementById('auth-feedback');
+                router.navigate('register');
+            },
+            submitRegister: async (e) => {
+                e.preventDefault();
+                const email = document.getElementById('register-email').value.trim();
+                const password = document.getElementById('register-password').value;
+                const confirm = document.getElementById('register-password-confirm').value;
+                const acceptedPrivacy = document.getElementById('register-privacy').checked;
+                const wantsNewsletter = document.getElementById('register-newsletter').checked;
+                const feedback = document.getElementById('register-feedback');
 
                 if (!email || !password) {
-                    feedback.textContent = 'Ingresa email y contraseña para registrarte.';
+                    feedback.textContent = 'Completa email y contraseña.';
                     return;
                 }
-
                 if (password.length < 6) {
                     feedback.textContent = 'La contraseña debe tener al menos 6 caracteres.';
+                    return;
+                }
+                if (password !== confirm) {
+                    feedback.textContent = 'Las contraseñas no coinciden.';
+                    return;
+                }
+                if (!acceptedPrivacy) {
+                    feedback.textContent = 'Debes aceptar la política de tratamiento de datos.';
                     return;
                 }
 
                 try {
                     state.guestMode = false;
-                    await auth.createUserWithEmailAndPassword(email, password);
+                    const cred = await auth.createUserWithEmailAndPassword(email, password);
+                    const payload = {
+                        email,
+                        privacyAccepted: true,
+                        newsletterOptIn: wantsNewsletter,
+                        onboardingCompleted: false,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    };
+                    await alumniCollection.doc(cred.user.uid).set(payload, { merge: true });
+                    emailLogic.prepareWelcomeStructure(email);
                     feedback.textContent = 'Cuenta creada correctamente.';
                 } catch (error) {
                     const map = { 'auth/email-already-in-use': 'Ese correo ya está registrado.', 'auth/invalid-email': 'Correo inválido.', 'auth/weak-password': 'La contraseña es muy débil.' };
@@ -711,8 +779,8 @@
             browseAsGuest: async () => {
                 state.guestMode = true;
                 state.user = { uid: 'guest-view', displayName: 'Invitado' };
-                await loadAlumni();
                 router.navigate('directory');
+                await loadAlumni();
             },
             logout: async () => {
                 if (!state.guestMode) {
@@ -721,6 +789,19 @@
                 state.guestMode = false;
                 state.user = null;
                 router.navigate('auth');
+            }
+        };
+
+        const emailLogic = {
+            prepareWelcomeStructure: (toEmail) => {
+                const structure = {
+                    to: toEmail,
+                    subject: '¡Gracias por unirte a CONNECTING!',
+                    text: 'Gracias por registrarte en CONNECTING. Ya puedes iniciar sesión y completar tu perfil.',
+                    html: `<h2>¡Bienvenido(a) a CONNECTING!</h2><p>Gracias por registrarte en la red de egresados.</p><p>Te invitamos a completar tu perfil para conectar mejor con la comunidad.</p>`
+                };
+                console.info('Estructura de correo de bienvenida lista:', structure);
+                return structure;
             }
         };
 
@@ -776,12 +857,14 @@
             finish: async () => {
                 await loadAlumni();
                 await loadChatsForUser(state.user.uid);
-                alert('¡Datos guardados! Ahora te recomendamos completar tu perfil en la sección Perfil.');
+                alert('¡Gracias por completar tu primer ingreso! Te recomendamos ahora completar todo tu perfil de estudiante.');
                 router.navigate('directory');
             }
         };
 
         async function loadAlumni() {
+            state.directoryLoading = true;
+            if (state.view === 'directory') directoryLogic.render();
             try {
                 const snapshot = await alumniCollection.get();
                 state.data.alumni = snapshot.docs.map((doc) => {
@@ -805,6 +888,9 @@
                 });
             } catch (error) {
                 state.data.alumni = state.data.alumni.length ? state.data.alumni : [];
+            } finally {
+                state.directoryLoading = false;
+                if (state.view === 'directory') directoryLogic.render();
             }
         }
 
@@ -895,16 +981,16 @@
 
         const router = {
             navigate: (viewId) => {
-                if (viewId !== 'auth' && viewId !== 'home' && !state.user) { authLogic.logout(); return; }
+                if (viewId !== 'auth' && viewId !== 'register' && viewId !== 'home' && !state.user) { authLogic.logout(); return; }
 
-                const views = ['view-home', 'view-auth', 'view-onboarding', 'view-directory', 'view-news', 'view-messages', 'view-profile'];
+                const views = ['view-home', 'view-auth', 'view-register', 'view-onboarding', 'view-directory', 'view-news', 'view-messages', 'view-profile'];
                 views.forEach(id => {
                     const el = document.getElementById(id);
                     if(el) el.classList.add('hidden');
                 });
 
                 const nav = document.querySelector('nav');
-                if (viewId === 'auth' || viewId === 'onboarding') {
+                if (viewId === 'auth' || viewId === 'register' || viewId === 'onboarding') {
                     nav.classList.add('hidden');
                 } else {
                     nav.classList.remove('hidden');
@@ -919,6 +1005,7 @@
                     }
                 }
 
+                state.view = viewId;
                 const targetView = document.getElementById(`view-${viewId}`);
                 if (targetView) {
                     targetView.classList.remove('hidden');
@@ -937,6 +1024,23 @@
         const directoryLogic = {
             render: (items = state.data.alumni) => {
                 const grid = document.getElementById('directory-grid');
+                if (state.directoryLoading) {
+                    grid.innerHTML = Array.from({ length: 8 }).map(() => `
+                        <div class="bg-white p-6 rounded-2xl border border-gray-100 animate-pulse">
+                            <div class="flex gap-4 mb-4">
+                                <div class="w-14 h-14 rounded-xl bg-gray-100"></div>
+                                <div class="flex-1 space-y-2">
+                                    <div class="h-4 bg-gray-100 rounded w-3/4"></div>
+                                    <div class="h-3 bg-gray-100 rounded w-1/2"></div>
+                                    <div class="h-3 bg-gray-100 rounded w-2/3"></div>
+                                </div>
+                            </div>
+                            <div class="h-3 bg-gray-100 rounded w-full mb-2"></div>
+                            <div class="h-3 bg-gray-100 rounded w-5/6"></div>
+                        </div>
+                    `).join('');
+                    return;
+                }
                 grid.innerHTML = items.map(alum => `
                     <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition group cursor-pointer h-full flex flex-col" onclick="directoryLogic.openProfile('${alum.id}')">
                         <div class="flex items-start justify-between">
@@ -1273,6 +1377,7 @@
         window.router = router;
         window.authLogic = authLogic;
         window.onboardingLogic = onboardingLogic;
+        window.emailLogic = emailLogic;
         window.directoryLogic = directoryLogic;
         window.newsLogic = newsLogic;
         window.chatLogic = chatLogic;
@@ -1295,9 +1400,9 @@
                     }
                     router.navigate('onboarding');
                 } else {
+                    router.navigate('directory');
                     await loadAlumni();
                     await loadChatsForUser(user.uid);
-                    router.navigate('directory');
                 }
             } else {
                 state.data.alumni = [];
