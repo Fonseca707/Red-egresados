@@ -19,7 +19,7 @@
                 extend: {
                     fontFamily: { sans: ['"Plus Jakarta Sans"', 'sans-serif'] },
                     colors: { 
-                        brand: { 50: '#eff6ff', 100: '#dbeafe', 500: '#3b82f6', 600: '#2563eb', 900: '#1e3a8a' }
+                        brand: { 50: '#faf5ff', 100: '#f3e8ff', 200: '#e9d5ff', 300: '#d8b4fe', 400: '#c084fc', 500: '#a855f7', 600: '#9333ea', 700: '#7e22ce', 800: '#6b21a8', 900: '#581c87', 950: '#3b0764' }
                     },
                     animation: {
                         'fade-in': 'fadeIn 0.3s ease-out',
@@ -37,27 +37,27 @@
     </script>
 
     <style>
-        .glass-nav { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(12px); border-bottom: 1px solid #e5e7eb; }
+        .glass-nav { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(16px); border-bottom: 1px solid rgba(229, 231, 235, 0.5); }
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        .section-card { @apply bg-white p-6 md:p-8 rounded-2xl border border-gray-100 shadow-sm mb-6; }
+        .section-card { @apply bg-white p-6 md:p-8 rounded-[2rem] border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] mb-6 transition-all hover:shadow-[0_12px_40px_rgb(147,51,234,0.06)]; }
         .input-label { @apply text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 block; }
-        .input-field { @apply w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition-all text-sm font-medium; }
+        .input-field { @apply w-full px-4 py-3.5 bg-gray-50/50 border border-gray-200 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/20 focus:border-brand-500 focus:bg-white transition-all text-sm font-medium; }
         
         /* Chat bubbles */
-        .chat-bubble { max-width: 75%; padding: 0.75rem 1rem; border-radius: 1rem; position: relative; font-size: 0.95rem; line-height: 1.4; }
-        .chat-me { background-color: #2563eb; color: white; border-bottom-right-radius: 0.25rem; margin-left: auto; }
+        .chat-bubble { max-width: 75%; padding: 0.875rem 1.25rem; border-radius: 1.25rem; position: relative; font-size: 0.95rem; line-height: 1.5; box-shadow: 0 2px 10px rgba(0,0,0,0.02); }
+        .chat-me { background: linear-gradient(135deg, #9333ea 0%, #7e22ce 100%); color: white; border-bottom-right-radius: 0.25rem; margin-left: auto; }
         .chat-them { background-color: #f3f4f6; color: #1f2937; border-bottom-left-radius: 0.25rem; margin-right: auto; }
         .detail-row { @apply flex items-start gap-3 py-3 border-b border-gray-50 last:border-0; }
-        .detail-icon { @apply w-8 h-8 rounded-full bg-brand-50 text-brand-600 flex items-center justify-center shrink-0 text-lg; }
+        .detail-icon { @apply w-10 h-10 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center shrink-0 text-xl shadow-sm; }
     </style>
 </head>
 <body class="bg-gray-50 text-gray-800 font-sans h-screen flex flex-col overflow-hidden">
 
     <!-- 1. NOTIFICACIONES & NAVBAR -->
-    <nav class="glass-nav fixed w-full z-40 top-0 h-16 flex items-center justify-between px-4 lg:px-8">
+    <nav class="glass-nav fixed w-full z-40 top-0 h-16 flex items-center justify-between px-4 lg:px-8 shadow-sm">
         <div class="flex items-center gap-3 cursor-pointer" onclick="router.navigate('home')">
-            <div class="w-8 h-8 bg-brand-600 rounded-lg flex items-center justify-center text-white font-bold">A</div>
+            <div class="w-8 h-8 bg-gradient-to-br from-brand-600 to-brand-500 rounded-lg flex items-center justify-center text-white font-bold shadow-md shadow-brand-500/30">A</div>
             <span class="font-bold text-xl tracking-tight text-gray-900">Alumni<span class="text-brand-600">Connect</span></span>
         </div>
 
@@ -69,8 +69,8 @@
 
         <div class="flex items-center gap-4">
             <!-- Avatar Usuario -->
-            <button onclick="router.navigate('profile')" class="h-9 w-9 rounded-full bg-gray-200 overflow-hidden ring-2 ring-transparent hover:ring-brand-200 transition focus:outline-none">
-                <img src="https://ui-avatars.com/api/?name=Yo&background=0D8ABC&color=fff" alt="Perfil" class="object-cover w-full h-full" id="header-avatar">
+            <button onclick="router.navigate('profile')" class="h-10 w-10 rounded-full bg-brand-50 overflow-hidden ring-2 ring-transparent hover:ring-brand-300 transition-all focus:outline-none shadow-sm">
+                <img src="https://ui-avatars.com/api/?name=Yo&background=9333ea&color=fff" alt="Perfil" class="object-cover w-full h-full" id="header-avatar">
             </button>
         </div>
     </nav>
@@ -82,7 +82,7 @@
     </div>
 
     <!-- MAIN CONTENT AREA -->
-    <main id="app-content" class="flex-1 pt-20 pb-8 px-4 overflow-y-auto relative scroll-smooth bg-gray-50">
+    <main id="app-content" class="flex-1 pt-20 pb-8 px-4 overflow-y-auto relative scroll-smooth bg-gray-50/50">
         
         <!-- VISTA: HOME (Landing Profesional) -->
         <div id="view-home" class="animate-fade-in w-full max-w-7xl mx-auto">
@@ -223,7 +223,8 @@
 
         <!-- VISTA: LOGIN -->
         <div id="view-auth" class="hidden min-h-[80vh] flex items-center justify-center animate-fade-in">
-            <div class="bg-white p-8 rounded-3xl shadow-xl border border-gray-100 w-full max-w-md">
+            <div class="bg-white p-8 md:p-10 rounded-[2.5rem] shadow-[0_20px_50px_rgb(0,0,0,0.08)] border border-gray-100 w-full max-w-md relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-40 h-40 bg-brand-50 rounded-bl-full -z-10 opacity-70"></div>
                 <div class="text-center mb-8">
                     <div class="w-14 h-14 bg-brand-600 rounded-2xl flex items-center justify-center text-white text-3xl font-bold mx-auto mb-4 shadow-lg shadow-brand-500/30">A</div>
                     <h1 class="text-2xl font-bold text-gray-900">Bienvenido de nuevo</h1>
@@ -257,7 +258,8 @@
 
         <!-- VISTA: ONBOARDING (Formulario primer ingreso) -->
         <div id="view-onboarding" class="hidden min-h-[80vh] flex items-center justify-center animate-fade-in">
-            <div class="bg-white p-8 md:p-10 rounded-3xl shadow-xl border border-gray-100 w-full max-w-2xl">
+            <div class="bg-white p-8 md:p-12 rounded-[2.5rem] shadow-[0_20px_50px_rgb(0,0,0,0.08)] border border-gray-100 w-full max-w-2xl relative overflow-hidden">
+                <div class="absolute -top-10 -right-10 w-56 h-56 bg-brand-50 rounded-full blur-2xl -z-10 opacity-70"></div>
                 <div class="text-center mb-8">
                     <div class="w-16 h-16 bg-brand-50 text-brand-600 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-4 border border-brand-100 shadow-sm">
                         <i class="ph-duotone ph-hand-waving"></i>
@@ -389,9 +391,9 @@
 
         <!-- VISTA: PERFIL DETALLADO -->
         <div id="view-profile" class="hidden max-w-4xl mx-auto animate-slide-up pb-20">
-            <div class="bg-white rounded-3xl shadow-sm border border-gray-200 overflow-hidden mb-6">
+            <div class="bg-white rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden mb-6">
                 <!-- Portada -->
-                <div class="h-40 bg-gradient-to-r from-brand-600 to-indigo-900 relative group">
+                <div class="h-48 bg-gradient-to-r from-brand-500 via-brand-700 to-brand-900 relative group">
                     <button class="absolute top-4 right-4 bg-black/20 text-white px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-black/30 backdrop-blur-sm transition opacity-0 group-hover:opacity-100 flex items-center gap-2">
                         <i class="ph-bold ph-camera"></i> Editar portada
                     </button>
@@ -401,7 +403,7 @@
                 <div class="px-8 pb-8">
                     <div class="relative flex flex-col md:flex-row md:items-end gap-6 -mt-12 mb-8">
                         <div class="relative">
-                            <img src="https://ui-avatars.com/api/?name=Yo&background=0D8ABC&color=fff" class="w-32 h-32 rounded-3xl border-[6px] border-white shadow-lg bg-white object-cover" id="profile-avatar">
+                            <img src="https://ui-avatars.com/api/?name=Yo&background=9333ea&color=fff" class="w-36 h-36 rounded-[2rem] border-[6px] border-white shadow-xl bg-white object-cover" id="profile-avatar">
                         </div>
                         <div class="flex-1 mt-2 md:mt-0">
                             <h2 class="text-3xl font-bold text-gray-900" id="display-name">Tu Nombre</h2>
@@ -801,7 +803,7 @@
         }
 
         function buildAvatarUrl(name = 'Usuario') {
-            return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=0D8ABC&color=fff`;
+            return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=9333ea&color=fff`;
         }
 
         async function loadProfile(uid) {
