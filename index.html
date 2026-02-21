@@ -50,6 +50,7 @@
         .chat-them { background-color: #f3f4f6; color: #1f2937; border-bottom-left-radius: 0.25rem; margin-right: auto; }
         .detail-row { @apply flex items-start gap-3 py-3 border-b border-gray-50 last:border-0; }
         .detail-icon { @apply w-10 h-10 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center shrink-0 text-xl shadow-sm; }
+        #profileForm .input-field { @apply bg-white border-brand-100 shadow-sm; }
     </style>
 </head>
 <body class="bg-gray-50 text-gray-800 font-sans h-screen flex flex-col overflow-hidden">
@@ -62,6 +63,7 @@
         </div>
 
         <div class="hidden md:flex items-center gap-6" id="nav-links">
+            <button onclick="router.navigate('home')" class="text-gray-500 hover:text-brand-600 font-medium transition" id="nav-home">Inicio</button>
             <button onclick="router.navigate('directory')" class="text-gray-500 hover:text-brand-600 font-medium transition" id="nav-dir">Directorio</button>
             <button onclick="router.navigate('news')" class="text-gray-500 hover:text-brand-600 font-medium transition" id="nav-news">Novedades</button>
             <button onclick="router.navigate('messages')" class="text-gray-500 hover:text-brand-600 font-medium transition" id="nav-msg">Mensajes</button>
@@ -316,7 +318,13 @@
                         <i class="ph ph-magnifying-glass absolute left-3 top-3.5 text-gray-400"></i>
                         <input type="text" id="directory-search" placeholder="Buscar por nombre, cargo, empresa..." class="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100 transition shadow-sm" onkeyup="directoryLogic.filter()">
                     </div>
-                    <button class="bg-white p-3 border border-gray-200 rounded-xl hover:bg-gray-50 text-gray-600 shadow-sm transition"><i class="ph ph-sliders text-lg"></i></button>
+                    <select id="directory-filter" class="bg-white px-3 py-3 border border-gray-200 rounded-xl hover:bg-gray-50 text-gray-600 shadow-sm transition text-sm font-medium" onchange="directoryLogic.filter()">
+                        <option value="all">Todos</option>
+                        <option value="trabajando">Trabajando</option>
+                        <option value="estudiando">Estudiando</option>
+                        <option value="emprendiendo">Emprendiendo</option>
+                        <option value="trabajando-estudiando">Trabajando y estudiando</option>
+                    </select>
                 </div>
             </div>
 
@@ -381,8 +389,7 @@
                 <!-- Input -->
                 <div class="p-4 bg-white border-t border-gray-100">
                     <form onsubmit="chatLogic.send(event)" class="flex gap-2 items-center">
-                        <button type="button" class="p-2 text-gray-400 hover:text-brand-600 transition"><i class="ph ph-paperclip text-xl"></i></button>
-                        <input id="chat-input" type="text" placeholder="Escribe un mensaje..." class="flex-1 bg-gray-100 border-0 rounded-full px-5 py-3 focus:ring-2 focus:ring-brand-500 focus:bg-white transition outline-none text-sm">
+                                                <input id="chat-input" type="text" placeholder="Escribe un mensaje..." class="flex-1 bg-gray-100 border-0 rounded-full px-5 py-3 focus:ring-2 focus:ring-brand-500 focus:bg-white transition outline-none text-sm">
                         <button type="submit" class="p-3 bg-brand-600 hover:bg-brand-700 text-white rounded-full transition shadow-md flex items-center justify-center"><i class="ph-fill ph-paper-plane-right"></i></button>
                     </form>
                 </div>
@@ -394,10 +401,7 @@
             <div class="bg-white rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden mb-6">
                 <!-- Portada -->
                 <div class="h-48 bg-gradient-to-r from-brand-500 via-brand-700 to-brand-900 relative group">
-                    <button class="absolute top-4 right-4 bg-black/20 text-white px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-black/30 backdrop-blur-sm transition opacity-0 group-hover:opacity-100 flex items-center gap-2">
-                        <i class="ph-bold ph-camera"></i> Editar portada
-                    </button>
-                </div>
+                                    </div>
                 
                 <!-- Info Principal -->
                 <div class="px-8 pb-8">
@@ -451,7 +455,7 @@
                                     <select id="p-status" class="input-field">
                                         <option value="trabajando">Trabajando</option>
                                         <option value="estudiando">Estudiando</option>
-                                        <option value="buscando">En búsqueda activa</option>
+                                        <option value="trabajando-estudiando">Trabajando y estudiando</option>
                                         <option value="emprendiendo">Emprendiendo</option>
                                     </select>
                                 </div>
@@ -689,7 +693,8 @@
                     await auth.createUserWithEmailAndPassword(email, password);
                     feedback.textContent = 'Cuenta creada correctamente.';
                 } catch (error) {
-                    feedback.textContent = `Error de registro: ${error.message}`;
+                    const map = { 'auth/email-already-in-use': 'Ese correo ya está registrado.', 'auth/invalid-email': 'Correo inválido.', 'auth/weak-password': 'La contraseña es muy débil.' };
+                    feedback.textContent = map[error.code] || `Error de registro: ${error.message}`;
                 }
             },
             loginWithGoogle: async () => {
@@ -771,6 +776,7 @@
             finish: async () => {
                 await loadAlumni();
                 await loadChatsForUser(state.user.uid);
+                alert('¡Datos guardados! Ahora te recomendamos completar tu perfil en la sección Perfil.');
                 router.navigate('directory');
             }
         };
@@ -902,7 +908,7 @@
                     nav.classList.add('hidden');
                 } else {
                     nav.classList.remove('hidden');
-                    const navButtons = { 'directory': 'nav-dir', 'news': 'nav-news', 'messages': 'nav-msg' };
+                    const navButtons = { 'home': 'nav-home', 'directory': 'nav-dir', 'news': 'nav-news', 'messages': 'nav-msg' };
                     Object.values(navButtons).forEach(btnId => {
                         const btn = document.getElementById(btnId);
                         if(btn) btn.classList.remove('text-brand-600', 'bg-brand-50');
@@ -987,11 +993,16 @@
             },
             filter: () => {
                 const term = document.getElementById('directory-search').value.toLowerCase().trim();
-                const filtered = state.data.alumni.filter(u =>
-                    u.name.toLowerCase().includes(term) ||
-                    (u.role || '').toLowerCase().includes(term) ||
-                    (u.company || '').toLowerCase().includes(term)
-                );
+                const selected = document.getElementById('directory-filter')?.value || 'all';
+                const filtered = state.data.alumni.filter(u => {
+                    const matchesTerm = u.name.toLowerCase().includes(term) ||
+                        (u.role || '').toLowerCase().includes(term) ||
+                        (u.company || '').toLowerCase().includes(term);
+                    if (!matchesTerm) return false;
+                    if (selected === 'all') return true;
+                    const tags = (u.tags || []).map(t => String(t).toLowerCase());
+                    return tags.includes(selected);
+                });
                 directoryLogic.render(filtered);
             }
         };
@@ -1187,7 +1198,7 @@
                 document.getElementById('header-avatar').src = avatar;
             },
             save: async () => {
-                if (!state.user) return;
+                if (!state.user) { alert('Debes iniciar sesión para actualizar tu cuenta.'); return; }
                 const btn = document.getElementById('btn-save-profile');
                 const original = btn.innerHTML;
                 btn.disabled = true;
