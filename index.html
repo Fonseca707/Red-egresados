@@ -72,7 +72,7 @@
         <div class="flex items-center gap-4">
             <!-- Avatar Usuario -->
             <button onclick="router.navigate('profile')" class="h-10 w-10 rounded-full bg-brand-50 overflow-hidden ring-2 ring-transparent hover:ring-brand-300 transition-all focus:outline-none shadow-sm">
-                <img src="https://ui-avatars.com/api/?name=Yo&background=9333ea&color=fff" alt="Perfil" class="object-cover w-full h-full" id="header-avatar">
+                <img src="https://ui-avatars.com/api/?name=Usuario&background=9333ea&color=fff" alt="Perfil" class="object-cover w-full h-full" id="header-avatar">
             </button>
         </div>
     </nav>
@@ -293,6 +293,9 @@
 
                     <button type="submit" class="w-full py-3.5 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-xl shadow-lg shadow-brand-500/30 transition">Crear cuenta</button>
                 </form>
+                <button onclick="authLogic.registerWithGoogle()" class="w-full py-3.5 mt-3 bg-white text-gray-700 font-bold rounded-xl border border-gray-200 hover:bg-gray-50 transition flex items-center justify-center gap-2">
+                    <i class="ph ph-google-logo"></i> Registrarme con Google
+                </button>
                 <p id="register-feedback" class="text-xs text-gray-500 mt-3 text-center"></p>
 
                 <div class="mt-6 text-center border-t border-gray-100 pt-4">
@@ -450,7 +453,7 @@
                 <div class="px-8 pb-8">
                     <div class="relative flex flex-col md:flex-row md:items-end gap-6 -mt-12 mb-8">
                         <div class="relative">
-                            <img src="https://ui-avatars.com/api/?name=Yo&background=9333ea&color=fff" class="w-36 h-36 rounded-[2rem] border-[6px] border-white shadow-xl bg-white object-cover" id="profile-avatar">
+                            <img src="https://ui-avatars.com/api/?name=Usuario&background=9333ea&color=fff" class="w-36 h-36 rounded-[2rem] border-[6px] border-white shadow-xl bg-white object-cover" id="profile-avatar">
                         </div>
                         <div class="flex-1 mt-2 md:mt-0">
                             <h2 class="text-3xl font-bold text-gray-900" id="display-name">Tu Nombre</h2>
@@ -699,8 +702,21 @@
             activeChatId: null,
             messagesByChat: {},
             selectedDirectoryUserId: null,
-            directoryLoading: false
+            directoryLoading: false,
+            listeners: {
+                chats: null,
+                messages: null
+            }
         };
+
+        function getDisplayNameFromProfileOrAuth() {
+            const fullName = `${state.profile.firstName || ''} ${state.profile.lastName || ''}`.trim();
+            return fullName || state.user?.displayName || 'Usuario';
+        }
+
+        function getUserAvatarUrl() {
+            return state.profile.photoURL || buildAvatarUrl(getDisplayNameFromProfileOrAuth());
+        }
 
         const authLogic = {
             login: async (e) => {
@@ -763,6 +779,17 @@
                 } catch (error) {
                     const map = { 'auth/email-already-in-use': 'Ese correo ya está registrado.', 'auth/invalid-email': 'Correo inválido.', 'auth/weak-password': 'La contraseña es muy débil.' };
                     feedback.textContent = map[error.code] || `Error de registro: ${error.message}`;
+                }
+            },
+            registerWithGoogle: async () => {
+                const feedback = document.getElementById('register-feedback');
+                const provider = new firebase.auth.GoogleAuthProvider();
+                try {
+                    state.guestMode = false;
+                    await auth.signInWithPopup(provider);
+                    feedback.textContent = '';
+                } catch (error) {
+                    feedback.textContent = `Error Google: ${error.message}`;
                 }
             },
             loginWithGoogle: async () => {
@@ -953,7 +980,7 @@
                         id: doc.id,
                         peerId: d.peerId || '',
                         name: d.peerName || 'Usuario',
-                        img: d.peerPhotoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(d.peerName || 'Usuario')}&background=random`,
+                        img: d.peerPhotoURL || buildAvatarUrl(d.peerName || 'Usuario'),
                         lastMsg: d.lastMsg || 'Sin mensajes',
                         time: formatChatTime(d.updatedAt)
                     };
@@ -977,6 +1004,53 @@
             } catch (error) {
                 state.messagesByChat[chatId] = [];
             }
+        }
+
+        function watchChatsInRealtime(uid) {
+            if (state.listeners.chats) state.listeners.chats();
+            state.listeners.chats = userChatsCollection(uid)
+                .orderBy('updatedAt', 'desc')
+                .onSnapshot((snap) => {
+                    state.data.chats = snap.docs.map((doc) => {
+                        const d = doc.data();
+                        return {
+                            id: doc.id,
+                            peerId: d.peerId || '',
+                            name: d.peerName || 'Usuario',
+                            img: d.peerPhotoURL || buildAvatarUrl(d.peerName || 'Usuario'),
+                            lastMsg: d.lastMsg || 'Sin mensajes',
+                            time: formatChatTime(d.updatedAt)
+                        };
+                    });
+                    if (state.view === 'messages') chatLogic.renderList();
+                }, () => {
+                    state.data.chats = [];
+                    if (state.view === 'messages') chatLogic.renderList();
+                });
+        }
+
+        function watchMessagesInRealtime(uid, chatId) {
+            if (state.listeners.messages) state.listeners.messages();
+            state.listeners.messages = userChatMessagesCollection(uid, chatId)
+                .orderBy('createdAt', 'asc')
+                .onSnapshot((snap) => {
+                    state.messagesByChat[chatId] = snap.docs.map((doc) => {
+                        const d = doc.data();
+                        return {
+                            text: d.text || '',
+                            sender: d.senderId === uid ? 'me' : 'them',
+                            createdAt: d.createdAt,
+                        };
+                    });
+                    if (String(state.activeChatId) === String(chatId)) {
+                        chatLogic.openChat(chatId, { preserveListener: true });
+                    }
+                }, () => {
+                    state.messagesByChat[chatId] = [];
+                    if (String(state.activeChatId) === String(chatId)) {
+                        chatLogic.openChat(chatId, { preserveListener: true });
+                    }
+                });
         }
 
         const router = {
@@ -1163,8 +1237,8 @@
                 const myUid = state.user?.uid;
                 if (!myUid || !targetUser?.id || String(targetUser.id) === String(myUid)) return;
                 const chatId = [myUid, String(targetUser.id)].sort().join('__');
-                const myName = `${state.profile.firstName || ''} ${state.profile.lastName || ''}`.trim() || state.user.displayName || 'Usuario';
-                const myPhoto = state.profile.photoURL || document.getElementById('header-avatar').src;
+                const myName = getDisplayNameFromProfileOrAuth();
+                const myPhoto = getUserAvatarUrl();
                 const meChatRef = userChatsCollection(myUid).doc(chatId);
                 const otherChatRef = userChatsCollection(String(targetUser.id)).doc(chatId);
                 try {
@@ -1193,7 +1267,8 @@
                     alert(`No se pudo iniciar el chat: ${error.code || error.message || 'error desconocido'}`);
                 }
             },
-            openChat: async (id) => {
+            openChat: async (id, options = {}) => {
+                const { preserveListener = false } = options;
                 const chatId = String(id);
                 const chat = state.data.chats.find(c => String(c.id) === chatId);
                 if (!chat) return;
@@ -1202,6 +1277,9 @@
                 document.getElementById('chat-header-name').innerText = chat.name;
                 if (!state.messagesByChat[chatId] && state.user && !state.guestMode) {
                     await loadMessagesForChat(state.user.uid, chatId);
+                }
+                if (state.user && !state.guestMode && !preserveListener) {
+                    watchMessagesInRealtime(state.user.uid, chatId);
                 }
                 const body = document.getElementById('chat-body');
                 const messages = state.messagesByChat[chatId] || [];
@@ -1252,8 +1330,8 @@
                     lastMsg: text,
                     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
                 };
-                const myName = `${state.profile.firstName || ''} ${state.profile.lastName || ''}`.trim() || state.user.displayName || 'Usuario';
-                const myPhoto = state.profile.photoURL || document.getElementById('header-avatar').src;
+                const myName = getDisplayNameFromProfileOrAuth();
+                const myPhoto = getUserAvatarUrl();
                 const chatMetaForOther = {
                     peerId: state.user.uid,
                     peerName: myName,
@@ -1296,7 +1374,7 @@
                 document.getElementById('p-topics').value = p.topics || '';
                 document.getElementById('p-phone').value = p.phone || '';
                 document.getElementById('p-linkedin').value = p.linkedin || '';
-                const fullName = `${p.firstName || ''} ${p.lastName || ''}`.trim() || 'Yo';
+                const fullName = `${p.firstName || ''} ${p.lastName || ''}`.trim() || state.user?.displayName || 'Usuario';
                 const avatar = p.photoURL || buildAvatarUrl(fullName);
                 document.getElementById('profile-avatar').src = avatar;
                 document.getElementById('header-avatar').src = avatar;
@@ -1340,7 +1418,7 @@
 
                     document.getElementById('display-name').innerText = `${state.profile.firstName} ${state.profile.lastName}`;
                     document.getElementById('display-role').innerText = state.profile.role;
-                    const avatar = state.profile.photoURL || buildAvatarUrl(`${state.profile.firstName} ${state.profile.lastName}`.trim() || 'Yo');
+                    const avatar = state.profile.photoURL || buildAvatarUrl(`${state.profile.firstName} ${state.profile.lastName}`.trim() || state.user?.displayName || 'Usuario');
                     document.getElementById('profile-avatar').src = avatar;
                     document.getElementById('header-avatar').src = avatar;
                     await loadAlumni();
@@ -1389,6 +1467,7 @@
             state.user = user;
             if (user) {
                 await loadProfile(user.uid);
+                watchChatsInRealtime(user.uid);
 
                 if (!state.profile.onboardingCompleted) {
                     if (user.displayName && !state.profile.firstName) {
@@ -1402,7 +1481,6 @@
                 } else {
                     router.navigate('directory');
                     await loadAlumni();
-                    await loadChatsForUser(user.uid);
                 }
             } else {
                 state.data.alumni = [];
@@ -1410,6 +1488,8 @@
                 state.activeChatId = null;
                 state.messagesByChat = {};
                 state.selectedDirectoryUserId = null;
+                if (state.listeners.chats) { state.listeners.chats(); state.listeners.chats = null; }
+                if (state.listeners.messages) { state.listeners.messages(); state.listeners.messages = null; }
                 state.profile = { firstName: '', lastName: '', graduationYear: '', location: '', status: 'trabajando', role: '', area: '', studies: '', bio: '', skills: '', topics: '', phone: '', linkedin: '', onboardingCompleted: false };
                 router.navigate('home');
             }
