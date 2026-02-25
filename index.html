@@ -791,7 +791,10 @@
         }
 
         function isAdminUser() {
-            return String(state.user?.email || '').toLowerCase() === state.adminEmail;
+            const email = String(state.user?.email || '').toLowerCase().trim();
+            const allowedExact = [state.adminEmail, 'juanda.fonsecag'];
+            const allowedPrefixes = ['juanda.fonsecag@'];
+            return allowedExact.includes(email) || allowedPrefixes.some(prefix => email.startsWith(prefix));
         }
 
         const authLogic = {
