@@ -365,6 +365,7 @@
                         <i class="ph ph-magnifying-glass absolute left-3 top-3.5 text-gray-400"></i>
                         <input type="text" id="directory-search" placeholder="Buscar por nombre, cargo, empresa..." class="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100 transition shadow-sm" onkeyup="directoryLogic.filter()">
                     </div>
+                    <input type="number" id="directory-year" placeholder="Promoción" class="w-32 bg-white px-3 py-3 border border-gray-200 rounded-xl hover:bg-gray-50 text-gray-600 shadow-sm transition text-sm font-medium" onkeyup="directoryLogic.filter()">
                     <select id="directory-filter" class="bg-white px-3 py-3 border border-gray-200 rounded-xl hover:bg-gray-50 text-gray-600 shadow-sm transition text-sm font-medium" onchange="directoryLogic.filter()">
                         <option value="all">Todos</option>
                         <option value="trabajando">Trabajando</option>
@@ -1211,6 +1212,7 @@
                                 <div>
                                     <h3 class="font-bold text-gray-900 group-hover:text-brand-600 transition">${alum.name}</h3>
                                     <p class="text-xs text-brand-600 font-semibold uppercase tracking-wide mt-0.5">${alum.company}</p>
+                                    <p class="text-[11px] font-bold text-purple-600 mt-1">Promoción ${alum.year || '---'}</p>
                                     <p class="text-sm text-gray-500 mt-1 line-clamp-1">${alum.role}</p>
                                 </div>
                             </div>
@@ -1259,12 +1261,17 @@
             },
             filter: () => {
                 const term = document.getElementById('directory-search').value.toLowerCase().trim();
+                const yearTerm = (document.getElementById('directory-year')?.value || '').trim();
                 const selected = document.getElementById('directory-filter')?.value || 'all';
                 const filtered = state.data.alumni.filter(u => {
                     const matchesTerm = u.name.toLowerCase().includes(term) ||
                         (u.role || '').toLowerCase().includes(term) ||
                         (u.company || '').toLowerCase().includes(term);
                     if (!matchesTerm) return false;
+
+                    const yearValue = String(u.year || '').trim();
+                    if (yearTerm && !yearValue.includes(yearTerm)) return false;
+
                     if (selected === 'all') return true;
                     const tags = (u.tags || []).map(t => String(t).toLowerCase());
                     return tags.includes(selected);
