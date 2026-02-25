@@ -743,6 +743,11 @@
           .doc('data')
           .collection('alumni');
 
+        const newsCollection = artifactsRoot
+          .collection('public')
+          .doc('data')
+          .collection('news');
+
         const userChatsCollection = (uid) => artifactsRoot
           .collection('users')
           .doc(uid)
@@ -1058,6 +1063,30 @@
             return ts.toDate().toLocaleString('es-CO', { hour: '2-digit', minute: '2-digit' });
         }
 
+        function formatNewsDate(ts) {
+            if (!ts || typeof ts.toDate !== 'function') return 'Reciente';
+            return ts.toDate().toLocaleDateString('es-CO', { day: '2-digit', month: 'short' });
+        }
+
+        async function loadNews() {
+            try {
+                const snap = await newsCollection.orderBy('createdAt', 'desc').get();
+                state.data.news = snap.docs.map((doc) => {
+                    const d = doc.data();
+                    return {
+                        id: doc.id,
+                        title: d.title || 'Sin título',
+                        category: d.category || 'Noticia',
+                        date: formatNewsDate(d.createdAt),
+                        summary: d.summary || '',
+                        img: d.img || 'https://placehold.co/600x400/7e22ce/FFF?text=Noticia'
+                    };
+                });
+            } catch (error) {
+                // Si falla Firestore, mantenemos estado actual como fallback visual.
+            }
+        }
+
         async function loadChatsForUser(uid) {
             try {
                 const snap = await userChatsCollection(uid).orderBy('updatedAt', 'desc').get();
@@ -1283,6 +1312,10 @@
         const newsLogic = {
             render: () => {
                 const feed = document.getElementById('news-feed');
+                if (!state.data.news.length) {
+                    feed.innerHTML = '<div class="col-span-full bg-white rounded-2xl border border-gray-100 p-8 text-center text-sm text-gray-500">Aún no hay novedades publicadas.</div>';
+                    return;
+                }
                 feed.innerHTML = state.data.news.map((item, idx) => `
                     <div class="bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-lg transition cursor-pointer group" onclick="uiLogic.openNewsModal(${idx})">
                         <div class="h-48 overflow-hidden relative">
@@ -1359,15 +1392,23 @@
             },
             toggleUserStatus: async (uid, currentStatus) => {
                 const next = currentStatus === 'suspendido' ? 'activo' : 'suspendido';
-                await alumniCollection.doc(uid).set({ accountStatus: next, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
-                await loadAlumni();
-                adminLogic.renderUsers();
+                try {
+                    await alumniCollection.doc(uid).set({ accountStatus: next, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+                    await loadAlumni();
+                    adminLogic.renderUsers();
+                } catch (error) {
+                    alert(`No se pudo actualizar el estado del usuario: ${error.message}`);
+                }
             },
             removeUser: async (uid) => {
                 if (!confirm('¿Eliminar este usuario del directorio?')) return;
-                await alumniCollection.doc(uid).delete();
-                await loadAlumni();
-                adminLogic.renderUsers();
+                try {
+                    await alumniCollection.doc(uid).delete();
+                    await loadAlumni();
+                    adminLogic.renderUsers();
+                } catch (error) {
+                    alert(`No se pudo eliminar el usuario: ${error.message}`);
+                }
             },
             renderNewsList: () => {
                 const list = document.getElementById('admin-news-list');
@@ -1387,25 +1428,43 @@
                             <h4 class="font-bold text-gray-900">${item.title}</h4>
                             <p class="text-sm text-gray-500 line-clamp-1 mt-1">${item.summary}</p>
                         </div>
-                        <button onclick="adminLogic.deleteNews(${idx})" class="p-3 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-xl transition shrink-0" title="Eliminar noticia"><i class="ph-bold ph-trash text-xl"></i></button>
+                        <button onclick="adminLogic.deleteNews('${item.id}')" class="p-3 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-xl transition shrink-0" title="Eliminar noticia"><i class="ph-bold ph-trash text-xl"></i></button>
                     </div>
                 `).join('');
             },
-            addNews: (e) => {
+            addNews: async (e) => {
                 e.preventDefault();
                 const title = document.getElementById('admin-news-title').value.trim();
                 const category = document.getElementById('admin-news-category').value.trim();
                 const summary = document.getElementById('admin-news-summary').value.trim();
                 const img = document.getElementById('admin-news-img').value.trim() || 'https://placehold.co/600x400/7e22ce/FFF?text=Noticia';
-                state.data.news.unshift({ id: Date.now(), title, category, date: 'Ahora', summary, img });
-                newsLogic.render();
-                adminLogic.renderNewsList();
-                e.target.reset();
+                try {
+                    await newsCollection.add({
+                        title,
+                        category,
+                        summary,
+                        img,
+                        createdBy: state.user?.email || '',
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    await loadNews();
+                    newsLogic.render();
+                    adminLogic.renderNewsList();
+                    e.target.reset();
+                } catch (error) {
+                    alert(`No se pudo publicar la noticia: ${error.message}`);
+                }
             },
-            deleteNews: (idx) => {
-                state.data.news.splice(idx, 1);
-                newsLogic.render();
-                adminLogic.renderNewsList();
+            deleteNews: async (id) => {
+                if (!confirm('¿Eliminar esta noticia?')) return;
+                try {
+                    await newsCollection.doc(String(id)).delete();
+                    await loadNews();
+                    newsLogic.render();
+                    adminLogic.renderNewsList();
+                } catch (error) {
+                    alert(`No se pudo eliminar la noticia: ${error.message}`);
+                }
             },
             render: async () => {
                 if (!isAdminUser()) {
@@ -1413,6 +1472,7 @@
                     return;
                 }
                 if (!state.data.alumni.length) await loadAlumni();
+                await loadNews();
                 adminLogic.renderUsers();
                 adminLogic.renderNewsList();
                 adminLogic.switchTab(state.adminTab || 'users');
@@ -1664,7 +1724,7 @@
                 document.getElementById('news-modal-cat').innerText = item.category;
                 document.getElementById('news-modal-title').innerText = item.title;
                 document.getElementById('news-modal-date').innerText = item.date;
-                document.getElementById('news-modal-body').innerText = item.summary + " Aquí iría el contenido completo del artículo, descripción detallada del evento o requisitos de la vacante...";
+                document.getElementById('news-modal-body').innerText = item.summary || 'Sin contenido adicional.';
                 document.getElementById('modal-news').classList.remove('hidden');
             },
             closeNewsModal: () => document.getElementById('modal-news').classList.add('hidden'),
@@ -1706,6 +1766,7 @@
                 } else {
                     router.navigate('directory');
                     await loadAlumni();
+                    await loadNews();
                 }
             } else {
                 if (adminBtn) adminBtn.classList.add('hidden');
@@ -1723,6 +1784,7 @@
 
         document.addEventListener('DOMContentLoaded', () => {
             router.navigate('home');
+            loadNews();
         });
 
     </script>
