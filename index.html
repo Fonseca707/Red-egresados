@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AlumniConnect | Red de Egresados</title>
+    <title>Sinapsis | Ecosistema de Egresados</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -19,7 +19,9 @@
                 extend: {
                     fontFamily: { sans: ['"Plus Jakarta Sans"', 'sans-serif'] },
                     colors: { 
-                        brand: { 50: '#faf5ff', 100: '#f3e8ff', 200: '#e9d5ff', 300: '#d8b4fe', 400: '#c084fc', 500: '#a855f7', 600: '#9333ea', 700: '#7e22ce', 800: '#6b21a8', 900: '#581c87', 950: '#3b0764' }
+                        brand: { 50: '#f0fdf4', 100: '#dcfce7', 200: '#bbf7d0', 300: '#86efac', 400: '#4ade80', 500: '#22c55e', 600: '#16a34a', 700: '#15803d', 800: '#166534', 900: '#14532d', 950: '#052e16' },
+                        stone: { 50: '#fafaf9', 100: '#f5f5f4', 200: '#e7e5e4', 300: '#d6d3d1', 400: '#a8a29e', 500: '#78716c', 600: '#57534e', 700: '#44403c', 800: '#292524', 900: '#1c1917' },
+                        sun: { 50: '#fffbeb', 100: '#fef3c7', 200: '#fde68a', 400: '#fbbf24', 500: '#f59e0b', 600: '#d97706' }
                     },
                     animation: {
                         'fade-in': 'fadeIn 0.3s ease-out',
@@ -37,36 +39,37 @@
     </script>
 
     <style>
-        .glass-nav { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(16px); border-bottom: 1px solid rgba(229, 231, 235, 0.5); }
+        body { background-color: #fafaf9; }
+        .glass-nav { background: rgba(250, 250, 249, 0.85); backdrop-filter: blur(16px); border-bottom: 1px solid rgba(231, 229, 228, 0.6); }
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        .section-card { @apply bg-white p-6 md:p-8 rounded-[2rem] border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] mb-6 transition-all hover:shadow-[0_12px_40px_rgb(147,51,234,0.06)]; }
-        .input-label { @apply text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 block; }
-        .input-field { @apply w-full px-4 py-3.5 bg-gray-50/50 border border-gray-200 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/20 focus:border-brand-500 focus:bg-white transition-all text-sm font-medium; }
+        .section-card { @apply bg-white p-6 md:p-8 rounded-[2rem] border border-stone-100 shadow-[0_8px_30px_rgb(20,83,45,0.03)] mb-6 transition-all hover:shadow-[0_12px_40px_rgb(22,163,74,0.08)]; }
+        .input-label { @apply text-xs font-bold text-stone-500 uppercase tracking-wider mb-2 block; }
+        .input-field { @apply w-full px-4 py-3.5 bg-stone-50/50 border border-stone-200 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/20 focus:border-brand-500 focus:bg-white transition-all text-sm font-medium; }
         
         /* Chat bubbles */
         .chat-bubble { max-width: 75%; padding: 0.875rem 1.25rem; border-radius: 1.25rem; position: relative; font-size: 0.95rem; line-height: 1.5; box-shadow: 0 2px 10px rgba(0,0,0,0.02); }
-        .chat-me { background: linear-gradient(135deg, #9333ea 0%, #7e22ce 100%); color: white; border-bottom-right-radius: 0.25rem; margin-left: auto; }
-        .chat-them { background-color: #f3f4f6; color: #1f2937; border-bottom-left-radius: 0.25rem; margin-right: auto; }
-        .detail-row { @apply flex items-start gap-3 py-3 border-b border-gray-50 last:border-0; }
+        .chat-me { background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%); color: white; border-bottom-right-radius: 0.25rem; margin-left: auto; }
+        .chat-them { background-color: #f5f5f4; color: #292524; border-bottom-left-radius: 0.25rem; margin-right: auto; }
+        .detail-row { @apply flex items-start gap-3 py-3 border-b border-stone-100 last:border-0; }
         .detail-icon { @apply w-10 h-10 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center shrink-0 text-xl shadow-sm; }
         #profileForm .input-field { @apply bg-white border-brand-100 shadow-sm; }
     </style>
 </head>
-<body class="bg-gray-50 text-gray-800 font-sans h-screen flex flex-col overflow-hidden">
+<body class="text-stone-800 font-sans h-screen flex flex-col overflow-hidden">
 
     <!-- 1. NOTIFICACIONES & NAVBAR -->
     <nav class="glass-nav fixed w-full z-40 top-0 h-16 flex items-center justify-between px-4 lg:px-8 shadow-sm">
         <div class="flex items-center gap-3 cursor-pointer" onclick="router.navigate('home')">
-            <div class="w-8 h-8 bg-gradient-to-br from-brand-600 to-brand-500 rounded-lg flex items-center justify-center text-white font-bold shadow-md shadow-brand-500/30">A</div>
-            <span class="font-bold text-xl tracking-tight text-gray-900">Alumni<span class="text-brand-600">Connect</span></span>
+            <div class="w-8 h-8 bg-gradient-to-br from-brand-600 to-brand-500 rounded-lg flex items-center justify-center text-white font-bold shadow-md shadow-brand-500/30">S</div>
+            <span class="font-bold text-xl tracking-tight text-gray-900">Sinap<span class="text-brand-600">sis</span></span>
         </div>
 
         <div class="hidden md:flex items-center gap-6" id="nav-links">
-            <button onclick="router.navigate('home')" class="text-gray-500 hover:text-brand-600 font-medium transition" id="nav-home">Inicio</button>
-            <button onclick="router.navigate('directory')" class="text-gray-500 hover:text-brand-600 font-medium transition" id="nav-dir">Directorio</button>
+            <button onclick="router.navigate('home')" class="text-gray-500 hover:text-brand-600 font-medium transition" id="nav-home">Ecosistema</button>
+            <button onclick="router.navigate('directory')" class="text-gray-500 hover:text-brand-600 font-medium transition" id="nav-dir">Comunidad</button>
             <button onclick="router.navigate('news')" class="text-gray-500 hover:text-brand-600 font-medium transition" id="nav-news">Novedades</button>
-            <button onclick="router.navigate('messages')" class="text-gray-500 hover:text-brand-600 font-medium transition" id="nav-msg">Mensajes</button>
+            <button onclick="router.navigate('messages')" class="text-gray-500 hover:text-brand-600 font-medium transition" id="nav-msg">Conexiones</button>
             <button onclick="router.navigate('admin')" class="hidden text-gray-500 hover:text-brand-600 font-medium transition" id="nav-admin">Admin</button>
         </div>
 
@@ -101,17 +104,17 @@
                         Plataforma Oficial de Egresados
                     </div>
                     <h1 class="text-4xl md:text-5xl lg:text-6xl font-extrabold text-gray-900 mb-6 tracking-tight leading-tight">
-                        Tu conexión con el <br class="hidden lg:block"><span class="text-brand-600">éxito profesional.</span>
+                        Cultiva tu red. <br class="hidden lg:block"><span class="text-brand-600">Cosecha tu futuro.</span>
                     </h1>
                     <p class="text-lg md:text-xl text-gray-500 mb-10 max-w-2xl mx-auto lg:mx-0 leading-relaxed">
                         Únete a la red global de nuestra institución. Expande tu red de contactos, encuentra mentores líderes en la industria y descubre oportunidades exclusivas diseñadas para ti.
                     </p>
                     <div class="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
                         <button onclick="uiLogic.toggleAuthModal()" class="px-8 py-4 bg-brand-600 text-white font-bold rounded-xl shadow-lg shadow-brand-500/30 hover:bg-brand-700 hover:-translate-y-1 transition transform flex items-center justify-center gap-2 text-lg">
-                            Crear mi cuenta <i class="ph-bold ph-arrow-right"></i>
+                            Plantar semilla <i class="ph-bold ph-arrow-right"></i>
                         </button>
                         <button onclick="router.navigate('directory')" class="px-8 py-4 bg-white text-gray-700 font-bold rounded-xl border border-gray-200 hover:bg-gray-50 hover:shadow-sm transition flex items-center justify-center gap-2 text-lg">
-                            <i class="ph-bold ph-magnifying-glass"></i> Explorar Directorio
+                            <i class="ph-bold ph-magnifying-glass"></i> Explorar la jungla
                         </button>
                     </div>
 
@@ -206,20 +209,20 @@
 
             <section class="pb-16">
                 <div class="bg-gradient-to-b from-gray-50 to-gray-100 rounded-3xl p-10 md:p-16 text-center border border-gray-200 shadow-inner">
-                    <h2 class="text-3xl md:text-4xl font-extrabold text-gray-900 mb-4">¿Listo para reconectar?</h2>
+                    <h2 class="text-3xl md:text-4xl font-extrabold text-gray-900 mb-4">¿Listo para integrarte al ecosistema?</h2>
                     <p class="text-lg text-gray-600 mb-8 max-w-2xl mx-auto">No pierdas la oportunidad de ser parte de la comunidad de profesionales más activa. El registro te tomará menos de 2 minutos.</p>
                     <button onclick="uiLogic.toggleAuthModal()" class="px-10 py-4 bg-gray-900 text-white text-lg font-bold rounded-xl shadow-xl hover:bg-black transition transform hover:scale-105">
-                        Comenzar ahora
+                        Dar el primer paso
                     </button>
                 </div>
             </section>
 
             <footer class="border-t border-gray-200 pt-8 pb-4 text-center text-gray-500 text-sm mt-auto">
                 <div class="flex justify-center items-center gap-2 mb-3">
-                    <div class="w-7 h-7 bg-brand-600 rounded-lg flex items-center justify-center text-white font-bold text-xs">A</div>
-                    <span class="font-bold text-lg tracking-tight text-gray-900">Alumni<span class="text-brand-600">Connect</span></span>
+                    <div class="w-7 h-7 bg-brand-600 rounded-lg flex items-center justify-center text-white font-bold text-xs">S</div>
+                    <span class="font-bold text-lg tracking-tight text-gray-900">Sinap<span class="text-brand-600">sis</span></span>
                 </div>
-                <p>&copy; 2026 Red oficial de Egresados. Todos los derechos reservados.</p>
+                <p>&copy; 2026 Ecosistema Sinapsis. Fluyendo de forma natural.</p>
             </footer>
 
         </div>
@@ -229,8 +232,8 @@
             <div class="bg-white p-8 md:p-10 rounded-[2.5rem] shadow-[0_20px_50px_rgb(0,0,0,0.08)] border border-gray-100 w-full max-w-md relative overflow-hidden">
                 <div class="absolute top-0 right-0 w-40 h-40 bg-brand-50 rounded-bl-full -z-10 opacity-70"></div>
                 <div class="text-center mb-8">
-                    <div class="w-14 h-14 bg-brand-600 rounded-2xl flex items-center justify-center text-white text-3xl font-bold mx-auto mb-4 shadow-lg shadow-brand-500/30">A</div>
-                    <h1 class="text-2xl font-bold text-gray-900">Bienvenido de nuevo</h1>
+                    <div class="w-14 h-14 bg-brand-600 rounded-2xl flex items-center justify-center text-white text-3xl font-bold mx-auto mb-4 shadow-lg shadow-brand-500/30">S</div>
+                    <h1 class="text-2xl font-bold text-gray-900">Hola de nuevo</h1>
                     <p class="text-gray-500 text-sm mt-2">Red exclusiva de egresados</p>
                 </div>
                 
@@ -253,7 +256,7 @@
                 <p id="auth-feedback" class="text-xs text-gray-500 mt-3 text-center"></p>
                 
                 <div class="mt-8 text-center border-t border-gray-100 pt-6 space-y-2">
-                    <button onclick="authLogic.registerWithEmail()" class="text-sm text-brand-600 font-bold hover:underline">Crear cuenta con email</button>
+                    <button onclick="authLogic.registerWithEmail()" class="text-sm text-brand-600 font-bold hover:underline">Planta tu semilla con email</button>
                     <button onclick="authLogic.browseAsGuest()" class="block w-full text-sm text-gray-600 font-semibold hover:text-brand-600 transition">Revisar la red como invitado</button>
                 </div>
             </div>
@@ -263,9 +266,9 @@
         <div id="view-register" class="hidden min-h-[80vh] flex items-center justify-center animate-fade-in">
             <div class="bg-white p-8 md:p-10 rounded-[2.5rem] shadow-[0_20px_50px_rgb(0,0,0,0.08)] border border-gray-100 w-full max-w-md relative overflow-hidden">
                 <div class="text-center mb-8">
-                    <div class="w-14 h-14 bg-brand-600 rounded-2xl flex items-center justify-center text-white text-3xl font-bold mx-auto mb-4 shadow-lg shadow-brand-500/30">A</div>
-                    <h1 class="text-2xl font-bold text-gray-900">Crear cuenta</h1>
-                    <p class="text-gray-500 text-sm mt-2">Primer ingreso a AlumniConnect</p>
+                    <div class="w-14 h-14 bg-brand-600 rounded-2xl flex items-center justify-center text-white text-3xl font-bold mx-auto mb-4 shadow-lg shadow-brand-500/30">S</div>
+                    <h1 class="text-2xl font-bold text-gray-900">Planta tu semilla</h1>
+                    <p class="text-gray-500 text-sm mt-2">Comienza tu viaje en Sinapsis</p>
                 </div>
 
                 <form onsubmit="authLogic.submitRegister(event)" class="space-y-4">
@@ -292,7 +295,7 @@
                         <span>Deseo recibir novedades de la red de egresados.</span>
                     </label>
 
-                    <button type="submit" class="w-full py-3.5 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-xl shadow-lg shadow-brand-500/30 transition">Crear cuenta</button>
+                    <button type="submit" class="w-full py-3.5 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-xl shadow-lg shadow-brand-500/30 transition">Planta tu semilla</button>
                 </form>
                 <button onclick="authLogic.registerWithGoogle()" class="w-full py-3.5 mt-3 bg-white text-gray-700 font-bold rounded-xl border border-gray-200 hover:bg-gray-50 transition flex items-center justify-center gap-2">
                     <i class="ph ph-google-logo"></i> Registrarme con Google
@@ -582,7 +585,7 @@
         <div id="view-admin" class="hidden w-full max-w-7xl mx-auto pb-10 animate-fade-in">
             <div class="mb-8">
                 <h2 class="text-3xl font-bold text-gray-900 tracking-tight flex items-center gap-3">
-                    <i class="ph-bold ph-shield-star text-brand-600"></i> Panel de Administración
+                    <i class="ph-bold ph-shield-star text-brand-600"></i> Gestión del Ecosistema
                 </h2>
                 <p class="text-gray-500 mt-1 text-sm">Gestiona la comunidad y el contenido de la plataforma.</p>
             </div>
