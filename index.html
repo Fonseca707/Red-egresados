@@ -372,6 +372,7 @@
                         <option value="estudiando">Estudiando</option>
                         <option value="emprendiendo">Emprendiendo</option>
                         <option value="trabajando-estudiando">Trabajando y estudiando</option>
+                        <option value="profesor">Profesor</option>
                     </select>
                 </div>
             </div>
@@ -505,6 +506,7 @@
                                         <option value="estudiando">Estudiando</option>
                                         <option value="trabajando-estudiando">Trabajando y estudiando</option>
                                         <option value="emprendiendo">Emprendiendo</option>
+                                        <option value="profesor">Profesor</option>
                                     </select>
                                 </div>
                                 <div>
@@ -1014,7 +1016,12 @@
         }
 
         function buildAvatarUrl(name = 'Usuario') {
-            return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=9333ea&color=fff`;
+            const palette = ['9333ea', '2563eb', 'db2777', '0d9488', 'ea580c', '4f46e5', '16a34a', '0891b2'];
+            const seed = String(name || 'Usuario').toLowerCase().trim();
+            let hash = 0;
+            for (let i = 0; i < seed.length; i++) hash = (hash * 31 + seed.charCodeAt(i)) >>> 0;
+            const background = palette[hash % palette.length];
+            return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=${background}&color=fff`;
         }
 
         async function loadProfile(uid) {
