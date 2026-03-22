@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AlumniConnect | Red de Egresados</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  <script>
+    tailwind.config = {
+      theme: { extend: { fontFamily: { sans: ['"Plus Jakarta Sans"', 'sans-serif'] }, colors: { brand: { 500: '#3b82f6', 600: '#2563eb', 900: '#1e3a8a' } } } }
+    };
+  </script>
+  <style>
+    .glass-nav { background: rgba(255,255,255,.95); backdrop-filter: blur(12px); border-bottom: 1px solid #e5e7eb; }
+    .chat-bubble { max-width: 75%; padding: .75rem 1rem; border-radius: 1rem; font-size: .95rem; }
+    .chat-me { background:#2563eb; color:white; border-bottom-right-radius:.25rem; margin-left:auto; }
+    .chat-them { background:#f3f4f6; color:#1f2937; border-bottom-left-radius:.25rem; margin-right:auto; }
+  </style>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans h-screen flex flex-col overflow-hidden">
+  <nav class="glass-nav fixed w-full z-40 top-0 h-16 flex items-center justify-between px-4 lg:px-8">
+    <button class="flex items-center gap-3" onclick="ui.events.goLogo()" aria-label="Ir al inicio">
+      <div class="w-8 h-8 bg-brand-600 rounded-lg flex items-center justify-center text-white font-bold">A</div>
+      <span class="font-bold text-xl tracking-tight text-gray-900">Alumni<span class="text-brand-600">Connect</span></span>
+    </button>
+    <div class="hidden md:flex items-center gap-6" id="nav-links"></div>
+    <div class="flex items-center gap-4">
+      <div class="relative">
+        <button onclick="ui.events.toggleNotifications()" class="relative p-2 text-gray-500 hover:bg-gray-100 rounded-full transition" aria-haspopup="true" aria-controls="notif-panel" aria-expanded="false" id="notif-toggle-btn">
+          <i class="ph ph-bell text-xl"></i>
+          <span id="notif-badge" class="absolute top-1 right-1 h-2.5 w-2.5 bg-red-500 rounded-full border-2 border-white"></span>
+        </button>
+        <div id="notif-panel" class="hidden absolute right-0 mt-3 w-80 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden z-50" role="dialog" aria-label="Panel de notificaciones">
+          <div class="p-3 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
+            <span class="font-semibold text-sm">Notificaciones</span>
+            <button class="text-xs text-brand-600" onclick="ui.events.markAllNotificationsRead()">Marcar leídas</button>
+          </div>
+          <div id="notif-list" class="max-h-64 overflow-y-auto"></div>
+        </div>
+      </div>
+      <button onclick="app.navigate('profile')" class="h-9 w-9 rounded-full bg-gray-200 overflow-hidden ring-2 ring-transparent hover:ring-brand-200" aria-label="Ir a perfil">
+        <img src="https://i.pravatar.cc/150?u=me" alt="Perfil" class="object-cover w-full h-full" />
+      </button>
+    </div>
+  </nav>
+
+  <div id="approval-banner" class="hidden mt-16 bg-amber-50 border-b border-amber-200 px-4 py-3 text-amber-900 text-sm text-center"></div>
+  <div id="global-feedback" class="hidden fixed top-20 right-4 z-50 px-4 py-2 rounded-lg text-sm shadow-lg"></div>
+
+  <main class="flex-1 pt-20 pb-8 px-4 overflow-y-auto">
+    <section id="view-auth" class="min-h-[80vh] flex items-center justify-center">
+      <div class="bg-white p-8 rounded-2xl shadow-xl border border-gray-100 w-full max-w-md space-y-4">
+        <div class="text-center">
+          <div class="w-12 h-12 bg-brand-600 rounded-xl flex items-center justify-center text-white text-2xl font-bold mx-auto mb-4">A</div>
+          <h1 class="text-2xl font-bold text-gray-900">Bienvenido de nuevo</h1>
+          <p class="text-sm text-gray-500 mt-2">Usuario demo: <strong>demo@universidad.edu</strong> / <strong>123456</strong></p>
+        </div>
+        <form onsubmit="ui.events.login(event)" class="space-y-3" aria-label="Formulario de acceso">
+          <label for="auth-email" class="text-xs font-semibold text-gray-600">Correo institucional</label>
+          <input id="auth-email" type="email" required placeholder="tu.nombre@universidad.edu" class="w-full px-4 py-3 rounded-lg border border-gray-200" />
+          <label for="auth-pass" class="text-xs font-semibold text-gray-600">Contraseña</label>
+          <input id="auth-pass" type="password" required placeholder="••••••••" class="w-full px-4 py-3 rounded-lg border border-gray-200" />
+          <button id="btn-login" type="submit" class="w-full py-3 bg-brand-600 hover:bg-brand-700 text-white font-semibold rounded-lg">Ingresar</button>
+          <button type="button" onclick="ui.events.quickDemoLogin()" class="w-full py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg text-sm">Entrar con demo</button>
+          <p id="auth-error" class="text-sm text-red-600 hidden" role="alert"></p>
+        </form>
+      </div>
+    </section>
+
+    <section id="view-home" class="hidden max-w-6xl mx-auto space-y-6">
+      <div class="bg-white rounded-2xl border p-6 md:p-10">
+        <p class="text-xs uppercase tracking-wide text-brand-600 font-semibold">Red de Egresados</p>
+        <h2 class="text-3xl font-bold mt-2">Bienvenido a AlumniConnect</h2>
+        <p class="text-gray-600 mt-3 max-w-3xl">Conecta con egresados, explora oportunidades, comparte novedades y mantén tu red profesional activa desde un solo lugar.</p>
+        <div class="mt-6 flex flex-wrap gap-3">
+          <button onclick="app.navigate('directory')" class="px-4 py-2 bg-brand-600 text-white rounded-lg">Ir al Directorio</button>
+          <button onclick="app.navigate('messages')" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg">Abrir Mensajes</button>
+          <button onclick="app.navigate('news')" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg">Ver Novedades</button>
+        </div>
+      </div>
+
+      <div class="grid md:grid-cols-3 gap-4">
+        <article class="bg-white border rounded-xl p-5">
+          <h3 class="font-semibold">Directorio activo</h3>
+          <p class="text-sm text-gray-600 mt-2">Encuentra egresados por nombre, ubicación, habilidades e intereses.</p>
+        </article>
+        <article class="bg-white border rounded-xl p-5">
+          <h3 class="font-semibold">Mensajería 1:1</h3>
+          <p class="text-sm text-gray-600 mt-2">Conversa y mantén seguimiento con tus conexiones profesionales.</p>
+        </article>
+        <article class="bg-white border rounded-xl p-5">
+          <h3 class="font-semibold">Novedades</h3>
+          <p class="text-sm text-gray-600 mt-2">Consulta eventos, empleos y anuncios institucionales.</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="view-directory" class="hidden max-w-6xl mx-auto space-y-4">
+      <div class="flex flex-col md:flex-row justify-between items-end gap-3">
+        <div><h2 class="text-2xl font-bold">Directorio de Egresados</h2><p class="text-gray-500 text-sm">Buscar y conectar con la red.</p></div>
+        <label for="directory-search" class="sr-only">Buscar en directorio</label>
+        <input id="directory-search" type="text" class="w-full md:w-72 px-4 py-2 rounded-lg border" placeholder="Buscar por nombre o empresa..." oninput="ui.events.searchDirectory(this.value)" />
+      </div>
+      <div id="directory-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5"></div>
+      <div id="directory-empty" class="hidden text-center py-16 text-gray-500">No hay resultados con esos filtros.</div>
+    </section>
+
+    <section id="view-news" class="hidden max-w-4xl mx-auto space-y-4">
+      <h2 class="text-2xl font-bold">Novedades</h2>
+      <div class="flex flex-col md:flex-row gap-2">
+        <label for="news-search" class="sr-only">Buscar novedades</label>
+        <input id="news-search" type="text" class="flex-1 px-4 py-2 rounded-lg border" placeholder="Buscar novedades..." oninput="ui.events.searchNews(this.value)" />
+        <label for="news-category" class="sr-only">Filtrar por categoría</label>
+        <select id="news-category" class="px-4 py-2 rounded-lg border" onchange="ui.events.filterNews(this.value)">
+          <option value="all">Todo</option><option value="Evento">Evento</option><option value="Empleo">Empleo</option><option value="Institucional">Institucional</option>
+        </select>
+      </div>
+      <div id="admin-news-editor" class="hidden bg-white border rounded-xl p-4 space-y-2" aria-label="Editor de noticias admin">
+        <h3 class="font-bold">Administrar novedad (admin)</h3>
+        <label for="news-title" class="text-xs text-gray-600">Título</label>
+        <input id="news-title" class="w-full border rounded-lg px-3 py-2" placeholder="Título" />
+        <label for="news-summary" class="text-xs text-gray-600">Resumen</label>
+        <input id="news-summary" class="w-full border rounded-lg px-3 py-2" placeholder="Resumen" />
+        <label for="news-type" class="text-xs text-gray-600">Tipo</label>
+        <select id="news-type" class="w-full border rounded-lg px-3 py-2"><option>Evento</option><option>Empleo</option><option>Institucional</option></select>
+        <div class="flex gap-2"><button id="btn-save-news" onclick="ui.events.saveNews()" class="px-3 py-2 bg-brand-600 text-white rounded-lg">Guardar</button><button onclick="ui.events.cancelEditNews()" class="px-3 py-2 bg-gray-100 rounded-lg">Cancelar</button></div>
+      </div>
+      <div id="news-feed" class="space-y-3"></div>
+    </section>
+
+    <section id="view-messages" class="hidden h-[85vh] max-w-6xl mx-auto bg-white rounded-2xl border overflow-hidden flex">
+      <div class="w-full md:w-1/3 border-r flex flex-col"><div class="p-4 border-b"><h2 class="text-lg font-bold">Mensajes</h2></div><div id="chat-list" class="flex-1 overflow-y-auto"></div></div>
+      <div id="active-chat-container" class="hidden md:flex flex-1 flex-col">
+        <div class="p-4 border-b"><h3 id="chat-header-name" class="font-bold"></h3></div>
+        <div id="chat-body" class="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50"></div>
+        <div class="p-4 border-t bg-white"><form onsubmit="ui.events.sendMessage(event)" class="flex gap-2"><label for="chat-input" class="sr-only">Escribe un mensaje</label><input id="chat-input" class="flex-1 bg-gray-100 rounded-full px-4 py-2.5" placeholder="Escribe un mensaje" /><button id="btn-send-message" class="p-2.5 bg-brand-600 text-white rounded-full" type="submit"><i class="ph-fill ph-paper-plane-right"></i></button></form></div>
+      </div>
+      <div id="no-chat-selected" class="hidden md:flex flex-1 items-center justify-center text-gray-500">Selecciona una conversación</div>
+    </section>
+
+    <section id="view-profile" class="hidden max-w-4xl mx-auto">
+      <div class="bg-white rounded-2xl border p-6 space-y-6">
+        <h2 class="text-xl font-bold">Información personal y profesional</h2>
+
+        <div class="grid md:grid-cols-3 gap-3">
+          <div>
+            <label for="p-fullName" class="text-xs text-gray-600">Nombre y apellido</label>
+            <input id="p-fullName" class="w-full p-3 bg-gray-50 rounded-lg border" />
+          </div>
+          <div>
+            <label for="p-promotion" class="text-xs text-gray-600">Promoción de graduación</label>
+            <input id="p-promotion" class="w-full p-3 bg-gray-50 rounded-lg border" placeholder="Promoción 2020" />
+          </div>
+          <div>
+            <label for="p-location" class="text-xs text-gray-600">Ciudad y país donde vive</label>
+            <input id="p-location" class="w-full p-3 bg-gray-50 rounded-lg border" />
+          </div>
+        </div>
+
+        <div>
+          <h3 class="font-semibold mb-2">Perfil académico</h3>
+          <div class="grid md:grid-cols-2 gap-3">
+            <div>
+              <label for="p-currentSituation" class="text-xs text-gray-600">Situación actual</label>
+              <select id="p-currentSituation" class="w-full p-3 bg-gray-50 rounded-lg border">
+                <option value="estudiando">Estudiando</option>
+                <option value="trabajando">Trabajando</option>
+                <option value="estudiando y trabajando">Estudiando y trabajando</option>
+                <option value="emprendiendo">Emprendiendo</option>
+              </select>
+            </div>
+            <div>
+              <label for="p-interestArea" class="text-xs text-gray-600">Área de interés</label>
+              <input id="p-interestArea" class="w-full p-3 bg-gray-50 rounded-lg border" />
+            </div>
+            <div>
+              <label for="p-studies" class="text-xs text-gray-600">Estudios actuales o finalizados</label>
+              <input id="p-studies" class="w-full p-3 bg-gray-50 rounded-lg border" />
+            </div>
+            <div>
+              <label for="p-mainRole" class="text-xs text-gray-600">Puesto actual o rol principal</label>
+              <input id="p-mainRole" class="w-full p-3 bg-gray-50 rounded-lg border" />
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h3 class="font-semibold mb-2">Especialización</h3>
+          <div class="space-y-3">
+            <div>
+              <label for="p-conciseProfile" class="text-xs text-gray-600">Descripción concisa del perfil</label>
+              <textarea id="p-conciseProfile" rows="3" class="w-full p-3 bg-gray-50 rounded-lg border"></textarea>
+            </div>
+            <div>
+              <label for="p-keySkills" class="text-xs text-gray-600">Habilidades claves</label>
+              <input id="p-keySkills" class="w-full p-3 bg-gray-50 rounded-lg border" placeholder="Separar por comas" />
+            </div>
+            <div>
+              <label for="p-connectTopics" class="text-xs text-gray-600">Temas en los que le interesa conectar</label>
+              <input id="p-connectTopics" class="w-full p-3 bg-gray-50 rounded-lg border" placeholder="Separar por comas" />
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h3 class="font-semibold mb-2">Redes de contacto y celular</h3>
+          <div class="grid md:grid-cols-2 gap-3">
+            <div>
+              <label for="p-contactNetworks" class="text-xs text-gray-600">Redes de contacto</label>
+              <input id="p-contactNetworks" class="w-full p-3 bg-gray-50 rounded-lg border" placeholder="LinkedIn, GitHub, etc." />
+            </div>
+            <div>
+              <label for="p-phone" class="text-xs text-gray-600">Número de celular</label>
+              <input id="p-phone" class="w-full p-3 bg-gray-50 rounded-lg border" />
+            </div>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-3">
+          <button onclick="ui.events.saveProfile()" class="bg-brand-600 text-white px-4 py-2 rounded-lg">Guardar cambios</button>
+          <button id="status-toggle-btn" onclick="ui.events.toggleAccountStatus()" class="text-xs px-3 py-1 bg-green-100 text-green-700 rounded-full font-bold">Aprobado</button>
+          <button onclick="ui.events.logout()" class="text-red-500">Cerrar sesión</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // Interfaces esperadas (contrato): IAuthRepo, IUserRepo, INewsRepo, IChatRepo, INotificationRepo
+    const utils = {
+      now: () => new Date().toISOString(),
+      id: p => `${p}_${Math.random().toString(36).slice(2, 10)}`,
+      save: (k, v) => localStorage.setItem(k, JSON.stringify(v)),
+      load: (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } }
+    };
+
+    const models = {
+      user: x => !!(x?.id && x?.name && x?.email && ['pending', 'approved', 'admin'].includes(x.status)),
+      profile: x => !!(x?.userId && x?.fullName && x?.promotion && x?.location && x?.currentSituation),
+      post: x => !!(x?.id && x?.title && x?.category && x?.summary),
+      chat: x => !!(x?.id && Array.isArray(x?.participants) && x.participants.length === 2),
+      message: x => !!(x?.id && x?.chatId && x?.senderId && x?.text),
+      notification: x => !!(x?.id && x?.userId && x?.type)
+    };
+
+    const seed = {
+      users: [
+        { id: 'u_demo', name: 'Usuario Demo', email: 'demo@universidad.edu', password: '123456', status: 'approved', role: 'alumni' },
+        { id: 'u_admin', name: 'Admin Alumni', email: 'admin@universidad.edu', password: '123456', status: 'admin', role: 'admin' },
+        { id: 'u_sofia', name: 'Sofia Ramirez', email: 'sofia@universidad.edu', password: '123456', status: 'approved', role: 'alumni' },
+        { id: 'u_carlos', name: 'Carlos Mendez', email: 'carlos@universidad.edu', password: '123456', status: 'approved', role: 'alumni' },
+        { id: 'u_pend', name: 'Laura Torres', email: 'laura@universidad.edu', password: '123456', status: 'pending', role: 'alumni' }
+      ],
+      profiles: [
+        {
+          userId: 'u_demo',
+          fullName: 'Usuario Demo',
+          promotion: 'Promoción 2023',
+          location: 'Bogotá, Colombia',
+          currentSituation: 'trabajando',
+          interestArea: 'Tecnología y producto digital',
+          studies: 'Ingeniería de Sistemas (finalizado)',
+          mainRole: 'Analista de Producto',
+          conciseProfile: 'Egresado orientado a producto digital y colaboración multidisciplinaria.',
+          keySkills: 'Gestión de producto, comunicación, análisis funcional',
+          connectTopics: 'Mentoría, oportunidades laborales, proyectos colaborativos',
+          contactNetworks: 'LinkedIn: linkedin.com/in/usuariodemo',
+          phone: '+57 300 000 0000',
+          company: 'Freelance',
+          role: 'Egresado 2023',
+          bio: 'Listo para conectar.',
+          img: 'https://i.pravatar.cc/150?u=demo',
+          tags: ['Tech']
+        },
+        {
+          userId: 'u_admin',
+          fullName: 'Admin Alumni',
+          promotion: 'Promoción 2015',
+          location: 'Medellín, Colombia',
+          currentSituation: 'trabajando',
+          interestArea: 'Gestión de comunidades',
+          studies: 'Administración (finalizado)',
+          mainRole: 'Coordinación Alumni',
+          conciseProfile: 'Responsable de conectar egresados y oportunidades institucionales.',
+          keySkills: 'Gestión académica, comunicaciones, coordinación',
+          connectTopics: 'Convenios, networking, eventos',
+          contactNetworks: 'LinkedIn: linkedin.com/in/adminalumni',
+          phone: '+57 300 111 1111',
+          company: 'Universidad',
+          role: 'Coordinación Alumni',
+          bio: 'Administra comunidad.',
+          img: 'https://i.pravatar.cc/150?u=admin',
+          tags: ['Admin']
+        },
+        {
+          userId: 'u_sofia',
+          fullName: 'Sofia Ramirez',
+          promotion: 'Promoción 2020',
+          location: 'Ciudad de México, México',
+          currentSituation: 'trabajando',
+          interestArea: 'Diseño de producto',
+          studies: 'Diseño UX (finalizado)',
+          mainRole: 'UX Designer @ Google',
+          conciseProfile: 'Diseñadora UX con foco en productos de alto impacto.',
+          keySkills: 'UX Research, UI Design, prototipado',
+          connectTopics: 'Diseño, mentoría UX, oportunidades globales',
+          contactNetworks: 'LinkedIn: linkedin.com/in/sofia-ramirez',
+          phone: '+52 55 2222 2222',
+          company: 'Google',
+          role: 'UX Designer @ Google',
+          bio: 'Diseño de producto.',
+          img: 'https://i.pravatar.cc/150?u=1',
+          tags: ['Diseño', 'Tech']
+        },
+        {
+          userId: 'u_carlos',
+          fullName: 'Carlos Mendez',
+          promotion: 'Promoción 2018',
+          location: 'Quito, Ecuador',
+          currentSituation: 'trabajando',
+          interestArea: 'Gestión de proyectos',
+          studies: 'Ingeniería Civil (finalizado)',
+          mainRole: 'Gerente de Proyectos',
+          conciseProfile: 'PM en obras civiles y coordinación de equipos multidisciplinarios.',
+          keySkills: 'Planeación, liderazgo, control de riesgos',
+          connectTopics: 'Dirección de proyectos, empleo, alianzas',
+          contactNetworks: 'LinkedIn: linkedin.com/in/carlos-mendez',
+          phone: '+593 99 333 3333',
+          company: 'Constructora Bolivar',
+          role: 'PM en construcción',
+          bio: 'PM en construcción.',
+          img: 'https://i.pravatar.cc/150?u=2',
+          tags: ['Gestión', 'Ingeniería']
+        },
+        {
+          userId: 'u_pend',
+          fullName: 'Laura Torres',
+          promotion: 'Promoción 2022',
+          location: 'Lima, Perú',
+          currentSituation: 'estudiando y trabajando',
+          interestArea: 'Marketing y growth',
+          studies: 'Maestría en Marketing (actual)',
+          mainRole: 'Marketing Lead',
+          conciseProfile: 'Profesional de growth enfocada en adquisición y retención.',
+          keySkills: 'Growth, campañas, analítica',
+          connectTopics: 'Marketing digital, alianzas, emprendimiento',
+          contactNetworks: 'LinkedIn: linkedin.com/in/laura-torres',
+          phone: '+51 999 444 444',
+          company: 'Rappi',
+          role: 'Marketing Lead',
+          bio: 'Growth y branding.',
+          img: 'https://i.pravatar.cc/150?u=3',
+          tags: ['Marketing']
+        }
+      ],
+      news: [
+        { id: 'n1', title: 'Encuentro anual de egresados', category: 'Evento', summary: 'Networking en campus central.', createdAt: utils.now(), authorId: 'u_admin' },
+        { id: 'n2', title: 'Vacante Senior Developer', category: 'Empleo', summary: 'Empresa aliada busca fullstack.', createdAt: utils.now(), authorId: 'u_admin' },
+        { id: 'n3', title: 'Nuevo convenio de maestrías', category: 'Institucional', summary: '20% descuento para egresados.', createdAt: utils.now(), authorId: 'u_admin' }
+      ],
+      chats: [], messages: [], notifications: []
+    };
+
+    const seedManager = {
+      ensure() {
+        const users = utils.load('ac_users', []);
+        const profiles = utils.load('ac_profiles', []);
+        const demoSeed = seed.users.find(u => u.id === 'u_demo');
+        const adminSeed = seed.users.find(u => u.id === 'u_admin');
+
+        const byId = (arr, id) => arr.find(x => x.id === id);
+        const byMail = (arr, mail) => arr.find(x => x.email === mail);
+
+        const mergedUsers = [...users];
+        const upsertUser = (u) => {
+          const idx = mergedUsers.findIndex(x => x.id === u.id || x.email === u.email);
+          if (idx >= 0) mergedUsers[idx] = { ...mergedUsers[idx], ...u, password: u.password };
+          else mergedUsers.push(u);
+        };
+        upsertUser(demoSeed); upsertUser(adminSeed);
+        if (!byId(mergedUsers, 'u_sofia')) mergedUsers.push(seed.users.find(u => u.id === 'u_sofia'));
+        if (!byId(mergedUsers, 'u_carlos')) mergedUsers.push(seed.users.find(u => u.id === 'u_carlos'));
+        if (!byId(mergedUsers, 'u_pend')) mergedUsers.push(seed.users.find(u => u.id === 'u_pend'));
+        utils.save('ac_users', mergedUsers);
+
+        const mergedProfiles = [...profiles];
+        const upsertProfile = (p) => {
+          const idx = mergedProfiles.findIndex(x => x.userId === p.userId);
+          if (idx >= 0) mergedProfiles[idx] = { ...mergedProfiles[idx], ...p };
+          else mergedProfiles.push(p);
+        };
+        seed.profiles.forEach(upsertProfile);
+        utils.save('ac_profiles', mergedProfiles);
+
+        if (!localStorage.getItem('ac_news')) utils.save('ac_news', seed.news);
+        if (!localStorage.getItem('ac_chats')) utils.save('ac_chats', seed.chats);
+        if (!localStorage.getItem('ac_messages')) utils.save('ac_messages', seed.messages);
+        if (!localStorage.getItem('ac_notifications')) utils.save('ac_notifications', seed.notifications);
+
+        if (!byMail(mergedUsers, 'demo@universidad.edu')) {
+          throw new Error('No se pudo crear usuario demo');
+        }
+      }
+    };
+
+    class BaseRepo {
+      constructor(key, defaults = []) { this.key = key; if (!localStorage.getItem(key)) utils.save(key, defaults); }
+      list() { return utils.load(this.key, []); }
+      getById(id) { return this.list().find(x => x.id === id) || null; }
+      create(entity) { const items = this.list(); items.push(entity); utils.save(this.key, items); return entity; }
+      update(id, patch) { const items = this.list().map(x => x.id === id ? { ...x, ...patch, updatedAt: utils.now() } : x); utils.save(this.key, items); return items.find(x => x.id === id); }
+      search() { return this.list(); }
+    }
+
+    class MockAuthRepo extends BaseRepo {
+      constructor(userRepo) { super('ac_session', null); this.userRepo = userRepo; }
+      list() { const s = utils.load(this.key, null); return s ? [s] : []; }
+      getById(id) { return this.list().find(s => s.id === id) || null; }
+      create({ email, password }) {
+        const user = this.userRepo.search({ email })[0];
+        if (!user || user.password !== password) throw new Error('Credenciales inválidas. Revisa correo y contraseña.');
+        const session = { id: utils.id('ses'), userId: user.id, createdAt: utils.now() };
+        utils.save(this.key, session);
+        return session;
+      }
+      update() { return null; }
+      search() { return this.list(); }
+      logout() { localStorage.removeItem(this.key); }
+    }
+
+    class MockUserRepo extends BaseRepo {
+      constructor() { super('ac_users', seed.users); this.profileKey = 'ac_profiles'; if (!localStorage.getItem(this.profileKey)) utils.save(this.profileKey, seed.profiles); }
+      search(params = {}) { return this.list().filter(u => (!params.email || u.email === params.email) && (!params.term || u.name.toLowerCase().includes(params.term.toLowerCase()))); }
+      listDirectory(term = '') {
+        const profiles = utils.load(this.profileKey, []);
+        return this.list().map(u => ({ ...u, profile: profiles.find(p => p.userId === u.id) })).filter(u => u.profile && (u.name + ' ' + u.profile.company).toLowerCase().includes(term.toLowerCase()));
+      }
+      getProfile(userId) { return utils.load(this.profileKey, []).find(x => x.userId === userId) || null; }
+      updateProfile(userId, patch) { const profiles = utils.load(this.profileKey, []); utils.save(this.profileKey, profiles.map(p => p.userId === userId ? { ...p, ...patch } : p)); }
+    }
+
+    class MockNewsRepo extends BaseRepo {
+      constructor() { super('ac_news', seed.news); }
+      search(params = {}) { return this.list().filter(p => (!params.category || params.category === 'all' || p.category === params.category) && (!params.term || (p.title + ' ' + p.summary).toLowerCase().includes(params.term.toLowerCase()))).sort((a,b)=>b.createdAt.localeCompare(a.createdAt)); }
+    }
+
+    class MockChatRepo extends BaseRepo {
+      constructor() { super('ac_chats', seed.chats); this.messageKey = 'ac_messages'; if (!localStorage.getItem(this.messageKey)) utils.save(this.messageKey, seed.messages); }
+      search(params = {}) {
+        return this.list().filter(c => !params.userId || c.participants.includes(params.userId)).map(c => {
+          const m = this.getMessages(c.id); const last = m[m.length - 1];
+          return { ...c, lastActivity: last?.createdAt || c.createdAt, lastText: last?.text || '' };
+        }).sort((a,b)=>b.lastActivity.localeCompare(a.lastActivity));
+      }
+      getOrCreate(a, b) {
+        const existing = this.list().find(c => c.participants.includes(a) && c.participants.includes(b));
+        if (existing) return existing;
+        const chat = { id: utils.id('chat'), participants: [a,b], createdAt: utils.now() };
+        if (!models.chat(chat)) throw new Error('Chat inválido');
+        return this.create(chat);
+      }
+      getMessages(chatId) { return utils.load(this.messageKey, []).filter(m => m.chatId === chatId).sort((a,b)=>a.createdAt.localeCompare(b.createdAt)); }
+      send(chatId, senderId, text) {
+        const msg = { id: utils.id('msg'), chatId, senderId, text, createdAt: utils.now() };
+        if (!models.message(msg)) throw new Error('Mensaje inválido');
+        const all = utils.load(this.messageKey, []); all.push(msg); utils.save(this.messageKey, all); return msg;
+      }
+    }
+
+    class MockNotificationRepo extends BaseRepo {
+      constructor() { super('ac_notifications', seed.notifications); }
+      search(params = {}) { return this.list().filter(n => !params.userId || n.userId === params.userId).sort((a,b)=>b.createdAt.localeCompare(a.createdAt)); }
+      unreadCount(userId) { return this.search({ userId }).filter(n => !n.read).length; }
+      markAllRead(userId) { utils.save(this.key, this.list().map(n => n.userId === userId ? { ...n, read: true } : n)); }
+    }
+
+    const repos = { user: new MockUserRepo(), news: new MockNewsRepo(), chat: new MockChatRepo(), notification: new MockNotificationRepo() };
+    repos.auth = new MockAuthRepo(repos.user);
+
+    const store = {
+      state: { currentUser: null, currentView: 'auth', selectedChatId: null, filters: { directoryTerm: '', newsTerm: '', newsCategory: 'all' }, editingNewsId: null, loading: { login: false, saveNews: false, sendMessage: false } },
+      listeners: [],
+      reducers: {
+        setUser: (s, user) => ({ ...s, currentUser: user }),
+        setView: (s, v) => ({ ...s, currentView: v }),
+        setSelectedChat: (s, id) => ({ ...s, selectedChatId: id }),
+        setFilters: (s, patch) => ({ ...s, filters: { ...s.filters, ...patch } }),
+        setEditingNewsId: (s, id) => ({ ...s, editingNewsId: id }),
+        setLoading: (s, loading) => ({ ...s, loading: { ...s.loading, ...loading } })
+      },
+      dispatch(type, payload) { this.state = this.reducers[type](this.state, payload); this.listeners.forEach(fn => fn(this.state)); },
+      subscribe(fn) { this.listeners.push(fn); }
+    };
+
+    const services = {
+      auth: { login(email, password) { const session = repos.auth.create({ email, password }); return repos.user.getById(session.userId); }, logout() { repos.auth.logout(); } },
+      directory: { list(term) { return repos.user.listDirectory(term); } },
+      news: {
+        list(term, category) { return repos.news.search({ term, category }); },
+        save(post, user) {
+          if (user.role !== 'admin') throw new Error('Solo admin puede administrar novedades');
+          if (!post.title || !post.summary) throw new Error('Completa título y resumen');
+          if (!post.id) {
+            const created = { id: utils.id('news'), createdAt: utils.now(), authorId: user.id, ...post };
+            if (!models.post(created)) throw new Error('Post inválido');
+            repos.news.create(created); return created;
+          }
+          return repos.news.update(post.id, post);
+        }
+      },
+      chat: { list(userId) { return repos.chat.search({ userId }); }, getOrCreate(a, b) { return repos.chat.getOrCreate(a, b); }, send(chatId, senderId, text) { return repos.chat.send(chatId, senderId, text); } },
+      notification: { create(userId, type, text) { const n = { id: utils.id('notif'), userId, type, text, read: false, createdAt: utils.now() }; if (!models.notification(n)) throw new Error('Notificación inválida'); return repos.notification.create(n); } }
+    };
+
+    const guards = {
+      isLogged: s => !!s.currentUser,
+      canDirectory: s => !!s.currentUser && (s.currentUser.status === 'approved' || s.currentUser.role === 'admin'),
+      canMessages: s => !!s.currentUser && (s.currentUser.status === 'approved' || s.currentUser.role === 'admin')
+    };
+
+    const app = {
+      routes: { auth: { guard: () => true }, home: { guard: guards.isLogged }, directory: { guard: guards.canDirectory }, news: { guard: guards.isLogged }, messages: { guard: guards.canMessages }, profile: { guard: guards.isLogged } },
+      navigate(target) { const route = this.routes[target] || this.routes.auth; const safe = route.guard(store.state) ? target : (store.state.currentUser ? 'profile' : 'auth'); store.dispatch('setView', safe); }
+    };
+
+    const ui = {
+      feedback(message, type='info') {
+        const box = document.getElementById('global-feedback');
+        box.textContent = message;
+        box.className = 'fixed top-20 right-4 z-50 px-4 py-2 rounded-lg text-sm shadow-lg';
+        if (type === 'error') box.classList.add('bg-red-600', 'text-white');
+        else if (type === 'success') box.classList.add('bg-emerald-600', 'text-white');
+        else box.classList.add('bg-gray-900', 'text-white');
+        box.classList.remove('hidden');
+        setTimeout(() => box.classList.add('hidden'), 2200);
+      },
+      setButtonLoading(id, loading, textLoading, textDefault) {
+        const btn = document.getElementById(id); if (!btn) return;
+        btn.disabled = loading; btn.textContent = loading ? textLoading : textDefault;
+      },
+      renderFrame() {
+        const s = store.state;
+        ['auth','home','directory','news','messages','profile'].forEach(v => document.getElementById(`view-${v}`).classList.toggle('hidden', v !== s.currentView));
+        const nav = document.querySelector('nav'); nav.classList.toggle('hidden', s.currentView === 'auth');
+        document.getElementById('nav-links').innerHTML = s.currentUser ? `<button onclick="app.navigate('home')" class="text-gray-500 hover:text-brand-600 font-medium">Inicio</button><button onclick="app.navigate('directory')" class="text-gray-500 hover:text-brand-600 font-medium">Directorio</button><button onclick="app.navigate('news')" class="text-gray-500 hover:text-brand-600 font-medium">Novedades</button><button onclick="app.navigate('messages')" class="text-gray-500 hover:text-brand-600 font-medium">Mensajes</button>` : '';
+        const banner = document.getElementById('approval-banner');
+        if (s.currentUser?.status === 'pending') { banner.textContent = 'Cuenta en revisión: Directorio y Mensajes están bloqueados hasta aprobación.'; banner.classList.remove('hidden'); }
+        else banner.classList.add('hidden');
+
+        this.setButtonLoading('btn-login', s.loading.login, 'Ingresando...', 'Ingresar');
+        this.setButtonLoading('btn-save-news', s.loading.saveNews, 'Guardando...', 'Guardar');
+
+        this.views[s.currentView]();
+        this.renderNotifications();
+      },
+      renderNotifications() {
+        const me = store.state.currentUser; if (!me) return;
+        const list = repos.notification.search({ userId: me.id });
+        document.getElementById('notif-list').innerHTML = list.length ? list.map(n => `<div class="p-3 border-b ${n.read ? 'bg-white':'bg-blue-50'}"><p class="text-sm font-semibold">${n.type}</p><p class="text-xs text-gray-600">${n.text}</p></div>`).join('') : '<div class="p-3 text-sm text-gray-500">Sin notificaciones</div>';
+        document.getElementById('notif-badge').classList.toggle('hidden', repos.notification.unreadCount(me.id) === 0);
+      },
+      views: {
+        auth() {},
+        home() {
+          const me = store.state.currentUser;
+          const total = repos.user.listDirectory('').filter(x => x.id !== me.id).length;
+          const chats = services.chat.list(me.id).length;
+          const unread = repos.notification.unreadCount(me.id);
+          const section = document.getElementById('view-home');
+          const badge = `<div class="grid md:grid-cols-3 gap-3"><div class="bg-brand-50 rounded-lg p-3 text-sm"><strong>${total}</strong> egresados en directorio</div><div class="bg-gray-50 rounded-lg p-3 text-sm"><strong>${chats}</strong> chats activos</div><div class="bg-amber-50 rounded-lg p-3 text-sm"><strong>${unread}</strong> notificaciones sin leer</div></div>`;
+          if (!section.querySelector('[data-home-stats]')) {
+            const wrap = document.createElement('div');
+            wrap.setAttribute('data-home-stats','1');
+            wrap.innerHTML = badge;
+            section.appendChild(wrap);
+          } else {
+            section.querySelector('[data-home-stats]').innerHTML = badge;
+          }
+        },
+        directory() {
+          const me = store.state.currentUser;
+          const rows = services.directory.list(store.state.filters.directoryTerm).filter(x => x.id !== me.id);
+          const grid = document.getElementById('directory-grid');
+          const empty = document.getElementById('directory-empty');
+          if (!rows.length) { empty.classList.remove('hidden'); grid.innerHTML = ''; return; }
+          empty.classList.add('hidden');
+          grid.innerHTML = rows.map(a => `<article class="bg-white p-5 rounded-xl border"><div class="flex gap-3"><img src="${a.profile.img}" class="w-12 h-12 rounded-lg object-cover"><div><h3 class="font-bold">${a.profile.fullName || a.name}</h3><p class="text-xs text-brand-600">${a.profile.company}</p><p class="text-sm text-gray-500">${a.profile.mainRole || a.profile.role}</p><p class="text-xs text-gray-400">${a.profile.location || ''}</p></div></div><p class="mt-2 text-sm text-gray-600">${a.profile.conciseProfile || ''}</p><div class="mt-3 flex gap-2 flex-wrap">${(a.profile.keySkills || '').split(',').filter(Boolean).map(t=>`<span class='px-2 py-1 bg-gray-100 text-xs rounded'>${t.trim()}</span>`).join('') || a.profile.tags.map(t=>`<span class='px-2 py-1 bg-gray-100 text-xs rounded'>${t}</span>`).join('')}</div><button onclick="ui.events.connect('${a.id}')" class="mt-4 px-3 py-2 bg-gray-900 text-white rounded-lg text-sm">Conectar</button></article>`).join('');
+        },
+        news() {
+          const me = store.state.currentUser;
+          const items = services.news.list(store.state.filters.newsTerm, store.state.filters.newsCategory);
+          document.getElementById('admin-news-editor').classList.toggle('hidden', me.role !== 'admin');
+          document.getElementById('news-feed').innerHTML = items.length ? items.map(n => `<article class="bg-white p-4 rounded-xl border"><div class='flex justify-between gap-2 items-start'><div><p class="text-xs text-brand-600 font-semibold">${n.category}</p><h3 class="font-bold">${n.title}</h3><p class="text-sm text-gray-600">${n.summary}</p></div>${me.role === 'admin' ? `<button onclick="ui.events.editNews('${n.id}')" class="text-xs px-2 py-1 bg-gray-100 rounded">Editar</button>` : ''}</div></article>`).join('') : '<div class="text-center text-gray-500 py-10">No hay novedades para estos filtros.</div>';
+        },
+        messages() {
+          const me = store.state.currentUser;
+          const chats = services.chat.list(me.id);
+          document.getElementById('chat-list').innerHTML = chats.length ? chats.map(c => {
+            const otherId = c.participants.find(p => p !== me.id);
+            const other = repos.user.getById(otherId);
+            return `<button onclick="ui.events.openChat('${c.id}')" class="w-full text-left p-4 border-b ${store.state.selectedChatId===c.id?'bg-blue-50':''}"><div class='font-semibold text-sm'>${other.name}</div><div class='text-xs text-gray-500 truncate'>${c.lastText || 'Nuevo chat'}</div></button>`;
+          }).join('') : '<div class="text-sm text-gray-500 p-4">Aún no tienes conversaciones. Usa “Conectar” en el directorio.</div>';
+
+          const hasChat = !!store.state.selectedChatId;
+          document.getElementById('active-chat-container').classList.toggle('hidden', !hasChat);
+          document.getElementById('no-chat-selected').classList.toggle('hidden', hasChat);
+          if (!hasChat) return;
+
+          const chat = repos.chat.getById(store.state.selectedChatId);
+          const otherId = chat.participants.find(p => p !== me.id);
+          document.getElementById('chat-header-name').textContent = repos.user.getById(otherId).name;
+          const messages = repos.chat.getMessages(chat.id);
+          document.getElementById('chat-body').innerHTML = messages.length ? messages.map(m => `<div class="flex flex-col ${m.senderId===me.id?'items-end':'items-start'}"><div class="chat-bubble ${m.senderId===me.id?'chat-me':'chat-them'}">${m.text}</div><span class='text-[10px] text-gray-400 mt-1'>${new Date(m.createdAt).toLocaleTimeString()}</span></div>`).join('') : '<div class="text-sm text-gray-500">Sin mensajes todavía.</div>';
+          document.getElementById('chat-body').scrollTop = document.getElementById('chat-body').scrollHeight;
+        },
+        profile() {
+          const me = store.state.currentUser;
+          const p = repos.user.getProfile(me.id);
+          document.getElementById('p-fullName').value = p?.fullName || me.name || '';
+          document.getElementById('p-promotion').value = p?.promotion || '';
+          document.getElementById('p-location').value = p?.location || '';
+          document.getElementById('p-currentSituation').value = p?.currentSituation || 'trabajando';
+          document.getElementById('p-interestArea').value = p?.interestArea || '';
+          document.getElementById('p-studies').value = p?.studies || '';
+          document.getElementById('p-mainRole').value = p?.mainRole || p?.role || '';
+          document.getElementById('p-conciseProfile').value = p?.conciseProfile || '';
+          document.getElementById('p-keySkills').value = p?.keySkills || '';
+          document.getElementById('p-connectTopics').value = p?.connectTopics || '';
+          document.getElementById('p-contactNetworks').value = p?.contactNetworks || '';
+          document.getElementById('p-phone').value = p?.phone || '';
+          const btn = document.getElementById('status-toggle-btn');
+          btn.textContent = me.status === 'approved' ? 'Aprobado' : me.status === 'pending' ? 'En Revisión' : 'Admin';
+          btn.disabled = me.role === 'admin';
+        }
+      },
+      events: {
+        goLogo() { app.navigate(store.state.currentUser ? 'home' : 'auth'); },
+        async login(e) {
+          e.preventDefault();
+          const error = document.getElementById('auth-error');
+          store.dispatch('setLoading', { login: true });
+          try {
+            await new Promise(r => setTimeout(r, 250));
+            const user = services.auth.login(document.getElementById('auth-email').value.trim(), document.getElementById('auth-pass').value.trim());
+            if (!models.user(user)) throw new Error('Datos de usuario inválidos');
+            store.dispatch('setUser', user);
+            services.notification.create(user.id, 'Aprobación', user.status === 'pending' ? 'Tu cuenta está pendiente de aprobación.' : 'Bienvenido a AlumniConnect.');
+            app.navigate(user.status === 'pending' ? 'profile' : 'home');
+            error.classList.add('hidden');
+            ui.feedback('Sesión iniciada correctamente.', 'success');
+          } catch (err) {
+            error.textContent = err.message; error.classList.remove('hidden'); ui.feedback(err.message, 'error');
+          } finally {
+            store.dispatch('setLoading', { login: false });
+          }
+        },
+        quickDemoLogin() {
+          document.getElementById('auth-email').value = 'demo@universidad.edu';
+          document.getElementById('auth-pass').value = '123456';
+          ui.events.login({ preventDefault() {} });
+        },
+        logout() { services.auth.logout(); store.dispatch('setUser', null); store.dispatch('setSelectedChat', null); app.navigate('auth'); ui.feedback('Sesión cerrada.'); },
+        searchDirectory(term) { store.dispatch('setFilters', { directoryTerm: term }); },
+        searchNews(term) { store.dispatch('setFilters', { newsTerm: term }); },
+        filterNews(cat) { store.dispatch('setFilters', { newsCategory: cat }); },
+        connect(userId) {
+          const me = store.state.currentUser;
+          const chat = services.chat.getOrCreate(me.id, userId);
+          services.notification.create(userId, 'Nuevo mensaje', `${me.name} inició una conversación contigo.`);
+          store.dispatch('setSelectedChat', chat.id);
+          app.navigate('messages');
+        },
+        openChat(chatId) { store.dispatch('setSelectedChat', chatId); },
+        async sendMessage(e) {
+          e.preventDefault();
+          const input = document.getElementById('chat-input');
+          const text = input.value.trim();
+          if (!text || !store.state.selectedChatId) return;
+          store.dispatch('setLoading', { sendMessage: true });
+          try {
+            const me = store.state.currentUser;
+            services.chat.send(store.state.selectedChatId, me.id, text);
+            const chat = repos.chat.getById(store.state.selectedChatId);
+            const otherId = chat.participants.find(x => x !== me.id);
+            services.notification.create(otherId, 'Nuevo mensaje', text);
+            input.value = '';
+            ui.views.messages();
+            ui.renderNotifications();
+          } finally {
+            store.dispatch('setLoading', { sendMessage: false });
+          }
+        },
+        toggleNotifications() {
+          const panel = document.getElementById('notif-panel');
+          const btn = document.getElementById('notif-toggle-btn');
+          panel.classList.toggle('hidden');
+          btn.setAttribute('aria-expanded', String(!panel.classList.contains('hidden')));
+        },
+        markAllNotificationsRead() { repos.notification.markAllRead(store.state.currentUser.id); ui.renderNotifications(); ui.feedback('Notificaciones marcadas como leídas.', 'success'); },
+        saveProfile() {
+          const me = store.state.currentUser;
+          const fullName = document.getElementById('p-fullName').value.trim();
+          const profilePayload = {
+            fullName,
+            promotion: document.getElementById('p-promotion').value.trim(),
+            location: document.getElementById('p-location').value.trim(),
+            currentSituation: document.getElementById('p-currentSituation').value,
+            interestArea: document.getElementById('p-interestArea').value.trim(),
+            studies: document.getElementById('p-studies').value.trim(),
+            mainRole: document.getElementById('p-mainRole').value.trim(),
+            conciseProfile: document.getElementById('p-conciseProfile').value.trim(),
+            keySkills: document.getElementById('p-keySkills').value.trim(),
+            connectTopics: document.getElementById('p-connectTopics').value.trim(),
+            contactNetworks: document.getElementById('p-contactNetworks').value.trim(),
+            phone: document.getElementById('p-phone').value.trim(),
+            role: document.getElementById('p-mainRole').value.trim(),
+            bio: document.getElementById('p-conciseProfile').value.trim()
+          };
+          if (!profilePayload.fullName || !profilePayload.promotion || !profilePayload.location) {
+            ui.feedback('Completa nombre, promoción y ciudad/país.', 'error');
+            return;
+          }
+          repos.user.update(me.id, { name: fullName });
+          repos.user.updateProfile(me.id, profilePayload);
+          store.dispatch('setUser', repos.user.getById(me.id));
+          ui.feedback('Perfil actualizado.', 'success');
+        },
+        toggleAccountStatus() {
+          const me = store.state.currentUser;
+          if (!me || me.role === 'admin') return;
+          const next = me.status === 'approved' ? 'pending' : 'approved';
+          repos.user.update(me.id, { status: next });
+          store.dispatch('setUser', repos.user.getById(me.id));
+          services.notification.create(me.id, 'Aprobación', next === 'approved' ? 'Tu cuenta fue aprobada.' : 'Tu cuenta pasó a revisión.');
+          if (next === 'pending' && ['directory','messages'].includes(store.state.currentView)) app.navigate('profile');
+        },
+        editNews(newsId) {
+          const post = repos.news.getById(newsId); if (!post) return;
+          store.dispatch('setEditingNewsId', newsId);
+          document.getElementById('news-title').value = post.title;
+          document.getElementById('news-summary').value = post.summary;
+          document.getElementById('news-type').value = post.category;
+          document.getElementById('news-title').focus();
+        },
+        cancelEditNews() {
+          store.dispatch('setEditingNewsId', null);
+          document.getElementById('news-title').value = '';
+          document.getElementById('news-summary').value = '';
+          document.getElementById('news-type').value = 'Evento';
+        },
+        async saveNews() {
+          const me = store.state.currentUser;
+          const payload = { id: store.state.editingNewsId, title: document.getElementById('news-title').value.trim(), summary: document.getElementById('news-summary').value.trim(), category: document.getElementById('news-type').value };
+          store.dispatch('setLoading', { saveNews: true });
+          try {
+            services.news.save(payload, me);
+            this.cancelEditNews();
+            services.notification.create(me.id, 'Nueva novedad', 'Se guardó correctamente una novedad.');
+            ui.views.news(); ui.renderNotifications(); ui.feedback('Novedad guardada.', 'success');
+          } catch (err) {
+            ui.feedback(err.message, 'error');
+          } finally {
+            store.dispatch('setLoading', { saveNews: false });
+          }
+        }
+      }
+    };
+
+    store.subscribe(() => ui.renderFrame());
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        const panel = document.getElementById('notif-panel');
+        if (!panel.classList.contains('hidden')) ui.events.toggleNotifications();
+      }
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+      try {
+        seedManager.ensure();
+      } catch (err) {
+        ui.feedback(`Error de inicialización: ${err.message}`, 'error');
+      }
+
+      const session = repos.auth.list()[0];
+      if (session) {
+        const user = repos.user.getById(session.userId);
+        if (user) store.dispatch('setUser', user);
+      }
+      app.navigate(store.state.currentUser ? 'home' : 'auth');
+      ui.renderFrame();
+    });
+  </script>
+</body>
+</html>
