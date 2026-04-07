@@ -384,7 +384,7 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                             <label class="input-label">Nombres</label>
-                            <input id="ob-name" type="text" placeholder="Ej: Juan Carlos" class="input-field">
+                            <input id="ob-name" type="text" placeholder="Ej: Juan Carlos" class="input-field" required minlength="2">
                         </div>
                         <div>
                             <label class="input-label">Apellidos</label>
@@ -539,7 +539,7 @@
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
                                     <label class="input-label">Nombres</label>
-                                    <input type="text" id="p-name" class="input-field" placeholder="Ej: Juan">
+                                    <input type="text" id="p-name" class="input-field" placeholder="Ej: Juan" required minlength="2">
                                 </div>
                                 <div>
                                     <label class="input-label">Apellidos</label>
@@ -995,10 +995,19 @@
             }
         };
 
+        function hasValidFirstName(value) {
+            return String(value || '').trim().length >= 2;
+        }
+
         const onboardingLogic = {
             save: async (e) => {
                 e.preventDefault();
                 if(!state.user) return;
+                const firstNameValue = document.getElementById('ob-name').value.trim();
+                if (!hasValidFirstName(firstNameValue)) {
+                    alert('El nombre es obligatorio y debe tener al menos 2 caracteres.');
+                    return;
+                }
 
                 const btn = document.getElementById('btn-save-onboarding');
                 const originalText = btn.innerHTML;
@@ -1006,7 +1015,7 @@
                 btn.innerHTML = `<i class="ph-bold ph-spinner animate-spin"></i> Guardando...`;
 
                 const payload = {
-                    firstName: document.getElementById('ob-name').value.trim(),
+                    firstName: firstNameValue,
                     lastName: document.getElementById('ob-lastname').value.trim(),
                     graduationYear: document.getElementById('ob-year').value.trim(),
                     location: document.getElementById('ob-location').value.trim(),
@@ -1062,6 +1071,7 @@
                 return {
                     id: doc.id,
                     name: `${d.firstName || ''} ${d.lastName || ''}`.trim() || 'Sin nombre',
+                    firstName: (d.firstName || '').trim(),
                     email: d.email || '',
                     role: d.role || 'Sin rol',
                     status: d.status || 'sin-definir',
@@ -1079,7 +1089,7 @@
                     phone: d.phone || '',
                     linkedin: d.linkedin || ''
                 };
-                });
+                }).filter((alum) => hasValidFirstName(alum.firstName));
             } catch (error) {
                 state.data.alumni = state.data.alumni.length ? state.data.alumni : [];
             } finally {
@@ -1783,13 +1793,18 @@
             },
             save: async () => {
                 if (!state.user) { alert('Debes iniciar sesión para actualizar tu cuenta.'); return; }
+                const firstNameValue = document.getElementById('p-name').value.trim();
+                if (!hasValidFirstName(firstNameValue)) {
+                    alert('El nombre es obligatorio y debe tener al menos 2 caracteres.');
+                    return;
+                }
                 const btn = document.getElementById('btn-save-profile');
                 const original = btn.innerHTML;
                 btn.disabled = true;
                 btn.innerHTML = `<i class="ph-bold ph-spinner animate-spin"></i> Guardando...`;
 
                 const payload = {
-                    firstName: document.getElementById('p-name').value.trim(),
+                    firstName: firstNameValue,
                     lastName: document.getElementById('p-lastname').value.trim(),
                     graduationYear: document.getElementById('p-year').value.trim(),
                     location: document.getElementById('p-location').value.trim(),
