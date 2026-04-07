@@ -101,20 +101,20 @@
                           <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-400 opacity-75"></span>
                           <span class="relative inline-flex rounded-full h-2 w-2 bg-brand-500"></span>
                         </span>
-                        Plataforma Oficial de Egresados
+                        Plataforma de Egresados
                     </div>
                     <h1 class="text-4xl md:text-5xl lg:text-6xl font-extrabold text-gray-900 mb-6 tracking-tight leading-tight">
-                        Cultiva tu red. <br class="hidden lg:block"><span class="text-brand-600">Cosecha tu futuro.</span>
+                        Cultiva tu red <br class="hidden lg:block"><span class="text-brand-600">Cosecha tu futuro</span>
                     </h1>
                     <p class="text-lg md:text-xl text-gray-500 mb-10 max-w-2xl mx-auto lg:mx-0 leading-relaxed">
-                        Únete a la red global de nuestra institución. Expande tu red de contactos, encuentra mentores líderes en la industria y descubre oportunidades exclusivas diseñadas para ti.
+                         Únete a la red global de egresados en Risaralda. Expande tu red de contactos, encuentra socios líderes en la industria y descubre oportunidades exclusivas diseñadas para ti.
                     </p>
                     <div class="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
                         <button onclick="uiLogic.toggleAuthModal()" class="px-8 py-4 bg-brand-600 text-white font-bold rounded-xl shadow-lg shadow-brand-500/30 hover:bg-brand-700 hover:-translate-y-1 transition transform flex items-center justify-center gap-2 text-lg">
                             Plantar semilla <i class="ph-bold ph-arrow-right"></i>
                         </button>
                         <button onclick="router.navigate('directory')" class="px-8 py-4 bg-white text-gray-700 font-bold rounded-xl border border-gray-200 hover:bg-gray-50 hover:shadow-sm transition flex items-center justify-center gap-2 text-lg">
-                            <i class="ph-bold ph-magnifying-glass"></i> Explorar la jungla
+                            <i class="ph-bold ph-magnifying-glass"></i> Explorar el directorio
                         </button>
                     </div>
 
@@ -124,10 +124,10 @@
                             <img class="w-10 h-10 rounded-full border-2 border-white object-cover" src="https://ui-avatars.com/api/?name=Carlos&background=F59E0B&color=fff" alt="User">
                             <img class="w-10 h-10 rounded-full border-2 border-white object-cover" src="https://ui-avatars.com/api/?name=Laura&background=3B82F6&color=fff" alt="User">
                             <img class="w-10 h-10 rounded-full border-2 border-white object-cover" src="https://ui-avatars.com/api/?name=David&background=8B5CF6&color=fff" alt="User">
-                            <div class="w-10 h-10 rounded-full border-2 border-white bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-500">+2k</div>
+                            <div class="w-10 h-10 rounded-full border-2 border-white bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-500"></div>
                         </div>
                         <div class="text-sm text-gray-500">
-                            <span class="font-bold text-gray-900">2,500+</span> egresados <br>ya están conectados.
+                             <span class="font-bold text-gray-900">Decenas</span>de egresados <br>ya están conectados.
                         </div>
                     </div>
                 </div>
@@ -143,8 +143,8 @@
                             <i class="ph-fill ph-briefcase"></i>
                         </div>
                         <div>
-                            <p class="text-sm text-gray-500 font-semibold">Nuevas vacantes</p>
-                            <p class="text-lg font-bold text-gray-900">+45 esta semana</p>
+                            <p class="text-sm text-gray-500 font-semibold">Nuevas oportunidades</p>
+                            <p class="text-lg font-bold text-gray-900">cada semana</p>
                         </div>
                     </div>
                 </div>
@@ -194,8 +194,8 @@
                         <div class="w-16 h-16 bg-brand-50 text-brand-600 rounded-2xl flex items-center justify-center text-3xl mb-6 group-hover:bg-brand-600 group-hover:text-white transition duration-300">
                             <i class="ph-duotone ph-briefcase"></i>
                         </div>
-                        <h4 class="text-xl font-bold text-gray-900 mb-3">Bolsa de Empleo</h4>
-                        <p class="text-gray-500 leading-relaxed">Accede a ofertas laborales exclusivas publicadas por nuestra red de empresas aliadas y otros egresados.</p>
+                        <h4 class="text-xl font-bold text-gray-900 mb-3">Bolsa de Beneficios</h4>
+                        <p class="text-gray-500 leading-relaxed">Accede a ofertas laborales o beneficios exclusivos publicadas por medio de nuestra red de aliados y otros egresados.</p>
                     </div>
                     <div class="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm hover:shadow-xl transition duration-300 group transform hover:-translate-y-1">
                         <div class="w-16 h-16 bg-brand-50 text-brand-600 rounded-2xl flex items-center justify-center text-3xl mb-6 group-hover:bg-brand-600 group-hover:text-white transition duration-300">
@@ -239,7 +239,7 @@
                 
                 <form onsubmit="authLogic.login(event)" class="space-y-5">
                     <div>
-                        <label class="input-label">Email Institucional</label>
+                        <label class="input-label">Email Personal</label>
                         <input id="login-email" type="email" required placeholder="tu.nombre@universidad.edu" class="input-field">
                     </div>
                     <div>
@@ -291,8 +291,8 @@
                     </label>
 
                     <label class="flex items-start gap-3 text-sm text-gray-600">
-                        <input id="register-newsletter" type="checkbox" class="mt-1 h-4 w-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500">
-                        <span>Deseo recibir novedades de la red de egresados.</span>
+                        <input id="register-newsletter" type="checkbox" checked class="mt-1 h-4 w-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500">
+                        <span>Deseo recibir novedades de la red de egresados (reencuentros, trabajos, etc). </span>
                     </label>
 
                     <button type="submit" class="w-full py-3.5 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-xl shadow-lg shadow-brand-500/30 transition">Planta tu semilla</button>
