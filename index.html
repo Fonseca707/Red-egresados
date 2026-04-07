@@ -287,7 +287,7 @@
 
                     <label class="flex items-start gap-3 text-sm text-gray-600">
                         <input id="register-privacy" type="checkbox" required class="mt-1 h-4 w-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500">
-                        <span>Autorizo el tratamiento de mis datos personales conforme a la Política de Tratamiento de Datos Personales de CONNECTING y declaro haberla leído y aceptado.</span>
+                        <span>Autorizo el tratamiento de mis datos personales conforme a la <button type="button" onclick="router.navigate('terms')" class="font-bold text-brand-600 hover:underline">Política de Tratamiento de Datos Personales y Términos</button> y declaro haberla leído y aceptado.</span>
                     </label>
 
                     <label class="flex items-start gap-3 text-sm text-gray-600">
@@ -304,6 +304,66 @@
 
                 <div class="mt-6 text-center border-t border-gray-100 pt-4">
                     <button onclick="router.navigate('auth')" class="text-sm text-brand-600 font-bold hover:underline">Ya tengo cuenta</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- VISTA: TÉRMINOS (oculta, solo por enlace directo en registro) -->
+        <div id="view-terms" class="hidden min-h-[80vh] py-8 animate-fade-in">
+            <div class="max-w-4xl mx-auto bg-white rounded-3xl border border-gray-100 shadow-sm p-6 md:p-10">
+                <div class="flex items-center justify-between gap-4 mb-6 border-b border-gray-100 pb-4">
+                    <h2 class="text-xl md:text-2xl font-bold text-gray-900">Términos y Condiciones de Uso y Política de Privacidad</h2>
+                    <button onclick="router.navigate('register')" class="px-4 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-sm font-semibold text-gray-700 transition">Volver</button>
+                </div>
+                <p class="text-sm text-gray-500 mb-6">Fecha de última actualización: 07 de abril de 2026.</p>
+
+                <div class="space-y-6 text-gray-700 leading-relaxed">
+                    <section>
+                        <h3 class="font-bold text-gray-900 mb-2">1. Naturaleza de la Plataforma y Aceptación</h3>
+                        <p>Esta red es una plataforma digital de carácter estrictamente independiente, creada y administrada de forma autónoma. No está afiliada, asociada, respaldada ni patrocinada por ninguna institución educativa, colegio o universidad. El acceso y registro en la plataforma constituyen la aceptación expresa, libre e informada de los presentes Términos y Condiciones por parte del usuario. La titularidad legal y administración de la plataforma están a cargo de Sonia Viviana Garavito Pinea (en adelante, "El Administrador").</p>
+                    </section>
+
+                    <section>
+                        <h3 class="font-bold text-gray-900 mb-2">2. Tratamiento de Datos Personales y Carácter Público</h3>
+                        <p>En cumplimiento de la Ley 1581 de 2012 y normas concordantes de la República de Colombia, se informa que la plataforma recolecta los siguientes datos opcionales proporcionados voluntariamente por el usuario:</p>
+                        <ul class="list-disc pl-6 space-y-1">
+                            <li><strong>Información Personal:</strong> Nombres, apellidos, promoción (año), ubicación.</li>
+                            <li><strong>Perfil Académico y Profesional:</strong> Situación actual, puesto, área de interés, estudios, especialización, extracto/bio, habilidades, intereses de conexión.</li>
+                            <li><strong>Redes de Contacto:</strong> Celular/WhatsApp y URL de LinkedIn.</li>
+                        </ul>
+                        <p><strong>Aviso de Publicidad de Datos:</strong> El usuario acepta y autoriza de manera explícita que toda la información suministrada en los campos anteriores será de carácter PÚBLICO y visible en internet para cualquier persona. El usuario asume total responsabilidad por los datos de contacto que decida publicar. La plataforma no se hace responsable por el uso indebido que terceros hagan de esta información pública (incluyendo, pero sin limitarse a, spam, acoso o extracción de datos).</p>
+                        <p><strong>Privacidad de las Comunicaciones:</strong> El único componente de la plataforma que se mantiene bajo estricta privacidad es el contenido de los mensajes intercambiados a través del chat interno de la red. Estos no serán divulgados a terceros, salvo por orden de una autoridad judicial competente.</p>
+                    </section>
+
+                    <section>
+                        <h3 class="font-bold text-gray-900 mb-2">3. Interacción, Conducta y Moderación</h3>
+                        <p><strong>Publicaciones:</strong> Los usuarios no pueden realizar publicaciones directas en la red. Toda publicación de contenido está sujeta a la solicitud previa y a la moderación, aprobación y publicación exclusiva por parte del Administrador.</p>
+                        <p><strong>Causales de Expulsión:</strong> La plataforma se reserva el derecho de admisión y permanencia. El Administrador podrá expulsar, suspender o bloquear de manera permanente e inapelable a cualquier usuario que haga un uso inadecuado de la plataforma, incluyendo el envío de mensajes inapropiados, acoso, spam o comportamiento abusivo a través de los chats internos.</p>
+                    </section>
+
+                    <section>
+                        <h3 class="font-bold text-gray-900 mb-2">4. Exención de Responsabilidad Civil y Comercial</h3>
+                        <p>La plataforma actúa única y exclusivamente como un directorio y facilitador de contacto entre individuos. El Administrador se exime expresamente de cualquier tipo de responsabilidad civil, penal, comercial o de cualquier otra índole derivada de:</p>
+                        <ul class="list-disc pl-6 space-y-1">
+                            <li>La naturaleza, resultado o consecuencias de las interacciones, reuniones, acuerdos comerciales, ofertas laborales o conexiones establecidas entre los usuarios.</li>
+                            <li>Disputas, conflictos, estafas, fraudes o daños materiales o inmateriales que surjan entre las partes a raíz del uso de la red. Toda interacción se realiza bajo el propio riesgo y cuenta del usuario.</li>
+                        </ul>
+                    </section>
+
+                    <section>
+                        <h3 class="font-bold text-gray-900 mb-2">5. Propiedad Intelectual y Licencia de Uso</h3>
+                        <p>El código fuente, diseño, bases de datos y marca de la plataforma son propiedad exclusiva de su creador. Respecto al contenido y las solicitudes de publicación enviadas por los usuarios, estos conservan sus derechos de autor originales. Sin embargo, al enviar una solicitud de publicación, el usuario otorga a la plataforma una licencia gratuita, perpetua, irrevocable y transferible para usar, modificar, adaptar y publicar dicho material en pro del beneficio de la red de estudiantes y egresados, a criterio exclusivo del Administrador.</p>
+                    </section>
+
+                    <section>
+                        <h3 class="font-bold text-gray-900 mb-2">6. Derechos ARCO (Actualización, Rectificación, Cancelación y Oposición)</h3>
+                        <p>El usuario tiene derecho a conocer, actualizar, rectificar o solicitar la supresión de sus datos personales y la eliminación de su cuenta en cualquier momento. Para ejercer este derecho o escalar cualquier solicitud, el usuario deberá enviar un correo electrónico a la dirección oficial de soporte: <a href="mailto:juanda.fonsecag@gmail.com" class="text-brand-600 font-semibold hover:underline">juanda.fonsecag@gmail.com</a>. La plataforma contará con los tiempos de ley aplicables para dar trámite y respuesta a la solicitud de eliminación técnica de la base de datos.</p>
+                    </section>
+
+                    <section>
+                        <h3 class="font-bold text-gray-900 mb-2">7. Ley Aplicable y Jurisdicción</h3>
+                        <p>Estos Términos y Condiciones se rigen por las leyes de la República de Colombia.</p>
+                    </section>
                 </div>
             </div>
         </div>
@@ -1203,17 +1263,17 @@
 
         const router = {
             navigate: (viewId) => {
-                if (viewId !== 'auth' && viewId !== 'register' && viewId !== 'home' && !state.user) { authLogic.logout(); return; }
+                if (viewId !== 'auth' && viewId !== 'register' && viewId !== 'home' && viewId !== 'terms' && !state.user) { authLogic.logout(); return; }
                 if (viewId === 'admin' && !isAdminUser()) { viewId = 'directory'; }
 
-                const views = ['view-home', 'view-auth', 'view-register', 'view-onboarding', 'view-directory', 'view-news', 'view-messages', 'view-profile', 'view-admin'];
+                const views = ['view-home', 'view-auth', 'view-register', 'view-terms', 'view-onboarding', 'view-directory', 'view-news', 'view-messages', 'view-profile', 'view-admin'];
                 views.forEach(id => {
                     const el = document.getElementById(id);
                     if(el) el.classList.add('hidden');
                 });
 
                 const nav = document.querySelector('nav');
-                if (viewId === 'auth' || viewId === 'register' || viewId === 'onboarding') {
+                if (viewId === 'auth' || viewId === 'register' || viewId === 'onboarding' || viewId === 'terms') {
                     nav.classList.add('hidden');
                 } else {
                     nav.classList.remove('hidden');
