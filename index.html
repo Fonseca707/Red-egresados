@@ -384,7 +384,7 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                             <label class="input-label">Nombres</label>
-                            <input id="ob-name" type="text" placeholder="Ej: Juan Carlos" class="input-field">
+                            <input id="ob-name" type="text" placeholder="Ej: Juan Carlos" class="input-field" required minlength="2">
                         </div>
                         <div>
                             <label class="input-label">Apellidos</label>
@@ -539,7 +539,7 @@
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
                                     <label class="input-label">Nombres</label>
-                                    <input type="text" id="p-name" class="input-field" placeholder="Ej: Juan">
+                                    <input type="text" id="p-name" class="input-field" placeholder="Ej: Juan" required minlength="2">
                                 </div>
                                 <div>
                                     <label class="input-label">Apellidos</label>
@@ -668,6 +668,7 @@
                                 <tr>
                                     <th class="px-6 py-4 font-semibold">Egresado</th>
                                     <th class="px-6 py-4 font-semibold">Email</th>
+                                    <th class="px-6 py-4 font-semibold">Recibe Novedades</th>
                                     <th class="px-6 py-4 font-semibold">Estado Cuenta</th>
                                     <th class="px-6 py-4 font-semibold text-right">Acciones</th>
                                 </tr>
@@ -928,6 +929,7 @@
                         email,
                         privacyAccepted: true,
                         newsletterOptIn: wantsNewsletter,
+                        newsletterOptInUpdatedAt: firebase.firestore.FieldValue.serverTimestamp(),
                         onboardingCompleted: false,
                         createdAt: firebase.firestore.FieldValue.serverTimestamp(),
                         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
@@ -943,10 +945,24 @@
             registerWithGoogle: async () => {
                 const feedback = document.getElementById('register-feedback');
                 const provider = new firebase.auth.GoogleAuthProvider();
+                const acceptedPrivacy = document.getElementById('register-privacy').checked;
+                const wantsNewsletter = document.getElementById('register-newsletter').checked;
+                if (!acceptedPrivacy) {
+                    feedback.textContent = 'Debes aceptar la política de tratamiento de datos.';
+                    return;
+                }
                 try {
                     state.guestMode = false;
-                    await auth.signInWithPopup(provider);
-                    feedback.textContent = '';
+                    const result = await auth.signInWithPopup(provider);
+                    await alumniCollection.doc(result.user.uid).set({
+                        email: result.user.email || '',
+                        privacyAccepted: true,
+                        newsletterOptIn: wantsNewsletter,
+                        newsletterOptInUpdatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                        onboardingCompleted: false,
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    }, { merge: true });
+                    feedback.textContent = 'Preferencias guardadas correctamente.';
                 } catch (error) {
                     feedback.textContent = `Error Google: ${error.message}`;
                 }
@@ -995,10 +1011,19 @@
             }
         };
 
+        function hasValidFirstName(value) {
+            return String(value || '').trim().length >= 2;
+        }
+
         const onboardingLogic = {
             save: async (e) => {
                 e.preventDefault();
                 if(!state.user) return;
+                const firstNameValue = document.getElementById('ob-name').value.trim();
+                if (!hasValidFirstName(firstNameValue)) {
+                    alert('El nombre es obligatorio y debe tener al menos 2 caracteres.');
+                    return;
+                }
 
                 const btn = document.getElementById('btn-save-onboarding');
                 const originalText = btn.innerHTML;
@@ -1006,7 +1031,7 @@
                 btn.innerHTML = `<i class="ph-bold ph-spinner animate-spin"></i> Guardando...`;
 
                 const payload = {
-                    firstName: document.getElementById('ob-name').value.trim(),
+                    firstName: firstNameValue,
                     lastName: document.getElementById('ob-lastname').value.trim(),
                     graduationYear: document.getElementById('ob-year').value.trim(),
                     location: document.getElementById('ob-location').value.trim(),
@@ -1062,7 +1087,9 @@
                 return {
                     id: doc.id,
                     name: `${d.firstName || ''} ${d.lastName || ''}`.trim() || 'Sin nombre',
+                    firstName: (d.firstName || '').trim(),
                     email: d.email || '',
+                    newsletterOptIn: Boolean(d.newsletterOptIn),
                     role: d.role || 'Sin rol',
                     status: d.status || 'sin-definir',
                     statusLabel: formatStatusLabel(d.status),
@@ -1079,7 +1106,7 @@
                     phone: d.phone || '',
                     linkedin: d.linkedin || ''
                 };
-                });
+                }).filter((alum) => hasValidFirstName(alum.firstName));
             } catch (error) {
                 state.data.alumni = state.data.alumni.length ? state.data.alumni : [];
             } finally {
@@ -1449,7 +1476,7 @@
                 const tbody = document.getElementById('admin-users-body');
                 if (!tbody) return;
                 if (!state.data.alumni.length) {
-                    tbody.innerHTML = '<tr><td colspan="4" class="px-6 py-6 text-center text-gray-500">Sin usuarios para mostrar.</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-6 text-center text-gray-500">Sin usuarios para mostrar.</td></tr>';
                     return;
                 }
                 tbody.innerHTML = state.data.alumni.map((user) => {
@@ -1473,6 +1500,11 @@
                                 </div>
                             </td>
                             <td class="px-6 py-4 text-gray-600 text-sm">${user.email || 'No disponible'}</td>
+                            <td class="px-6 py-4 text-sm">
+                                <span class="px-2.5 py-1 text-xs font-bold rounded-lg border ${user.newsletterOptIn ? 'bg-blue-50 text-blue-600 border-blue-100' : 'bg-gray-50 text-gray-500 border-gray-200'}">
+                                    ${user.newsletterOptIn ? 'Sí' : 'No'}
+                                </span>
+                            </td>
                             <td class="px-6 py-4"><span class="px-2.5 py-1 text-xs font-bold rounded-lg border ${badge}">${statusText}</span></td>
                             <td class="px-6 py-4 text-right space-x-2">
                                 <button onclick="adminLogic.toggleUserStatus('${user.id}', '${accountStatus}')" class="p-2 rounded-lg text-amber-600 hover:bg-amber-50 transition" title="${toggleTitle}"><i class="ph-bold ${toggleIcon} text-lg"></i></button>
@@ -1783,13 +1815,18 @@
             },
             save: async () => {
                 if (!state.user) { alert('Debes iniciar sesión para actualizar tu cuenta.'); return; }
+                const firstNameValue = document.getElementById('p-name').value.trim();
+                if (!hasValidFirstName(firstNameValue)) {
+                    alert('El nombre es obligatorio y debe tener al menos 2 caracteres.');
+                    return;
+                }
                 const btn = document.getElementById('btn-save-profile');
                 const original = btn.innerHTML;
                 btn.disabled = true;
                 btn.innerHTML = `<i class="ph-bold ph-spinner animate-spin"></i> Guardando...`;
 
                 const payload = {
-                    firstName: document.getElementById('p-name').value.trim(),
+                    firstName: firstNameValue,
                     lastName: document.getElementById('p-lastname').value.trim(),
                     graduationYear: document.getElementById('p-year').value.trim(),
                     location: document.getElementById('p-location').value.trim(),
