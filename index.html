@@ -88,7 +88,7 @@
     </div>
 
     <!-- MAIN CONTENT AREA -->
-    <main id="app-content" class="flex-1 pt-20 pb-8 px-4 overflow-y-auto relative scroll-smooth bg-stone-50/60">
+    <main id="app-content" class="flex-1 pt-20 pb-24 md:pb-8 px-4 overflow-y-auto relative scroll-smooth bg-stone-50/60">
         
         <!-- VISTA: HOME (Landing Profesional) -->
         <div id="view-home" class="animate-fade-in w-full max-w-7xl mx-auto">
@@ -725,20 +725,20 @@
     </main>
 
     <!-- 3.5 NAVEGACIÓN MÓVIL -->
-    <nav id="mobile-nav" class="hidden md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur border-t border-gray-200 grid-cols-5">
-        <button id="mnav-home" onclick="router.navigate('home')" class="py-3 text-xs font-semibold text-gray-500 flex flex-col items-center gap-1">
+    <nav id="mobile-nav" class="hidden md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur border-t border-gray-200 grid grid-cols-5">
+        <button id="mnav-home" onclick="router.navigate('home')" class="py-3 text-xs font-semibold text-gray-500 flex flex-col items-center justify-center gap-1 min-w-0">
             <i class="ph ph-house text-lg"></i><span>Inicio</span>
         </button>
-        <button id="mnav-dir" onclick="router.navigate('directory')" class="py-3 text-xs font-semibold text-gray-500 flex flex-col items-center gap-1">
+        <button id="mnav-dir" onclick="router.navigate('directory')" class="py-3 text-xs font-semibold text-gray-500 flex flex-col items-center justify-center gap-1 min-w-0">
             <i class="ph ph-users text-lg"></i><span>Directorio</span>
         </button>
-        <button id="mnav-news" onclick="router.navigate('news')" class="py-3 text-xs font-semibold text-gray-500 flex flex-col items-center gap-1">
+        <button id="mnav-news" onclick="router.navigate('news')" class="py-3 text-xs font-semibold text-gray-500 flex flex-col items-center justify-center gap-1 min-w-0">
             <i class="ph ph-newspaper text-lg"></i><span>Novedades</span>
         </button>
-        <button id="mnav-msg" onclick="router.navigate('messages')" class="py-3 text-xs font-semibold text-gray-500 flex flex-col items-center gap-1">
+        <button id="mnav-msg" onclick="router.navigate('messages')" class="py-3 text-xs font-semibold text-gray-500 flex flex-col items-center justify-center gap-1 min-w-0">
             <i class="ph ph-chats-circle text-lg"></i><span>Mensajes</span>
         </button>
-        <button id="mnav-profile" onclick="router.navigate('profile')" class="py-3 text-xs font-semibold text-gray-500 flex flex-col items-center gap-1">
+        <button id="mnav-profile" onclick="router.navigate('profile')" class="py-3 text-xs font-semibold text-gray-500 flex flex-col items-center justify-center gap-1 min-w-0">
             <i class="ph ph-user-circle text-lg"></i><span>Perfil</span>
         </button>
     </nav>
