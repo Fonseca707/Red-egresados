@@ -54,23 +54,6 @@
         .detail-row { @apply flex items-start gap-3 py-3 border-b border-stone-100 last:border-0; }
         .detail-icon { @apply w-10 h-10 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center shrink-0 text-xl shadow-sm; }
         #profileForm .input-field { @apply bg-white border-brand-100 shadow-sm; }
-
-        @media (max-width: 768px) {
-            body { min-height: 100dvh; height: auto; overflow: auto; }
-
-            main#app-content { padding-top: 5rem; padding-bottom: 1rem; padding-left: 0.75rem; padding-right: 0.75rem; }
-
-            #view-auth > div, #view-register > div, #view-onboarding > div {
-                border-radius: 1.5rem;
-                padding: 1.25rem;
-                margin: 0.25rem;
-            }
-            #view-profile .section-card { padding: 1rem; border-radius: 1.25rem; }
-            #view-profile #profile-avatar { width: 6.5rem; height: 6.5rem; }
-            #view-messages { height: calc(100dvh - 6.5rem); border-radius: 1.5rem; }
-            #view-directory, #view-news, #view-profile, #view-admin { padding-bottom: 1rem; }
-            .input-field, input, select, textarea, button { font-size: 16px; }
-        }
     </style>
 </head>
 <body class="text-stone-800 font-sans h-screen flex flex-col overflow-hidden">
