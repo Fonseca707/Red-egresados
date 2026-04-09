@@ -84,7 +84,7 @@
     <!-- 2. BANNER DE ESTADO -->
     <div id="approval-banner" class="hidden mt-16 bg-amber-50 border-b border-amber-200 px-4 py-3 flex items-center justify-center gap-3 text-amber-900 text-sm animate-fade-in">
         <i class="ph-fill ph-warning-circle text-amber-500 text-lg"></i>
-        <span><strong>Cuenta en revisión:</strong> Tu perfil está siendo validado. Algunas funciones están limitadas.</span>
+        <span><strong></strong> Bienvenido a la red</span>
     </div>
 
     <!-- MAIN CONTENT AREA -->
@@ -107,11 +107,11 @@
                         Cultiva tu red <br class="hidden lg:block"><span class="text-brand-600">Cosecha tu futuro</span>
                     </h1>
                     <p class="text-lg md:text-xl text-gray-500 mb-10 max-w-2xl mx-auto lg:mx-0 leading-relaxed">
-                         Únete a la red global de egresados en Risaralda. Expande tu red de contactos, encuentra socios líderes en la industria y descubre oportunidades exclusivas diseñadas para ti.
+                         Únete a la red de egresados en Risaralda. Expande tu red de contactos, encuentra socios líderes en la industria y descubre oportunidades exclusivas diseñadas para ti.
                     </p>
                     <div class="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
                         <button onclick="uiLogic.toggleAuthModal()" class="px-8 py-4 bg-brand-600 text-white font-bold rounded-xl shadow-lg shadow-brand-500/30 hover:bg-brand-700 hover:-translate-y-1 transition transform flex items-center justify-center gap-2 text-lg">
-                            Plantar semilla <i class="ph-bold ph-arrow-right"></i>
+                            Regístrate <i class="ph-bold ph-arrow-right"></i>
                         </button>
                         <button onclick="router.navigate('directory')" class="px-8 py-4 bg-white text-gray-700 font-bold rounded-xl border border-gray-200 hover:bg-gray-50 hover:shadow-sm transition flex items-center justify-center gap-2 text-lg">
                             <i class="ph-bold ph-magnifying-glass"></i> Explorar el directorio
@@ -144,7 +144,7 @@
                         </div>
                         <div>
                             <p class="text-sm text-gray-500 font-semibold">Nuevas oportunidades</p>
-                            <p class="text-lg font-bold text-gray-900">cada semana</p>
+                            <p class="text-lg font-bold text-gray-900">Cada semana</p>
                         </div>
                     </div>
                 </div>
@@ -240,7 +240,7 @@
                 <form onsubmit="authLogic.login(event)" class="space-y-5">
                     <div>
                         <label class="input-label">Email Personal</label>
-                        <input id="login-email" type="email" required placeholder="tu.nombre@universidad.edu" class="input-field">
+                        <input id="login-email" type="email" required placeholder="tu.nombre@gmail.com" class="input-field">
                     </div>
                     <div>
                         <label class="input-label">Contraseña</label>
@@ -256,7 +256,7 @@
                 <p id="auth-feedback" class="text-xs text-gray-500 mt-3 text-center"></p>
                 
                 <div class="mt-8 text-center border-t border-gray-100 pt-6 space-y-2">
-                    <button onclick="authLogic.registerWithEmail()" class="text-sm text-brand-600 font-bold hover:underline">Planta tu semilla con email</button>
+                    <button onclick="authLogic.registerWithEmail()" class="text-sm text-brand-600 font-bold hover:underline">Regístrate con email</button>
                     <button onclick="authLogic.browseAsGuest()" class="block w-full text-sm text-gray-600 font-semibold hover:text-brand-600 transition">Revisar la red como invitado</button>
                 </div>
             </div>
@@ -377,7 +377,7 @@
                         <i class="ph-duotone ph-hand-waving"></i>
                     </div>
                     <h1 class="text-2xl md:text-3xl font-bold text-gray-900">¡Bienvenido a la comunidad!</h1>
-                    <p class="text-gray-500 text-sm mt-2 max-w-lg mx-auto">Cuéntanos un poco sobre ti para que otros egresados puedan conectar contigo. <strong class="text-brand-600">Todos los campos son opcionales.</strong></p>
+                    <p class="text-gray-500 text-sm mt-2 max-w-lg mx-auto">Cuéntanos un poco sobre ti para que otras personas puedan conectar contigo. <strong class="text-brand-600">Todos los campos son opcionales.</strong></p>
                 </div>
 
                 <form onsubmit="onboardingLogic.save(event)" class="space-y-6">
