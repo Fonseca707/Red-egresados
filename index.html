@@ -57,7 +57,9 @@
 
         @media (max-width: 768px) {
             body { min-height: 100dvh; height: auto; overflow: auto; }
-            main#app-content { padding-top: 5rem; padding-bottom: 5.5rem; padding-left: 0.75rem; padding-right: 0.75rem; }
+
+            main#app-content { padding-top: 5rem; padding-bottom: 1rem; padding-left: 0.75rem; padding-right: 0.75rem; }
+
             #view-auth > div, #view-register > div, #view-onboarding > div {
                 border-radius: 1.5rem;
                 padding: 1.25rem;
@@ -66,25 +68,6 @@
             #view-profile .section-card { padding: 1rem; border-radius: 1.25rem; }
             #view-profile #profile-avatar { width: 6.5rem; height: 6.5rem; }
             #view-messages { height: calc(100dvh - 6.5rem); border-radius: 1.5rem; }
-            #mobile-nav {
-                display: grid;
-                position: fixed;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                width: 100vw;
-                grid-template-columns: repeat(5, minmax(0, 1fr));
-                align-items: stretch;
-            }
-            #mobile-nav button {
-                width: 100%;
-                min-width: 0;
-                padding: 0.65rem 0.15rem 0.75rem;
-            }
-            #mobile-nav button span {
-                font-size: 0.72rem;
-                line-height: 1.1;
-            }
             #view-directory, #view-news, #view-profile, #view-admin { padding-bottom: 1rem; }
             .input-field, input, select, textarea, button { font-size: 16px; }
         }
