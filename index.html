@@ -2088,7 +2088,6 @@
                 const fullName = `${p.firstName || ''} ${p.lastName || ''}`.trim() || state.user?.displayName || 'Usuario';
                 const avatar = p.photoURL || buildAvatarUrl(fullName);
                 document.getElementById('profile-avatar').src = avatar;
-                document.getElementById('display-expectations').innerText = p.expectations || 'Aún no has agregado esta información.';
                 refreshHeaderIdentity();
             },
             save: async () => {
