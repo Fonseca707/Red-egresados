@@ -998,7 +998,7 @@
                 const newsletterInput = document.getElementById('register-newsletter');
                 if (newsletterInput) newsletterInput.checked = true;
                 if (state.user) {
-                    router.navigate('directory');
+                    router.navigate('profile');
                     return;
                 }
                 router.navigate('register');
@@ -1404,7 +1404,7 @@
         const router = {
             navigate: (viewId) => {
                 if (viewId !== 'auth' && viewId !== 'register' && viewId !== 'home' && viewId !== 'terms' && !state.user) { authLogic.logout(); return; }
-                if (viewId === 'register' && state.user) { viewId = 'directory'; }
+                if (viewId === 'register' && state.user) { viewId = 'profile'; }
                 if (viewId === 'admin' && !isAdminUser()) { viewId = 'directory'; }
 
                 const views = ['view-home', 'view-auth', 'view-register', 'view-terms', 'view-onboarding', 'view-directory', 'view-news', 'view-messages', 'view-profile', 'view-admin'];
@@ -2094,7 +2094,7 @@
                 document.getElementById('modal-news').classList.remove('hidden');
             },
             closeNewsModal: () => document.getElementById('modal-news').classList.add('hidden'),
-            toggleAuthModal: () => router.navigate(state.user ? 'directory' : 'register')
+            toggleAuthModal: () => router.navigate(state.user ? 'profile' : 'register')
         };
 
         window.router = router;
