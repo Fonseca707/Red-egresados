@@ -129,7 +129,7 @@
                     </p>
                     <div class="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
                         <button onclick="uiLogic.toggleAuthModal()" class="px-8 py-4 bg-brand-600 text-white font-bold rounded-xl shadow-lg shadow-brand-500/30 hover:bg-brand-700 hover:-translate-y-1 transition transform flex items-center justify-center gap-2 text-lg">
-                            Regístrate <i class="ph-bold ph-arrow-right"></i>
+                            Crear cuenta <i class="ph-bold ph-arrow-right"></i>
                         </button>
                         <button onclick="router.navigate('directory')" class="px-8 py-4 bg-white text-gray-700 font-bold rounded-xl border border-gray-200 hover:bg-gray-50 hover:shadow-sm transition flex items-center justify-center gap-2 text-lg">
                             <i class="ph-bold ph-magnifying-glass"></i> Explorar el directorio
@@ -230,7 +230,7 @@
                     <h2 class="text-3xl md:text-4xl font-extrabold text-gray-900 mb-4">¿Listo para integrarte al ecosistema?</h2>
                     <p class="text-lg text-gray-600 mb-8 max-w-2xl mx-auto">No pierdas la oportunidad de ser parte de la comunidad de profesionales más activa. El registro te tomará menos de 2 minutos.</p>
                     <button onclick="uiLogic.toggleAuthModal()" class="px-10 py-4 bg-gray-900 text-white text-lg font-bold rounded-xl shadow-xl hover:bg-black transition transform hover:scale-105">
-                        Dar el primer paso
+                        Crear mi cuenta ahora
                     </button>
                 </div>
             </section>
@@ -274,7 +274,7 @@
                 <p id="auth-feedback" class="text-xs text-red-600 mt-3 text-center font-semibold"></p>
                 
                 <div class="mt-8 text-center border-t border-gray-100 pt-6 space-y-2">
-                    <button id="login-register-btn" onclick="authLogic.registerWithEmail()" class="text-sm text-brand-600 font-bold hover:underline">Regístrate con email</button>
+                    <button id="login-register-btn" onclick="authLogic.registerWithEmail()" class="text-sm text-brand-600 font-bold hover:underline">Crear cuenta con email</button>
                     <button onclick="authLogic.browseAsGuest()" class="block w-full text-sm text-gray-600 font-semibold hover:text-brand-600 transition">Revisar la red como invitado</button>
                 </div>
             </div>
@@ -2094,7 +2094,7 @@
                 document.getElementById('modal-news').classList.remove('hidden');
             },
             closeNewsModal: () => document.getElementById('modal-news').classList.add('hidden'),
-            toggleAuthModal: () => router.navigate('auth')
+            toggleAuthModal: () => router.navigate(state.user ? 'directory' : 'register')
         };
 
         window.router = router;
