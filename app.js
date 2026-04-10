@@ -1,6 +1,6 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js';
-import { getAuth, signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js';
-import { getFirestore, collection, getDocs } from 'https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js';
+import { createUserWithEmailAndPassword, getAuth, signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js';
+import { doc, getFirestore, setDoc, collection, getDocs, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js';
 
 let firebaseConfig;
 try {
@@ -42,6 +42,33 @@ if (firebaseConfig) {
   googleProvider = new GoogleAuthProvider();
 }
 
+const AUTH_ERROR_MESSAGES = {
+  'auth/user-not-found': 'No existe la cuenta.',
+  'auth/wrong-password': 'La contraseña es incorrecta.',
+  'auth/invalid-credential': 'Credenciales inválidas. Verifica email y contraseña.',
+  'auth/invalid-email': 'El correo no tiene un formato válido.',
+  'auth/email-already-in-use': 'Este correo ya está registrado.',
+  'auth/weak-password': 'La contraseña debe tener al menos 6 caracteres.',
+  'auth/popup-closed-by-user': 'Cerraste la ventana de Google antes de completar el acceso.',
+  'auth/cancelled-popup-request': 'Se canceló la solicitud de acceso con Google.',
+  'auth/network-request-failed': 'No hay conexión a internet. Intenta nuevamente.'
+};
+
+function getFriendlyAuthError(error, fallbackMessage) {
+  return AUTH_ERROR_MESSAGES[error?.code] || fallbackMessage;
+}
+
+async function saveUserPreferences({ uid, email, receiveInfo = true }) {
+  if (!state.firebaseEnabled || !uid) return;
+
+  await setDoc(doc(db, 'alumni', uid), {
+    email: email || null,
+    receiveInfo,
+    updatedAt: serverTimestamp(),
+    createdAt: serverTimestamp()
+  }, { merge: true });
+}
+
 const authLogic = {
   async login(e) {
     e.preventDefault();
@@ -62,7 +89,7 @@ const authLogic = {
       feedback.textContent = '';
       router.navigate('directory');
     } catch (error) {
-      feedback.textContent = `Error de acceso email: ${error.message}`;
+      feedback.textContent = getFriendlyAuthError(error, 'No pudimos iniciar sesión. Intenta de nuevo.');
     }
   },
 
@@ -82,8 +109,74 @@ const authLogic = {
       feedback.textContent = '';
       router.navigate('directory');
     } catch (error) {
-      feedback.textContent = `Error de acceso Google: ${error.message}`;
+      feedback.textContent = getFriendlyAuthError(error, 'No pudimos iniciar sesión con Google.');
     }
+  },
+
+  async submitRegister(e) {
+    e.preventDefault();
+    const email = document.getElementById('register-email')?.value?.trim();
+    const password = document.getElementById('register-password')?.value;
+    const passwordConfirm = document.getElementById('register-password-confirm')?.value;
+    const receiveInfo = document.getElementById('register-newsletter')?.checked ?? true;
+    const feedback = document.getElementById('register-feedback');
+
+    if (password !== passwordConfirm) {
+      feedback.textContent = 'Las contraseñas no coinciden.';
+      return;
+    }
+
+    if (!state.firebaseEnabled) {
+      state.user = { uid: 'guest-register', email, displayName: 'Registro Demo', status: 'approved' };
+      feedback.textContent = `Modo demo: registro simulado con recibir información ${receiveInfo ? 'activado' : 'desactivado'}.`;
+      router.navigate('directory');
+      return;
+    }
+
+    try {
+      const credential = await createUserWithEmailAndPassword(auth, email, password);
+      await saveUserPreferences({ uid: credential.user.uid, email, receiveInfo });
+      feedback.textContent = '';
+      router.navigate('directory');
+    } catch (error) {
+      feedback.textContent = getFriendlyAuthError(error, 'No pudimos crear tu cuenta.');
+    }
+  },
+
+  async registerWithGoogle() {
+    const feedback = document.getElementById('register-feedback');
+
+    if (!state.firebaseEnabled) {
+      state.user = { uid: 'guest-register-google', email: 'demo.google@alumni.test', displayName: 'Registro Google Demo', status: 'approved' };
+      feedback.textContent = 'Modo demo: registro con Google simulado (recibir información activado).';
+      router.navigate('directory');
+      return;
+    }
+
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      await saveUserPreferences({
+        uid: result.user.uid,
+        email: result.user.email,
+        receiveInfo: true
+      });
+      feedback.textContent = '';
+      router.navigate('directory');
+    } catch (error) {
+      feedback.textContent = getFriendlyAuthError(error, 'No pudimos registrarte con Google.');
+    }
+  },
+
+  registerWithEmail() {
+    const newsletter = document.getElementById('register-newsletter');
+    if (newsletter) newsletter.checked = true;
+    router.navigate('register');
+  },
+
+  browseAsGuest() {
+    state.user = { uid: 'guest-browse', email: null, displayName: 'Invitado', status: 'approved' };
+    state.profile = { firstName: 'Invitado', lastName: '', role: 'Vista de demostración' };
+    router.navigate('directory');
   },
 
   async logout() {
@@ -95,12 +188,12 @@ const authLogic = {
 
 const router = {
   navigate(viewId) {
-    if (viewId !== 'auth' && viewId !== 'home' && !state.user) {
+    if (!['auth', 'home', 'register', 'terms'].includes(viewId) && !state.user) {
       authLogic.logout();
       return;
     }
 
-    const views = ['view-home', 'view-auth', 'view-directory', 'view-news', 'view-messages', 'view-profile'];
+    const views = ['view-home', 'view-auth', 'view-register', 'view-terms', 'view-directory', 'view-news', 'view-messages', 'view-profile'];
     views.forEach((id) => document.getElementById(id)?.classList.add('hidden'));
 
     const targetView = document.getElementById(`view-${viewId}`);
