@@ -54,6 +54,21 @@
         .detail-row { @apply flex items-start gap-3 py-3 border-b border-stone-100 last:border-0; }
         .detail-icon { @apply w-10 h-10 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center shrink-0 text-xl shadow-sm; }
         #profileForm .input-field { @apply bg-white border-brand-100 shadow-sm; }
+        #view-onboarding .onboarding-field {
+            width: 100%;
+            padding: 0.85rem 1rem;
+            background: #f5f5f5;
+            border: 1px solid #d6d3d1;
+            border-radius: 0.75rem;
+            font-size: 0.95rem;
+            color: #1f2937;
+        }
+        #view-onboarding .onboarding-field:focus {
+            outline: none;
+            border-color: #16a34a;
+            box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.15);
+            background: #ffffff;
+        }
     </style>
 </head>
 <body class="text-stone-800 font-sans h-screen flex flex-col overflow-hidden">
@@ -384,23 +399,29 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                             <label class="input-label">Nombres</label>
-                            <input id="ob-name" type="text" placeholder="Ej: Juan Carlos" class="input-field" required minlength="2">
+                            <input id="ob-name" type="text" placeholder="Ej: Juan Carlos" class="input-field onboarding-field" required minlength="2">
                         </div>
                         <div>
                             <label class="input-label">Apellidos</label>
-                            <input id="ob-lastname" type="text" placeholder="Ej: Pérez" class="input-field">
+                            <input id="ob-lastname" type="text" placeholder="Ej: Pérez" class="input-field onboarding-field">
                         </div>
                         <div>
                             <label class="input-label">Promoción (Año)</label>
-                            <input id="ob-year" type="number" placeholder="Ej: 2020" class="input-field">
+                            <input id="ob-year" type="number" placeholder="Ej: 2020" class="input-field onboarding-field">
                         </div>
                         <div>
                             <label class="input-label">Ubicación Actual</label>
-                            <input id="ob-location" type="text" placeholder="Ej: Bogotá, Colombia" class="input-field">
+                            <input id="ob-location" type="text" placeholder="Ej: Bogotá, Colombia" class="input-field onboarding-field">
                         </div>
                         <div class="md:col-span-2">
-                            <label class="input-label">Puesto o Rol Actual</label>
-                            <input id="ob-role" type="text" placeholder="Ej: Desarrollador Backend, Analista..." class="input-field">
+                            <label class="input-label">Situación Actual</label>
+                            <select id="ob-status" class="input-field onboarding-field">
+                                <option value="trabajando">Trabajando</option>
+                                <option value="estudiando">Estudiando</option>
+                                <option value="trabajando-estudiando">Trabajando y estudiando</option>
+                                <option value="emprendiendo">Emprendiendo</option>
+                                <option value="profesor">Profesor</option>
+                            </select>
                         </div>
                     </div>
 
@@ -900,6 +921,22 @@
             return allowedExact.includes(email) || allowedPrefixes.some(prefix => email.startsWith(prefix));
         }
 
+        const AUTH_ERROR_MESSAGES = {
+            'auth/user-not-found': 'No existe la cuenta.',
+            'auth/wrong-password': 'La contraseña es incorrecta.',
+            'auth/invalid-credential': 'Correo o contraseña incorrectos.',
+            'auth/invalid-email': 'El correo no tiene un formato válido.',
+            'auth/email-already-in-use': 'Ese correo ya está registrado.',
+            'auth/weak-password': 'La contraseña es muy débil.',
+            'auth/popup-closed-by-user': 'Cerraste la ventana de Google antes de terminar.',
+            'auth/cancelled-popup-request': 'Se canceló la solicitud con Google.',
+            'auth/network-request-failed': 'No hay conexión a internet. Intenta nuevamente.'
+        };
+
+        function getFriendlyAuthError(error, fallback = 'Ocurrió un error de autenticación.') {
+            return AUTH_ERROR_MESSAGES[error?.code] || fallback;
+        }
+
         const authLogic = {
             login: async (e) => {
                 e.preventDefault();
@@ -912,10 +949,12 @@
                     await auth.signInWithEmailAndPassword(email, password);
                     feedback.textContent = '';
                 } catch (error) {
-                    feedback.textContent = `Error de acceso: ${error.message}`;
+                    feedback.textContent = getFriendlyAuthError(error, 'No pudimos iniciar sesión.');
                 }
             },
             registerWithEmail: async () => {
+                const newsletterInput = document.getElementById('register-newsletter');
+                if (newsletterInput) newsletterInput.checked = true;
                 router.navigate('register');
             },
             submitRegister: async (e) => {
@@ -960,15 +999,13 @@
                     emailLogic.prepareWelcomeStructure(email);
                     feedback.textContent = 'Cuenta creada correctamente.';
                 } catch (error) {
-                    const map = { 'auth/email-already-in-use': 'Ese correo ya está registrado.', 'auth/invalid-email': 'Correo inválido.', 'auth/weak-password': 'La contraseña es muy débil.' };
-                    feedback.textContent = map[error.code] || `Error de registro: ${error.message}`;
+                    feedback.textContent = getFriendlyAuthError(error, 'No pudimos crear la cuenta.');
                 }
             },
             registerWithGoogle: async () => {
                 const feedback = document.getElementById('register-feedback');
                 const provider = new firebase.auth.GoogleAuthProvider();
                 const acceptedPrivacy = document.getElementById('register-privacy').checked;
-                const wantsNewsletter = document.getElementById('register-newsletter').checked;
                 if (!acceptedPrivacy) {
                     feedback.textContent = 'Debes aceptar la política de tratamiento de datos.';
                     return;
@@ -979,14 +1016,14 @@
                     await alumniCollection.doc(result.user.uid).set({
                         email: result.user.email || '',
                         privacyAccepted: true,
-                        newsletterOptIn: wantsNewsletter,
+                        newsletterOptIn: true,
                         newsletterOptInUpdatedAt: firebase.firestore.FieldValue.serverTimestamp(),
                         onboardingCompleted: false,
                         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
                     }, { merge: true });
                     feedback.textContent = 'Preferencias guardadas correctamente.';
                 } catch (error) {
-                    feedback.textContent = `Error Google: ${error.message}`;
+                    feedback.textContent = getFriendlyAuthError(error, 'No pudimos registrarte con Google.');
                 }
             },
             loginWithGoogle: async () => {
@@ -997,7 +1034,7 @@
                     await auth.signInWithPopup(provider);
                     feedback.textContent = '';
                 } catch (error) {
-                    feedback.textContent = `Error Google: ${error.message}`;
+                    feedback.textContent = getFriendlyAuthError(error, 'No pudimos iniciar sesión con Google.');
                 }
             },
             browseAsGuest: async () => {
@@ -1057,7 +1094,7 @@
                     lastName: document.getElementById('ob-lastname').value.trim(),
                     graduationYear: document.getElementById('ob-year').value.trim(),
                     location: document.getElementById('ob-location').value.trim(),
-                    role: document.getElementById('ob-role').value.trim(),
+                    status: document.getElementById('ob-status').value,
                     onboardingCompleted: true,
                     email: state.user.email || '',
                     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
