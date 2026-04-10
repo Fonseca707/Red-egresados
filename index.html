@@ -399,8 +399,14 @@
                             <input id="ob-location" type="text" placeholder="Ej: Bogotá, Colombia" class="input-field">
                         </div>
                         <div class="md:col-span-2">
-                            <label class="input-label">Puesto o Rol Actual</label>
-                            <input id="ob-role" type="text" placeholder="Ej: Desarrollador Backend, Analista..." class="input-field">
+                            <label class="input-label">Situación Actual</label>
+                            <select id="ob-status" class="input-field">
+                                <option value="trabajando">Trabajando</option>
+                                <option value="estudiando">Estudiando</option>
+                                <option value="trabajando-estudiando">Trabajando y estudiando</option>
+                                <option value="emprendiendo">Emprendiendo</option>
+                                <option value="profesor">Profesor</option>
+                            </select>
                         </div>
                     </div>
 
@@ -1073,7 +1079,7 @@
                     lastName: document.getElementById('ob-lastname').value.trim(),
                     graduationYear: document.getElementById('ob-year').value.trim(),
                     location: document.getElementById('ob-location').value.trim(),
-                    role: document.getElementById('ob-role').value.trim(),
+                    status: document.getElementById('ob-status').value,
                     onboardingCompleted: true,
                     email: state.user.email || '',
                     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
