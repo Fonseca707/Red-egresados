@@ -784,6 +784,7 @@
                         <div><label class="input-label">Habilidades (coma separadas)</label><input id="admin-edit-skills" class="input-field"></div>
                         <div><label class="input-label">LinkedIn</label><input id="admin-edit-linkedin" class="input-field"></div>
                         <div><label class="input-label">Teléfono</label><input id="admin-edit-phone" class="input-field"></div>
+                        <div class="md:col-span-2"><label class="input-label">Proyecciones / expectativas</label><textarea id="admin-edit-expectations" class="input-field h-24 resize-none" placeholder="Metas, expectativas o proyecciones del estudiante"></textarea></div>
                         <div class="md:col-span-2 flex justify-end">
                             <button type="submit" class="px-6 py-3 bg-brand-600 text-white font-bold rounded-xl shadow-lg shadow-brand-500/30 hover:bg-brand-700 transition">Guardar cambios</button>
                         </div>
@@ -878,17 +879,17 @@
     </div>
 
     <!-- 4. SLIDE PANEL DE PERFIL PÚBLICO -->
-    <div id="slide-panel-overlay" class="fixed inset-0 z-[60] hidden">
-        <div class="absolute inset-0 bg-black/20 backdrop-blur-sm transition-opacity" onclick="directoryLogic.closeProfile()"></div>
-        <div id="slide-panel-content" class="absolute right-0 top-0 h-full w-full max-w-md bg-white shadow-2xl overflow-y-auto animate-slide-in-right flex flex-col">
-            <div class="relative h-40 bg-gradient-to-r from-brand-600 to-brand-900 shrink-0">
-                <button onclick="directoryLogic.closeProfile()" class="absolute top-4 left-4 text-white hover:bg-white/20 p-2 rounded-full transition z-10"><i class="ph-bold ph-arrow-right text-xl"></i></button>
-            </div>
-            <div class="px-6 -mt-16 pb-10 flex-1">
-                <div class="flex justify-between items-end mb-4">
-                    <img id="sp-img" src="" class="w-28 h-28 rounded-2xl border-[4px] border-white shadow-lg bg-white object-cover">
-                    <span id="sp-year" class="mb-2 px-3 py-1 bg-brand-50 text-brand-600 rounded-lg text-xs font-bold border border-brand-100">Promoción</span>
+        <div id="slide-panel-overlay" class="fixed inset-0 z-[60] hidden">
+            <div class="absolute inset-0 bg-black/20 backdrop-blur-sm transition-opacity" onclick="directoryLogic.closeProfile()"></div>
+            <div id="slide-panel-content" class="absolute right-0 top-0 h-full w-full max-w-md bg-white shadow-2xl overflow-y-auto animate-slide-in-right flex flex-col">
+                <div class="relative h-40 bg-gradient-to-r from-brand-600 to-brand-900 shrink-0">
+                    <button onclick="directoryLogic.closeProfile()" class="absolute top-4 left-4 text-white hover:bg-white/20 p-2 rounded-full transition z-10"><i class="ph-bold ph-arrow-right text-xl"></i></button>
+                    <img id="sp-img" src="" class="absolute left-6 -bottom-14 w-28 h-28 rounded-2xl border-[4px] border-white shadow-lg bg-white object-cover z-10">
                 </div>
+                <div class="px-6 pt-16 pb-10 flex-1">
+                    <div class="flex justify-between items-end mb-4">
+                        <span id="sp-year" class="mb-2 px-3 py-1 bg-brand-50 text-brand-600 rounded-lg text-xs font-bold border border-brand-100">Promoción</span>
+                    </div>
                 <div class="mb-6">
                     <h2 id="sp-name" class="text-2xl font-bold text-gray-900 leading-tight">Nombre Usuario</h2>
                     <p id="sp-role" class="text-lg text-brand-600 font-medium mt-1">Cargo / Puesto</p>
@@ -903,6 +904,10 @@
                     <div>
                         <h4 class="text-sm font-bold text-gray-900 uppercase tracking-wide mb-3">Sobre mí</h4>
                         <p id="sp-bio" class="text-gray-600 text-sm leading-relaxed bg-gray-50 p-4 rounded-xl border border-gray-100">Sin información disponible.</p>
+                    </div>
+                    <div>
+                        <h4 class="text-sm font-bold text-gray-900 uppercase tracking-wide mb-3">Proyecciones</h4>
+                        <p id="sp-expectations" class="text-gray-600 text-sm leading-relaxed bg-gray-50 p-4 rounded-xl border border-gray-100">No especificadas.</p>
                     </div>
                     <div>
                         <h4 class="text-sm font-bold text-gray-900 uppercase tracking-wide mb-3">Información Académica</h4>
@@ -1273,7 +1278,8 @@
                     area: d.area || 'General',
                     skills: Array.isArray(d.skills) ? d.skills : (d.skills ? String(d.skills).split(',') : []),
                     phone: d.phone || '',
-                    linkedin: d.linkedin || ''
+                    linkedin: d.linkedin || '',
+                    expectations: d.expectations || ''
                 };
                 }).filter((alum) => hasValidFirstName(alum.firstName));
             } catch (error) {
@@ -1571,6 +1577,7 @@
                 document.getElementById('sp-location').innerText = user.location;
                 document.getElementById('sp-year').innerText = `Promoción ${user.year}`;
                 document.getElementById('sp-bio').innerText = user.bio;
+                document.getElementById('sp-expectations').innerText = user.expectations || 'No especificadas.';
                 document.getElementById('sp-studies').innerText = user.fullStudies;
                 document.getElementById('sp-area').innerText = user.area;
                 const skillsContainer = document.getElementById('sp-skills');
@@ -1718,6 +1725,7 @@
                 document.getElementById('admin-edit-skills').value = Array.isArray(user.skills) ? user.skills.join(', ') : '';
                 document.getElementById('admin-edit-linkedin').value = user.linkedin || '';
                 document.getElementById('admin-edit-phone').value = user.phone || '';
+                document.getElementById('admin-edit-expectations').value = user.expectations || '';
                 document.getElementById('admin-user-editor').classList.remove('hidden');
                 document.getElementById('admin-user-editor').scrollIntoView({ behavior: 'smooth', block: 'start' });
             },
@@ -1743,6 +1751,7 @@
                     skills: document.getElementById('admin-edit-skills').value.split(',').map((s) => s.trim()).filter(Boolean),
                     linkedin: document.getElementById('admin-edit-linkedin').value.trim(),
                     phone: document.getElementById('admin-edit-phone').value.trim(),
+                    expectations: document.getElementById('admin-edit-expectations').value.trim(),
                     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
                 };
                 if (!hasValidFirstName(payload.firstName)) {
@@ -2126,7 +2135,8 @@
 
                     document.getElementById('display-name').innerText = `${state.profile.firstName} ${state.profile.lastName}`;
                     document.getElementById('display-role').innerText = state.profile.role;
-                    document.getElementById('display-expectations').innerText = state.profile.expectations || 'Aún no has agregado esta información.';
+                    const expectationsEl = document.getElementById('display-expectations');
+                    if (expectationsEl) expectationsEl.innerText = state.profile.expectations || 'Aún no has agregado esta información.';
                     const avatar = state.profile.photoURL || buildAvatarUrl(`${state.profile.firstName} ${state.profile.lastName}`.trim() || state.user?.displayName || 'Usuario');
                     document.getElementById('profile-avatar').src = avatar;
                     refreshHeaderIdentity();
