@@ -504,9 +504,9 @@
                 <div class="flex gap-3 w-full md:w-auto">
                     <div class="relative flex-1 md:w-72">
                         <i class="ph ph-magnifying-glass absolute left-3 top-3.5 text-gray-400"></i>
-                        <input type="text" id="directory-search" placeholder="Buscar por nombre, cargo, empresa..." class="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100 transition shadow-sm" onkeyup="directoryLogic.filter()">
+                        <input type="text" id="directory-search" placeholder="Buscar por nombre, cargo, empresa..." class="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100 transition shadow-sm" oninput="directoryLogic.debouncedFilter()" aria-label="Buscar egresados">
                     </div>
-                    <input type="number" id="directory-year" placeholder="Promoción" class="w-32 bg-white px-3 py-3 border border-gray-200 rounded-xl hover:bg-gray-50 text-gray-600 shadow-sm transition text-sm font-medium" onkeyup="directoryLogic.filter()">
+                    <input type="number" id="directory-year" placeholder="Promoción" class="w-32 bg-white px-3 py-3 border border-gray-200 rounded-xl hover:bg-gray-50 text-gray-600 shadow-sm transition text-sm font-medium" oninput="directoryLogic.debouncedFilter()" aria-label="Filtrar por año de promoción">
                     <select id="directory-filter" class="bg-white px-3 py-3 border border-gray-200 rounded-xl hover:bg-gray-50 text-gray-600 shadow-sm transition text-sm font-medium" onchange="directoryLogic.filter()">
                         <option value="all">Todos</option>
                         <option value="trabajando">Trabajando</option>
@@ -520,6 +520,11 @@
 
             <div id="directory-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 <!-- Cards renderizadas via JS -->
+            </div>
+            <div id="directory-load-more" class="hidden justify-center mt-8">
+                <button onclick="directoryLogic.loadMore()" class="px-6 py-3 bg-white border border-gray-200 rounded-xl text-sm font-bold text-gray-700 hover:bg-brand-50 hover:border-brand-200 hover:text-brand-700 transition shadow-sm flex items-center gap-2" aria-label="Ver más egresados">
+                    <i class="ph ph-caret-down"></i> Ver más egresados
+                </button>
             </div>
         </div>
 
@@ -556,7 +561,7 @@
                 <!-- Header -->
                 <div class="p-4 border-b border-gray-100 flex items-center justify-between bg-white z-10">
                     <div class="flex items-center gap-3">
-                        <button onclick="chatLogic.backToList()" class="md:hidden p-2 rounded-full hover:bg-gray-100 text-gray-500" title="Volver a chats">
+                        <button onclick="chatLogic.backToList()" class="md:hidden p-2 rounded-full hover:bg-gray-100 text-gray-500" title="Volver a chats" aria-label="Volver a la lista de chats">
                             <i class="ph-bold ph-arrow-left"></i>
                         </button>
                         <div class="relative">
@@ -568,7 +573,7 @@
                             <p class="text-xs text-gray-500">En línea</p>
                         </div>
                     </div>
-                    <button class="text-gray-400 hover:text-gray-600 p-2 rounded-full hover:bg-gray-100 transition"><i class="ph ph-dots-three-vertical text-xl"></i></button>
+                    <button class="text-gray-400 hover:text-gray-600 p-2 rounded-full hover:bg-gray-100 transition" aria-label="Opciones del chat"><i class="ph ph-dots-three-vertical text-xl"></i></button>
                 </div>
 
                 <!-- Cuerpo -->
@@ -583,7 +588,7 @@
                 <div class="p-4 bg-white border-t border-gray-100">
                     <form onsubmit="chatLogic.send(event)" class="flex gap-2 items-center">
                                                 <input id="chat-input" type="text" placeholder="Escribe un mensaje..." class="flex-1 bg-gray-100 border-0 rounded-full px-5 py-3 focus:ring-2 focus:ring-brand-500 focus:bg-white transition outline-none text-sm">
-                        <button type="submit" class="p-3 bg-brand-600 hover:bg-brand-700 text-white rounded-full transition shadow-md flex items-center justify-center"><i class="ph-fill ph-paper-plane-right"></i></button>
+                        <button type="submit" class="p-3 bg-brand-600 hover:bg-brand-700 text-white rounded-full transition shadow-md flex items-center justify-center" aria-label="Enviar mensaje"><i class="ph-fill ph-paper-plane-right"></i></button>
                     </form>
                 </div>
             </div>
@@ -607,7 +612,7 @@
                             <p class="text-brand-600 font-medium" id="display-role">Tu Cargo</p>
                            
                         </div>
-                        <button onclick="profileLogic.save()" id="btn-save-profile" class="bg-brand-600 text-white px-8 py-3 rounded-xl font-bold shadow-lg shadow-brand-500/30 hover:bg-brand-700 transition flex items-center gap-2">
+                        <button onclick="profileLogic.save()" id="btn-save-profile" class="bg-brand-600 text-white px-8 py-3 rounded-xl font-bold shadow-lg shadow-brand-500/30 hover:bg-brand-700 transition flex items-center gap-2" aria-label="Guardar cambios del perfil">
                             <i class="ph-bold ph-floppy-disk"></i> Guardar Cambios
                         </button>
                     </div>
@@ -856,7 +861,7 @@
     <!-- 3. MODAL DE NOTICIAS -->
     <div id="modal-news" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm bg-black/40">
         <div class="bg-white rounded-3xl w-full max-w-2xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden animate-fade-in relative">
-            <button onclick="uiLogic.closeNewsModal()" class="absolute top-4 right-4 bg-white/50 hover:bg-white p-2 rounded-full backdrop-blur-md transition z-10"><i class="ph-bold ph-x text-xl"></i></button>
+            <button onclick="uiLogic.closeNewsModal()" class="absolute top-4 right-4 bg-white/50 hover:bg-white p-2 rounded-full backdrop-blur-md transition z-10" aria-label="Cerrar noticia"><i class="ph-bold ph-x text-xl"></i></button>
             <div class="h-64 relative shrink-0">
                 <img id="news-modal-img" src="" class="w-full h-full object-cover">
                 <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
@@ -883,7 +888,7 @@
             <div class="absolute inset-0 bg-black/20 backdrop-blur-sm transition-opacity" onclick="directoryLogic.closeProfile()"></div>
             <div id="slide-panel-content" class="absolute right-0 top-0 h-full w-full max-w-md bg-white shadow-2xl overflow-y-auto animate-slide-in-right flex flex-col">
                 <div class="relative h-40 bg-gradient-to-r from-brand-600 to-brand-900 shrink-0">
-                    <button onclick="directoryLogic.closeProfile()" class="absolute top-4 left-4 text-white hover:bg-white/20 p-2 rounded-full transition z-10"><i class="ph-bold ph-arrow-right text-xl"></i></button>
+                    <button onclick="directoryLogic.closeProfile()" class="absolute top-4 left-4 text-white hover:bg-white/20 p-2 rounded-full transition z-10" aria-label="Cerrar perfil"><i class="ph-bold ph-arrow-right text-xl"></i></button>
                     <img id="sp-img" src="" class="absolute left-6 -bottom-14 w-28 h-28 rounded-2xl border-[4px] border-white shadow-lg bg-white object-cover z-10">
                 </div>
                 <div class="px-6 pt-16 pb-10 flex-1">
@@ -967,6 +972,55 @@
           .doc(chatId)
           .collection('messages');
 
+        // ── Constantes ────────────────────────────────────────────────────────────
+        const STATUS = {
+            TRABAJANDO: 'trabajando',
+            ESTUDIANDO: 'estudiando',
+            TRABAJANDO_ESTUDIANDO: 'trabajando-estudiando',
+            EMPRENDIENDO: 'emprendiendo',
+            PROFESOR: 'profesor',
+            SIN_DEFINIR: 'sin-definir'
+        };
+
+        const ACCOUNT_STATUS = {
+            ACTIVO: 'activo',
+            SUSPENDIDO: 'suspendido'
+        };
+
+        const DIRECTORY_PAGE_SIZE = 12;
+
+        // ── Utilidades ────────────────────────────────────────────────────────────
+        function sanitizeHTML(str) {
+            const div = document.createElement('div');
+            div.textContent = String(str ?? '');
+            return div.innerHTML;
+        }
+
+        function debounce(fn, delay = 300) {
+            let timer;
+            return (...args) => { clearTimeout(timer); timer = setTimeout(() => fn(...args), delay); };
+        }
+
+        function isValidLinkedInUrl(url) {
+            if (!url) return false;
+            const normalized = url.startsWith('http') ? url : `https://${url}`;
+            try {
+                const u = new URL(normalized);
+                return u.hostname.includes('linkedin.com');
+            } catch { return false; }
+        }
+
+        function normalizeLinkedInUrl(url) {
+            if (!url) return '';
+            return url.startsWith('http') ? url : `https://${url}`;
+        }
+
+        function isValidPhone(phone) {
+            const digits = String(phone || '').replace(/[^0-9+]/g, '');
+            return digits.replace(/\+/g, '').length >= 7;
+        }
+
+        // ── Estado global ─────────────────────────────────────────────────────────
         const state = {
             user: null,
             view: 'home',
@@ -980,7 +1034,7 @@
             },
             profile: {
                 firstName: "", lastName: "", graduationYear: "", location: "",
-                status: "trabajando", role: "", area: "", studies: "",
+                status: STATUS.TRABAJANDO, role: "", area: "", studies: "",
                 bio: "", skills: "", topics: "", expectations: "", phone: "", linkedin: "",
                 onboardingCompleted: false
             },
@@ -989,6 +1043,7 @@
             messagesByChat: {},
             selectedDirectoryUserId: null,
             directoryLoading: false,
+            directoryPage: 1,
             adminEmail: 'juanda.fonsecag@gmail.com',
             adminTab: 'users',
             editingNewsId: null,
@@ -1474,6 +1529,14 @@
                 if (viewId === 'register' && state.user) { viewId = 'profile'; }
                 if (viewId === 'admin' && !isAdminUser()) { viewId = 'directory'; }
 
+                // Libera el listener de mensajes al salir de la vista de mensajes
+                if (state.view === 'messages' && viewId !== 'messages') {
+                    if (state.listeners.messages) {
+                        state.listeners.messages();
+                        state.listeners.messages = null;
+                    }
+                }
+
                 const views = ['view-home', 'view-auth', 'view-register', 'view-terms', 'view-onboarding', 'view-directory', 'view-news', 'view-messages', 'view-profile', 'view-admin'];
                 views.forEach(id => {
                     const el = document.getElementById(id);
@@ -1526,8 +1589,17 @@
         };
 
         const directoryLogic = {
+            _currentItems: [],
             render: (items = state.data.alumni) => {
+                directoryLogic._currentItems = items;
+                directoryLogic._renderPage(1);
+            },
+            _renderPage: (page) => {
+                state.directoryPage = page;
+                const items = directoryLogic._currentItems;
                 const grid = document.getElementById('directory-grid');
+                const loadMoreBtn = document.getElementById('directory-load-more');
+
                 if (state.directoryLoading) {
                     grid.innerHTML = Array.from({ length: 8 }).map(() => `
                         <div class="bg-white p-6 rounded-2xl border border-gray-100 animate-pulse">
@@ -1543,29 +1615,53 @@
                             <div class="h-3 bg-gray-100 rounded w-5/6"></div>
                         </div>
                     `).join('');
+                    if (loadMoreBtn) loadMoreBtn.classList.add('hidden');
                     return;
                 }
-                grid.innerHTML = items.map(alum => `
-                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition group cursor-pointer h-full flex flex-col" onclick="directoryLogic.openProfile('${alum.id}')">
+
+                const shown = items.slice(0, page * DIRECTORY_PAGE_SIZE);
+                const hasMore = items.length > shown.length;
+
+                if (items.length === 0) {
+                    grid.innerHTML = `
+                        <div class="col-span-full flex flex-col items-center justify-center py-16 text-center">
+                            <i class="ph ph-users-three text-5xl text-gray-300 mb-4"></i>
+                            <p class="text-gray-500 font-semibold">No se encontraron egresados</p>
+                            <p class="text-gray-400 text-sm mt-1">Intenta con otro nombre, año o categoría.</p>
+                        </div>`;
+                    if (loadMoreBtn) loadMoreBtn.classList.add('hidden');
+                    return;
+                }
+
+                grid.innerHTML = shown.map(alum => `
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition group cursor-pointer h-full flex flex-col" onclick="directoryLogic.openProfile('${sanitizeHTML(alum.id)}')">
                         <div class="flex items-start justify-between">
                             <div class="flex gap-4">
-                                <img src="${alum.img}" class="w-14 h-14 rounded-xl object-cover shadow-sm group-hover:scale-105 transition shrink-0">
+                                <img src="${sanitizeHTML(alum.img)}" alt="Foto de ${sanitizeHTML(alum.name)}" class="w-14 h-14 rounded-xl object-cover shadow-sm group-hover:scale-105 transition shrink-0">
                                 <div class="min-w-0 pt-0.5">
-                                    <h3 class="font-bold text-gray-900 group-hover:text-brand-600 transition leading-tight break-words">${alum.name}</h3>
-                                    <p class="text-xs text-brand-600 font-semibold uppercase tracking-wide mt-1 leading-tight break-words">${alum.company}</p>
-                                    <p class="text-[11px] font-bold text-brand-600 mt-1 leading-tight">Promoción ${alum.year || '---'}</p>
-                                    <p class="text-sm text-gray-500 mt-1 line-clamp-1">${alum.role}</p>
+                                    <h3 class="font-bold text-gray-900 group-hover:text-brand-600 transition leading-tight break-words">${sanitizeHTML(alum.name)}</h3>
+                                    <p class="text-xs text-brand-600 font-semibold uppercase tracking-wide mt-1 leading-tight break-words">${sanitizeHTML(alum.company)}</p>
+                                    <p class="text-[11px] font-bold text-brand-600 mt-1 leading-tight">Promoción ${sanitizeHTML(alum.year || '---')}</p>
+                                    <p class="text-sm text-gray-500 mt-1 line-clamp-1">${sanitizeHTML(alum.role)}</p>
                                 </div>
                             </div>
                         </div>
                         <div class="mt-4 flex gap-2 flex-wrap mb-4 flex-1 content-start">
-                            ${(alum.tags || []).slice(0,3).map(t => `<span class="px-2 py-1 bg-gray-50 text-gray-600 text-xs rounded-md font-medium border border-gray-100">${t}</span>`).join('')}
+                            ${(alum.tags || []).slice(0,3).map(t => `<span class="px-2 py-1 bg-gray-50 text-gray-600 text-xs rounded-md font-medium border border-gray-100">${sanitizeHTML(t)}</span>`).join('')}
                         </div>
                         <div class="pt-4 border-t border-gray-50">
                             <span class="w-full px-4 py-2 bg-gray-50 text-gray-600 text-xs font-bold rounded-lg hover:bg-brand-50 hover:text-brand-600 transition flex justify-center items-center gap-2"><i class="ph-bold ph-user-list"></i> Ver Perfil Completo</span>
                         </div>
                     </div>
                 `).join('');
+
+                if (loadMoreBtn) {
+                    loadMoreBtn.classList.toggle('hidden', !hasMore);
+                    loadMoreBtn.classList.toggle('flex', hasMore);
+                }
+            },
+            loadMore: () => {
+                directoryLogic._renderPage(state.directoryPage + 1);
             },
             openProfile: (id) => {
                 const user = state.data.alumni.find(u => String(u.id) === String(id));
@@ -1582,19 +1678,19 @@
                 document.getElementById('sp-area').innerText = user.area;
                 const skillsContainer = document.getElementById('sp-skills');
                 if (user.skills && user.skills.length > 0) {
-                    skillsContainer.innerHTML = user.skills.map(s => `<span class="px-3 py-1 bg-brand-50 text-brand-700 rounded-full text-xs font-bold border border-brand-100">${String(s).trim()}</span>`).join('');
+                    skillsContainer.innerHTML = user.skills.map(s => `<span class="px-3 py-1 bg-brand-50 text-brand-700 rounded-full text-xs font-bold border border-brand-100">${sanitizeHTML(String(s).trim())}</span>`).join('');
                 } else {
                     skillsContainer.innerHTML = '<span class="text-gray-400 text-xs italic">No especificadas</span>';
                 }
                 const waBtn = document.getElementById('sp-whatsapp-btn');
-                if (user.phone) {
+                if (user.phone && isValidPhone(user.phone)) {
                     waBtn.classList.remove('hidden');
                     waBtn.href = `https://wa.me/${String(user.phone).replace(/[^0-9]/g, '')}`;
                 } else { waBtn.classList.add('hidden'); }
                 const liBtn = document.getElementById('sp-linkedin-btn');
-                if (user.linkedin) {
+                if (isValidLinkedInUrl(user.linkedin)) {
                     liBtn.classList.remove('hidden');
-                    liBtn.href = user.linkedin.startsWith('http') ? user.linkedin : `https://${user.linkedin}`;
+                    liBtn.href = normalizeLinkedInUrl(user.linkedin);
                 } else { liBtn.classList.add('hidden'); }
                 document.getElementById('slide-panel-overlay').classList.remove('hidden');
             },
@@ -1632,13 +1728,13 @@
                 feed.innerHTML = state.data.news.map((item, idx) => `
                     <div class="bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-lg transition cursor-pointer group" onclick="uiLogic.openNewsModal(${idx})">
                         <div class="h-48 overflow-hidden relative">
-                            <img src="${item.img}" class="w-full h-full object-cover transition duration-500 group-hover:scale-105">
-                            <span class="absolute top-4 left-4 bg-white/90 backdrop-blur text-xs font-bold px-3 py-1 rounded-lg shadow-sm">${item.category}</span>
+                            <img src="${sanitizeHTML(item.img)}" alt="${sanitizeHTML(item.title)}" class="w-full h-full object-cover transition duration-500 group-hover:scale-105">
+                            <span class="absolute top-4 left-4 bg-white/90 backdrop-blur text-xs font-bold px-3 py-1 rounded-lg shadow-sm">${sanitizeHTML(item.category)}</span>
                         </div>
                         <div class="p-6">
-                            <div class="text-xs font-bold text-brand-600 mb-2 uppercase">${item.date}</div>
-                            <h3 class="font-bold text-lg text-gray-900 mb-3 leading-tight group-hover:text-brand-600 transition">${item.title}</h3>
-                            <p class="text-base text-gray-500 leading-relaxed line-clamp-4 min-h-[6.5rem]">${item.summary}</p>
+                            <div class="text-xs font-bold text-brand-600 mb-2 uppercase">${sanitizeHTML(item.date)}</div>
+                            <h3 class="font-bold text-lg text-gray-900 mb-3 leading-tight group-hover:text-brand-600 transition">${sanitizeHTML(item.title)}</h3>
+                            <p class="text-base text-gray-500 leading-relaxed line-clamp-4 min-h-[6.5rem]">${sanitizeHTML(item.summary)}</p>
                             <button class="mt-4 text-sm font-bold text-gray-900 flex items-center gap-1 group-hover:gap-2 transition-all">Leer más <i class="ph-bold ph-arrow-right"></i></button>
                         </div>
                     </div>
@@ -1674,26 +1770,25 @@
                     return;
                 }
                 tbody.innerHTML = state.data.alumni.map((user) => {
-                    const status = user.status || 'trabajando';
-                    const accountStatus = user.accountStatus || 'activo';
-                    const badge = accountStatus === 'suspendido'
+                    const accountStatus = user.accountStatus || ACCOUNT_STATUS.ACTIVO;
+                    const badge = accountStatus === ACCOUNT_STATUS.SUSPENDIDO
                         ? 'bg-red-50 text-red-600 border-red-100'
                         : 'bg-green-50 text-green-600 border-green-100';
-                    const statusText = accountStatus === 'suspendido' ? 'Suspendido' : 'Activo';
-                    const toggleTitle = accountStatus === 'suspendido' ? 'Activar' : 'Suspender';
-                    const toggleIcon = accountStatus === 'suspendido' ? 'ph-check-circle' : 'ph-prohibit';
+                    const statusText = accountStatus === ACCOUNT_STATUS.SUSPENDIDO ? 'Suspendido' : 'Activo';
+                    const toggleTitle = accountStatus === ACCOUNT_STATUS.SUSPENDIDO ? 'Activar' : 'Suspender';
+                    const toggleIcon = accountStatus === ACCOUNT_STATUS.SUSPENDIDO ? 'ph-check-circle' : 'ph-prohibit';
                     return `
                         <tr class="hover:bg-gray-50 transition">
                             <td class="px-6 py-4">
                                 <div class="flex items-center gap-3">
-                                    <img src="${user.img}" class="w-10 h-10 rounded-full object-cover border border-gray-100">
+                                    <img src="${sanitizeHTML(user.img)}" alt="Foto de ${sanitizeHTML(user.name)}" class="w-10 h-10 rounded-full object-cover border border-gray-100">
                                     <div>
-                                        <div class="font-bold text-gray-900">${user.name}</div>
-                                        <div class="text-xs text-gray-500">${user.role || status}</div>
+                                        <div class="font-bold text-gray-900">${sanitizeHTML(user.name)}</div>
+                                        <div class="text-xs text-gray-500">${sanitizeHTML(user.role || user.status || '')}</div>
                                     </div>
                                 </div>
                             </td>
-                            <td class="px-6 py-4 text-gray-600 text-sm">${user.email || 'No disponible'}</td>
+                            <td class="px-6 py-4 text-gray-600 text-sm">${sanitizeHTML(user.email || 'No disponible')}</td>
                             <td class="px-6 py-4 text-sm">
                                 <span class="px-2.5 py-1 text-xs font-bold rounded-lg border ${user.newsletterOptIn ? 'bg-blue-50 text-blue-600 border-blue-100' : 'bg-gray-50 text-gray-500 border-gray-200'}">
                                     ${user.newsletterOptIn ? 'Sí' : 'No'}
@@ -1796,18 +1891,18 @@
                 }
                 list.innerHTML = state.data.news.map((item, idx) => `
                     <div class="p-6 flex flex-col md:flex-row items-start md:items-center gap-4 hover:bg-gray-50 transition">
-                        <img src="${item.img}" class="w-20 h-20 rounded-xl object-cover shadow-sm shrink-0">
+                        <img src="${sanitizeHTML(item.img)}" alt="${sanitizeHTML(item.title)}" class="w-20 h-20 rounded-xl object-cover shadow-sm shrink-0">
                         <div class="flex-1">
                             <div class="flex items-center gap-2 mb-1">
-                                <span class="text-xs font-bold bg-gray-100 text-gray-600 px-2 py-0.5 rounded">${item.category}</span>
-                                <span class="text-xs text-gray-400">${item.date}</span>
+                                <span class="text-xs font-bold bg-gray-100 text-gray-600 px-2 py-0.5 rounded">${sanitizeHTML(item.category)}</span>
+                                <span class="text-xs text-gray-400">${sanitizeHTML(item.date)}</span>
                             </div>
-                            <h4 class="font-bold text-gray-900">${item.title}</h4>
-                            <p class="text-sm text-gray-500 line-clamp-1 mt-1">${item.summary}</p>
+                            <h4 class="font-bold text-gray-900">${sanitizeHTML(item.title)}</h4>
+                            <p class="text-sm text-gray-500 line-clamp-1 mt-1">${sanitizeHTML(item.summary)}</p>
                         </div>
                         <div class="flex items-center gap-1 shrink-0">
-                            <button onclick="adminLogic.startNewsEdit('${item.id}')" class="p-3 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-xl transition" title="Editar noticia"><i class="ph-bold ph-pencil-simple text-xl"></i></button>
-                            <button onclick="adminLogic.deleteNews('${item.id}')" class="p-3 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-xl transition" title="Eliminar noticia"><i class="ph-bold ph-trash text-xl"></i></button>
+                            <button onclick="adminLogic.startNewsEdit('${sanitizeHTML(item.id)}')" class="p-3 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-xl transition" title="Editar noticia" aria-label="Editar noticia"><i class="ph-bold ph-pencil-simple text-xl"></i></button>
+                            <button onclick="adminLogic.deleteNews('${sanitizeHTML(item.id)}')" class="p-3 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-xl transition" title="Eliminar noticia" aria-label="Eliminar noticia"><i class="ph-bold ph-trash text-xl"></i></button>
                         </div>
                     </div>
                 `).join('');
@@ -1899,7 +1994,12 @@
                     activeArea.classList.remove('flex');
                 }
                 if (!state.data.chats.length) {
-                    list.innerHTML = '<div class="p-4 text-sm text-gray-500">Sin conversaciones aún. Abre un perfil en Directorio y pulsa "Mensaje".</div>';
+                    list.innerHTML = `
+                        <div class="flex flex-col items-center justify-center h-full py-12 px-6 text-center">
+                            <i class="ph ph-chats-circle text-4xl text-gray-300 mb-3"></i>
+                            <p class="text-sm font-semibold text-gray-500">Sin conversaciones aún</p>
+                            <p class="text-xs text-gray-400 mt-1">Busca un egresado en el <button onclick="router.navigate('directory')" class="text-brand-600 font-bold hover:underline">Directorio</button> y pulsa "Mensaje".</p>
+                        </div>`;
                     state.activeChatId = null;
                     return;
                 }
@@ -1908,17 +2008,17 @@
                     if (first?.id) chatLogic.openChat(first.id);
                 }
                 list.innerHTML = state.data.chats.map(chat => `
-                    <div onclick="chatLogic.openChat('${chat.id}')" class="p-4 hover:bg-white cursor-pointer border-b border-gray-100 flex gap-3 transition ${String(state.activeChatId) === String(chat.id) ? 'bg-white' : ''}">
+                    <div onclick="chatLogic.openChat('${sanitizeHTML(chat.id)}')" class="p-4 hover:bg-white cursor-pointer border-b border-gray-100 flex gap-3 transition ${String(state.activeChatId) === String(chat.id) ? 'bg-white' : ''}">
                         <div class="relative">
-                            <img src="${chat.img}" class="w-12 h-12 rounded-full object-cover">
+                            <img src="${sanitizeHTML(chat.img)}" alt="Foto de ${sanitizeHTML(chat.name)}" class="w-12 h-12 rounded-full object-cover">
                             <span class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></span>
                         </div>
                         <div class="flex-1 min-w-0">
                             <div class="flex justify-between items-baseline mb-1">
-                                <h4 class="font-bold text-sm text-gray-900 truncate">${chat.name}</h4>
-                                <span class="text-xs text-gray-400">${chat.time || ''}</span>
+                                <h4 class="font-bold text-sm text-gray-900 truncate">${sanitizeHTML(chat.name)}</h4>
+                                <span class="text-xs text-gray-400">${sanitizeHTML(chat.time || '')}</span>
                             </div>
-                            <p class="text-xs text-gray-500 truncate">${chat.lastMsg || 'Sin mensajes'}</p>
+                            <p class="text-xs text-gray-500 truncate">${sanitizeHTML(chat.lastMsg || 'Sin mensajes')}</p>
                         </div>
                     </div>
                 `).join('');
@@ -1996,7 +2096,7 @@
 
                 body.innerHTML = messages.map((m) => `
                     <div class="flex flex-col ${m.sender === 'me' ? 'items-end' : 'items-start'}">
-                        <div class="chat-bubble ${m.sender === 'me' ? 'chat-me' : 'chat-them'}">${m.text}</div>
+                        <div class="chat-bubble ${m.sender === 'me' ? 'chat-me' : 'chat-them'}">${sanitizeHTML(m.text)}</div>
                         <span class="text-[10px] text-gray-400 mt-1 ${m.sender === 'me' ? 'mr-1' : 'ml-1'}">${m.createdAt ? 'Guardado' : 'Ahora'}</span>
                     </div>
                 `).join('');
@@ -2097,6 +2197,17 @@
                     alert('El nombre es obligatorio y debe tener al menos 2 caracteres.');
                     return;
                 }
+                const phoneValue = document.getElementById('p-phone').value.trim();
+                if (phoneValue && !isValidPhone(phoneValue)) {
+                    alert('El número de teléfono debe tener al menos 7 dígitos.');
+                    return;
+                }
+                const linkedinValue = document.getElementById('p-linkedin').value.trim();
+                if (linkedinValue && !isValidLinkedInUrl(linkedinValue)) {
+                    alert('El enlace de LinkedIn no es válido. Debe ser una URL de linkedin.com (ej: https://linkedin.com/in/tu-perfil).');
+                    return;
+                }
+
                 const btn = document.getElementById('btn-save-profile');
                 const original = btn.innerHTML;
                 btn.disabled = true;
@@ -2115,8 +2226,8 @@
                     skills: document.getElementById('p-skills').value.split(',').map(s => s.trim()).filter(Boolean),
                     topics: document.getElementById('p-topics').value.trim(),
                     expectations: document.getElementById('p-expectations').value.trim(),
-                    phone: document.getElementById('p-phone').value.trim(),
-                    linkedin: document.getElementById('p-linkedin').value.trim(),
+                    phone: phoneValue,
+                    linkedin: linkedinValue ? normalizeLinkedInUrl(linkedinValue) : '',
                     email: state.user.email || '',
                     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
                 };
@@ -2170,6 +2281,8 @@
             closeNewsModal: () => document.getElementById('modal-news').classList.add('hidden'),
             toggleAuthModal: () => router.navigate(state.user ? 'profile' : 'register')
         };
+
+        directoryLogic.debouncedFilter = debounce(() => directoryLogic.filter(), 280);
 
         window.router = router;
         window.authLogic = authLogic;
