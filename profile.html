@@ -82,6 +82,10 @@
                                     <label class="input-label">Ubicación (Ciudad, País)</label>
                                     <input type="text" id="p-location" class="input-field" placeholder="Ej: Medellín, Colombia">
                                 </div>
+                                <div>
+                                    <label class="input-label">Colegio</label>
+                                    <input type="text" id="p-school" class="input-field" placeholder="Ej: LCP">
+                                </div>
                                 <div class="md:col-span-2">
                                     <label class="input-label">¿Qué expectativas/proyecciones tiene sobre usted?</label>
                                     <textarea id="p-expectations" class="input-field h-24 resize-y" placeholder="Ej: Consolidarme en liderazgo de proyectos, emprender y aportar como mentor en la red."></textarea>
@@ -206,6 +210,7 @@
                 document.getElementById('p-expectations').value = p.expectations || '';
                 document.getElementById('p-phone').value = p.phone || '';
                 document.getElementById('p-linkedin').value = p.linkedin || '';
+                document.getElementById('p-school').value = p.school || '';
                 const fullName = `${p.firstName || ''} ${p.lastName || ''}`.trim() || state.user?.displayName || 'Usuario';
                 const avatar = p.photoURL || buildAvatarUrl(fullName);
                 document.getElementById('profile-avatar').src = avatar;
@@ -249,6 +254,7 @@
                     expectations: document.getElementById('p-expectations').value.trim(),
                     phone: phoneValue,
                     linkedin: linkedinValue ? normalizeLinkedInUrl(linkedinValue) : '',
+                    school: document.getElementById('p-school').value.trim(),
                     email: state.user.email || '',
                     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
                 };

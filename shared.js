@@ -46,7 +46,7 @@ function buildAvatarUrl(name='Usuario') {
 const state = {
     user: null,
     data: { alumni:[], news:[{id:1,title:"Encuentro Anual de Egresados 2024",category:"Evento",date:"15 Oct",summary:"Únete a nosotros para una noche de networking y celebración.",img:"https://placehold.co/600x400/1e3a8a/FFF?text=Evento"},{id:2,title:"Senior Developer Vacancy",category:"Empleo",date:"Hace 2h",summary:"Empresa aliada busca desarrollador Full Stack con experiencia.",img:"https://placehold.co/600x400/2563eb/FFF?text=Empleo"}], chats:[] },
-    profile: { firstName:'',lastName:'',graduationYear:'',location:'',status:'trabajando',role:'',area:'',studies:'',bio:'',skills:'',topics:'',expectations:'',phone:'',linkedin:'',photoURL:'',onboardingCompleted:false },
+    profile: { firstName:'',lastName:'',graduationYear:'',location:'',status:'trabajando',role:'',area:'',studies:'',bio:'',skills:'',topics:'',expectations:'',phone:'',linkedin:'',photoURL:'',school:'',onboardingCompleted:false },
     guestMode: false, activeChatId:null, messagesByChat:{}, selectedDirectoryUserId:null,
     directoryLoading:false, directoryPage:1, adminEmail:'juanda.fonsecag@gmail.com', adminTab:'users', editingNewsId:null,
     listeners: { chats:null, messages:null }
@@ -76,16 +76,16 @@ function getFriendlyAuthError(e,fb='Ocurrió un error.') { return AUTH_ERROR_MES
 
 async function loadProfile(uid) {
     const doc=await alumniCollection.doc(uid).get();
-    if(!doc.exists){ state.profile={firstName:state.user?.displayName?.split(' ')[0]||'',lastName:state.user?.displayName?.split(' ').slice(1).join(' ')||'',graduationYear:'',location:'',status:'trabajando',role:'',area:'',studies:'',bio:'',skills:'',topics:'',expectations:'',phone:'',linkedin:'',photoURL:state.user?.photoURL||'',onboardingCompleted:false}; refreshHeaderIdentity(); return; }
+    if(!doc.exists){ state.profile={firstName:state.user?.displayName?.split(' ')[0]||'',lastName:state.user?.displayName?.split(' ').slice(1).join(' ')||'',graduationYear:'',location:'',status:'trabajando',role:'',area:'',studies:'',bio:'',skills:'',topics:'',expectations:'',phone:'',linkedin:'',photoURL:state.user?.photoURL||'',school:'',onboardingCompleted:false}; refreshHeaderIdentity(); return; }
     const d=doc.data();
-    state.profile={firstName:d.firstName||'',lastName:d.lastName||'',graduationYear:d.graduationYear||'',location:d.location||'',status:d.status||'trabajando',role:d.role||'',area:d.area||'',studies:d.studies||'',bio:d.bio||'',skills:Array.isArray(d.skills)?d.skills.join(', '):(d.skills||''),topics:d.topics||'',expectations:d.expectations||'',phone:d.phone||'',linkedin:d.linkedin||'',photoURL:d.photoURL||'',onboardingCompleted:d.onboardingCompleted||false};
+    state.profile={firstName:d.firstName||'',lastName:d.lastName||'',graduationYear:d.graduationYear||'',location:d.location||'',status:d.status||'trabajando',role:d.role||'',area:d.area||'',studies:d.studies||'',bio:d.bio||'',skills:Array.isArray(d.skills)?d.skills.join(', '):(d.skills||''),topics:d.topics||'',expectations:d.expectations||'',phone:d.phone||'',linkedin:d.linkedin||'',photoURL:d.photoURL||'',school:d.school||'',onboardingCompleted:d.onboardingCompleted||false};
     refreshHeaderIdentity();
 }
 async function loadAlumni() {
     state.directoryLoading=true;
     try {
         const snap=await alumniCollection.get();
-        state.data.alumni=snap.docs.map(doc=>{const d=doc.data();return{id:doc.id,name:`${d.firstName||''} ${d.lastName||''}`.trim()||'Sin nombre',firstName:(d.firstName||'').trim(),lastName:(d.lastName||'').trim(),email:d.email||'',newsletterOptIn:Boolean(d.newsletterOptIn),role:d.role||'Sin rol',status:d.status||'sin-definir',statusLabel:formatStatusLabel(d.status),accountStatus:d.accountStatus||'activo',company:d.studies||formatStatusLabel(d.status),img:d.photoURL||buildAvatarUrl(`${d.firstName||'Usuario'} ${d.lastName||''}`.trim()),tags:[d.area||'General',formatStatusLabel(d.status)].filter(Boolean),fullStudies:d.studies||'No especificado',location:d.location||'Ubicación no disponible',bio:d.bio||'Sin biografía disponible.',year:d.graduationYear||'---',area:d.area||'General',skills:Array.isArray(d.skills)?d.skills:(d.skills?String(d.skills).split(','):[]),phone:d.phone||'',linkedin:d.linkedin||'',expectations:d.expectations||''};}).filter(a=>hasValidFirstName(a.firstName));
+        state.data.alumni=snap.docs.map(doc=>{const d=doc.data();return{id:doc.id,name:`${d.firstName||''} ${d.lastName||''}`.trim()||'Sin nombre',firstName:(d.firstName||'').trim(),lastName:(d.lastName||'').trim(),email:d.email||'',newsletterOptIn:Boolean(d.newsletterOptIn),role:d.role||'Sin rol',status:d.status||'sin-definir',statusLabel:formatStatusLabel(d.status),accountStatus:d.accountStatus||'activo',company:d.studies||formatStatusLabel(d.status),img:d.photoURL||buildAvatarUrl(`${d.firstName||'Usuario'} ${d.lastName||''}`.trim()),tags:[d.area||'General',formatStatusLabel(d.status)].filter(Boolean),fullStudies:d.studies||'No especificado',location:d.location||'Ubicación no disponible',bio:d.bio||'Sin biografía disponible.',year:d.graduationYear||'---',area:d.area||'General',skills:Array.isArray(d.skills)?d.skills:(d.skills?String(d.skills).split(','):[]),phone:d.phone||'',linkedin:d.linkedin||'',expectations:d.expectations||'',school:d.school||''};}).filter(a=>hasValidFirstName(a.firstName));
     } catch(e){ state.data.alumni=state.data.alumni.length?state.data.alumni:[];}
     finally{ state.directoryLoading=false; }
 }
