@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sinapsis | Bienvenida</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script>
+        tailwind.config = {
+            theme: { extend: {
+                fontFamily: { sans: ['"Plus Jakarta Sans"', 'sans-serif'] },
+                colors: {
+                    brand: { 50:'#f0fdf4',100:'#dcfce7',200:'#bbf7d0',300:'#86efac',400:'#4ade80',500:'#22c55e',600:'#16a34a',700:'#15803d',800:'#166534',900:'#14532d',950:'#052e16' },
+                    stone: { 50:'#fafaf9',100:'#f5f5f4',200:'#e7e5e4',300:'#d6d3d1',400:'#a8a29e',500:'#78716c',600:'#57534e',700:'#44403c',800:'#292524',900:'#1c1917' },
+                    sun: { 50:'#fffbeb',100:'#fef3c7',200:'#fde68a',400:'#fbbf24',500:'#f59e0b',600:'#d97706' }
+                },
+                animation: { 'fade-in':'fadeIn 0.3s ease-out','slide-up':'slideUp 0.4s ease-out','slide-in-right':'slideInRight 0.4s cubic-bezier(0.16,1,0.3,1)' },
+                keyframes: { fadeIn:{'0%':{opacity:'0'},'100%':{opacity:'1'}},slideUp:{'0%':{transform:'translateY(20px)',opacity:'0'},'100%':{transform:'translateY(0)',opacity:'1'}},slideInRight:{'0%':{transform:'translateX(100%)'},'100%':{transform:'translateX(0)'}} }
+            }}
+        }
+    </script>
+    <style>
+        body { background-color: #fafaf9; }
+        .glass-nav { background: rgba(250,250,249,0.85); backdrop-filter: blur(16px); border-bottom: 1px solid rgba(231,229,228,0.6); }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .input-label { font-size:0.75rem; font-weight:700; color:#78716c; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:0.5rem; display:block; }
+        .input-field { width:100%; padding:0.85rem 1rem; background:rgba(250,250,249,0.9); border:1px solid #e7e5e4; border-radius:0.75rem; outline:none; transition:all 0.2s ease; font-size:0.9rem; font-weight:500; color:#292524; }
+        .input-field:focus { border-color:#16a34a; box-shadow:0 0 0 4px rgb(34 197 94/0.15); background:#fff; }
+        .onboarding-field {
+            width: 100%;
+            padding: 0.85rem 1rem;
+            background: #f5f5f5;
+            border: 1px solid #d6d3d1;
+            border-radius: 0.75rem;
+            font-size: 0.95rem;
+            color: #1f2937;
+        }
+        .onboarding-field:focus {
+            outline: none;
+            border-color: #16a34a;
+            box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.15);
+            background: #ffffff;
+        }
+    </style>
+</head>
+<body class="text-stone-800 font-sans min-h-screen flex flex-col">
+
+    <main class="flex-1 flex items-center justify-center px-4 py-12">
+        <div class="bg-white p-8 md:p-12 rounded-[2.5rem] shadow-[0_20px_50px_rgb(0,0,0,0.08)] border border-gray-100 w-full max-w-2xl relative overflow-hidden animate-fade-in">
+            <div class="absolute -top-10 -right-10 w-56 h-56 bg-brand-50 rounded-full blur-2xl -z-10 opacity-70"></div>
+            <div class="text-center mb-8">
+                <div class="w-16 h-16 bg-brand-50 text-brand-600 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-4 border border-brand-100 shadow-sm">
+                    <i class="ph-duotone ph-hand-waving"></i>
+                </div>
+                <h1 class="text-2xl md:text-3xl font-bold text-gray-900">¡Bienvenido a la comunidad!</h1>
+                <p class="text-gray-500 text-sm mt-2 max-w-lg mx-auto">Cuéntanos un poco sobre ti para que otras personas puedan conectar contigo. <strong class="text-brand-600">Todos los campos son opcionales.</strong></p>
+            </div>
+
+            <form onsubmit="onboardingLogic.save(event)" class="space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="input-label">Nombres</label>
+                        <input id="ob-name" type="text" placeholder="Ej: Juan Carlos" class="input-field onboarding-field" required minlength="2">
+                    </div>
+                    <div>
+                        <label class="input-label">Apellidos</label>
+                        <input id="ob-lastname" type="text" placeholder="Ej: Pérez" class="input-field onboarding-field">
+                    </div>
+                    <div>
+                        <label class="input-label">Promoción (Año)</label>
+                        <input id="ob-year" type="number" placeholder="Ej: 2020" class="input-field onboarding-field">
+                    </div>
+                    <div>
+                        <label class="input-label">Ubicación Actual</label>
+                        <input id="ob-location" type="text" placeholder="Ej: Bogotá, Colombia" class="input-field onboarding-field">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="input-label">Situación Actual</label>
+                        <select id="ob-status" class="input-field onboarding-field">
+                            <option value="trabajando">Trabajando</option>
+                            <option value="estudiando">Estudiando</option>
+                            <option value="trabajando-estudiando">Trabajando y estudiando</option>
+                            <option value="emprendiendo">Emprendiendo</option>
+                            <option value="profesor">Profesor</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="flex flex-col-reverse md:flex-row gap-4 pt-6 mt-6 border-t border-gray-100">
+                    <button type="button" onclick="onboardingLogic.skip()" class="w-full md:w-auto px-6 py-3.5 bg-gray-50 hover:bg-gray-100 text-gray-600 font-bold rounded-xl transition border border-gray-200">
+                        Omitir por ahora
+                    </button>
+                    <button type="submit" class="w-full md:flex-1 py-3.5 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-xl shadow-lg shadow-brand-500/30 transition transform hover:scale-[1.02] flex justify-center items-center gap-2" id="btn-save-onboarding">
+                        Guardar y Continuar <i class="ph-bold ph-arrow-right"></i>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </main>
+
+    <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore-compat.js"></script>
+    <script src="shared.js"></script>
+    <script>
+        const onboardingLogic = {
+            save: async (e) => {
+                e.preventDefault();
+                if (!state.user) return;
+                const firstNameValue = document.getElementById('ob-name').value.trim();
+                if (!hasValidFirstName(firstNameValue)) {
+                    alert('El nombre es obligatorio y debe tener al menos 2 caracteres.');
+                    return;
+                }
+
+                const btn = document.getElementById('btn-save-onboarding');
+                const originalText = btn.innerHTML;
+                btn.disabled = true;
+                btn.innerHTML = `<i class="ph-bold ph-spinner animate-spin"></i> Guardando...`;
+
+                const payload = {
+                    firstName: firstNameValue,
+                    lastName: document.getElementById('ob-lastname').value.trim(),
+                    graduationYear: document.getElementById('ob-year').value.trim(),
+                    location: document.getElementById('ob-location').value.trim(),
+                    status: document.getElementById('ob-status').value,
+                    onboardingCompleted: true,
+                    email: state.user.email || '',
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                };
+
+                try {
+                    const docRef = alumniCollection.doc(state.user.uid);
+                    const exists = (await docRef.get()).exists;
+                    if (!exists) payload.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+                    await docRef.set(payload, { merge: true });
+
+                    state.profile = { ...state.profile, ...payload };
+                    await onboardingLogic.finish();
+                } catch (error) {
+                    alert('Hubo un error al guardar los datos: ' + (error.message || 'error desconocido'));
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                }
+            },
+            skip: async () => {
+                if (!state.user) return;
+                try {
+                    await alumniCollection.doc(state.user.uid).set({
+                        onboardingCompleted: true,
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    }, { merge: true });
+
+                    state.profile.onboardingCompleted = true;
+                    await onboardingLogic.finish();
+                } catch (error) {
+                    alert('Error al omitir: ' + (error.message || 'error desconocido'));
+                }
+            },
+            finish: async () => {
+                alert('¡Gracias por completar tu primer ingreso! Te recomendamos ahora completar todo tu perfil de estudiante.');
+                goto('directory');
+            }
+        };
+        window.onboardingLogic = onboardingLogic;
+
+        auth.onAuthStateChanged(async (user) => {
+            if (!user) { goto('login'); return; }
+            state.user = user;
+            await loadProfile(user.uid);
+            if (user.displayName && !state.profile.firstName) {
+                const parts = user.displayName.split(' ');
+                const n = document.getElementById('ob-name');
+                const l = document.getElementById('ob-lastname');
+                if (n) n.value = parts[0] || '';
+                if (l) l.value = parts.slice(1).join(' ') || '';
+            }
+        });
+    </script>
+</body>
+</html>
