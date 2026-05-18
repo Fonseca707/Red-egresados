@@ -46,8 +46,9 @@
             </div>
 
             <div class="flex gap-6 mb-6 border-b border-gray-200">
-                <button onclick="adminLogic.switchTab('users')" id="tab-users" class="pb-3 text-sm font-bold border-b-2 border-brand-600 text-brand-600 transition">Gestión de Usuarios</button>
-                <button onclick="adminLogic.switchTab('news')" id="tab-news-admin" class="pb-3 text-sm font-bold border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition">Gestión de Noticias</button>
+                <button onclick="adminLogic.switchTab('users')" id="tab-users" class="pb-3 text-sm font-bold border-b-2 border-brand-600 text-brand-600 transition">Usuarios</button>
+                <button onclick="adminLogic.switchTab('news')" id="tab-news-admin" class="pb-3 text-sm font-bold border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition">Noticias</button>
+                <button onclick="adminLogic.switchTab('subadmins')" id="tab-subadmins" class="hidden pb-3 text-sm font-bold border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition">Sub-Administradores</button>
             </div>
 
             <!-- Herramienta de migración -->
@@ -66,21 +67,7 @@
 
             <div id="admin-users-tab" class="space-y-4">
                 <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left text-sm whitespace-nowrap">
-                            <thead class="bg-gray-50/50 text-gray-500 border-b border-gray-100">
-                                <tr>
-                                    <th class="px-6 py-4 font-semibold">Egresado</th>
-                                    <th class="px-6 py-4 font-semibold">Colegio</th>
-                                    <th class="px-6 py-4 font-semibold">Email</th>
-                                    <th class="px-6 py-4 font-semibold">Recibe Novedades</th>
-                                    <th class="px-6 py-4 font-semibold">Estado Cuenta</th>
-                                    <th class="px-6 py-4 font-semibold text-right">Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody id="admin-users-body" class="divide-y divide-gray-50"></tbody>
-                        </table>
-                    </div>
+                    <div id="admin-users-table-container" class="overflow-x-auto"></div>
                 </div>
                 <div id="admin-user-editor" class="hidden bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-gray-100">
                     <div class="flex items-center justify-between gap-4 mb-6">
@@ -150,6 +137,23 @@
                     <div id="admin-news-list" class="divide-y divide-gray-50"></div>
                 </div>
             </div>
+
+            <!-- TAB: SUB-ADMINISTRADORES (solo super admin) -->
+            <div id="admin-subadmins-tab" class="hidden space-y-4">
+                <div class="bg-purple-50 border border-purple-100 rounded-2xl px-5 py-4 flex items-start gap-3">
+                    <i class="ph-duotone ph-shield-star text-purple-600 text-2xl mt-0.5 shrink-0"></i>
+                    <div>
+                        <p class="font-bold text-purple-900 text-sm">Sub-Administradores por Colegio</p>
+                        <p class="text-purple-700 text-xs mt-0.5">Los sub-admins pueden ver y editar únicamente los usuarios de su colegio asignado. Para asignar uno, usa el botón <i class="ph-bold ph-shield-star"></i> en la tabla de Usuarios.</p>
+                    </div>
+                </div>
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div class="p-6 border-b border-gray-100">
+                        <h3 class="text-lg font-bold text-gray-900">Sub-Admins activos</h3>
+                    </div>
+                    <div id="admin-subadmins-list" class="divide-y divide-gray-50"></div>
+                </div>
+            </div>
         </div>
     </main>
 
@@ -163,38 +167,67 @@
         const adminLogic = {
             switchTab: (tab) => {
                 state.adminTab = tab;
-                const usersBtn = document.getElementById('tab-users');
-                const newsBtn = document.getElementById('tab-news-admin');
-                const usersTab = document.getElementById('admin-users-tab');
-                const newsTab = document.getElementById('admin-news-tab');
-                if (!usersBtn || !newsBtn || !usersTab || !newsTab) return;
-                if (tab === 'users') {
-                    usersBtn.className = 'pb-3 text-sm font-bold border-b-2 border-brand-600 text-brand-600 transition';
-                    newsBtn.className = 'pb-3 text-sm font-bold border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition';
-                    usersTab.classList.remove('hidden');
-                    newsTab.classList.add('hidden');
-                } else {
-                    newsBtn.className = 'pb-3 text-sm font-bold border-b-2 border-brand-600 text-brand-600 transition';
-                    usersBtn.className = 'pb-3 text-sm font-bold border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition';
-                    newsTab.classList.remove('hidden');
-                    usersTab.classList.add('hidden');
-                }
+                const tabMap = {
+                    users:     { btn:'tab-users',      panel:'admin-users-tab' },
+                    news:      { btn:'tab-news-admin', panel:'admin-news-tab' },
+                    subadmins: { btn:'tab-subadmins',  panel:'admin-subadmins-tab' }
+                };
+                Object.entries(tabMap).forEach(([key, { btn, panel }]) => {
+                    const b = document.getElementById(btn);
+                    const p = document.getElementById(panel);
+                    if (b) b.className = key === tab
+                        ? 'pb-3 text-sm font-bold border-b-2 border-brand-600 text-brand-600 transition'
+                        : 'pb-3 text-sm font-bold border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition';
+                    if (p) p.classList.toggle('hidden', key !== tab);
+                });
+                if (tab === 'subadmins') adminLogic.renderSubAdmins();
             },
             renderUsers: () => {
-                const tbody = document.getElementById('admin-users-body');
-                if (!tbody) return;
-                if (!state.data.alumni.length) {
-                    tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-6 text-center text-gray-500">Sin usuarios para mostrar.</td></tr>';
+                const container = document.getElementById('admin-users-table-container');
+                if (!container) return;
+                const isSuperAdmin = state.adminRole === 'superadmin';
+                const users = isSuperAdmin
+                    ? state.data.alumni
+                    : state.data.alumni.filter(u => u.school === state.adminSchool);
+                const subAdminUids = new Set((state.data.subAdmins || []).map(sa => sa.uid));
+                const headerCols = isSuperAdmin ? `
+                    <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Egresado</th>
+                    <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Colegio</th>
+                    <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Email</th>
+                    <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Newsletter</th>
+                    <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Rol</th>
+                    <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Estado</th>
+                    <th class="px-6 py-4 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Acciones</th>` : `
+                    <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Egresado</th>
+                    <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Email</th>
+                    <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Newsletter</th>
+                    <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Estado</th>
+                    <th class="px-6 py-4 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Acciones</th>`;
+                const colspan = isSuperAdmin ? 7 : 5;
+                if (!users.length) {
+                    container.innerHTML = `<table class="w-full"><thead class="bg-gray-50 border-b border-gray-100"><tr>${headerCols}</tr></thead><tbody><tr><td colspan="${colspan}" class="px-6 py-6 text-center text-gray-500">Sin usuarios para mostrar.</td></tr></tbody></table>`;
                     return;
                 }
-                tbody.innerHTML = state.data.alumni.map((user) => {
+                const rows = users.map(user => {
                     const accountStatus = user.accountStatus || ACCOUNT_STATUS.ACTIVO;
-                    const badge = accountStatus === ACCOUNT_STATUS.SUSPENDIDO
-                        ? 'bg-red-50 text-red-600 border-red-100'
-                        : 'bg-green-50 text-green-600 border-green-100';
+                    const badge = accountStatus === ACCOUNT_STATUS.SUSPENDIDO ? 'bg-red-50 text-red-600 border-red-100' : 'bg-green-50 text-green-600 border-green-100';
                     const statusText = accountStatus === ACCOUNT_STATUS.SUSPENDIDO ? 'Suspendido' : 'Activo';
                     const toggleTitle = accountStatus === ACCOUNT_STATUS.SUSPENDIDO ? 'Activar' : 'Suspender';
                     const toggleIcon = accountStatus === ACCOUNT_STATUS.SUSPENDIDO ? 'ph-check-circle' : 'ph-prohibit';
+                    const isSubAdmin = subAdminUids.has(user.id);
+                    const schoolCell = isSuperAdmin ? `<td class="px-6 py-4 text-sm">${user.school ? `<span class="px-2.5 py-1 text-xs font-bold rounded-lg border bg-brand-50 text-brand-700 border-brand-100">${sanitizeHTML(user.school)}</span>` : `<span class="text-gray-400 text-xs italic">Sin asignar</span>`}</td>` : '';
+                    const roleCell = isSuperAdmin ? `<td class="px-6 py-4 text-sm">${isSubAdmin ? `<span class="px-2.5 py-1 text-xs font-bold rounded-lg border bg-purple-50 text-purple-700 border-purple-100 inline-flex items-center gap-1"><i class="ph-bold ph-shield-star"></i> Sub-admin</span>` : `<span class="text-gray-400 text-xs">—</span>`}</td>` : '';
+                    const actionsCell = isSuperAdmin ? `
+                        <td class="px-6 py-4 text-right space-x-1">
+                            <button onclick="adminLogic.openUserEditor('${user.id}')" class="p-2 rounded-lg text-blue-600 hover:bg-blue-50 transition" title="Editar perfil"><i class="ph-bold ph-user-circle-gear text-lg"></i></button>
+                            <button onclick="adminLogic.toggleUserStatus('${user.id}', '${accountStatus}')" class="p-2 rounded-lg text-amber-600 hover:bg-amber-50 transition" title="${toggleTitle}"><i class="ph-bold ${toggleIcon} text-lg"></i></button>
+                            <button onclick="adminLogic.toggleSubAdmin('${user.id}', '${sanitizeHTML(user.school || '')}')" class="p-2 rounded-lg ${isSubAdmin ? 'text-purple-600 hover:bg-purple-50' : 'text-gray-400 hover:bg-gray-100'} transition" title="${isSubAdmin ? 'Revocar sub-admin' : 'Asignar sub-admin'}"><i class="ph-bold ph-shield-star text-lg"></i></button>
+                            <button onclick="adminLogic.removeUser('${user.id}')" class="p-2 rounded-lg text-red-600 hover:bg-red-50 transition" title="Eliminar"><i class="ph-bold ph-trash text-lg"></i></button>
+                        </td>` : `
+                        <td class="px-6 py-4 text-right space-x-1">
+                            <button onclick="adminLogic.openUserEditor('${user.id}')" class="p-2 rounded-lg text-blue-600 hover:bg-blue-50 transition" title="Editar perfil"><i class="ph-bold ph-user-circle-gear text-lg"></i></button>
+                            <button onclick="adminLogic.toggleUserStatus('${user.id}', '${accountStatus}')" class="p-2 rounded-lg text-amber-600 hover:bg-amber-50 transition" title="${toggleTitle}"><i class="ph-bold ${toggleIcon} text-lg"></i></button>
+                        </td>`;
                     return `
                         <tr class="hover:bg-gray-50 transition">
                             <td class="px-6 py-4">
@@ -206,31 +239,31 @@
                                     </div>
                                 </div>
                             </td>
-                            <td class="px-6 py-4 text-sm">
-                                ${user.school
-                                    ? `<span class="px-2.5 py-1 text-xs font-bold rounded-lg border bg-brand-50 text-brand-700 border-brand-100">${sanitizeHTML(user.school)}</span>`
-                                    : `<span class="text-gray-400 text-xs italic">Sin asignar</span>`
-                                }
-                            </td>
+                            ${schoolCell}
                             <td class="px-6 py-4 text-gray-600 text-sm">${sanitizeHTML(user.email || 'No disponible')}</td>
                             <td class="px-6 py-4 text-sm">
                                 <span class="px-2.5 py-1 text-xs font-bold rounded-lg border ${user.newsletterOptIn ? 'bg-blue-50 text-blue-600 border-blue-100' : 'bg-gray-50 text-gray-500 border-gray-200'}">
                                     ${user.newsletterOptIn ? 'Sí' : 'No'}
                                 </span>
                             </td>
+                            ${roleCell}
                             <td class="px-6 py-4"><span class="px-2.5 py-1 text-xs font-bold rounded-lg border ${badge}">${statusText}</span></td>
-                            <td class="px-6 py-4 text-right space-x-2">
-                                <button onclick="adminLogic.openUserEditor('${user.id}')" class="p-2 rounded-lg text-blue-600 hover:bg-blue-50 transition" title="Ver / editar perfil"><i class="ph-bold ph-user-circle-gear text-lg"></i></button>
-                                <button onclick="adminLogic.toggleUserStatus('${user.id}', '${accountStatus}')" class="p-2 rounded-lg text-amber-600 hover:bg-amber-50 transition" title="${toggleTitle}"><i class="ph-bold ${toggleIcon} text-lg"></i></button>
-                                <button onclick="adminLogic.removeUser('${user.id}')" class="p-2 rounded-lg text-red-600 hover:bg-red-50 transition" title="Eliminar"><i class="ph-bold ph-trash text-lg"></i></button>
-                            </td>
-                        </tr>
-                    `;
+                            ${actionsCell}
+                        </tr>`;
                 }).join('');
+                container.innerHTML = `
+                    <table class="w-full">
+                        <thead class="bg-gray-50 border-b border-gray-100"><tr>${headerCols}</tr></thead>
+                        <tbody class="divide-y divide-gray-50">${rows}</tbody>
+                    </table>`;
             },
             openUserEditor: (uid) => {
                 const user = state.data.alumni.find((item) => String(item.id) === String(uid));
                 if (!user) return;
+                if (state.adminRole === 'subadmin' && user.school !== state.adminSchool) {
+                    alert('Solo puedes editar usuarios de tu colegio asignado.');
+                    return;
+                }
                 document.getElementById('admin-edit-user-id').value = user.id;
                 document.getElementById('admin-edit-first-name').value = user.firstName || '';
                 document.getElementById('admin-edit-last-name').value = user.lastName || '';
@@ -246,6 +279,8 @@
                 document.getElementById('admin-edit-phone').value = user.phone || '';
                 document.getElementById('admin-edit-expectations').value = user.expectations || '';
                 document.getElementById('admin-edit-school').value = user.school || '';
+                const schoolInput = document.getElementById('admin-edit-school');
+                if (schoolInput) schoolInput.readOnly = state.adminRole === 'subadmin';
                 document.getElementById('admin-user-editor').classList.remove('hidden');
                 document.getElementById('admin-user-editor').scrollIntoView({ behavior: 'smooth', block: 'start' });
             },
@@ -258,6 +293,14 @@
                 e.preventDefault();
                 const uid = document.getElementById('admin-edit-user-id').value;
                 if (!uid) return;
+                if (state.adminRole === 'subadmin') {
+                    const u = state.data.alumni.find(a => String(a.id) === String(uid));
+                    if (u && u.school !== state.adminSchool) {
+                        alert('No tienes permiso para guardar cambios de este usuario.');
+                        return;
+                    }
+                }
+                const targetUser = state.data.alumni.find(a => String(a.id) === String(uid));
                 const payload = {
                     firstName: document.getElementById('admin-edit-first-name').value.trim(),
                     lastName: document.getElementById('admin-edit-last-name').value.trim(),
@@ -272,7 +315,7 @@
                     linkedin: document.getElementById('admin-edit-linkedin').value.trim(),
                     phone: document.getElementById('admin-edit-phone').value.trim(),
                     expectations: document.getElementById('admin-edit-expectations').value.trim(),
-                    school: document.getElementById('admin-edit-school').value.trim(),
+                    school: state.adminRole === 'subadmin' ? (targetUser?.school || state.adminSchool || '') : document.getElementById('admin-edit-school').value.trim(),
                     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
                 };
                 if (!hasValidFirstName(payload.firstName)) {
@@ -289,6 +332,13 @@
                 }
             },
             toggleUserStatus: async (uid, currentStatus) => {
+                if (state.adminRole === 'subadmin') {
+                    const u = state.data.alumni.find(a => String(a.id) === String(uid));
+                    if (u && u.school !== state.adminSchool) {
+                        alert('No tienes permiso para modificar este usuario.');
+                        return;
+                    }
+                }
                 const next = currentStatus === 'suspendido' ? 'activo' : 'suspendido';
                 try {
                     await alumniCollection.doc(uid).set({ accountStatus: next, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
@@ -299,6 +349,7 @@
                 }
             },
             removeUser: async (uid) => {
+                if (state.adminRole !== 'superadmin') return;
                 if (!confirm('¿Eliminar este usuario del directorio?')) return;
                 try {
                     await alumniCollection.doc(uid).delete();
@@ -307,6 +358,65 @@
                 } catch (error) {
                     alert(`No se pudo eliminar el usuario: ${error.message}`);
                 }
+            },
+            toggleSubAdmin: async (uid, school) => {
+                const existing = (state.data.subAdmins || []).find(sa => sa.uid === uid);
+                if (existing) {
+                    if (!confirm('¿Revocar el rol de sub-administrador a este usuario?')) return;
+                    try {
+                        await adminsCollection.doc(uid).delete();
+                        await loadSubAdmins();
+                        adminLogic.renderUsers();
+                    } catch (e) { alert(`Error al revocar sub-admin: ${e.message}`); }
+                } else {
+                    if (!school) { alert('El usuario debe tener un colegio asignado para ser sub-administrador.'); return; }
+                    if (!confirm(`¿Asignar como sub-administrador del colegio "${school}"?`)) return;
+                    try {
+                        await adminsCollection.doc(uid).set({ role: 'subadmin', school, assignedAt: firebase.firestore.FieldValue.serverTimestamp() });
+                        await loadSubAdmins();
+                        adminLogic.renderUsers();
+                    } catch (e) { alert(`Error al asignar sub-admin: ${e.message}`); }
+                }
+            },
+            revokeSubAdmin: async (uid) => {
+                if (!confirm('¿Revocar el rol de sub-administrador?')) return;
+                try {
+                    await adminsCollection.doc(uid).delete();
+                    await loadSubAdmins();
+                    adminLogic.renderSubAdmins();
+                    adminLogic.renderUsers();
+                } catch (e) { alert(`Error al revocar sub-admin: ${e.message}`); }
+            },
+            renderSubAdmins: () => {
+                const list = document.getElementById('admin-subadmins-list');
+                if (!list) return;
+                const subAdmins = state.data.subAdmins || [];
+                if (!subAdmins.length) {
+                    list.innerHTML = '<div class="p-6 text-sm text-gray-500">No hay sub-administradores asignados aún.</div>';
+                    return;
+                }
+                list.innerHTML = subAdmins.map(sa => {
+                    const alumnus = state.data.alumni.find(a => a.id === sa.uid);
+                    const name = alumnus ? sanitizeHTML(alumnus.name) : sa.uid;
+                    const email = alumnus ? sanitizeHTML(alumnus.email || '') : '';
+                    const imgTag = alumnus?.img
+                        ? `<img src="${sanitizeHTML(alumnus.img)}" alt="${name}" class="w-10 h-10 rounded-full object-cover border border-gray-100">`
+                        : `<div class="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center"><i class="ph-bold ph-shield-star text-purple-600"></i></div>`;
+                    return `
+                        <div class="p-5 flex items-center justify-between gap-4 hover:bg-gray-50 transition">
+                            <div class="flex items-center gap-3">
+                                ${imgTag}
+                                <div>
+                                    <div class="font-bold text-gray-900">${name}</div>
+                                    <div class="text-xs text-gray-500">${email}</div>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <span class="px-2.5 py-1 text-xs font-bold rounded-lg border bg-brand-50 text-brand-700 border-brand-100">${sanitizeHTML(sa.school || '—')}</span>
+                                <button onclick="adminLogic.revokeSubAdmin('${sa.uid}')" class="p-2 rounded-lg text-red-600 hover:bg-red-50 transition" title="Revocar sub-admin"><i class="ph-bold ph-x-circle text-lg"></i></button>
+                            </div>
+                        </div>`;
+                }).join('');
             },
             renderNewsList: () => {
                 const list = document.getElementById('admin-news-list');
@@ -436,13 +546,24 @@
             if (!user) { goto('login'); return; }
             state.user = user;
             await loadProfile(user.uid);
-            if (!isAdminUser()) { goto('directory'); return; }
+            await loadAdminRole(user.uid);
+            if (!canAccessAdmin()) { goto('directory'); return; }
+            const isSuperAdmin = state.adminRole === 'superadmin';
             const adminBtn = document.getElementById('nav-admin');
             if (adminBtn) adminBtn.classList.remove('hidden');
+            if (isSuperAdmin) {
+                document.getElementById('tab-subadmins')?.classList.remove('hidden');
+            } else {
+                document.getElementById('migration-banner')?.classList.add('hidden');
+                document.getElementById('tab-news-admin')?.classList.add('hidden');
+            }
             await loadAlumni();
-            await loadNews();
+            if (isSuperAdmin) {
+                await loadNews();
+                await loadSubAdmins();
+                adminLogic.renderNewsList();
+            }
             adminLogic.renderUsers();
-            adminLogic.renderNewsList();
             adminLogic.switchTab('users');
         });
     </script>
