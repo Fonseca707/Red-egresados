@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sinapsis | Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script>
+        tailwind.config = {
+            theme: { extend: {
+                fontFamily: { sans: ['"Plus Jakarta Sans"', 'sans-serif'] },
+                colors: {
+                    brand: { 50:'#f0fdf4',100:'#dcfce7',200:'#bbf7d0',300:'#86efac',400:'#4ade80',500:'#22c55e',600:'#16a34a',700:'#15803d',800:'#166534',900:'#14532d',950:'#052e16' },
+                    stone: { 50:'#fafaf9',100:'#f5f5f4',200:'#e7e5e4',300:'#d6d3d1',400:'#a8a29e',500:'#78716c',600:'#57534e',700:'#44403c',800:'#292524',900:'#1c1917' },
+                    sun: { 50:'#fffbeb',100:'#fef3c7',200:'#fde68a',400:'#fbbf24',500:'#f59e0b',600:'#d97706' }
+                },
+                animation: { 'fade-in':'fadeIn 0.3s ease-out','slide-up':'slideUp 0.4s ease-out','slide-in-right':'slideInRight 0.4s cubic-bezier(0.16,1,0.3,1)' },
+                keyframes: { fadeIn:{'0%':{opacity:'0'},'100%':{opacity:'1'}},slideUp:{'0%':{transform:'translateY(20px)',opacity:'0'},'100%':{transform:'translateY(0)',opacity:'1'}},slideInRight:{'0%':{transform:'translateX(100%)'},'100%':{transform:'translateX(0)'}} }
+            }}
+        }
+    </script>
+    <style>
+        body { background-color: #fafaf9; }
+        .glass-nav { background: rgba(250,250,249,0.85); backdrop-filter: blur(16px); border-bottom: 1px solid rgba(231,229,228,0.6); }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .section-card { background:#fff; padding:1.5rem; border-radius:2rem; border:1px solid #f5f5f4; box-shadow:0 8px 30px rgb(20 83 45/0.03); margin-bottom:1.5rem; transition:all 0.2s ease; }
+        @media(min-width:768px){ .section-card{padding:2rem;} }
+        .section-card:hover { box-shadow: 0 12px 40px rgb(22 163 74/0.08); }
+        .input-label { font-size:0.75rem; font-weight:700; color:#78716c; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:0.5rem; display:block; }
+        .input-field { width:100%; padding:0.85rem 1rem; background:rgba(250,250,249,0.9); border:1px solid #e7e5e4; border-radius:0.75rem; outline:none; transition:all 0.2s ease; font-size:0.9rem; font-weight:500; color:#292524; }
+        .input-field:focus { border-color:#16a34a; box-shadow:0 0 0 4px rgb(34 197 94/0.15); background:#fff; }
+    </style>
+</head>
+<body class="text-stone-800 font-sans min-h-screen flex flex-col">
+
+    <main class="flex-1 pt-20 pb-24 md:pb-8 px-4 bg-stone-50/60">
+        <div class="w-full max-w-7xl mx-auto pb-10 animate-fade-in">
+            <div class="mb-8">
+                <h2 class="text-3xl font-bold text-gray-900 tracking-tight flex items-center gap-3">
+                    <i class="ph-bold ph-shield-star text-brand-600"></i> Gestión del Ecosistema
+                </h2>
+                <p class="text-gray-500 mt-1 text-sm">Gestiona la comunidad y el contenido de la plataforma.</p>
+            </div>
+
+            <div class="flex gap-6 mb-6 border-b border-gray-200">
+                <button onclick="adminLogic.switchTab('users')" id="tab-users" class="pb-3 text-sm font-bold border-b-2 border-brand-600 text-brand-600 transition">Gestión de Usuarios</button>
+                <button onclick="adminLogic.switchTab('news')" id="tab-news-admin" class="pb-3 text-sm font-bold border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition">Gestión de Noticias</button>
+            </div>
+
+            <div id="admin-users-tab" class="space-y-4">
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm whitespace-nowrap">
+                            <thead class="bg-gray-50/50 text-gray-500 border-b border-gray-100">
+                                <tr>
+                                    <th class="px-6 py-4 font-semibold">Egresado</th>
+                                    <th class="px-6 py-4 font-semibold">Email</th>
+                                    <th class="px-6 py-4 font-semibold">Recibe Novedades</th>
+                                    <th class="px-6 py-4 font-semibold">Estado Cuenta</th>
+                                    <th class="px-6 py-4 font-semibold text-right">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-users-body" class="divide-y divide-gray-50"></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div id="admin-user-editor" class="hidden bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-gray-100">
+                    <div class="flex items-center justify-between gap-4 mb-6">
+                        <h3 class="text-lg font-bold text-gray-900 flex items-center gap-2">
+                            <i class="ph-bold ph-user-gear text-brand-600 text-xl"></i> Editar perfil de egresado
+                        </h3>
+                        <button type="button" onclick="adminLogic.cancelUserEdit()" class="px-4 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-sm font-semibold text-gray-700 transition">Cancelar</button>
+                    </div>
+                    <form id="admin-user-form" class="grid grid-cols-1 md:grid-cols-2 gap-4" onsubmit="adminLogic.saveUserProfile(event)">
+                        <input id="admin-edit-user-id" type="hidden">
+                        <div><label class="input-label">Nombre</label><input id="admin-edit-first-name" class="input-field" required></div>
+                        <div><label class="input-label">Apellido</label><input id="admin-edit-last-name" class="input-field"></div>
+                        <div><label class="input-label">Rol / Cargo</label><input id="admin-edit-role" class="input-field"></div>
+                        <div><label class="input-label">Ubicación</label><input id="admin-edit-location" class="input-field"></div>
+                        <div><label class="input-label">Año de graduación</label><input id="admin-edit-year" class="input-field"></div>
+                        <div><label class="input-label">Estado actual</label><input id="admin-edit-status" class="input-field" placeholder="trabajando / estudiando"></div>
+                        <div><label class="input-label">Área</label><input id="admin-edit-area" class="input-field"></div>
+                        <div><label class="input-label">Estudios</label><input id="admin-edit-studies" class="input-field"></div>
+                        <div class="md:col-span-2"><label class="input-label">Biografía</label><textarea id="admin-edit-bio" class="input-field h-24 resize-none"></textarea></div>
+                        <div><label class="input-label">Habilidades (coma separadas)</label><input id="admin-edit-skills" class="input-field"></div>
+                        <div><label class="input-label">LinkedIn</label><input id="admin-edit-linkedin" class="input-field"></div>
+                        <div><label class="input-label">Teléfono</label><input id="admin-edit-phone" class="input-field"></div>
+                        <div class="md:col-span-2"><label class="input-label">Proyecciones / expectativas</label><textarea id="admin-edit-expectations" class="input-field h-24 resize-none" placeholder="Metas, expectativas o proyecciones del estudiante"></textarea></div>
+                        <div class="md:col-span-2 flex justify-end">
+                            <button type="submit" class="px-6 py-3 bg-brand-600 text-white font-bold rounded-xl shadow-lg shadow-brand-500/30 hover:bg-brand-700 transition">Guardar cambios</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div id="admin-news-tab" class="hidden space-y-8">
+                <div class="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-gray-100">
+                    <h3 id="admin-news-form-title" class="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2">
+                        <i class="ph-duotone ph-newspaper text-brand-600 text-xl"></i> Publicar Nueva Noticia
+                    </h3>
+                    <form class="grid grid-cols-1 md:grid-cols-2 gap-6" onsubmit="adminLogic.addNews(event)">
+                        <div>
+                            <label class="input-label">Título</label>
+                            <input id="admin-news-title" type="text" required class="input-field" placeholder="Ej: Nueva Alianza Estratégica">
+                        </div>
+                        <div>
+                            <label class="input-label">Categoría</label>
+                            <input id="admin-news-category" type="text" required class="input-field" placeholder="Ej: Evento, Empleo, Noticia">
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="input-label">Resumen / Contenido</label>
+                            <textarea id="admin-news-summary" required class="input-field h-24 resize-none" placeholder="Breve descripción de la noticia..."></textarea>
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="input-label">URL de Imagen (Opcional)</label>
+                            <input id="admin-news-img" type="url" class="input-field" placeholder="https://ejemplo.com/imagen.jpg">
+                        </div>
+                        <div class="md:col-span-2 flex justify-end">
+                            <div class="flex gap-3">
+                                <button type="button" id="admin-news-cancel-edit" onclick="adminLogic.cancelNewsEdit()" class="hidden px-5 py-3 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition">Cancelar edición</button>
+                                <button type="submit" id="admin-news-submit-btn" class="px-6 py-3 bg-brand-600 text-white font-bold rounded-xl shadow-lg shadow-brand-500/30 hover:bg-brand-700 transition">Publicar Noticia</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div class="p-6 border-b border-gray-100">
+                        <h3 class="text-lg font-bold text-gray-900">Noticias Publicadas</h3>
+                    </div>
+                    <div id="admin-news-list" class="divide-y divide-gray-50"></div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore-compat.js"></script>
+    <script src="shared.js"></script>
+    <script>
+        renderNav('admin');
+
+        const adminLogic = {
+            switchTab: (tab) => {
+                state.adminTab = tab;
+                const usersBtn = document.getElementById('tab-users');
+                const newsBtn = document.getElementById('tab-news-admin');
+                const usersTab = document.getElementById('admin-users-tab');
+                const newsTab = document.getElementById('admin-news-tab');
+                if (!usersBtn || !newsBtn || !usersTab || !newsTab) return;
+                if (tab === 'users') {
+                    usersBtn.className = 'pb-3 text-sm font-bold border-b-2 border-brand-600 text-brand-600 transition';
+                    newsBtn.className = 'pb-3 text-sm font-bold border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition';
+                    usersTab.classList.remove('hidden');
+                    newsTab.classList.add('hidden');
+                } else {
+                    newsBtn.className = 'pb-3 text-sm font-bold border-b-2 border-brand-600 text-brand-600 transition';
+                    usersBtn.className = 'pb-3 text-sm font-bold border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition';
+                    newsTab.classList.remove('hidden');
+                    usersTab.classList.add('hidden');
+                }
+            },
+            renderUsers: () => {
+                const tbody = document.getElementById('admin-users-body');
+                if (!tbody) return;
+                if (!state.data.alumni.length) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-6 text-center text-gray-500">Sin usuarios para mostrar.</td></tr>';
+                    return;
+                }
+                tbody.innerHTML = state.data.alumni.map((user) => {
+                    const accountStatus = user.accountStatus || ACCOUNT_STATUS.ACTIVO;
+                    const badge = accountStatus === ACCOUNT_STATUS.SUSPENDIDO
+                        ? 'bg-red-50 text-red-600 border-red-100'
+                        : 'bg-green-50 text-green-600 border-green-100';
+                    const statusText = accountStatus === ACCOUNT_STATUS.SUSPENDIDO ? 'Suspendido' : 'Activo';
+                    const toggleTitle = accountStatus === ACCOUNT_STATUS.SUSPENDIDO ? 'Activar' : 'Suspender';
+                    const toggleIcon = accountStatus === ACCOUNT_STATUS.SUSPENDIDO ? 'ph-check-circle' : 'ph-prohibit';
+                    return `
+                        <tr class="hover:bg-gray-50 transition">
+                            <td class="px-6 py-4">
+                                <div class="flex items-center gap-3">
+                                    <img src="${sanitizeHTML(user.img)}" alt="Foto de ${sanitizeHTML(user.name)}" class="w-10 h-10 rounded-full object-cover border border-gray-100">
+                                    <div>
+                                        <div class="font-bold text-gray-900">${sanitizeHTML(user.name)}</div>
+                                        <div class="text-xs text-gray-500">${sanitizeHTML(user.role || user.status || '')}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 text-gray-600 text-sm">${sanitizeHTML(user.email || 'No disponible')}</td>
+                            <td class="px-6 py-4 text-sm">
+                                <span class="px-2.5 py-1 text-xs font-bold rounded-lg border ${user.newsletterOptIn ? 'bg-blue-50 text-blue-600 border-blue-100' : 'bg-gray-50 text-gray-500 border-gray-200'}">
+                                    ${user.newsletterOptIn ? 'Sí' : 'No'}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4"><span class="px-2.5 py-1 text-xs font-bold rounded-lg border ${badge}">${statusText}</span></td>
+                            <td class="px-6 py-4 text-right space-x-2">
+                                <button onclick="adminLogic.openUserEditor('${user.id}')" class="p-2 rounded-lg text-blue-600 hover:bg-blue-50 transition" title="Ver / editar perfil"><i class="ph-bold ph-user-circle-gear text-lg"></i></button>
+                                <button onclick="adminLogic.toggleUserStatus('${user.id}', '${accountStatus}')" class="p-2 rounded-lg text-amber-600 hover:bg-amber-50 transition" title="${toggleTitle}"><i class="ph-bold ${toggleIcon} text-lg"></i></button>
+                                <button onclick="adminLogic.removeUser('${user.id}')" class="p-2 rounded-lg text-red-600 hover:bg-red-50 transition" title="Eliminar"><i class="ph-bold ph-trash text-lg"></i></button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            },
+            openUserEditor: (uid) => {
+                const user = state.data.alumni.find((item) => String(item.id) === String(uid));
+                if (!user) return;
+                document.getElementById('admin-edit-user-id').value = user.id;
+                document.getElementById('admin-edit-first-name').value = user.firstName || '';
+                document.getElementById('admin-edit-last-name').value = user.lastName || '';
+                document.getElementById('admin-edit-role').value = user.role || '';
+                document.getElementById('admin-edit-location').value = user.location || '';
+                document.getElementById('admin-edit-year').value = user.year === '---' ? '' : (user.year || '');
+                document.getElementById('admin-edit-status').value = user.status || '';
+                document.getElementById('admin-edit-area').value = user.area || '';
+                document.getElementById('admin-edit-studies').value = user.fullStudies === 'No especificado' ? '' : (user.fullStudies || '');
+                document.getElementById('admin-edit-bio').value = user.bio === 'Sin biografía disponible.' ? '' : (user.bio || '');
+                document.getElementById('admin-edit-skills').value = Array.isArray(user.skills) ? user.skills.join(', ') : '';
+                document.getElementById('admin-edit-linkedin').value = user.linkedin || '';
+                document.getElementById('admin-edit-phone').value = user.phone || '';
+                document.getElementById('admin-edit-expectations').value = user.expectations || '';
+                document.getElementById('admin-user-editor').classList.remove('hidden');
+                document.getElementById('admin-user-editor').scrollIntoView({ behavior: 'smooth', block: 'start' });
+            },
+            cancelUserEdit: () => {
+                const form = document.getElementById('admin-user-form');
+                if (form) form.reset();
+                document.getElementById('admin-user-editor').classList.add('hidden');
+            },
+            saveUserProfile: async (e) => {
+                e.preventDefault();
+                const uid = document.getElementById('admin-edit-user-id').value;
+                if (!uid) return;
+                const payload = {
+                    firstName: document.getElementById('admin-edit-first-name').value.trim(),
+                    lastName: document.getElementById('admin-edit-last-name').value.trim(),
+                    role: document.getElementById('admin-edit-role').value.trim(),
+                    location: document.getElementById('admin-edit-location').value.trim(),
+                    graduationYear: document.getElementById('admin-edit-year').value.trim(),
+                    status: document.getElementById('admin-edit-status').value.trim() || 'trabajando',
+                    area: document.getElementById('admin-edit-area').value.trim(),
+                    studies: document.getElementById('admin-edit-studies').value.trim(),
+                    bio: document.getElementById('admin-edit-bio').value.trim(),
+                    skills: document.getElementById('admin-edit-skills').value.split(',').map((s) => s.trim()).filter(Boolean),
+                    linkedin: document.getElementById('admin-edit-linkedin').value.trim(),
+                    phone: document.getElementById('admin-edit-phone').value.trim(),
+                    expectations: document.getElementById('admin-edit-expectations').value.trim(),
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                };
+                if (!hasValidFirstName(payload.firstName)) {
+                    alert('El nombre es obligatorio y debe tener al menos 2 caracteres.');
+                    return;
+                }
+                try {
+                    await alumniCollection.doc(uid).set(payload, { merge: true });
+                    await loadAlumni();
+                    adminLogic.renderUsers();
+                    adminLogic.cancelUserEdit();
+                } catch (error) {
+                    alert(`No se pudo guardar el perfil: ${error.message}`);
+                }
+            },
+            toggleUserStatus: async (uid, currentStatus) => {
+                const next = currentStatus === 'suspendido' ? 'activo' : 'suspendido';
+                try {
+                    await alumniCollection.doc(uid).set({ accountStatus: next, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+                    await loadAlumni();
+                    adminLogic.renderUsers();
+                } catch (error) {
+                    alert(`No se pudo actualizar el estado del usuario: ${error.message}`);
+                }
+            },
+            removeUser: async (uid) => {
+                if (!confirm('¿Eliminar este usuario del directorio?')) return;
+                try {
+                    await alumniCollection.doc(uid).delete();
+                    await loadAlumni();
+                    adminLogic.renderUsers();
+                } catch (error) {
+                    alert(`No se pudo eliminar el usuario: ${error.message}`);
+                }
+            },
+            renderNewsList: () => {
+                const list = document.getElementById('admin-news-list');
+                if (!list) return;
+                if (!state.data.news.length) {
+                    list.innerHTML = '<div class="p-6 text-sm text-gray-500">Aún no hay noticias publicadas.</div>';
+                    return;
+                }
+                list.innerHTML = state.data.news.map((item) => `
+                    <div class="p-6 flex flex-col md:flex-row items-start md:items-center gap-4 hover:bg-gray-50 transition">
+                        <img src="${sanitizeHTML(item.img)}" alt="${sanitizeHTML(item.title)}" class="w-20 h-20 rounded-xl object-cover shadow-sm shrink-0">
+                        <div class="flex-1">
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="text-xs font-bold bg-gray-100 text-gray-600 px-2 py-0.5 rounded">${sanitizeHTML(item.category)}</span>
+                                <span class="text-xs text-gray-400">${sanitizeHTML(item.date)}</span>
+                            </div>
+                            <h4 class="font-bold text-gray-900">${sanitizeHTML(item.title)}</h4>
+                            <p class="text-sm text-gray-500 line-clamp-1 mt-1">${sanitizeHTML(item.summary)}</p>
+                        </div>
+                        <div class="flex items-center gap-1 shrink-0">
+                            <button onclick="adminLogic.startNewsEdit('${sanitizeHTML(item.id)}')" class="p-3 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-xl transition" title="Editar noticia" aria-label="Editar noticia"><i class="ph-bold ph-pencil-simple text-xl"></i></button>
+                            <button onclick="adminLogic.deleteNews('${sanitizeHTML(item.id)}')" class="p-3 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-xl transition" title="Eliminar noticia" aria-label="Eliminar noticia"><i class="ph-bold ph-trash text-xl"></i></button>
+                        </div>
+                    </div>
+                `).join('');
+            },
+            startNewsEdit: (id) => {
+                const item = state.data.news.find(n => String(n.id) === String(id));
+                if (!item) return;
+                state.editingNewsId = String(id);
+                document.getElementById('admin-news-title').value = item.title || '';
+                document.getElementById('admin-news-category').value = item.category || '';
+                document.getElementById('admin-news-summary').value = item.summary || '';
+                document.getElementById('admin-news-img').value = item.img || '';
+                document.getElementById('admin-news-form-title').innerHTML = '<i class="ph-duotone ph-pencil-simple-line text-brand-600 text-xl"></i> Editar Noticia';
+                document.getElementById('admin-news-submit-btn').innerText = 'Guardar Cambios';
+                document.getElementById('admin-news-cancel-edit').classList.remove('hidden');
+            },
+            cancelNewsEdit: () => {
+                state.editingNewsId = null;
+                const form = document.querySelector('#admin-news-tab form');
+                if (form) form.reset();
+                document.getElementById('admin-news-form-title').innerHTML = '<i class="ph-duotone ph-newspaper text-brand-600 text-xl"></i> Publicar Nueva Noticia';
+                document.getElementById('admin-news-submit-btn').innerText = 'Publicar Noticia';
+                document.getElementById('admin-news-cancel-edit').classList.add('hidden');
+            },
+            addNews: async (e) => {
+                e.preventDefault();
+                const title = document.getElementById('admin-news-title').value.trim();
+                const category = document.getElementById('admin-news-category').value.trim();
+                const summary = document.getElementById('admin-news-summary').value.trim();
+                const img = document.getElementById('admin-news-img').value.trim() || 'https://placehold.co/600x400/7e22ce/FFF?text=Noticia';
+                try {
+                    const payload = {
+                        title,
+                        category,
+                        summary,
+                        img,
+                        createdBy: state.user?.email || '',
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    };
+                    if (state.editingNewsId) {
+                        await newsCollection.doc(state.editingNewsId).set(payload, { merge: true });
+                    } else {
+                        await newsCollection.add({
+                            ...payload,
+                            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                    }
+                    await loadNews();
+                    adminLogic.renderNewsList();
+                    adminLogic.cancelNewsEdit();
+                } catch (error) {
+                    alert(`No se pudo publicar la noticia: ${error.message}`);
+                }
+            },
+            deleteNews: async (id) => {
+                if (!confirm('¿Eliminar esta noticia?')) return;
+                try {
+                    await newsCollection.doc(String(id)).delete();
+                    await loadNews();
+                    adminLogic.renderNewsList();
+                } catch (error) {
+                    alert(`No se pudo eliminar la noticia: ${error.message}`);
+                }
+            }
+        };
+        window.adminLogic = adminLogic;
+
+        auth.onAuthStateChanged(async (user) => {
+            if (!user) { goto('login'); return; }
+            state.user = user;
+            await loadProfile(user.uid);
+            if (!isAdminUser()) { goto('directory'); return; }
+            const adminBtn = document.getElementById('nav-admin');
+            if (adminBtn) adminBtn.classList.remove('hidden');
+            await loadAlumni();
+            await loadNews();
+            adminLogic.renderUsers();
+            adminLogic.renderNewsList();
+            adminLogic.switchTab('users');
+        });
+    </script>
+</body>
+</html>
