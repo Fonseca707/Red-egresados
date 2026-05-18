@@ -16,6 +16,7 @@ const db = firebase.firestore();
 const _appId = "1:874010522484:web:28881821d110defd3b7221";
 const artifactsRoot = db.collection('artifacts').doc(_appId);
 const alumniCollection = artifactsRoot.collection('public').doc('data').collection('alumni');
+const adminsCollection = artifactsRoot.collection('admins');
 const newsCollection = artifactsRoot.collection('public').doc('data').collection('news');
 const userChatsCollection = (uid) => artifactsRoot.collection('users').doc(uid).collection('chats');
 const userChatMessagesCollection = (uid, chatId) => userChatsCollection(uid).doc(chatId).collection('messages');
@@ -45,10 +46,11 @@ function buildAvatarUrl(name='Usuario') {
 
 const state = {
     user: null,
-    data: { alumni:[], news:[{id:1,title:"Encuentro Anual de Egresados 2024",category:"Evento",date:"15 Oct",summary:"Únete a nosotros para una noche de networking y celebración.",img:"https://placehold.co/600x400/1e3a8a/FFF?text=Evento"},{id:2,title:"Senior Developer Vacancy",category:"Empleo",date:"Hace 2h",summary:"Empresa aliada busca desarrollador Full Stack con experiencia.",img:"https://placehold.co/600x400/2563eb/FFF?text=Empleo"}], chats:[] },
+    data: { alumni:[], news:[{id:1,title:"Encuentro Anual de Egresados 2024",category:"Evento",date:"15 Oct",summary:"Únete a nosotros para una noche de networking y celebración.",img:"https://placehold.co/600x400/1e3a8a/FFF?text=Evento"},{id:2,title:"Senior Developer Vacancy",category:"Empleo",date:"Hace 2h",summary:"Empresa aliada busca desarrollador Full Stack con experiencia.",img:"https://placehold.co/600x400/2563eb/FFF?text=Empleo"}], chats:[], subAdmins:[] },
     profile: { firstName:'',lastName:'',graduationYear:'',location:'',status:'trabajando',role:'',area:'',studies:'',bio:'',skills:'',topics:'',expectations:'',phone:'',linkedin:'',photoURL:'',school:'',onboardingCompleted:false },
     guestMode: false, activeChatId:null, messagesByChat:{}, selectedDirectoryUserId:null,
     directoryLoading:false, directoryPage:1, adminEmail:'juanda.fonsecag@gmail.com', adminTab:'users', editingNewsId:null,
+    adminRole: null, adminSchool: null,
     listeners: { chats:null, messages:null }
 };
 
@@ -73,6 +75,21 @@ function isAdminUser() {
 }
 const AUTH_ERROR_MESSAGES={'auth/user-not-found':'No existe la cuenta.','auth/wrong-password':'La contraseña es incorrecta.','auth/invalid-credential':'Correo o contraseña incorrectos.','auth/invalid-email':'El correo no tiene un formato válido.','auth/email-already-in-use':'Ese correo ya está registrado.','auth/weak-password':'La contraseña es muy débil.','auth/popup-closed-by-user':'Cerraste la ventana de Google antes de terminar.','auth/cancelled-popup-request':'Se canceló la solicitud con Google.','auth/network-request-failed':'No hay conexión a internet. Intenta nuevamente.'};
 function getFriendlyAuthError(e,fb='Ocurrió un error.') { return AUTH_ERROR_MESSAGES[e?.code]||fb; }
+
+async function loadAdminRole(uid) {
+    if (isAdminUser()) { state.adminRole='superadmin'; state.adminSchool=null; return; }
+    try {
+        const doc=await adminsCollection.doc(uid).get();
+        if (doc.exists && doc.data().role==='subadmin') {
+            state.adminRole='subadmin'; state.adminSchool=doc.data().school||null;
+        } else { state.adminRole=null; state.adminSchool=null; }
+    } catch(e) { state.adminRole=null; state.adminSchool=null; }
+}
+function canAccessAdmin() { return isAdminUser()||state.adminRole==='subadmin'; }
+async function loadSubAdmins() {
+    try { const s=await adminsCollection.get(); state.data.subAdmins=s.docs.map(d=>({uid:d.id,...d.data()})); }
+    catch(e) { state.data.subAdmins=[]; }
+}
 
 async function loadProfile(uid) {
     const doc=await alumniCollection.doc(uid).get();
