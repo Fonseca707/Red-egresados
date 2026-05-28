@@ -578,6 +578,92 @@
             </div>
         </div>
 
+        <!-- VISTA: ONBOARDING PERFIL PROFESIONAL -->
+        <div id="view-onboarding-profile" class="hidden min-h-[80vh] flex items-center justify-center animate-fade-in py-8">
+            <div class="bg-white p-8 md:p-12 rounded-[2.5rem] shadow-[0_20px_50px_rgb(0,0,0,0.08)] border border-gray-100 w-full max-w-4xl relative overflow-hidden">
+                <div class="absolute -bottom-10 -left-10 w-56 h-56 bg-brand-50 rounded-full blur-2xl -z-10 opacity-70"></div>
+                <div class="text-center mb-8">
+                    <div class="w-16 h-16 bg-brand-50 text-brand-600 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-4 border border-brand-100 shadow-sm">
+                        <i class="ph-duotone ph-identification-card"></i>
+                    </div>
+                    <p class="text-xs font-bold uppercase tracking-[0.2em] text-brand-600 mb-2">Paso 2 de 2</p>
+                    <h1 class="text-2xl md:text-3xl font-bold text-gray-900">Completa otra parte de tu perfil</h1>
+                    <p class="text-gray-500 text-sm mt-2 max-w-2xl mx-auto">Esta sección ayuda a que otros egresados entiendan tu camino profesional, tus intereses y cómo contactarte. <strong class="text-brand-600">Todos los campos son opcionales.</strong></p>
+                </div>
+
+                <form onsubmit="onboardingLogic.saveProfileDetails(event)" class="space-y-6">
+                    <div class="section-card !shadow-none !mb-0">
+                        <h3 class="text-lg font-bold mb-6 flex items-center gap-2 text-gray-900 border-b border-gray-100 pb-3">
+                            <i class="ph-duotone ph-student text-brand-600 text-2xl"></i> Perfil académico y profesional
+                        </h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="input-label">Puesto / Rol actual</label>
+                                <input id="ob-role" type="text" placeholder="Ej: Gerente de Ventas" class="input-field onboarding-field">
+                            </div>
+                            <div>
+                                <label class="input-label">Área de interés</label>
+                                <input id="ob-area" type="text" placeholder="Ej: Tecnología, Finanzas" class="input-field onboarding-field">
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="input-label">Estudios recientes</label>
+                                <input id="ob-studies" type="text" placeholder="Ej: Maestría en Marketing Digital" class="input-field onboarding-field">
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="input-label">¿Qué expectativas/proyecciones tiene sobre usted?</label>
+                                <textarea id="ob-expectations" class="input-field onboarding-field h-24 resize-y" placeholder="Ej: Consolidarme en liderazgo de proyectos, emprender y aportar como mentor en la red."></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="section-card !shadow-none !mb-0">
+                        <h3 class="text-lg font-bold mb-6 flex items-center gap-2 text-gray-900 border-b border-gray-100 pb-3">
+                            <i class="ph-duotone ph-star text-brand-600 text-2xl"></i> Especialización y conexión
+                        </h3>
+                        <div class="space-y-6">
+                            <div>
+                                <label class="input-label">Extracto / Bio</label>
+                                <textarea id="ob-bio" class="input-field onboarding-field h-28 resize-y" placeholder="Cuéntanos brevemente sobre tu experiencia y objetivos..."></textarea>
+                            </div>
+                            <div>
+                                <label class="input-label">Habilidades clave (separadas por comas)</label>
+                                <textarea id="ob-skills" class="input-field onboarding-field h-24 resize-y" placeholder="Ej: Liderazgo, Python, Negociación"></textarea>
+                            </div>
+                            <div>
+                                <label class="input-label">Intereses de conexión</label>
+                                <input id="ob-topics" type="text" placeholder="Ej: Mentoría, inversiones, proyectos" class="input-field onboarding-field">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="section-card !shadow-none !mb-0">
+                        <h3 class="text-lg font-bold mb-6 flex items-center gap-2 text-gray-900 border-b border-gray-100 pb-3">
+                            <i class="ph-duotone ph-share-network text-brand-600 text-2xl"></i> Redes de contacto
+                        </h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="input-label">Celular / WhatsApp</label>
+                                <input id="ob-phone" type="text" placeholder="+57 300 123 4567" class="input-field onboarding-field">
+                            </div>
+                            <div>
+                                <label class="input-label">LinkedIn (URL)</label>
+                                <input id="ob-linkedin" type="text" placeholder="linkedin.com/in/usuario" class="input-field onboarding-field">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col-reverse md:flex-row gap-4 pt-6 mt-6 border-t border-gray-100">
+                        <button type="button" onclick="onboardingLogic.skipProfileDetails()" class="w-full md:w-auto px-6 py-3.5 bg-gray-50 hover:bg-gray-100 text-gray-600 font-bold rounded-xl transition border border-gray-200">
+                            Omitir por ahora
+                        </button>
+                        <button type="submit" class="w-full md:flex-1 py-3.5 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-xl shadow-lg shadow-brand-500/30 transition transform hover:scale-[1.02] flex justify-center items-center gap-2" id="btn-save-onboarding-profile">
+                            Terminar primer ingreso <i class="ph-bold ph-check-circle"></i>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
         <!-- VISTA: DIRECTORIO -->
         <div id="view-directory" class="hidden max-w-7xl mx-auto animate-slide-up pb-10">
             <div class="flex flex-col md:flex-row justify-between items-end mb-8 gap-4 px-2">
