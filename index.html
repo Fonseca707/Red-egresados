@@ -114,7 +114,8 @@
             border-color: #dcfce7;
             box-shadow: 0 1px 2px rgb(0 0 0 / 0.05);
         }
-        #view-onboarding .onboarding-field {
+        #view-onboarding .onboarding-field,
+        #view-onboarding-profile .onboarding-field {
             width: 100%;
             padding: 0.85rem 1rem;
             background: #f5f5f5;
@@ -123,7 +124,8 @@
             font-size: 0.95rem;
             color: #1f2937;
         }
-        #view-onboarding .onboarding-field:focus {
+        #view-onboarding .onboarding-field:focus,
+        #view-onboarding-profile .onboarding-field:focus {
             outline: none;
             border-color: #16a34a;
             box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.15);
@@ -448,15 +450,16 @@
                     <div class="w-16 h-16 bg-brand-50 text-brand-600 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-4 border border-brand-100 shadow-sm">
                         <i class="ph-duotone ph-hand-waving"></i>
                     </div>
+                    <p class="text-xs font-bold uppercase tracking-[0.2em] text-brand-600 mb-2">Paso 1 de 2</p>
                     <h1 class="text-2xl md:text-3xl font-bold text-gray-900">¡Bienvenido a la comunidad!</h1>
-                    <p class="text-gray-500 text-sm mt-2 max-w-lg mx-auto">Cuéntanos un poco sobre ti para que otras personas puedan conectar contigo. <strong class="text-brand-600">Todos los campos son opcionales.</strong></p>
+                    <p class="text-gray-500 text-sm mt-2 max-w-lg mx-auto">Primero completa tus datos básicos. En el siguiente paso verás el resto de campos que también aparecen en tu perfil.</p>
                 </div>
 
                 <form onsubmit="onboardingLogic.save(event)" class="space-y-6">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                             <label class="input-label">Nombres</label>
-                            <input id="ob-name" type="text" placeholder="Ej: Juan Carlos" class="input-field onboarding-field" required minlength="2">
+                            <input id="ob-name" type="text" placeholder="Ej: Juan Carlos" class="input-field onboarding-field" minlength="2">
                         </div>
                         <div>
                             <label class="input-label">Apellidos</label>
@@ -473,6 +476,7 @@
                         <div class="md:col-span-2">
                             <label class="input-label">Situación Actual</label>
                             <select id="ob-status" class="input-field onboarding-field">
+                                <option value="sin-definir">Prefiero no decir por ahora</option>
                                 <option value="trabajando">Trabajando</option>
                                 <option value="estudiando">Estudiando</option>
                                 <option value="trabajando-estudiando">Trabajando y estudiando</option>
@@ -482,12 +486,92 @@
                         </div>
                     </div>
 
-                    <div class="flex flex-col-reverse md:flex-row gap-4 pt-6 mt-6 border-t border-gray-100">
-                        <button type="button" onclick="onboardingLogic.skip()" class="w-full md:w-auto px-6 py-3.5 bg-gray-50 hover:bg-gray-100 text-gray-600 font-bold rounded-xl transition border border-gray-200">
-                            Omitir por ahora
+                    <div class="flex pt-6 mt-6 border-t border-gray-100">
+                        <button type="submit" class="w-full py-3.5 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-xl shadow-lg shadow-brand-500/30 transition transform hover:scale-[1.02] flex justify-center items-center gap-2" id="btn-save-onboarding">
+                            Siguiente <i class="ph-bold ph-arrow-right"></i>
                         </button>
-                        <button type="submit" class="w-full md:flex-1 py-3.5 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-xl shadow-lg shadow-brand-500/30 transition transform hover:scale-[1.02] flex justify-center items-center gap-2" id="btn-save-onboarding">
-                            Guardar y Continuar <i class="ph-bold ph-arrow-right"></i>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- VISTA: ONBOARDING PERFIL PROFESIONAL -->
+        <div id="view-onboarding-profile" class="hidden min-h-[80vh] flex items-center justify-center animate-fade-in py-8">
+            <div class="bg-white p-8 md:p-12 rounded-[2.5rem] shadow-[0_20px_50px_rgb(0,0,0,0.08)] border border-gray-100 w-full max-w-4xl relative overflow-hidden">
+                <div class="absolute -bottom-10 -left-10 w-56 h-56 bg-brand-50 rounded-full blur-2xl -z-10 opacity-70"></div>
+                <div class="text-center mb-8">
+                    <div class="w-16 h-16 bg-brand-50 text-brand-600 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-4 border border-brand-100 shadow-sm">
+                        <i class="ph-duotone ph-identification-card"></i>
+                    </div>
+                    <p class="text-xs font-bold uppercase tracking-[0.2em] text-brand-600 mb-2">Paso 2 de 2</p>
+                    <h1 class="text-2xl md:text-3xl font-bold text-gray-900">Completa otra parte de tu perfil</h1>
+                    <p class="text-gray-500 text-sm mt-2 max-w-2xl mx-auto">Ahora completa los demás datos que aparecen en tu perfil: trayectoria profesional, especialización, expectativas y redes de contacto.</p>
+                </div>
+
+                <form onsubmit="onboardingLogic.saveProfileDetails(event)" class="space-y-6">
+                    <div class="section-card !shadow-none !mb-0">
+                        <h3 class="text-lg font-bold mb-6 flex items-center gap-2 text-gray-900 border-b border-gray-100 pb-3">
+                            <i class="ph-duotone ph-student text-brand-600 text-2xl"></i> Perfil académico y profesional
+                        </h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="input-label">Puesto / Rol actual</label>
+                                <input id="ob-role" type="text" placeholder="Ej: Gerente de Ventas" class="input-field onboarding-field">
+                            </div>
+                            <div>
+                                <label class="input-label">Área de interés</label>
+                                <input id="ob-area" type="text" placeholder="Ej: Tecnología, Finanzas" class="input-field onboarding-field">
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="input-label">Estudios recientes</label>
+                                <input id="ob-studies" type="text" placeholder="Ej: Maestría en Marketing Digital" class="input-field onboarding-field">
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="input-label">¿Qué expectativas/proyecciones tiene sobre usted?</label>
+                                <textarea id="ob-expectations" class="input-field onboarding-field h-24 resize-y" placeholder="Ej: Consolidarme en liderazgo de proyectos, emprender y aportar como mentor en la red."></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="section-card !shadow-none !mb-0">
+                        <h3 class="text-lg font-bold mb-6 flex items-center gap-2 text-gray-900 border-b border-gray-100 pb-3">
+                            <i class="ph-duotone ph-star text-brand-600 text-2xl"></i> Especialización y conexión
+                        </h3>
+                        <div class="space-y-6">
+                            <div>
+                                <label class="input-label">Extracto / Bio</label>
+                                <textarea id="ob-bio" class="input-field onboarding-field h-28 resize-y" placeholder="Cuéntanos brevemente sobre tu experiencia y objetivos..."></textarea>
+                            </div>
+                            <div>
+                                <label class="input-label">Habilidades clave (separadas por comas)</label>
+                                <textarea id="ob-skills" class="input-field onboarding-field h-24 resize-y" placeholder="Ej: Liderazgo, Python, Negociación"></textarea>
+                            </div>
+                            <div>
+                                <label class="input-label">Intereses de conexión</label>
+                                <input id="ob-topics" type="text" placeholder="Ej: Mentoría, inversiones, proyectos" class="input-field onboarding-field">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="section-card !shadow-none !mb-0">
+                        <h3 class="text-lg font-bold mb-6 flex items-center gap-2 text-gray-900 border-b border-gray-100 pb-3">
+                            <i class="ph-duotone ph-share-network text-brand-600 text-2xl"></i> Redes de contacto
+                        </h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="input-label">Celular / WhatsApp</label>
+                                <input id="ob-phone" type="text" placeholder="+57 300 123 4567" class="input-field onboarding-field">
+                            </div>
+                            <div>
+                                <label class="input-label">LinkedIn (URL)</label>
+                                <input id="ob-linkedin" type="text" placeholder="linkedin.com/in/usuario" class="input-field onboarding-field">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex pt-6 mt-6 border-t border-gray-100">
+                        <button type="submit" class="w-full py-3.5 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-xl shadow-lg shadow-brand-500/30 transition transform hover:scale-[1.02] flex justify-center items-center gap-2" id="btn-save-onboarding-profile">
+                            Guardar y salir <i class="ph-bold ph-check-circle"></i>
                         </button>
                     </div>
                 </form>
@@ -626,7 +710,7 @@
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
                                     <label class="input-label">Nombres</label>
-                                    <input type="text" id="p-name" class="input-field" placeholder="Ej: Juan" required minlength="2">
+                                    <input type="text" id="p-name" class="input-field" placeholder="Ej: Juan" minlength="2">
                                 </div>
                                 <div>
                                     <label class="input-label">Apellidos</label>
@@ -1247,11 +1331,6 @@
             save: async (e) => {
                 e.preventDefault();
                 if(!state.user) return;
-                const firstNameValue = document.getElementById('ob-name').value.trim();
-                if (!hasValidFirstName(firstNameValue)) {
-                    alert('El nombre es obligatorio y debe tener al menos 2 caracteres.');
-                    return;
-                }
 
                 const btn = document.getElementById('btn-save-onboarding');
                 const originalText = btn.innerHTML;
@@ -1259,12 +1338,11 @@
                 btn.innerHTML = `<i class="ph-bold ph-spinner animate-spin"></i> Guardando...`;
 
                 const payload = {
-                    firstName: firstNameValue,
+                    firstName: document.getElementById('ob-name').value.trim(),
                     lastName: document.getElementById('ob-lastname').value.trim(),
                     graduationYear: document.getElementById('ob-year').value.trim(),
                     location: document.getElementById('ob-location').value.trim(),
                     status: document.getElementById('ob-status').value,
-                    onboardingCompleted: true,
                     email: state.user.email || '',
                     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
                 };
@@ -1276,31 +1354,90 @@
                     await docRef.set(payload, { merge: true });
 
                     state.profile = { ...state.profile, ...payload };
-                    await onboardingLogic.finish();
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                    router.navigate('onboarding-profile');
                 } catch (error) {
                     alert('Hubo un error al guardar los datos: ' + (error.message || 'error desconocido'));
                     btn.innerHTML = originalText;
                     btn.disabled = false;
                 }
             },
-            skip: async () => {
+            populateProfileDetails: () => {
+                const p = state.profile;
+                const fields = {
+                    'ob-role': p.role || '',
+                    'ob-area': p.area || '',
+                    'ob-studies': p.studies || '',
+                    'ob-expectations': p.expectations || '',
+                    'ob-bio': p.bio || '',
+                    'ob-skills': p.skills || '',
+                    'ob-topics': p.topics || '',
+                    'ob-phone': p.phone || '',
+                    'ob-linkedin': p.linkedin || ''
+                };
+                Object.entries(fields).forEach(([id, value]) => {
+                    const el = document.getElementById(id);
+                    if (el) el.value = value;
+                });
+            },
+            saveProfileDetails: async (e) => {
+                e.preventDefault();
                 if(!state.user) return;
-                try {
-                    await alumniCollection.doc(state.user.uid).set({
-                        onboardingCompleted: true,
-                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                    }, { merge: true });
 
-                    state.profile.onboardingCompleted = true;
+                const phoneValue = document.getElementById('ob-phone').value.trim();
+                if (phoneValue && !isValidPhone(phoneValue)) {
+                    alert('El número de teléfono debe tener al menos 7 dígitos. También puedes dejarlo vacío.');
+                    return;
+                }
+                const linkedinValue = document.getElementById('ob-linkedin').value.trim();
+                if (linkedinValue && !isValidLinkedInUrl(linkedinValue)) {
+                    alert('El enlace de LinkedIn no es válido. Debe ser una URL de linkedin.com o dejarse vacío.');
+                    return;
+                }
+
+                const btn = document.getElementById('btn-save-onboarding-profile');
+                const originalText = btn.innerHTML;
+                btn.disabled = true;
+                btn.innerHTML = `<i class="ph-bold ph-spinner animate-spin"></i> Guardando...`;
+
+                const payload = {
+                    role: document.getElementById('ob-role').value.trim(),
+                    area: document.getElementById('ob-area').value.trim(),
+                    studies: document.getElementById('ob-studies').value.trim(),
+                    bio: document.getElementById('ob-bio').value.trim(),
+                    skills: document.getElementById('ob-skills').value.split(',').map(s => s.trim()).filter(Boolean),
+                    topics: document.getElementById('ob-topics').value.trim(),
+                    expectations: document.getElementById('ob-expectations').value.trim(),
+                    phone: phoneValue,
+                    linkedin: linkedinValue ? normalizeLinkedInUrl(linkedinValue) : '',
+                    onboardingCompleted: true,
+                    email: state.user.email || '',
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                };
+
+                try {
+                    const docRef = alumniCollection.doc(state.user.uid);
+                    const exists = (await docRef.get()).exists;
+                    if (!exists) payload.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+                    await docRef.set(payload, { merge: true });
+
+                    state.profile = {
+                        ...state.profile,
+                        ...payload,
+                        skills: (payload.skills || []).join(', ')
+                    };
                     await onboardingLogic.finish();
                 } catch (error) {
-                    alert('Error al omitir: ' + (error.message || 'error desconocido'));
+                    alert('Hubo un error al guardar esta parte del perfil: ' + (error.message || 'error desconocido'));
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
                 }
             },
             finish: async () => {
                 await loadAlumni();
                 await loadChatsForUser(state.user.uid);
-                alert('¡Gracias por completar tu primer ingreso! Te recomendamos ahora completar todo tu perfil de estudiante.');
+                alert('¡Gracias por completar tu primer ingreso! Puedes editar o ampliar estos datos cuando quieras desde tu perfil.');
                 router.navigate('directory');
             }
         };
@@ -1336,7 +1473,7 @@
                     linkedin: d.linkedin || '',
                     expectations: d.expectations || ''
                 };
-                }).filter((alum) => hasValidFirstName(alum.firstName));
+                });
             } catch (error) {
                 state.data.alumni = state.data.alumni.length ? state.data.alumni : [];
             } finally {
@@ -1537,7 +1674,7 @@
                     }
                 }
 
-                const views = ['view-home', 'view-auth', 'view-register', 'view-terms', 'view-onboarding', 'view-directory', 'view-news', 'view-messages', 'view-profile', 'view-admin'];
+                const views = ['view-home', 'view-auth', 'view-register', 'view-terms', 'view-onboarding', 'view-onboarding-profile', 'view-directory', 'view-news', 'view-messages', 'view-profile', 'view-admin'];
                 views.forEach(id => {
                     const el = document.getElementById(id);
                     if(el) el.classList.add('hidden');
@@ -1545,7 +1682,7 @@
 
                 const nav = document.querySelector('nav');
                 const mobileNav = document.getElementById('mobile-nav');
-                if (viewId === 'auth' || viewId === 'register' || viewId === 'onboarding' || viewId === 'terms') {
+                if (viewId === 'auth' || viewId === 'register' || viewId === 'onboarding' || viewId === 'onboarding-profile' || viewId === 'terms') {
                     nav.classList.add('hidden');
                     if (mobileNav) mobileNav.classList.add('hidden');
                 } else {
@@ -1584,6 +1721,7 @@
                 if(viewId === 'news') newsLogic.render();
                 if(viewId === 'messages') chatLogic.renderList();
                 if(viewId === 'profile') profileLogic.populate();
+                if(viewId === 'onboarding-profile') onboardingLogic.populateProfileDetails();
                 if(viewId === 'admin') adminLogic.render();
             }
         };
@@ -2193,10 +2331,6 @@
             save: async () => {
                 if (!state.user) { alert('Debes iniciar sesión para actualizar tu cuenta.'); return; }
                 const firstNameValue = document.getElementById('p-name').value.trim();
-                if (!hasValidFirstName(firstNameValue)) {
-                    alert('El nombre es obligatorio y debe tener al menos 2 caracteres.');
-                    return;
-                }
                 const phoneValue = document.getElementById('p-phone').value.trim();
                 if (phoneValue && !isValidPhone(phoneValue)) {
                     alert('El número de teléfono debe tener al menos 7 dígitos.');
@@ -2244,8 +2378,8 @@
                         skills: (payload.skills || []).join(', ')
                     };
 
-                    document.getElementById('display-name').innerText = `${state.profile.firstName} ${state.profile.lastName}`;
-                    document.getElementById('display-role').innerText = state.profile.role;
+                    document.getElementById('display-name').innerText = `${state.profile.firstName} ${state.profile.lastName}`.trim() || state.user?.displayName || 'Tu Nombre';
+                    document.getElementById('display-role').innerText = state.profile.role || 'Tu Cargo';
                     const expectationsEl = document.getElementById('display-expectations');
                     if (expectationsEl) expectationsEl.innerText = state.profile.expectations || 'Aún no has agregado esta información.';
                     const avatar = state.profile.photoURL || buildAvatarUrl(`${state.profile.firstName} ${state.profile.lastName}`.trim() || state.user?.displayName || 'Usuario');
