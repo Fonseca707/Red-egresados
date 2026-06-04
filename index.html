@@ -902,7 +902,8 @@
                         </div>
                         <div class="md:col-span-2">
                             <label class="input-label">Resumen / Contenido</label>
-                            <textarea id="admin-news-summary" required class="input-field h-24 resize-none" placeholder="Breve descripción de la noticia..."></textarea>
+                            <textarea id="admin-news-summary" required class="input-field h-24 resize-none" placeholder="Breve descripción de la noticia... Incluye enlaces con https:// o www."></textarea>
+                            <p class="mt-2 text-xs text-gray-500 flex items-center gap-1"><i class="ph-bold ph-link"></i> Los enlaces incluidos aparecerán como enlaces clicables al publicar.</p>
                         </div>
                         <div class="md:col-span-2">
                             <label class="input-label">URL de Imagen (Opcional)</label>
@@ -964,7 +965,7 @@
                     <span class="flex items-center gap-1"><i class="ph-bold ph-calendar"></i> <span id="news-modal-date">Fecha</span></span>
                     <span class="flex items-center gap-1"><i class="ph-bold ph-user"></i> Admin</span>
                 </div>
-                <p id="news-modal-body" class="text-gray-600 leading-relaxed text-lg">Contenido...</p>
+                <p id="news-modal-body" class="text-gray-600 leading-relaxed text-lg whitespace-pre-wrap break-words">Contenido...</p>
                 <div class="mt-8 pt-6 border-t border-gray-100 flex justify-end">
                     <button onclick="uiLogic.closeNewsModal()" class="px-6 py-2.5 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition">Cerrar</button>
                 </div>
@@ -1083,6 +1084,35 @@
             const div = document.createElement('div');
             div.textContent = String(str ?? '');
             return div.innerHTML;
+        }
+
+        function renderTextWithLinks(element, text) {
+            const content = String(text ?? '');
+            const urlPattern = /(?:https?:\/\/|www\.)[^\s<]+/gi;
+            const fragment = document.createDocumentFragment();
+            let lastIndex = 0;
+
+            for (const match of content.matchAll(urlPattern)) {
+                const matchedUrl = match[0];
+                const cleanUrl = matchedUrl.replace(/[.,!?;:)'"\]]+$/g, '');
+                const trailingText = matchedUrl.slice(cleanUrl.length);
+
+                fragment.append(document.createTextNode(content.slice(lastIndex, match.index)));
+
+                const link = document.createElement('a');
+                link.href = /^www\./i.test(cleanUrl) ? `https://${cleanUrl}` : cleanUrl;
+                link.textContent = cleanUrl;
+                link.target = '_blank';
+                link.rel = 'noopener noreferrer';
+                link.className = 'text-brand-600 font-semibold underline decoration-brand-300 underline-offset-2 hover:text-brand-800 transition';
+                fragment.append(link);
+
+                if (trailingText) fragment.append(document.createTextNode(trailingText));
+                lastIndex = match.index + matchedUrl.length;
+            }
+
+            fragment.append(document.createTextNode(content.slice(lastIndex)));
+            element.replaceChildren(fragment);
         }
 
         function debounce(fn, delay = 300) {
@@ -2432,7 +2462,7 @@
                 document.getElementById('news-modal-cat').innerText = item.category;
                 document.getElementById('news-modal-title').innerText = item.title;
                 document.getElementById('news-modal-date').innerText = item.date;
-                document.getElementById('news-modal-body').innerText = item.summary || 'Sin contenido adicional.';
+                renderTextWithLinks(document.getElementById('news-modal-body'), item.summary || 'Sin contenido adicional.');
                 document.getElementById('modal-news').classList.remove('hidden');
             },
             closeNewsModal: () => document.getElementById('modal-news').classList.add('hidden'),
