@@ -36,11 +36,6 @@
             <div class="w-8 h-8 bg-gradient-to-br from-brand-600 to-brand-500 rounded-lg flex items-center justify-center text-white font-bold shadow-md shadow-brand-500/30">S</div>
             <span class="font-bold text-xl tracking-tight text-gray-900">Sinap<span class="text-brand-600">sis</span></span>
         </a>
-        <div class="hidden md:flex items-center gap-6">
-            <a href="directory.html" class="text-gray-500 hover:text-brand-600 font-medium transition">Comunidad</a>
-            <a href="news.html" class="text-gray-500 hover:text-brand-600 font-medium transition">Novedades</a>
-        </div>
-
         <div class="hidden md:flex items-center gap-6" id="nav-links">
             <button onclick="router.navigate('home')" class="text-gray-500 hover:text-brand-600 font-medium transition" id="nav-home">Ecosistema</button>
             <button onclick="router.navigate('directory')" class="text-gray-500 hover:text-brand-600 font-medium transition" id="nav-dir">Comunidad</button>
@@ -1020,7 +1015,6 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore-compat.js"></script>
-    <script src="shared.js"></script>
     <script>
         const firebaseConfig = {
           apiKey: "AIzaSyBoVTqroZ7zR-3a5QGy5CzK19a4422t0Rg",
@@ -2532,6 +2526,29 @@
 
         directoryLogic.debouncedFilter = debounce(() => directoryLogic.filter(), 280);
 
+        function normalizeInitialView(rawView) {
+            const aliases = {
+                preparacion: 'exam-modules',
+                preparación: 'exam-modules',
+                preparation: 'exam-modules',
+                exams: 'exam-modules',
+                exam: 'exam-modules'
+            };
+            const normalized = String(rawView || '')
+                .trim()
+                .replace(/^#/, '')
+                .replace(/^view-/, '')
+                .toLowerCase();
+            return aliases[normalized] || normalized;
+        }
+
+        function getInitialView() {
+            const allowed = ['home', 'directory', 'news', 'exam-modules', 'messages', 'profile', 'admin', 'terms', 'register', 'auth'];
+            const params = new URLSearchParams(window.location.search);
+            const requested = normalizeInitialView(params.get('view') || window.location.hash);
+            return allowed.includes(requested) ? requested : 'home';
+        }
+
         window.router = router;
         window.authLogic = authLogic;
         window.onboardingLogic = onboardingLogic;
@@ -2567,9 +2584,9 @@
                     }
                     router.navigate('onboarding');
                 } else {
-                    router.navigate('directory');
                     await loadAlumni();
                     await loadNews();
+                    router.navigate(getInitialView() || 'directory');
                 }
             } else {
                 if (registerBtn) registerBtn.classList.remove('hidden');
@@ -2583,12 +2600,12 @@
                 if (state.listeners.messages) { state.listeners.messages(); state.listeners.messages = null; }
                 state.profile = { firstName: '', lastName: '', graduationYear: '', location: '', status: 'trabajando', role: '', area: '', studies: '', bio: '', skills: '', topics: '', expectations: '', phone: '', linkedin: '', onboardingCompleted: false };
                 refreshHeaderIdentity();
-                router.navigate('home');
+                router.navigate(getInitialView());
             }
         });
 
         document.addEventListener('DOMContentLoaded', () => {
-            router.navigate('home');
+            router.navigate(getInitialView());
             loadNews();
         });
     </script>

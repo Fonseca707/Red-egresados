@@ -162,8 +162,11 @@
         };
         window.authLogic = authLogic;
 
-        auth.onAuthStateChanged((user) => {
-            if (user) goto('directory');
+        auth.onAuthStateChanged(async (user) => {
+            if (!user) return;
+            const ready = await hydrateAuthenticatedUser(user);
+            if (!ready) return;
+            goto(state.profile.onboardingCompleted ? 'directory' : 'onboarding');
         });
     </script>
 </body>
