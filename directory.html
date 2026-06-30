@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sinapsis | Directorio</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script>
+        tailwind.config = {
+            theme: { extend: {
+                fontFamily: { sans: ['"Plus Jakarta Sans"', 'sans-serif'] },
+                colors: {
+                    brand: { 50:'#f0fdf4',100:'#dcfce7',200:'#bbf7d0',300:'#86efac',400:'#4ade80',500:'#22c55e',600:'#16a34a',700:'#15803d',800:'#166534',900:'#14532d',950:'#052e16' },
+                    stone: { 50:'#fafaf9',100:'#f5f5f4',200:'#e7e5e4',300:'#d6d3d1',400:'#a8a29e',500:'#78716c',600:'#57534e',700:'#44403c',800:'#292524',900:'#1c1917' },
+                    sun: { 50:'#fffbeb',100:'#fef3c7',200:'#fde68a',400:'#fbbf24',500:'#f59e0b',600:'#d97706' }
+                },
+                animation: { 'fade-in':'fadeIn 0.3s ease-out','slide-up':'slideUp 0.4s ease-out','slide-in-right':'slideInRight 0.4s cubic-bezier(0.16,1,0.3,1)' },
+                keyframes: { fadeIn:{'0%':{opacity:'0'},'100%':{opacity:'1'}},slideUp:{'0%':{transform:'translateY(20px)',opacity:'0'},'100%':{transform:'translateY(0)',opacity:'1'}},slideInRight:{'0%':{transform:'translateX(100%)'},'100%':{transform:'translateX(0)'}} }
+            }}
+        }
+    </script>
+    <style>
+        body { background-color: #fafaf9; }
+        .glass-nav { background: rgba(250,250,249,0.85); backdrop-filter: blur(16px); border-bottom: 1px solid rgba(231,229,228,0.6); }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .section-card { background:#fff; padding:1.5rem; border-radius:2rem; border:1px solid #f5f5f4; box-shadow:0 8px 30px rgb(20 83 45/0.03); margin-bottom:1.5rem; transition:all 0.2s ease; }
+        @media(min-width:768px){ .section-card{padding:2rem;} }
+        .section-card:hover { box-shadow: 0 12px 40px rgb(22 163 74/0.08); }
+        .input-label { font-size:0.75rem; font-weight:700; color:#78716c; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:0.5rem; display:block; }
+        .input-field { width:100%; padding:0.85rem 1rem; background:rgba(250,250,249,0.9); border:1px solid #e7e5e4; border-radius:0.75rem; outline:none; transition:all 0.2s ease; font-size:0.9rem; font-weight:500; color:#292524; }
+        .input-field:focus { border-color:#16a34a; box-shadow:0 0 0 4px rgb(34 197 94/0.15); background:#fff; }
+        .detail-row { display:flex; align-items:flex-start; gap:0.75rem; padding:0.75rem 0; border-bottom:1px solid #f5f5f4; }
+        .detail-row:last-child { border-bottom:0; }
+        .detail-icon { width:2.5rem; height:2.5rem; border-radius:0.75rem; background:#f0fdf4; color:#16a34a; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:1.25rem; }
+    </style>
+</head>
+<body class="text-stone-800 font-sans min-h-screen flex flex-col">
+
+    <main class="flex-1 pt-20 pb-24 md:pb-8 px-4 bg-stone-50/60">
+        <div class="max-w-7xl mx-auto animate-slide-up pb-10">
+            <div class="flex flex-col md:flex-row justify-between items-end mb-8 gap-4 px-2">
+                <div>
+                    <h2 class="text-3xl font-bold text-gray-900 tracking-tight">Directorio</h2>
+                    <p class="text-gray-500 mt-1 text-sm">Conecta con compañeros de tu generación.</p>
+                </div>
+                <div class="flex gap-3 w-full md:w-auto">
+                    <div class="relative flex-1 md:w-72">
+                        <i class="ph ph-magnifying-glass absolute left-3 top-3.5 text-gray-400"></i>
+                        <input type="text" id="directory-search" placeholder="Buscar por nombre, cargo, empresa..." class="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100 transition shadow-sm" oninput="directoryLogic.debouncedFilter()" aria-label="Buscar egresados">
+                    </div>
+                    <input type="number" id="directory-year" placeholder="Promoción" class="w-32 bg-white px-3 py-3 border border-gray-200 rounded-xl hover:bg-gray-50 text-gray-600 shadow-sm transition text-sm font-medium" oninput="directoryLogic.debouncedFilter()" aria-label="Filtrar por año de promoción">
+                    <select id="directory-filter" class="bg-white px-3 py-3 border border-gray-200 rounded-xl hover:bg-gray-50 text-gray-600 shadow-sm transition text-sm font-medium" onchange="directoryLogic.filter()">
+                        <option value="all">Todos</option>
+                        <option value="trabajando">Trabajando</option>
+                        <option value="estudiando">Estudiando</option>
+                        <option value="emprendiendo">Emprendiendo</option>
+                        <option value="trabajando-estudiando">Trabajando y estudiando</option>
+                        <option value="profesor">Profesor</option>
+                    </select>
+                </div>
+            </div>
+
+            <div id="directory-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                <!-- Cards renderizadas via JS -->
+            </div>
+            <div id="directory-load-more" class="hidden justify-center mt-8">
+                <button onclick="directoryLogic.loadMore()" class="px-6 py-3 bg-white border border-gray-200 rounded-xl text-sm font-bold text-gray-700 hover:bg-brand-50 hover:border-brand-200 hover:text-brand-700 transition shadow-sm flex items-center gap-2" aria-label="Ver más egresados">
+                    <i class="ph ph-caret-down"></i> Ver más egresados
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <!-- MODAL DE NOTICIAS -->
+    <div id="modal-news" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm bg-black/40">
+        <div class="bg-white rounded-3xl w-full max-w-2xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden animate-fade-in relative">
+            <button onclick="uiLogic.closeNewsModal()" class="absolute top-4 right-4 bg-white/50 hover:bg-white p-2 rounded-full backdrop-blur-md transition z-10" aria-label="Cerrar noticia"><i class="ph-bold ph-x text-xl"></i></button>
+            <div class="h-64 relative shrink-0">
+                <img id="news-modal-img" src="" class="w-full h-full object-cover">
+                <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+                <div class="absolute bottom-6 left-6 right-6 text-white">
+                    <span id="news-modal-cat" class="px-3 py-1 bg-brand-600 rounded-lg text-xs font-bold uppercase tracking-wide mb-2 inline-block">Categoría</span>
+                    <h2 id="news-modal-title" class="text-2xl md:text-3xl font-bold leading-tight">Título</h2>
+                </div>
+            </div>
+            <div class="p-8 overflow-y-auto">
+                <div class="flex items-center gap-4 text-sm text-gray-500 mb-6 border-b border-gray-100 pb-4">
+                    <span class="flex items-center gap-1"><i class="ph-bold ph-calendar"></i> <span id="news-modal-date">Fecha</span></span>
+                    <span class="flex items-center gap-1"><i class="ph-bold ph-user"></i> Admin</span>
+                </div>
+                <p id="news-modal-body" class="text-gray-600 leading-relaxed text-lg">Contenido...</p>
+                <div class="mt-8 pt-6 border-t border-gray-100 flex justify-end">
+                    <button onclick="uiLogic.closeNewsModal()" class="px-6 py-2.5 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SLIDE PANEL DE PERFIL PÚBLICO -->
+    <div id="slide-panel-overlay" class="fixed inset-0 z-[60] hidden">
+        <div class="absolute inset-0 bg-black/20 backdrop-blur-sm transition-opacity" onclick="directoryLogic.closeProfile()"></div>
+        <div id="slide-panel-content" class="absolute right-0 top-0 h-full w-full max-w-md bg-white shadow-2xl overflow-y-auto animate-slide-in-right flex flex-col">
+            <div class="relative h-40 bg-gradient-to-r from-brand-600 to-brand-900 shrink-0">
+                <button onclick="directoryLogic.closeProfile()" class="absolute top-4 left-4 text-white hover:bg-white/20 p-2 rounded-full transition z-10" aria-label="Cerrar perfil"><i class="ph-bold ph-arrow-right text-xl"></i></button>
+                <img id="sp-img" src="" class="absolute left-6 -bottom-14 w-28 h-28 rounded-2xl border-[4px] border-white shadow-lg bg-white object-cover z-10">
+            </div>
+            <div class="px-6 pt-16 pb-10 flex-1">
+                <div class="flex justify-between items-end mb-4">
+                    <span id="sp-year" class="mb-2 px-3 py-1 bg-brand-50 text-brand-600 rounded-lg text-xs font-bold border border-brand-100">Promoción</span>
+                </div>
+                <div class="mb-6">
+                    <h2 id="sp-name" class="text-2xl font-bold text-gray-900 leading-tight">Nombre Usuario</h2>
+                    <p id="sp-role" class="text-lg text-brand-600 font-medium mt-1">Cargo / Puesto</p>
+                    <div class="flex items-center gap-2 text-gray-500 text-sm mt-2"><i class="ph-fill ph-map-pin"></i> <span id="sp-location">Ubicación</span></div>
+                </div>
+                <div class="flex gap-3 mb-8">
+                    <button onclick="chatLogic.startChatFromDirectory()" class="flex-1 bg-brand-600 text-white font-bold py-2.5 rounded-xl shadow-md shadow-brand-500/30 hover:bg-brand-700 transition flex justify-center items-center gap-2"><i class="ph-bold ph-chat-circle-text"></i> Mensaje</button>
+                    <a id="sp-linkedin-btn" href="#" target="_blank" class="hidden w-12 flex items-center justify-center bg-blue-50 text-[#0077b5] rounded-xl border border-blue-100 hover:bg-blue-100 transition"><i class="ph-bold ph-linkedin-logo text-xl"></i></a>
+                    <a id="sp-whatsapp-btn" href="#" target="_blank" class="hidden w-12 flex items-center justify-center bg-green-50 text-[#25D366] rounded-xl border border-green-100 hover:bg-green-100 transition"><i class="ph-bold ph-whatsapp-logo text-xl"></i></a>
+                </div>
+                <div class="space-y-6">
+                    <div>
+                        <h4 class="text-sm font-bold text-gray-900 uppercase tracking-wide mb-3">Sobre mí</h4>
+                        <p id="sp-bio" class="text-gray-600 text-sm leading-relaxed bg-gray-50 p-4 rounded-xl border border-gray-100">Sin información disponible.</p>
+                    </div>
+                    <div>
+                        <h4 class="text-sm font-bold text-gray-900 uppercase tracking-wide mb-3">Proyecciones</h4>
+                        <p id="sp-expectations" class="text-gray-600 text-sm leading-relaxed bg-gray-50 p-4 rounded-xl border border-gray-100">No especificadas.</p>
+                    </div>
+                    <div>
+                        <h4 class="text-sm font-bold text-gray-900 uppercase tracking-wide mb-3">Información Académica</h4>
+                        <div class="detail-row"><div class="detail-icon"><i class="ph-duotone ph-student"></i></div><div><p class="text-xs text-gray-500 font-semibold uppercase">Estudios</p><p id="sp-studies" class="text-gray-900 font-medium text-sm">No especificado</p></div></div>
+                        <div class="detail-row"><div class="detail-icon"><i class="ph-duotone ph-briefcase"></i></div><div><p class="text-xs text-gray-500 font-semibold uppercase">Área / Sector</p><p id="sp-area" class="text-gray-900 font-medium text-sm">No especificado</p></div></div>
+                    </div>
+                    <div>
+                        <h4 class="text-sm font-bold text-gray-900 uppercase tracking-wide mb-3">Habilidades</h4>
+                        <div id="sp-skills" class="flex flex-wrap gap-2"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore-compat.js"></script>
+    <script src="shared.js"></script>
+    <script>
+        renderNav('directory');
+
+        const directoryLogic = {
+            _currentItems: [],
+            render: (items = state.data.alumni) => {
+                directoryLogic._currentItems = items;
+                directoryLogic._renderPage(1);
+            },
+            _renderPage: (page) => {
+                state.directoryPage = page;
+                const items = directoryLogic._currentItems;
+                const grid = document.getElementById('directory-grid');
+                const loadMoreBtn = document.getElementById('directory-load-more');
+
+                if (state.directoryLoading) {
+                    grid.innerHTML = Array.from({ length: 8 }).map(() => `
+                        <div class="bg-white p-6 rounded-2xl border border-gray-100 animate-pulse">
+                            <div class="flex gap-4 mb-4">
+                                <div class="w-14 h-14 rounded-xl bg-gray-100"></div>
+                                <div class="flex-1 space-y-2">
+                                    <div class="h-4 bg-gray-100 rounded w-3/4"></div>
+                                    <div class="h-3 bg-gray-100 rounded w-1/2"></div>
+                                    <div class="h-3 bg-gray-100 rounded w-2/3"></div>
+                                </div>
+                            </div>
+                            <div class="h-3 bg-gray-100 rounded w-full mb-2"></div>
+                            <div class="h-3 bg-gray-100 rounded w-5/6"></div>
+                        </div>
+                    `).join('');
+                    if (loadMoreBtn) loadMoreBtn.classList.add('hidden');
+                    return;
+                }
+
+                const shown = items.slice(0, page * DIRECTORY_PAGE_SIZE);
+                const hasMore = items.length > shown.length;
+
+                if (items.length === 0) {
+                    grid.innerHTML = `
+                        <div class="col-span-full flex flex-col items-center justify-center py-16 text-center">
+                            <i class="ph ph-users-three text-5xl text-gray-300 mb-4"></i>
+                            <p class="text-gray-500 font-semibold">No se encontraron egresados</p>
+                            <p class="text-gray-400 text-sm mt-1">Intenta con otro nombre, año o categoría.</p>
+                        </div>`;
+                    if (loadMoreBtn) loadMoreBtn.classList.add('hidden');
+                    return;
+                }
+
+                grid.innerHTML = shown.map(alum => `
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition group cursor-pointer h-full flex flex-col" onclick="directoryLogic.openProfile('${sanitizeHTML(alum.id)}')">
+                        <div class="flex items-start justify-between">
+                            <div class="flex gap-4">
+                                <img src="${sanitizeHTML(alum.img)}" alt="Foto de ${sanitizeHTML(alum.name)}" class="w-14 h-14 rounded-xl object-cover shadow-sm group-hover:scale-105 transition shrink-0">
+                                <div class="min-w-0 pt-0.5">
+                                    <h3 class="font-bold text-gray-900 group-hover:text-brand-600 transition leading-tight break-words">${sanitizeHTML(alum.name)}</h3>
+                                    <p class="text-xs text-brand-600 font-semibold uppercase tracking-wide mt-1 leading-tight break-words">${sanitizeHTML(alum.company)}</p>
+                                    <p class="text-[11px] font-bold text-brand-600 mt-1 leading-tight">Promoción ${sanitizeHTML(alum.year || '---')}</p>
+                                    <p class="text-sm text-gray-500 mt-1 line-clamp-1">${sanitizeHTML(alum.role)}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-4 flex gap-2 flex-wrap mb-4 flex-1 content-start">
+                            ${(alum.tags || []).slice(0, 3).map(t => `<span class="px-2 py-1 bg-gray-50 text-gray-600 text-xs rounded-md font-medium border border-gray-100">${sanitizeHTML(t)}</span>`).join('')}
+                        </div>
+                        <div class="pt-4 border-t border-gray-50">
+                            <span class="w-full px-4 py-2 bg-gray-50 text-gray-600 text-xs font-bold rounded-lg hover:bg-brand-50 hover:text-brand-600 transition flex justify-center items-center gap-2"><i class="ph-bold ph-user-list"></i> Ver Perfil Completo</span>
+                        </div>
+                    </div>
+                `).join('');
+
+                if (loadMoreBtn) {
+                    loadMoreBtn.classList.toggle('hidden', !hasMore);
+                    loadMoreBtn.classList.toggle('flex', hasMore);
+                }
+            },
+            loadMore: () => {
+                directoryLogic._renderPage(state.directoryPage + 1);
+            },
+            openProfile: (id) => {
+                const user = state.data.alumni.find(u => String(u.id) === String(id));
+                state.selectedDirectoryUserId = String(id);
+                if (!user) return;
+                document.getElementById('sp-img').src = user.img;
+                document.getElementById('sp-name').innerText = user.name;
+                document.getElementById('sp-role').innerText = user.role;
+                document.getElementById('sp-location').innerText = user.location;
+                document.getElementById('sp-year').innerText = `Promoción ${user.year}`;
+                document.getElementById('sp-bio').innerText = user.bio;
+                document.getElementById('sp-expectations').innerText = user.expectations || 'No especificadas.';
+                document.getElementById('sp-studies').innerText = user.fullStudies;
+                document.getElementById('sp-area').innerText = user.area;
+                const skillsContainer = document.getElementById('sp-skills');
+                if (user.skills && user.skills.length > 0) {
+                    skillsContainer.innerHTML = user.skills.map(s => `<span class="px-3 py-1 bg-brand-50 text-brand-700 rounded-full text-xs font-bold border border-brand-100">${sanitizeHTML(String(s).trim())}</span>`).join('');
+                } else {
+                    skillsContainer.innerHTML = '<span class="text-gray-400 text-xs italic">No especificadas</span>';
+                }
+                const waBtn = document.getElementById('sp-whatsapp-btn');
+                if (user.phone && isValidPhone(user.phone)) {
+                    waBtn.classList.remove('hidden');
+                    waBtn.href = `https://wa.me/${String(user.phone).replace(/[^0-9]/g, '')}`;
+                } else { waBtn.classList.add('hidden'); }
+                const liBtn = document.getElementById('sp-linkedin-btn');
+                if (isValidLinkedInUrl(user.linkedin)) {
+                    liBtn.classList.remove('hidden');
+                    liBtn.href = normalizeLinkedInUrl(user.linkedin);
+                } else { liBtn.classList.add('hidden'); }
+                document.getElementById('slide-panel-overlay').classList.remove('hidden');
+            },
+            closeProfile: () => {
+                document.getElementById('slide-panel-overlay').classList.add('hidden');
+            },
+            filter: () => {
+                const term = document.getElementById('directory-search').value.toLowerCase().trim();
+                const yearTerm = (document.getElementById('directory-year')?.value || '').trim();
+                const selected = document.getElementById('directory-filter')?.value || 'all';
+                const filtered = state.data.alumni.filter(u => {
+                    const matchesTerm = u.name.toLowerCase().includes(term) ||
+                        (u.role || '').toLowerCase().includes(term) ||
+                        (u.company || '').toLowerCase().includes(term);
+                    if (!matchesTerm) return false;
+
+                    const yearValue = String(u.year || '').trim();
+                    if (yearTerm && !yearValue.includes(yearTerm)) return false;
+
+                    if (selected === 'all') return true;
+                    const tags = (u.tags || []).map(t => String(t).toLowerCase());
+                    return tags.includes(selected);
+                });
+                directoryLogic.render(filtered);
+            }
+        };
+        directoryLogic.debouncedFilter = debounce(() => directoryLogic.filter(), 280);
+
+        const chatLogic = {
+            startChatFromDirectory: async () => {
+                const user = state.data.alumni.find(u => String(u.id) === String(state.selectedDirectoryUserId));
+                if (!user || !state.user || state.guestMode) return;
+                await chatLogic.startChatWithUser(user);
+            },
+            startChatWithUser: async (targetUser) => {
+                const myUid = state.user?.uid;
+                if (!myUid || !targetUser?.id || String(targetUser.id) === String(myUid)) return;
+                const chatId = [myUid, String(targetUser.id)].sort().join('__');
+                const myName = getDisplayNameFromProfileOrAuth();
+                const myPhoto = getUserAvatarUrl();
+                const meChatRef = userChatsCollection(myUid).doc(chatId);
+                const otherChatRef = userChatsCollection(String(targetUser.id)).doc(chatId);
+                try {
+                    await Promise.all([
+                        meChatRef.set({
+                            peerId: String(targetUser.id),
+                            peerName: targetUser.name,
+                            peerPhotoURL: targetUser.img,
+                            lastMsg: 'Sin mensajes',
+                            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                        }, { merge: true }),
+                        otherChatRef.set({
+                            peerId: myUid,
+                            peerName: myName,
+                            peerPhotoURL: myPhoto,
+                            lastMsg: 'Sin mensajes',
+                            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                        }, { merge: true })
+                    ]);
+                    state.selectedDirectoryUserId = String(targetUser.id);
+                    directoryLogic.closeProfile();
+                    goto('messages');
+                } catch (error) {
+                    alert(`No se pudo iniciar el chat: ${error.code || error.message || 'error desconocido'}`);
+                }
+            }
+        };
+
+        const uiLogic = {
+            openNewsModal: (idx) => {
+                const item = state.data.news[idx];
+                document.getElementById('news-modal-img').src = item.img;
+                document.getElementById('news-modal-cat').innerText = item.category;
+                document.getElementById('news-modal-title').innerText = item.title;
+                document.getElementById('news-modal-date').innerText = item.date;
+                document.getElementById('news-modal-body').innerText = item.summary || 'Sin contenido adicional.';
+                document.getElementById('modal-news').classList.remove('hidden');
+            },
+            closeNewsModal: () => document.getElementById('modal-news').classList.add('hidden')
+        };
+
+        window.directoryLogic = directoryLogic;
+        window.chatLogic = chatLogic;
+        window.uiLogic = uiLogic;
+
+        auth.onAuthStateChanged(async (user) => {
+            const isGuest = state.guestMode;
+            if (!user && !isGuest) { goto('login'); return; }
+            if (user) {
+                state.user = user;
+                await loadProfile(user.uid);
+                const adminBtn = document.getElementById('nav-admin');
+                if (adminBtn && isAdminUser()) adminBtn.classList.remove('hidden');
+            }
+            await loadAlumni();
+            directoryLogic.render();
+        });
+    </script>
+</body>
+</html>
