@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sinapsis | Mi Perfil</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script>
+        tailwind.config = {
+            theme: { extend: {
+                fontFamily: { sans: ['"Plus Jakarta Sans"', 'sans-serif'] },
+                colors: {
+                    brand: { 50:'#f0fdf4',100:'#dcfce7',200:'#bbf7d0',300:'#86efac',400:'#4ade80',500:'#22c55e',600:'#16a34a',700:'#15803d',800:'#166534',900:'#14532d',950:'#052e16' },
+                    stone: { 50:'#fafaf9',100:'#f5f5f4',200:'#e7e5e4',300:'#d6d3d1',400:'#a8a29e',500:'#78716c',600:'#57534e',700:'#44403c',800:'#292524',900:'#1c1917' },
+                    sun: { 50:'#fffbeb',100:'#fef3c7',200:'#fde68a',400:'#fbbf24',500:'#f59e0b',600:'#d97706' }
+                },
+                animation: { 'fade-in':'fadeIn 0.3s ease-out','slide-up':'slideUp 0.4s ease-out','slide-in-right':'slideInRight 0.4s cubic-bezier(0.16,1,0.3,1)' },
+                keyframes: { fadeIn:{'0%':{opacity:'0'},'100%':{opacity:'1'}},slideUp:{'0%':{transform:'translateY(20px)',opacity:'0'},'100%':{transform:'translateY(0)',opacity:'1'}},slideInRight:{'0%':{transform:'translateX(100%)'},'100%':{transform:'translateX(0)'}} }
+            }}
+        }
+    </script>
+    <style>
+        body { background-color: #fafaf9; }
+        .glass-nav { background: rgba(250,250,249,0.85); backdrop-filter: blur(16px); border-bottom: 1px solid rgba(231,229,228,0.6); }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .section-card { background:#fff; padding:1.5rem; border-radius:2rem; border:1px solid #f5f5f4; box-shadow:0 8px 30px rgb(20 83 45/0.03); margin-bottom:1.5rem; transition:all 0.2s ease; }
+        @media(min-width:768px){ .section-card{padding:2rem;} }
+        .section-card:hover { box-shadow: 0 12px 40px rgb(22 163 74/0.08); }
+        .input-label { font-size:0.75rem; font-weight:700; color:#78716c; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:0.5rem; display:block; }
+        .input-field { width:100%; padding:0.85rem 1rem; background:rgba(250,250,249,0.9); border:1px solid #e7e5e4; border-radius:0.75rem; outline:none; transition:all 0.2s ease; font-size:0.9rem; font-weight:500; color:#292524; }
+        .input-field:focus { border-color:#16a34a; box-shadow:0 0 0 4px rgb(34 197 94/0.15); background:#fff; }
+        #profileForm .input-field { background:#fff; border-color:#dcfce7; }
+    </style>
+</head>
+<body class="text-stone-800 font-sans min-h-screen flex flex-col">
+
+    <main class="flex-1 pt-20 pb-24 md:pb-8 px-4 bg-stone-50/60">
+        <div class="max-w-4xl mx-auto animate-slide-up pb-20">
+            <div class="bg-white rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden mb-6">
+                <!-- Portada -->
+                <div class="h-48 bg-gradient-to-r from-brand-500 via-brand-700 to-brand-900 relative group">
+                </div>
+
+                <!-- Info Principal -->
+                <div class="px-8 pb-8">
+                    <div class="relative flex flex-col md:flex-row md:items-end gap-6 -mt-12 mb-8">
+                        <div class="relative">
+                            <img src="https://ui-avatars.com/api/?name=Usuario&background=9333ea&color=fff" class="w-36 h-36 rounded-[2rem] border-[6px] border-white shadow-xl bg-white object-cover" id="profile-avatar">
+                        </div>
+                        <div class="flex-1 mt-2 md:mt-0">
+                            <h2 class="text-3xl font-bold text-gray-900" id="display-name">Tu Nombre</h2>
+                            <p class="text-brand-600 font-medium" id="display-role">Tu Cargo</p>
+                        </div>
+                        <button onclick="profileLogic.save()" id="btn-save-profile" class="bg-brand-600 text-white px-8 py-3 rounded-xl font-bold shadow-lg shadow-brand-500/30 hover:bg-brand-700 transition flex items-center gap-2" aria-label="Guardar cambios del perfil">
+                            <i class="ph-bold ph-floppy-disk"></i> Guardar Cambios
+                        </button>
+                    </div>
+
+                    <form id="profileForm" class="space-y-8">
+                        <!-- 1. INFORMACIÓN BÁSICA -->
+                        <div class="section-card">
+                            <h3 class="text-lg font-bold mb-6 flex items-center gap-2 text-gray-900 border-b border-gray-100 pb-3">
+                                <i class="ph-duotone ph-user-circle text-brand-600 text-2xl"></i> Información Personal
+                            </h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label class="input-label">Nombres</label>
+                                    <input type="text" id="p-name" class="input-field" placeholder="Ej: Juan" required minlength="2">
+                                </div>
+                                <div>
+                                    <label class="input-label">Apellidos</label>
+                                    <input type="text" id="p-lastname" class="input-field" placeholder="Ej: Pérez">
+                                </div>
+                                <div>
+                                    <label class="input-label">Promoción (Año)</label>
+                                    <input type="text" id="p-year" class="input-field" placeholder="Ej: 2020">
+                                </div>
+                                <div>
+                                    <label class="input-label">Ubicación (Ciudad, País)</label>
+                                    <input type="text" id="p-location" class="input-field" placeholder="Ej: Medellín, Colombia">
+                                </div>
+                                <div>
+                                    <label class="input-label">Colegio</label>
+                                    <input type="text" id="p-school" class="input-field" placeholder="Ej: LCP">
+                                </div>
+                                <div class="md:col-span-2">
+                                    <label class="input-label">¿Qué expectativas/proyecciones tiene sobre usted?</label>
+                                    <textarea id="p-expectations" class="input-field h-24 resize-y" placeholder="Ej: Consolidarme en liderazgo de proyectos, emprender y aportar como mentor en la red."></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 2. PERFIL ACADÉMICO -->
+                        <div class="section-card">
+                            <h3 class="text-lg font-bold mb-6 flex items-center gap-2 text-gray-900 border-b border-gray-100 pb-3">
+                                <i class="ph-duotone ph-student text-brand-600 text-2xl"></i> Perfil Académico y Profesional
+                            </h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div class="md:col-span-2">
+                                    <label class="input-label">Situación Actual</label>
+                                    <select id="p-status" class="input-field">
+                                        <option value="trabajando">Trabajando</option>
+                                        <option value="estudiando">Estudiando</option>
+                                        <option value="trabajando-estudiando">Trabajando y estudiando</option>
+                                        <option value="emprendiendo">Emprendiendo</option>
+                                        <option value="profesor">Profesor</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="input-label">Puesto / Rol Actual</label>
+                                    <input type="text" id="p-role" class="input-field" placeholder="Ej: Gerente de Ventas">
+                                </div>
+                                <div>
+                                    <label class="input-label">Área de Interés</label>
+                                    <input type="text" id="p-area" class="input-field" placeholder="Ej: Tecnología, Finanzas">
+                                </div>
+                                <div class="md:col-span-2">
+                                    <label class="input-label">Estudios Recientes</label>
+                                    <input type="text" id="p-studies" class="input-field" placeholder="Ej: Maestría en Marketing Digital">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 3. ESPECIALIZACIÓN -->
+                        <div class="section-card">
+                            <h3 class="text-lg font-bold mb-6 flex items-center gap-2 text-gray-900 border-b border-gray-100 pb-3">
+                                <i class="ph-duotone ph-star text-brand-600 text-2xl"></i> Especialización
+                            </h3>
+                            <div class="space-y-6">
+                                <div>
+                                    <label class="input-label">Extracto / Bio (Breve descripción)</label>
+                                    <textarea id="p-bio" class="input-field h-36 resize-y" placeholder="Cuéntanos sobre tu experiencia y objetivos..."></textarea>
+                                </div>
+                                <div>
+                                    <label class="input-label">Habilidades Clave (Separadas por comas)</label>
+                                    <textarea id="p-skills" class="input-field h-28 resize-y" placeholder="Ej: Liderazgo, Python, Negociación"></textarea>
+                                </div>
+                                <div>
+                                    <label class="input-label">Intereses de Conexión</label>
+                                    <input type="text" id="p-topics" class="input-field" placeholder="Ej: Mentoria, Inversiones, Proyectos">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 4. CONTACTO -->
+                        <div class="section-card">
+                            <h3 class="text-lg font-bold mb-6 flex items-center gap-2 text-gray-900 border-b border-gray-100 pb-3">
+                                <i class="ph-duotone ph-share-network text-brand-600 text-2xl"></i> Redes de Contacto
+                            </h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label class="input-label">Celular / WhatsApp</label>
+                                    <div class="relative">
+                                        <i class="ph ph-whatsapp-logo absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-lg"></i>
+                                        <input type="text" id="p-phone" class="input-field pl-11" placeholder="+57 300 123 4567">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="input-label">LinkedIn (URL)</label>
+                                    <div class="relative">
+                                        <i class="ph ph-linkedin-logo absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-lg"></i>
+                                        <input type="text" id="p-linkedin" class="input-field pl-11" placeholder="linkedin.com/in/usuario">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+
+                    <div class="mt-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 flex items-start gap-2">
+                        <i class="ph-bold ph-warning-circle text-base mt-0.5"></i>
+                        <p><strong>Recordatorio:</strong> después de editar tu perfil, haz clic en <strong>"Guardar Cambios"</strong> para no perder la información.</p>
+                    </div>
+
+                    <div class="flex justify-center pt-6 border-t border-gray-100">
+                        <button onclick="authLogic.logout()" class="text-red-500 font-bold text-sm hover:text-red-700 flex items-center gap-2 transition px-4 py-2 rounded-lg hover:bg-red-50">
+                            <i class="ph-bold ph-sign-out"></i> Cerrar Sesión
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore-compat.js"></script>
+    <script src="shared.js"></script>
+    <script>
+        renderNav('profile');
+
+        const profileLogic = {
+            populate: () => {
+                const p = state.profile;
+                document.getElementById('display-name').innerText = `${p.firstName} ${p.lastName}`.trim() || 'Tu Nombre';
+                document.getElementById('display-role').innerText = p.role || 'Tu Cargo';
+                document.getElementById('p-name').value = p.firstName || '';
+                document.getElementById('p-lastname').value = p.lastName || '';
+                document.getElementById('p-year').value = p.graduationYear || '';
+                document.getElementById('p-location').value = p.location || '';
+                document.getElementById('p-status').value = p.status || 'trabajando';
+                document.getElementById('p-role').value = p.role || '';
+                document.getElementById('p-area').value = p.area || '';
+                document.getElementById('p-studies').value = p.studies || '';
+                document.getElementById('p-bio').value = p.bio || '';
+                document.getElementById('p-skills').value = p.skills || '';
+                document.getElementById('p-topics').value = p.topics || '';
+                document.getElementById('p-expectations').value = p.expectations || '';
+                document.getElementById('p-phone').value = p.phone || '';
+                document.getElementById('p-linkedin').value = p.linkedin || '';
+                document.getElementById('p-school').value = p.school || '';
+                const fullName = `${p.firstName || ''} ${p.lastName || ''}`.trim() || state.user?.displayName || 'Usuario';
+                const avatar = p.photoURL || buildAvatarUrl(fullName);
+                document.getElementById('profile-avatar').src = avatar;
+                refreshHeaderIdentity();
+            },
+            save: async () => {
+                if (!state.user) { alert('Debes iniciar sesión para actualizar tu cuenta.'); return; }
+                const firstNameValue = document.getElementById('p-name').value.trim();
+                if (!hasValidFirstName(firstNameValue)) {
+                    alert('El nombre es obligatorio y debe tener al menos 2 caracteres.');
+                    return;
+                }
+                const phoneValue = document.getElementById('p-phone').value.trim();
+                if (phoneValue && !isValidPhone(phoneValue)) {
+                    alert('El número de teléfono debe tener al menos 7 dígitos.');
+                    return;
+                }
+                const linkedinValue = document.getElementById('p-linkedin').value.trim();
+                if (linkedinValue && !isValidLinkedInUrl(linkedinValue)) {
+                    alert('El enlace de LinkedIn no es válido. Debe ser una URL de linkedin.com (ej: https://linkedin.com/in/tu-perfil).');
+                    return;
+                }
+
+                const btn = document.getElementById('btn-save-profile');
+                const original = btn.innerHTML;
+                btn.disabled = true;
+                btn.innerHTML = `<i class="ph-bold ph-spinner animate-spin"></i> Guardando...`;
+
+                const payload = {
+                    firstName: firstNameValue,
+                    lastName: document.getElementById('p-lastname').value.trim(),
+                    graduationYear: document.getElementById('p-year').value.trim(),
+                    location: document.getElementById('p-location').value.trim(),
+                    status: document.getElementById('p-status').value,
+                    role: document.getElementById('p-role').value.trim(),
+                    area: document.getElementById('p-area').value.trim(),
+                    studies: document.getElementById('p-studies').value.trim(),
+                    bio: document.getElementById('p-bio').value.trim(),
+                    skills: document.getElementById('p-skills').value.split(',').map(s => s.trim()).filter(Boolean),
+                    topics: document.getElementById('p-topics').value.trim(),
+                    expectations: document.getElementById('p-expectations').value.trim(),
+                    phone: phoneValue,
+                    linkedin: linkedinValue ? normalizeLinkedInUrl(linkedinValue) : '',
+                    school: document.getElementById('p-school').value.trim(),
+                    email: state.user.email || '',
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                };
+
+                try {
+                    const docRef = alumniCollection.doc(state.user.uid);
+                    const exists = (await docRef.get()).exists;
+                    if (!exists) payload.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+                    await docRef.set(payload, { merge: true });
+
+                    state.profile = {
+                        ...state.profile,
+                        ...payload,
+                        skills: (payload.skills || []).join(', ')
+                    };
+
+                    document.getElementById('display-name').innerText = `${state.profile.firstName} ${state.profile.lastName}`;
+                    document.getElementById('display-role').innerText = state.profile.role;
+                    const avatar = state.profile.photoURL || buildAvatarUrl(`${state.profile.firstName} ${state.profile.lastName}`.trim() || state.user?.displayName || 'Usuario');
+                    document.getElementById('profile-avatar').src = avatar;
+                    refreshHeaderIdentity();
+
+                    btn.className = btn.className.replace('bg-brand-600', 'bg-green-600');
+                    btn.innerHTML = `<i class="ph-bold ph-check"></i> ¡Guardado!`;
+                } catch (error) {
+                    btn.className = btn.className.replace('bg-brand-600', 'bg-red-600');
+                    btn.innerHTML = `<i class="ph-bold ph-warning-circle"></i> Error`;
+                }
+
+                setTimeout(() => {
+                    btn.className = btn.className.replace('bg-green-600', 'bg-brand-600').replace('bg-red-600', 'bg-brand-600');
+                    btn.innerHTML = original;
+                    btn.disabled = false;
+                }, 2000);
+            }
+        };
+
+        const authLogic = {
+            logout: async () => {
+                await auth.signOut();
+                state.guestMode = false;
+                sessionStorage.removeItem('guestMode');
+                goto('login');
+            }
+        };
+
+        window.profileLogic = profileLogic;
+        window.authLogic = authLogic;
+
+        auth.onAuthStateChanged(async (user) => {
+            if (!user) { goto('login'); return; }
+            state.user = user;
+            await loadProfile(user.uid);
+            const adminBtn = document.getElementById('nav-admin');
+            if (adminBtn && isAdminUser()) adminBtn.classList.remove('hidden');
+            profileLogic.populate();
+        });
+    </script>
+</body>
+</html>
