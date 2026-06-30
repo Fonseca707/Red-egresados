@@ -170,6 +170,7 @@ function renderNav(activePage='') {
                 <a href="index.html" class="font-medium transition ${active('home')}" id="nav-home">Ecosistema</a>
                 <a href="directory.html" class="font-medium transition ${active('directory')}" id="nav-dir">Comunidad</a>
                 <a href="news.html" class="font-medium transition ${active('news')}" id="nav-news">Novedades</a>
+                <a href="index.html?view=exam-modules" class="font-medium transition ${active('exam-modules')}" id="nav-exams">Preparación</a>
                 <a href="messages.html" class="font-medium transition ${active('messages')}" id="nav-msg">Mensajes</a>
                 <a href="admin.html" class="hidden font-medium transition ${active('admin')}" id="nav-admin">Admin</a>
             </div>
@@ -180,10 +181,11 @@ function renderNav(activePage='') {
                 <a href="profile.html" class="hidden md:flex items-center gap-1 text-xs text-gray-500 font-semibold hover:text-brand-600 transition px-2 py-1 rounded-lg hover:bg-brand-50"><span>Mi perfil</span><i class="ph-bold ph-caret-down"></i></a>
             </div>
         </nav>
-        <nav id="mobile-nav" class="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur border-t border-gray-200 grid grid-cols-5">
+        <nav id="mobile-nav" class="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur border-t border-gray-200 grid grid-cols-6">
             <a href="index.html" class="py-3 text-xs font-semibold flex flex-col items-center gap-1 ${mactive('home')}"><i class="ph ph-house text-lg"></i><span>Inicio</span></a>
             <a href="directory.html" class="py-3 text-xs font-semibold flex flex-col items-center gap-1 ${mactive('directory')}"><i class="ph ph-users text-lg"></i><span>Directorio</span></a>
             <a href="news.html" class="py-3 text-xs font-semibold flex flex-col items-center gap-1 ${mactive('news')}"><i class="ph ph-newspaper text-lg"></i><span>Novedades</span></a>
+            <a href="index.html?view=exam-modules" class="py-3 text-xs font-semibold flex flex-col items-center gap-1 ${mactive('exam-modules')}"><i class="ph ph-graduation-cap text-lg"></i><span>Prep.</span></a>
             <a href="messages.html" class="py-3 text-xs font-semibold flex flex-col items-center gap-1 ${mactive('messages')}"><i class="ph ph-chats-circle text-lg"></i><span>Mensajes</span></a>
             <a href="profile.html" class="py-3 text-xs font-semibold flex flex-col items-center gap-1 ${mactive('profile')}"><i class="ph ph-user-circle text-lg"></i><span>Perfil</span></a>
         </nav>

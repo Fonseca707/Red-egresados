@@ -2527,6 +2527,13 @@
 
         directoryLogic.debouncedFilter = debounce(() => directoryLogic.filter(), 280);
 
+        function getInitialView() {
+            const allowed = ['home', 'directory', 'news', 'exam-modules', 'messages', 'profile', 'admin', 'terms', 'register', 'auth'];
+            const params = new URLSearchParams(window.location.search);
+            const requested = params.get('view') || window.location.hash.replace(/^#/, '');
+            return allowed.includes(requested) ? requested : 'home';
+        }
+
         window.router = router;
         window.authLogic = authLogic;
         window.onboardingLogic = onboardingLogic;
@@ -2562,9 +2569,9 @@
                     }
                     router.navigate('onboarding');
                 } else {
-                    router.navigate('directory');
                     await loadAlumni();
                     await loadNews();
+                    router.navigate(getInitialView() || 'directory');
                 }
             } else {
                 if (registerBtn) registerBtn.classList.remove('hidden');
@@ -2578,12 +2585,12 @@
                 if (state.listeners.messages) { state.listeners.messages(); state.listeners.messages = null; }
                 state.profile = { firstName: '', lastName: '', graduationYear: '', location: '', status: 'trabajando', role: '', area: '', studies: '', bio: '', skills: '', topics: '', expectations: '', phone: '', linkedin: '', onboardingCompleted: false };
                 refreshHeaderIdentity();
-                router.navigate('home');
+                router.navigate(getInitialView());
             }
         });
 
         document.addEventListener('DOMContentLoaded', () => {
-            router.navigate('home');
+            router.navigate(getInitialView());
             loadNews();
         });
     </script>
