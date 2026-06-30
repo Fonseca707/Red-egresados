@@ -343,10 +343,11 @@
             const isGuest = state.guestMode;
             if (!user && !isGuest) { goto('login'); return; }
             if (user) {
-                state.user = user;
-                await loadProfile(user.uid);
-                const adminBtn = document.getElementById('nav-admin');
-                if (adminBtn && isAdminUser()) adminBtn.classList.remove('hidden');
+                const ready = await hydrateAuthenticatedUser(user, { redirectOnboarding: true });
+                if (!ready) return;
+            } else {
+                refreshHeaderIdentity();
+                updateAdminNavVisibility();
             }
             await loadAlumni();
             directoryLogic.render();

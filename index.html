@@ -36,11 +36,6 @@
             <div class="w-8 h-8 bg-gradient-to-br from-brand-600 to-brand-500 rounded-lg flex items-center justify-center text-white font-bold shadow-md shadow-brand-500/30">S</div>
             <span class="font-bold text-xl tracking-tight text-gray-900">Sinap<span class="text-brand-600">sis</span></span>
         </a>
-        <div class="hidden md:flex items-center gap-6">
-            <a href="directory.html" class="text-gray-500 hover:text-brand-600 font-medium transition">Comunidad</a>
-            <a href="news.html" class="text-gray-500 hover:text-brand-600 font-medium transition">Novedades</a>
-        </div>
-
         <div class="hidden md:flex items-center gap-6" id="nav-links">
             <button onclick="router.navigate('home')" class="text-gray-500 hover:text-brand-600 font-medium transition" id="nav-home">Ecosistema</button>
             <button onclick="router.navigate('directory')" class="text-gray-500 hover:text-brand-600 font-medium transition" id="nav-dir">Comunidad</button>
@@ -2532,6 +2527,13 @@
 
         directoryLogic.debouncedFilter = debounce(() => directoryLogic.filter(), 280);
 
+        function getInitialView() {
+            const allowed = ['home', 'directory', 'news', 'exam-modules', 'messages', 'profile', 'admin', 'terms', 'register', 'auth'];
+            const params = new URLSearchParams(window.location.search);
+            const requested = params.get('view') || window.location.hash.replace(/^#/, '');
+            return allowed.includes(requested) ? requested : 'home';
+        }
+
         window.router = router;
         window.authLogic = authLogic;
         window.onboardingLogic = onboardingLogic;
@@ -2567,9 +2569,9 @@
                     }
                     router.navigate('onboarding');
                 } else {
-                    router.navigate('directory');
                     await loadAlumni();
                     await loadNews();
+                    router.navigate(getInitialView() || 'directory');
                 }
             } else {
                 if (registerBtn) registerBtn.classList.remove('hidden');
@@ -2583,12 +2585,12 @@
                 if (state.listeners.messages) { state.listeners.messages(); state.listeners.messages = null; }
                 state.profile = { firstName: '', lastName: '', graduationYear: '', location: '', status: 'trabajando', role: '', area: '', studies: '', bio: '', skills: '', topics: '', expectations: '', phone: '', linkedin: '', onboardingCompleted: false };
                 refreshHeaderIdentity();
-                router.navigate('home');
+                router.navigate(getInitialView());
             }
         });
 
         document.addEventListener('DOMContentLoaded', () => {
-            router.navigate('home');
+            router.navigate(getInitialView());
             loadNews();
         });
     </script>
