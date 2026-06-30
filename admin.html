@@ -544,9 +544,8 @@
 
         auth.onAuthStateChanged(async (user) => {
             if (!user) { goto('login'); return; }
-            state.user = user;
-            await loadProfile(user.uid);
-            await loadAdminRole(user.uid);
+            const ready = await hydrateAuthenticatedUser(user);
+            if (!ready) return;
             if (!canAccessAdmin()) { goto('directory'); return; }
             const isSuperAdmin = state.adminRole === 'superadmin';
             const adminBtn = document.getElementById('nav-admin');

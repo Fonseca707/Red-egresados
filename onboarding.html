@@ -169,8 +169,8 @@
 
         auth.onAuthStateChanged(async (user) => {
             if (!user) { goto('login'); return; }
-            state.user = user;
-            await loadProfile(user.uid);
+            const ready = await hydrateAuthenticatedUser(user);
+            if (!ready) return;
             if (user.displayName && !state.profile.firstName) {
                 const parts = user.displayName.split(' ');
                 const n = document.getElementById('ob-name');
