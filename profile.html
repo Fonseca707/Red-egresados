@@ -306,10 +306,8 @@
 
         auth.onAuthStateChanged(async (user) => {
             if (!user) { goto('login'); return; }
-            state.user = user;
-            await loadProfile(user.uid);
-            const adminBtn = document.getElementById('nav-admin');
-            if (adminBtn && isAdminUser()) adminBtn.classList.remove('hidden');
+            const ready = await hydrateAuthenticatedUser(user);
+            if (!ready) return;
             profileLogic.populate();
         });
     </script>

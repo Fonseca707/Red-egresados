@@ -294,10 +294,8 @@
                     </div>`;
                 return;
             }
-            state.user = user;
-            await loadProfile(user.uid);
-            const adminBtn = document.getElementById('nav-admin');
-            if (adminBtn && isAdminUser()) adminBtn.classList.remove('hidden');
+            const ready = await hydrateAuthenticatedUser(user, { redirectOnboarding: true });
+            if (!ready) return;
             await loadChatsForUser(user.uid);
             watchChatsInRealtime(user.uid);
             chatLogic.renderList();

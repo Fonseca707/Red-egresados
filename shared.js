@@ -86,6 +86,28 @@ async function loadAdminRole(uid) {
     } catch(e) { state.adminRole=null; state.adminSchool=null; }
 }
 function canAccessAdmin() { return isAdminUser()||state.adminRole==='subadmin'; }
+
+function updateAdminNavVisibility() {
+    const adminBtn = document.getElementById('nav-admin');
+    if (!adminBtn) return;
+    if (canAccessAdmin()) adminBtn.classList.remove('hidden');
+    else adminBtn.classList.add('hidden');
+}
+async function hydrateAuthenticatedUser(user, { redirectOnboarding = false } = {}) {
+    if (!user) return false;
+    state.guestMode = false;
+    sessionStorage.removeItem('guestMode');
+    state.user = user;
+    await loadProfile(user.uid);
+    await loadAdminRole(user.uid);
+    updateAdminNavVisibility();
+    refreshHeaderIdentity();
+    if (redirectOnboarding && !state.profile.onboardingCompleted && !window.location.pathname.endsWith('/onboarding.html')) {
+        goto('onboarding');
+        return false;
+    }
+    return true;
+}
 async function loadSubAdmins() {
     try { const s=await adminsCollection.get(); state.data.subAdmins=s.docs.map(d=>({uid:d.id,...d.data()})); }
     catch(e) { state.data.subAdmins=[]; }
