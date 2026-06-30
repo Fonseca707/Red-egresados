@@ -146,6 +146,7 @@
             <button onclick="router.navigate('home')" class="text-gray-500 hover:text-brand-600 font-medium transition" id="nav-home">Ecosistema</button>
             <button onclick="router.navigate('directory')" class="text-gray-500 hover:text-brand-600 font-medium transition" id="nav-dir">Comunidad</button>
             <button onclick="router.navigate('news')" class="text-gray-500 hover:text-brand-600 font-medium transition" id="nav-news">Novedades</button>
+            <button onclick="router.navigate('exam-modules')" class="text-gray-500 hover:text-brand-600 font-medium transition" id="nav-exams">Preparación</button>
             <button onclick="router.navigate('messages')" class="text-gray-500 hover:text-brand-600 font-medium transition" id="nav-msg">Mensajes</button>
             <button onclick="router.navigate('admin')" class="hidden text-gray-500 hover:text-brand-600 font-medium transition" id="nav-admin">Admin</button>
         </div>
@@ -629,6 +630,21 @@
             </div>
         </div>
 
+        <!-- VISTA: MÓDULOS DE PREPARACIÓN -->
+        <div id="view-exam-modules" class="hidden max-w-7xl mx-auto animate-slide-up pb-12">
+            <div class="mb-8 text-center md:text-left">
+                <span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-brand-50 text-brand-700 text-xs font-bold uppercase tracking-widest border border-brand-100">
+                    <i class="ph-duotone ph-books"></i> Borrador programable
+                </span>
+                <h2 class="text-3xl md:text-4xl font-extrabold text-gray-900 mt-4 mb-3">Módulos de preparación en idiomas</h2>
+                <p class="text-gray-500 max-w-3xl">Estructura inicial para practicar componentes de exámenes internacionales desde la plataforma. Por ahora se excluyen prácticas orales como speaking/production orale porque requieren revisión especializada.</p>
+            </div>
+
+            <div id="exam-modules-grid" class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Módulos TOEFL y DELF renderizados via JS -->
+            </div>
+        </div>
+
         <!-- VISTA: MENSAJES -->
         <div id="view-messages" class="hidden h-[calc(100vh-8rem)] max-w-6xl mx-auto bg-white rounded-3xl shadow-xl border border-gray-200 overflow-hidden flex animate-fade-in">
             <!-- Lista de Chats -->
@@ -930,7 +946,7 @@
     </main>
 
     <!-- 3.5 NAVEGACIÓN MÓVIL -->
-    <nav id="mobile-nav" class="hidden md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur border-t border-gray-200 grid grid-cols-5">
+    <nav id="mobile-nav" class="hidden md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur border-t border-gray-200 grid grid-cols-6">
         <button id="mnav-home" onclick="router.navigate('home')" class="py-3 text-xs font-semibold text-gray-500 flex flex-col items-center justify-center gap-1 min-w-0">
             <i class="ph ph-house text-lg"></i><span>Inicio</span>
         </button>
@@ -939,6 +955,9 @@
         </button>
         <button id="mnav-news" onclick="router.navigate('news')" class="py-3 text-xs font-semibold text-gray-500 flex flex-col items-center justify-center gap-1 min-w-0">
             <i class="ph ph-newspaper text-lg"></i><span>Novedades</span>
+        </button>
+        <button id="mnav-exams" onclick="router.navigate('exam-modules')" class="py-3 text-xs font-semibold text-gray-500 flex flex-col items-center justify-center gap-1 min-w-0">
+            <i class="ph ph-books text-lg"></i><span>Práctica</span>
         </button>
         <button id="mnav-msg" onclick="router.navigate('messages')" class="py-3 text-xs font-semibold text-gray-500 flex flex-col items-center justify-center gap-1 min-w-0">
             <i class="ph ph-chats-circle text-lg"></i><span>Mensajes</span>
@@ -1151,6 +1170,38 @@
                 ],
                 chats: []
             },
+            examModules: [
+                {
+                    code: 'TOEFL',
+                    title: 'Módulo TOEFL',
+                    language: 'Inglés académico',
+                    level: 'Preparación internacional',
+                    icon: 'ph-duotone ph-globe-hemisphere-west',
+                    accent: 'blue',
+                    description: 'Borrador para practicar habilidades del examen TOEFL sin incluir speaking en esta primera versión.',
+                    practices: [
+                        { name: 'Reading', focus: 'Comprensión de textos académicos', format: 'Lecturas cortas + preguntas de selección', status: 'Básico' },
+                        { name: 'Listening', focus: 'Comprensión auditiva', format: 'Audio o video + preguntas guiadas', status: 'Básico' },
+                        { name: 'Writing', focus: 'Respuesta escrita estructurada', format: 'Prompt + planeador + autoevaluación', status: 'Borrador' }
+                    ],
+                    excluded: 'Speaking queda por fuera temporalmente por requerir evaluación oral especializada.'
+                },
+                {
+                    code: 'DELF',
+                    title: 'Módulo DELF',
+                    language: 'Francés',
+                    level: 'Preparación A1-B2',
+                    icon: 'ph-duotone ph-flag',
+                    accent: 'purple',
+                    description: 'Borrador para organizar prácticas del DELF enfocadas en comprensión y producción escrita.',
+                    practices: [
+                        { name: 'Compréhension écrite', focus: 'Comprensión de textos en francés', format: 'Texto corto + preguntas de comprensión', status: 'Básico' },
+                        { name: 'Compréhension orale', focus: 'Escucha de situaciones cotidianas o académicas', format: 'Audio + preguntas por nivel', status: 'Básico' },
+                        { name: 'Production écrite', focus: 'Escritura de mensajes, opiniones o textos breves', format: 'Consigna + estructura sugerida', status: 'Borrador' }
+                    ],
+                    excluded: 'Production orale queda por fuera temporalmente por requerir interacción y evaluación oral.'
+                }
+            ],
             profile: {
                 firstName: "", lastName: "", graduationYear: "", location: "",
                 status: STATUS.TRABAJANDO, role: "", area: "", studies: "",
@@ -1715,7 +1766,7 @@
 
         const router = {
             navigate: (viewId) => {
-                if (viewId !== 'auth' && viewId !== 'register' && viewId !== 'home' && viewId !== 'terms' && !state.user) { authLogic.logout(); return; }
+                if (viewId !== 'auth' && viewId !== 'register' && viewId !== 'home' && viewId !== 'terms' && viewId !== 'exam-modules' && !state.user) { authLogic.logout(); return; }
                 if (viewId === 'register' && state.user) { viewId = 'profile'; }
                 if (viewId === 'admin' && !isAdminUser()) { viewId = 'directory'; }
 
@@ -1727,7 +1778,7 @@
                     }
                 }
 
-                const views = ['view-home', 'view-auth', 'view-register', 'view-terms', 'view-onboarding', 'view-onboarding-profile', 'view-directory', 'view-news', 'view-messages', 'view-profile', 'view-admin'];
+                const views = ['view-home', 'view-auth', 'view-register', 'view-terms', 'view-onboarding', 'view-onboarding-profile', 'view-directory', 'view-news', 'view-exam-modules', 'view-messages', 'view-profile', 'view-admin'];
                 views.forEach(id => {
                     const el = document.getElementById(id);
                     if(el) el.classList.add('hidden');
@@ -1741,8 +1792,8 @@
                 } else {
                     nav.classList.remove('hidden');
                     if (mobileNav) mobileNav.classList.remove('hidden');
-                    const navButtons = { 'home': 'nav-home', 'directory': 'nav-dir', 'news': 'nav-news', 'messages': 'nav-msg', 'admin': 'nav-admin' };
-                    const mobileButtons = { 'home': 'mnav-home', 'directory': 'mnav-dir', 'news': 'mnav-news', 'messages': 'mnav-msg', 'profile': 'mnav-profile' };
+                    const navButtons = { 'home': 'nav-home', 'directory': 'nav-dir', 'news': 'nav-news', 'exam-modules': 'nav-exams', 'messages': 'nav-msg', 'admin': 'nav-admin' };
+                    const mobileButtons = { 'home': 'mnav-home', 'directory': 'mnav-dir', 'news': 'mnav-news', 'exam-modules': 'mnav-exams', 'messages': 'mnav-msg', 'profile': 'mnav-profile' };
                     Object.values(navButtons).forEach(btnId => {
                         const btn = document.getElementById(btnId);
                         if(btn) btn.classList.remove('text-brand-600', 'bg-brand-50');
@@ -1772,6 +1823,7 @@
 
                 if(viewId === 'directory') directoryLogic.render();
                 if(viewId === 'news') newsLogic.render();
+                if(viewId === 'exam-modules') examModulesLogic.render();
                 if(viewId === 'messages') chatLogic.renderList();
                 if(viewId === 'profile') profileLogic.populate();
                 if(viewId === 'onboarding-profile') onboardingLogic.populateProfileDetails();
@@ -1906,6 +1958,55 @@
                     return tags.includes(selected);
                 });
                 directoryLogic.render(filtered);
+            }
+        };
+
+
+        const examModulesLogic = {
+            render: () => {
+                const grid = document.getElementById('exam-modules-grid');
+                if (!grid) return;
+                grid.innerHTML = state.examModules.map((module) => {
+                    const accent = module.accent === 'purple'
+                        ? { soft: 'bg-purple-50 text-purple-700 border-purple-100', solid: 'bg-purple-600', ring: 'group-hover:border-purple-200' }
+                        : { soft: 'bg-blue-50 text-blue-700 border-blue-100', solid: 'bg-blue-600', ring: 'group-hover:border-blue-200' };
+                    return `
+                        <article class="bg-white rounded-[2rem] border border-gray-100 shadow-sm hover:shadow-xl transition overflow-hidden group ${accent.ring}">
+                            <div class="p-6 md:p-8 border-b border-gray-100">
+                                <div class="flex items-start justify-between gap-4 mb-6">
+                                    <div class="w-16 h-16 ${accent.soft} rounded-2xl border flex items-center justify-center text-3xl">
+                                        <i class="${sanitizeHTML(module.icon)}"></i>
+                                    </div>
+                                    <span class="px-3 py-1 rounded-full text-xs font-bold ${accent.soft} border">${sanitizeHTML(module.code)}</span>
+                                </div>
+                                <p class="text-xs font-bold uppercase tracking-[0.2em] text-gray-400 mb-2">${sanitizeHTML(module.language)} · ${sanitizeHTML(module.level)}</p>
+                                <h3 class="text-2xl font-extrabold text-gray-900 mb-3">${sanitizeHTML(module.title)}</h3>
+                                <p class="text-gray-500 leading-relaxed">${sanitizeHTML(module.description)}</p>
+                            </div>
+                            <div class="p-6 md:p-8 space-y-4">
+                                ${module.practices.map((practice, index) => `
+                                    <div class="rounded-2xl border border-gray-100 bg-gray-50/70 p-4 hover:bg-white hover:shadow-sm transition">
+                                        <div class="flex items-start gap-3">
+                                            <div class="w-9 h-9 rounded-xl ${accent.solid} text-white flex items-center justify-center font-bold text-sm shrink-0">${index + 1}</div>
+                                            <div class="min-w-0">
+                                                <div class="flex flex-wrap items-center gap-2 mb-1">
+                                                    <h4 class="font-bold text-gray-900">${sanitizeHTML(practice.name)}</h4>
+                                                    <span class="px-2 py-0.5 rounded-md bg-white border border-gray-200 text-[11px] font-bold text-gray-500">${sanitizeHTML(practice.status)}</span>
+                                                </div>
+                                                <p class="text-sm text-gray-600 mb-1">${sanitizeHTML(practice.focus)}</p>
+                                                <p class="text-xs text-gray-400 font-medium">Formato: ${sanitizeHTML(practice.format)}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                                <div class="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 flex gap-2">
+                                    <i class="ph-bold ph-warning-circle mt-0.5"></i>
+                                    <p><strong>No incluido por ahora:</strong> ${sanitizeHTML(module.excluded)}</p>
+                                </div>
+                            </div>
+                        </article>
+                    `;
+                }).join('');
             }
         };
 
