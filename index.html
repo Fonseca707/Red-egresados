@@ -40,9 +40,24 @@
             <a href="directory.html" class="text-gray-500 hover:text-brand-600 font-medium transition">Comunidad</a>
             <a href="news.html" class="text-gray-500 hover:text-brand-600 font-medium transition">Novedades</a>
         </div>
-        <div class="flex items-center gap-3">
-            <a href="login.html" class="text-sm font-bold text-gray-700 hover:text-brand-600 transition">Ingresar</a>
-            <a href="register.html" class="px-4 py-2 bg-brand-600 text-white text-sm font-bold rounded-xl shadow-lg shadow-brand-500/30 hover:bg-brand-700 transition">Registrarse</a>
+
+        <div class="hidden md:flex items-center gap-6" id="nav-links">
+            <button onclick="router.navigate('home')" class="text-gray-500 hover:text-brand-600 font-medium transition" id="nav-home">Ecosistema</button>
+            <button onclick="router.navigate('directory')" class="text-gray-500 hover:text-brand-600 font-medium transition" id="nav-dir">Comunidad</button>
+            <button onclick="router.navigate('news')" class="text-gray-500 hover:text-brand-600 font-medium transition" id="nav-news">Novedades</button>
+            <button onclick="router.navigate('exam-modules')" class="text-gray-500 hover:text-brand-600 font-medium transition" id="nav-exams">Preparación</button>
+            <button onclick="router.navigate('messages')" class="text-gray-500 hover:text-brand-600 font-medium transition" id="nav-msg">Mensajes</button>
+            <button onclick="router.navigate('admin')" class="hidden text-gray-500 hover:text-brand-600 font-medium transition" id="nav-admin">Admin</button>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <!-- Avatar Usuario -->
+            <button id="profile-menu-trigger" onclick="router.navigate('profile')" class="h-10 w-10 rounded-full bg-brand-50 overflow-hidden ring-2 ring-transparent hover:ring-brand-300 transition-all focus:outline-none shadow-sm" title="Ver perfil">
+                <img src="https://ui-avatars.com/api/?name=Usuario&background=22c55e&color=fff" alt="Perfil" class="object-cover w-full h-full" id="header-avatar">
+            </button>
+            <button onclick="router.navigate('profile')" class="hidden md:flex items-center gap-1 text-xs text-gray-500 font-semibold hover:text-brand-600 transition px-2 py-1 rounded-lg hover:bg-brand-50" title="Abrir perfil">
+                <span>Mi perfil</span><i class="ph-bold ph-caret-down"></i>
+            </button>
         </div>
     </nav>
 
@@ -185,18 +200,2333 @@
 
         </div>
 
+        <!-- VISTA: LOGIN -->
+        <div id="view-auth" class="hidden min-h-[80vh] flex items-center justify-center animate-fade-in">
+            <div class="bg-white p-8 md:p-10 rounded-[2.5rem] shadow-[0_20px_50px_rgb(0,0,0,0.08)] border border-gray-100 w-full max-w-md relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-40 h-40 bg-brand-50 rounded-bl-full -z-10 opacity-70"></div>
+                <div class="text-center mb-8">
+                    <div class="w-14 h-14 bg-brand-600 rounded-2xl flex items-center justify-center text-white text-3xl font-bold mx-auto mb-4 shadow-lg shadow-brand-500/30">S</div>
+                    <h1 class="text-2xl font-bold text-gray-900">Hola de nuevo</h1>
+                    <p class="text-gray-500 text-sm mt-2">Red exclusiva de egresados</p>
+                </div>
+                
+                <form onsubmit="authLogic.login(event)" class="space-y-5">
+                    <div>
+                        <label class="input-label">Email Personal</label>
+                        <input id="login-email" type="email" required placeholder="tu.nombre@gmail.com" class="input-field">
+                    </div>
+                    <div>
+                        <label class="input-label">Contraseña</label>
+                        <input id="login-password" type="password" required placeholder="••••••••" class="input-field">
+                    </div>
+                    <button type="submit" class="w-full py-3.5 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-xl shadow-lg shadow-brand-500/30 transition transform hover:scale-[1.02]">
+                        Ingresar
+                    </button>
+                </form>
+                <button onclick="authLogic.loginWithGoogle()" class="w-full py-3.5 mt-3 bg-white text-gray-700 font-bold rounded-xl border border-gray-200 hover:bg-gray-50 transition flex items-center justify-center gap-2">
+                    <i class="ph ph-google-logo"></i> Continuar con Google
+                </button>
+                <p id="auth-feedback" class="text-xs text-red-600 mt-3 text-center font-semibold"></p>
+                
+                <div class="mt-8 text-center border-t border-gray-100 pt-6 space-y-2">
+                    <button id="login-register-btn" onclick="authLogic.registerWithEmail()" class="text-sm text-brand-600 font-bold hover:underline">Crear cuenta con email</button>
+                    <button onclick="authLogic.browseAsGuest()" class="block w-full text-sm text-gray-600 font-semibold hover:text-brand-600 transition">Revisar la red como invitado</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- VISTA: REGISTRO -->
+        <div id="view-register" class="hidden min-h-[80vh] flex items-center justify-center animate-fade-in">
+            <div class="bg-white p-8 md:p-10 rounded-[2.5rem] shadow-[0_20px_50px_rgb(0,0,0,0.08)] border border-gray-100 w-full max-w-md relative overflow-hidden">
+                <div class="text-center mb-8">
+                    <div class="w-14 h-14 bg-brand-600 rounded-2xl flex items-center justify-center text-white text-3xl font-bold mx-auto mb-4 shadow-lg shadow-brand-500/30">S</div>
+                    <h1 class="text-2xl font-bold text-gray-900">Planta tu semilla</h1>
+                    <p class="text-gray-500 text-sm mt-2">Comienza tu viaje en Sinapsis</p>
+                </div>
+
+                <form onsubmit="authLogic.submitRegister(event)" class="space-y-4">
+                    <div>
+                        <label class="input-label">Email</label>
+                        <input id="register-email" type="email" required placeholder="tu.nombre@email.com" class="input-field">
+                    </div>
+                    <div>
+                        <label class="input-label">Contraseña</label>
+                        <input id="register-password" type="password" required minlength="6" placeholder="••••••••" class="input-field">
+                    </div>
+                    <div>
+                        <label class="input-label">Confirmar contraseña</label>
+                        <input id="register-password-confirm" type="password" required minlength="6" placeholder="••••••••" class="input-field">
+                    </div>
+
+                    <label class="flex items-start gap-3 text-sm text-gray-600">
+                        <input id="register-privacy" type="checkbox" required class="mt-1 h-4 w-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500">
+                        <span>Autorizo el tratamiento de mis datos personales conforme a la <button type="button" onclick="router.navigate('terms')" class="font-bold text-brand-600 hover:underline">Política de Tratamiento de Datos Personales y Términos</button> y declaro haberla leído y aceptado.</span>
+                    </label>
+
+                    <label class="flex items-start gap-3 text-sm text-gray-600">
+                        <input id="register-newsletter" type="checkbox" checked class="mt-1 h-4 w-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500">
+                        <span>Deseo recibir novedades de la red de egresados (reencuentros, trabajos, etc). </span>
+                    </label>
+
+                    <button type="submit" class="w-full py-3.5 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-xl shadow-lg shadow-brand-500/30 transition">Planta tu semilla</button>
+                </form>
+                <button onclick="authLogic.registerWithGoogle()" class="w-full py-3.5 mt-3 bg-white text-gray-700 font-bold rounded-xl border border-gray-200 hover:bg-gray-50 transition flex items-center justify-center gap-2">
+                    <i class="ph ph-google-logo"></i> Registrarme con Google
+                </button>
+                <p id="register-feedback" class="text-xs text-gray-500 mt-3 text-center"></p>
+
+                <div class="mt-6 text-center border-t border-gray-100 pt-4">
+                    <button onclick="router.navigate('auth')" class="text-sm text-brand-600 font-bold hover:underline">Ya tengo cuenta</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- VISTA: TÉRMINOS (oculta, solo por enlace directo en registro) -->
+        <div id="view-terms" class="hidden min-h-[80vh] py-8 animate-fade-in">
+            <div class="max-w-4xl mx-auto bg-white rounded-3xl border border-gray-100 shadow-sm p-6 md:p-10">
+                <div class="flex items-center justify-between gap-4 mb-6 border-b border-gray-100 pb-4">
+                    <h2 class="text-xl md:text-2xl font-bold text-gray-900">Términos y Condiciones de Uso y Política de Privacidad</h2>
+                    <button onclick="router.navigate('register')" class="px-4 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-sm font-semibold text-gray-700 transition">Volver</button>
+                </div>
+                <p class="text-sm text-gray-500 mb-6">Fecha de última actualización: 07 de abril de 2026.</p>
+
+                <div class="space-y-6 text-gray-700 leading-relaxed">
+                    <section>
+                        <h3 class="font-bold text-gray-900 mb-2">1. Naturaleza de la Plataforma y Aceptación</h3>
+                        <p>Esta red es una plataforma digital de carácter estrictamente independiente, creada y administrada de forma autónoma. No está afiliada, asociada, respaldada ni patrocinada por ninguna institución educativa, colegio o universidad. El acceso y registro en la plataforma constituyen la aceptación expresa, libre e informada de los presentes Términos y Condiciones por parte del usuario. La titularidad legal y administración de la plataforma están a cargo de Sonia Viviana Garavito Pinea (en adelante, "El Administrador").</p>
+                    </section>
+
+                    <section>
+                        <h3 class="font-bold text-gray-900 mb-2">2. Tratamiento de Datos Personales y Carácter Público</h3>
+                        <p>En cumplimiento de la Ley 1581 de 2012 y normas concordantes de la República de Colombia, se informa que la plataforma recolecta los siguientes datos opcionales proporcionados voluntariamente por el usuario:</p>
+                        <ul class="list-disc pl-6 space-y-1">
+                            <li><strong>Información Personal:</strong> Nombres, apellidos, promoción (año), ubicación.</li>
+                            <li><strong>Perfil Académico y Profesional:</strong> Situación actual, puesto, área de interés, estudios, especialización, extracto/bio, habilidades, intereses de conexión.</li>
+                            <li><strong>Redes de Contacto:</strong> Celular/WhatsApp y URL de LinkedIn.</li>
+                        </ul>
+                        <p><strong>Aviso de Publicidad de Datos:</strong> El usuario acepta y autoriza de manera explícita que toda la información suministrada en los campos anteriores será de carácter PÚBLICO y visible en internet para cualquier persona. El usuario asume total responsabilidad por los datos de contacto que decida publicar. La plataforma no se hace responsable por el uso indebido que terceros hagan de esta información pública (incluyendo, pero sin limitarse a, spam, acoso o extracción de datos).</p>
+                        <p><strong>Privacidad de las Comunicaciones:</strong> El único componente de la plataforma que se mantiene bajo estricta privacidad es el contenido de los mensajes intercambiados a través del chat interno de la red. Estos no serán divulgados a terceros, salvo por orden de una autoridad judicial competente.</p>
+                    </section>
+
+                    <section>
+                        <h3 class="font-bold text-gray-900 mb-2">3. Interacción, Conducta y Moderación</h3>
+                        <p><strong>Publicaciones:</strong> Los usuarios no pueden realizar publicaciones directas en la red. Toda publicación de contenido está sujeta a la solicitud previa y a la moderación, aprobación y publicación exclusiva por parte del Administrador.</p>
+                        <p><strong>Causales de Expulsión:</strong> La plataforma se reserva el derecho de admisión y permanencia. El Administrador podrá expulsar, suspender o bloquear de manera permanente e inapelable a cualquier usuario que haga un uso inadecuado de la plataforma, incluyendo el envío de mensajes inapropiados, acoso, spam o comportamiento abusivo a través de los chats internos.</p>
+                    </section>
+
+                    <section>
+                        <h3 class="font-bold text-gray-900 mb-2">4. Exención de Responsabilidad Civil y Comercial</h3>
+                        <p>La plataforma actúa única y exclusivamente como un directorio y facilitador de contacto entre individuos. El Administrador se exime expresamente de cualquier tipo de responsabilidad civil, penal, comercial o de cualquier otra índole derivada de:</p>
+                        <ul class="list-disc pl-6 space-y-1">
+                            <li>La naturaleza, resultado o consecuencias de las interacciones, reuniones, acuerdos comerciales, ofertas laborales o conexiones establecidas entre los usuarios.</li>
+                            <li>Disputas, conflictos, estafas, fraudes o daños materiales o inmateriales que surjan entre las partes a raíz del uso de la red. Toda interacción se realiza bajo el propio riesgo y cuenta del usuario.</li>
+                        </ul>
+                    </section>
+
+                    <section>
+                        <h3 class="font-bold text-gray-900 mb-2">5. Propiedad Intelectual y Licencia de Uso</h3>
+                        <p>El código fuente, diseño, bases de datos y marca de la plataforma son propiedad exclusiva de su creador. Respecto al contenido y las solicitudes de publicación enviadas por los usuarios, estos conservan sus derechos de autor originales. Sin embargo, al enviar una solicitud de publicación, el usuario otorga a la plataforma una licencia gratuita, perpetua, irrevocable y transferible para usar, modificar, adaptar y publicar dicho material en pro del beneficio de la red de estudiantes y egresados, a criterio exclusivo del Administrador.</p>
+                    </section>
+
+                    <section>
+                        <h3 class="font-bold text-gray-900 mb-2">6. Derechos ARCO (Actualización, Rectificación, Cancelación y Oposición)</h3>
+                        <p>El usuario tiene derecho a conocer, actualizar, rectificar o solicitar la supresión de sus datos personales y la eliminación de su cuenta en cualquier momento. Para ejercer este derecho o escalar cualquier solicitud, el usuario deberá enviar un correo electrónico a la dirección oficial de soporte: <a href="mailto:juanda.fonsecag@gmail.com" class="text-brand-600 font-semibold hover:underline">juanda.fonsecag@gmail.com</a>. La plataforma contará con los tiempos de ley aplicables para dar trámite y respuesta a la solicitud de eliminación técnica de la base de datos.</p>
+                    </section>
+
+                    <section>
+                        <h3 class="font-bold text-gray-900 mb-2">7. Ley Aplicable y Jurisdicción</h3>
+                        <p>Estos Términos y Condiciones se rigen por las leyes de la República de Colombia.</p>
+                    </section>
+                </div>
+            </div>
+        </div>
+
+        <!-- VISTA: ONBOARDING (Formulario primer ingreso) -->
+        <div id="view-onboarding" class="hidden min-h-[80vh] flex items-center justify-center animate-fade-in">
+            <div class="bg-white p-8 md:p-12 rounded-[2.5rem] shadow-[0_20px_50px_rgb(0,0,0,0.08)] border border-gray-100 w-full max-w-2xl relative overflow-hidden">
+                <div class="absolute -top-10 -right-10 w-56 h-56 bg-brand-50 rounded-full blur-2xl -z-10 opacity-70"></div>
+                <div class="text-center mb-8">
+                    <div class="w-16 h-16 bg-brand-50 text-brand-600 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-4 border border-brand-100 shadow-sm">
+                        <i class="ph-duotone ph-hand-waving"></i>
+                    </div>
+                    <h1 class="text-2xl md:text-3xl font-bold text-gray-900">¡Bienvenido a la comunidad!</h1>
+                    <p class="text-gray-500 text-sm mt-2 max-w-lg mx-auto">Cuéntanos un poco sobre ti para que otras personas puedan conectar contigo. <strong class="text-brand-600">Todos los campos son opcionales.</strong></p>
+                </div>
+
+                <form onsubmit="onboardingLogic.save(event)" class="space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="input-label">Nombres</label>
+                            <input id="ob-name" type="text" placeholder="Ej: Juan Carlos" class="input-field onboarding-field" minlength="2">
+                        </div>
+                        <div>
+                            <label class="input-label">Apellidos</label>
+                            <input id="ob-lastname" type="text" placeholder="Ej: Pérez" class="input-field onboarding-field">
+                        </div>
+                        <div>
+                            <label class="input-label">Promoción (Año)</label>
+                            <input id="ob-year" type="number" placeholder="Ej: 2020" class="input-field onboarding-field">
+                        </div>
+                        <div>
+                            <label class="input-label">Ubicación Actual</label>
+                            <input id="ob-location" type="text" placeholder="Ej: Bogotá, Colombia" class="input-field onboarding-field">
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="input-label">Situación Actual</label>
+                            <select id="ob-status" class="input-field onboarding-field">
+                                <option value="sin-definir">Prefiero no decir por ahora</option>
+                                <option value="trabajando">Trabajando</option>
+                                <option value="estudiando">Estudiando</option>
+                                <option value="trabajando-estudiando">Trabajando y estudiando</option>
+                                <option value="emprendiendo">Emprendiendo</option>
+                                <option value="profesor">Profesor</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col-reverse md:flex-row gap-4 pt-6 mt-6 border-t border-gray-100">
+                        <button type="button" onclick="onboardingLogic.skip()" class="w-full md:w-auto px-6 py-3.5 bg-gray-50 hover:bg-gray-100 text-gray-600 font-bold rounded-xl transition border border-gray-200">
+                            Omitir por ahora
+                        </button>
+                        <button type="submit" class="w-full md:flex-1 py-3.5 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-xl shadow-lg shadow-brand-500/30 transition transform hover:scale-[1.02] flex justify-center items-center gap-2" id="btn-save-onboarding">
+                            Guardar y Continuar <i class="ph-bold ph-arrow-right"></i>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- VISTA: ONBOARDING PERFIL PROFESIONAL -->
+        <div id="view-onboarding-profile" class="hidden min-h-[80vh] flex items-center justify-center animate-fade-in py-8">
+            <div class="bg-white p-8 md:p-12 rounded-[2.5rem] shadow-[0_20px_50px_rgb(0,0,0,0.08)] border border-gray-100 w-full max-w-4xl relative overflow-hidden">
+                <div class="absolute -bottom-10 -left-10 w-56 h-56 bg-brand-50 rounded-full blur-2xl -z-10 opacity-70"></div>
+                <div class="text-center mb-8">
+                    <div class="w-16 h-16 bg-brand-50 text-brand-600 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-4 border border-brand-100 shadow-sm">
+                        <i class="ph-duotone ph-identification-card"></i>
+                    </div>
+                    <p class="text-xs font-bold uppercase tracking-[0.2em] text-brand-600 mb-2">Paso 2 de 2</p>
+                    <h1 class="text-2xl md:text-3xl font-bold text-gray-900">Completa otra parte de tu perfil</h1>
+                    <p class="text-gray-500 text-sm mt-2 max-w-2xl mx-auto">Esta sección ayuda a que otros egresados entiendan tu camino profesional, tus intereses y cómo contactarte. <strong class="text-brand-600">Todos los campos son opcionales.</strong></p>
+                </div>
+
+                <form onsubmit="onboardingLogic.saveProfileDetails(event)" class="space-y-6">
+                    <div class="section-card !shadow-none !mb-0">
+                        <h3 class="text-lg font-bold mb-6 flex items-center gap-2 text-gray-900 border-b border-gray-100 pb-3">
+                            <i class="ph-duotone ph-student text-brand-600 text-2xl"></i> Perfil académico y profesional
+                        </h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="input-label">Puesto / Rol actual</label>
+                                <input id="ob-role" type="text" placeholder="Ej: Gerente de Ventas" class="input-field onboarding-field">
+                            </div>
+                            <div>
+                                <label class="input-label">Área de interés</label>
+                                <input id="ob-area" type="text" placeholder="Ej: Tecnología, Finanzas" class="input-field onboarding-field">
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="input-label">Estudios recientes</label>
+                                <input id="ob-studies" type="text" placeholder="Ej: Maestría en Marketing Digital" class="input-field onboarding-field">
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="input-label">¿Qué expectativas/proyecciones tiene sobre usted?</label>
+                                <textarea id="ob-expectations" class="input-field onboarding-field h-24 resize-y" placeholder="Ej: Consolidarme en liderazgo de proyectos, emprender y aportar como mentor en la red."></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="section-card !shadow-none !mb-0">
+                        <h3 class="text-lg font-bold mb-6 flex items-center gap-2 text-gray-900 border-b border-gray-100 pb-3">
+                            <i class="ph-duotone ph-star text-brand-600 text-2xl"></i> Especialización y conexión
+                        </h3>
+                        <div class="space-y-6">
+                            <div>
+                                <label class="input-label">Extracto / Bio</label>
+                                <textarea id="ob-bio" class="input-field onboarding-field h-28 resize-y" placeholder="Cuéntanos brevemente sobre tu experiencia y objetivos..."></textarea>
+                            </div>
+                            <div>
+                                <label class="input-label">Habilidades clave (separadas por comas)</label>
+                                <textarea id="ob-skills" class="input-field onboarding-field h-24 resize-y" placeholder="Ej: Liderazgo, Python, Negociación"></textarea>
+                            </div>
+                            <div>
+                                <label class="input-label">Intereses de conexión</label>
+                                <input id="ob-topics" type="text" placeholder="Ej: Mentoría, inversiones, proyectos" class="input-field onboarding-field">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="section-card !shadow-none !mb-0">
+                        <h3 class="text-lg font-bold mb-6 flex items-center gap-2 text-gray-900 border-b border-gray-100 pb-3">
+                            <i class="ph-duotone ph-share-network text-brand-600 text-2xl"></i> Redes de contacto
+                        </h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="input-label">Celular / WhatsApp</label>
+                                <input id="ob-phone" type="text" placeholder="+57 300 123 4567" class="input-field onboarding-field">
+                            </div>
+                            <div>
+                                <label class="input-label">LinkedIn (URL)</label>
+                                <input id="ob-linkedin" type="text" placeholder="linkedin.com/in/usuario" class="input-field onboarding-field">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col-reverse md:flex-row gap-4 pt-6 mt-6 border-t border-gray-100">
+                        <button type="button" onclick="onboardingLogic.skipProfileDetails()" class="w-full md:w-auto px-6 py-3.5 bg-gray-50 hover:bg-gray-100 text-gray-600 font-bold rounded-xl transition border border-gray-200">
+                            Omitir por ahora
+                        </button>
+                        <button type="submit" class="w-full md:flex-1 py-3.5 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-xl shadow-lg shadow-brand-500/30 transition transform hover:scale-[1.02] flex justify-center items-center gap-2" id="btn-save-onboarding-profile">
+                            Terminar primer ingreso <i class="ph-bold ph-check-circle"></i>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- VISTA: DIRECTORIO -->
+        <div id="view-directory" class="hidden max-w-7xl mx-auto animate-slide-up pb-10">
+            <div class="flex flex-col md:flex-row justify-between items-end mb-8 gap-4 px-2">
+                <div>
+                    <h2 class="text-3xl font-bold text-gray-900 tracking-tight">Directorio</h2>
+                    <p class="text-gray-500 mt-1 text-sm">Conecta con compañeros de tu generación.</p>
+                </div>
+                <div class="flex gap-3 w-full md:w-auto">
+                    <div class="relative flex-1 md:w-72">
+                        <i class="ph ph-magnifying-glass absolute left-3 top-3.5 text-gray-400"></i>
+                        <input type="text" id="directory-search" placeholder="Buscar por nombre, cargo, empresa..." class="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100 transition shadow-sm" oninput="directoryLogic.debouncedFilter()" aria-label="Buscar egresados">
+                    </div>
+                    <input type="number" id="directory-year" placeholder="Promoción" class="w-32 bg-white px-3 py-3 border border-gray-200 rounded-xl hover:bg-gray-50 text-gray-600 shadow-sm transition text-sm font-medium" oninput="directoryLogic.debouncedFilter()" aria-label="Filtrar por año de promoción">
+                    <select id="directory-filter" class="bg-white px-3 py-3 border border-gray-200 rounded-xl hover:bg-gray-50 text-gray-600 shadow-sm transition text-sm font-medium" onchange="directoryLogic.filter()">
+                        <option value="all">Todos</option>
+                        <option value="trabajando">Trabajando</option>
+                        <option value="estudiando">Estudiando</option>
+                        <option value="emprendiendo">Emprendiendo</option>
+                        <option value="trabajando-estudiando">Trabajando y estudiando</option>
+                        <option value="profesor">Profesor</option>
+                    </select>
+                </div>
+            </div>
+
+            <div id="directory-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                <!-- Cards renderizadas via JS -->
+            </div>
+            <div id="directory-load-more" class="hidden justify-center mt-8">
+                <button onclick="directoryLogic.loadMore()" class="px-6 py-3 bg-white border border-gray-200 rounded-xl text-sm font-bold text-gray-700 hover:bg-brand-50 hover:border-brand-200 hover:text-brand-700 transition shadow-sm flex items-center gap-2" aria-label="Ver más egresados">
+                    <i class="ph ph-caret-down"></i> Ver más egresados
+                </button>
+            </div>
+        </div>
+
+        <!-- VISTA: NOVEDADES -->
+        <div id="view-news" class="hidden max-w-5xl mx-auto animate-slide-up pb-10">
+            <div class="mb-10 text-center md:text-left">
+                <h2 class="text-3xl font-bold text-gray-900 mb-2">Novedades y Eventos</h2>
+                <p class="text-gray-500">Mantente al día con lo que sucede en tu comunidad.</p>
+            </div>
+
+            <div id="news-feed" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Feed renderizado via JS -->
+            </div>
+        </div>
+
+        <!-- VISTA: MÓDULOS DE PREPARACIÓN -->
+        <div id="view-exam-modules" class="hidden max-w-7xl mx-auto animate-slide-up pb-12">
+            <div class="mb-8 text-center md:text-left">
+                <span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-brand-50 text-brand-700 text-xs font-bold uppercase tracking-widest border border-brand-100">
+                    <i class="ph-duotone ph-books"></i> Borrador programable
+                </span>
+                <h2 class="text-3xl md:text-4xl font-extrabold text-gray-900 mt-4 mb-3">Módulos de preparación en idiomas</h2>
+                <p class="text-gray-500 max-w-3xl">Estructura inicial para practicar componentes de exámenes internacionales desde la plataforma. Por ahora se excluyen prácticas orales como speaking/production orale porque requieren revisión especializada.</p>
+            </div>
+
+            <div id="exam-modules-grid" class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Módulos TOEFL y DELF renderizados via JS -->
+            </div>
+        </div>
+
+        <!-- VISTA: MENSAJES -->
+        <div id="view-messages" class="hidden h-[calc(100vh-8rem)] max-w-6xl mx-auto bg-white rounded-3xl shadow-xl border border-gray-200 overflow-hidden flex animate-fade-in">
+            <!-- Lista de Chats -->
+            <div id="chat-list-panel" class="w-full md:w-80 lg:w-96 border-r border-gray-100 flex flex-col bg-gray-50/50">
+                <div class="p-5 border-b border-gray-100">
+                    <h2 class="text-lg font-bold text-gray-900">Mensajes</h2>
+                    <div class="mt-3 relative">
+                        <i class="ph ph-magnifying-glass absolute left-3 top-2.5 text-gray-400 text-sm"></i>
+                        <input type="text" placeholder="Buscar conversación..." class="w-full pl-9 pr-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-brand-500 transition">
+                    </div>
+                </div>
+                <div class="flex-1 overflow-y-auto" id="chat-list">
+                    <!-- Items de chat -->
+                </div>
+            </div>
+
+            <!-- Chat Activo -->
+            <div class="hidden md:flex flex-1 flex-col bg-white" id="active-chat-area">
+                <!-- Header -->
+                <div class="p-4 border-b border-gray-100 flex items-center justify-between bg-white z-10">
+                    <div class="flex items-center gap-3">
+                        <button onclick="chatLogic.backToList()" class="md:hidden p-2 rounded-full hover:bg-gray-100 text-gray-500" title="Volver a chats" aria-label="Volver a la lista de chats">
+                            <i class="ph-bold ph-arrow-left"></i>
+                        </button>
+                        <div class="relative">
+                            <img id="chat-header-img" src="" class="w-10 h-10 rounded-full object-cover border border-gray-100">
+                            <span class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-white rounded-full"></span>
+                        </div>
+                        <div>
+                            <h3 id="chat-header-name" class="font-bold text-gray-900 text-sm">Selecciona un chat</h3>
+                            <p class="text-xs text-gray-500">En línea</p>
+                        </div>
+                    </div>
+                    <button class="text-gray-400 hover:text-gray-600 p-2 rounded-full hover:bg-gray-100 transition" aria-label="Opciones del chat"><i class="ph ph-dots-three-vertical text-xl"></i></button>
+                </div>
+
+                <!-- Cuerpo -->
+                <div id="chat-body" class="flex-1 overflow-y-auto p-6 space-y-4 bg-gray-50/30">
+                    <div class="flex flex-col items-center justify-center h-full text-gray-400">
+                        <i class="ph ph-chats-circle text-4xl mb-2"></i>
+                        <p class="text-sm">Envía un mensaje para comenzar</p>
+                    </div>
+                </div>
+
+                <!-- Input -->
+                <div class="p-4 bg-white border-t border-gray-100">
+                    <form onsubmit="chatLogic.send(event)" class="flex gap-2 items-center">
+                                                <input id="chat-input" type="text" placeholder="Escribe un mensaje..." class="flex-1 bg-gray-100 border-0 rounded-full px-5 py-3 focus:ring-2 focus:ring-brand-500 focus:bg-white transition outline-none text-sm">
+                        <button type="submit" class="p-3 bg-brand-600 hover:bg-brand-700 text-white rounded-full transition shadow-md flex items-center justify-center" aria-label="Enviar mensaje"><i class="ph-fill ph-paper-plane-right"></i></button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- VISTA: PERFIL DETALLADO -->
+        <div id="view-profile" class="hidden max-w-4xl mx-auto animate-slide-up pb-20">
+            <div class="bg-white rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden mb-6">
+                <!-- Portada -->
+                <div class="h-48 bg-gradient-to-r from-brand-500 via-brand-700 to-brand-900 relative group">
+                                    </div>
+                
+                <!-- Info Principal -->
+                <div class="px-8 pb-8">
+                    <div class="relative flex flex-col md:flex-row md:items-end gap-6 -mt-12 mb-8">
+                        <div class="relative">
+                            <img src="https://ui-avatars.com/api/?name=Usuario&background=9333ea&color=fff" class="w-36 h-36 rounded-[2rem] border-[6px] border-white shadow-xl bg-white object-cover" id="profile-avatar">
+                        </div>
+                        <div class="flex-1 mt-2 md:mt-0">
+                            <h2 class="text-3xl font-bold text-gray-900" id="display-name">Tu Nombre</h2>
+                            <p class="text-brand-600 font-medium" id="display-role">Tu Cargo</p>
+                           
+                        </div>
+                        <button onclick="profileLogic.save()" id="btn-save-profile" class="bg-brand-600 text-white px-8 py-3 rounded-xl font-bold shadow-lg shadow-brand-500/30 hover:bg-brand-700 transition flex items-center gap-2" aria-label="Guardar cambios del perfil">
+                            <i class="ph-bold ph-floppy-disk"></i> Guardar Cambios
+                        </button>
+                    </div>
+
+                    <form id="profileForm" class="space-y-8">
+                        <!-- 1. INFORMACIÓN BÁSICA -->
+                        <div class="section-card">
+                            <h3 class="text-lg font-bold mb-6 flex items-center gap-2 text-gray-900 border-b border-gray-100 pb-3">
+                                <i class="ph-duotone ph-user-circle text-brand-600 text-2xl"></i> Información Personal
+                            </h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label class="input-label">Nombres</label>
+                                    <input type="text" id="p-name" class="input-field" placeholder="Ej: Juan" minlength="2">
+                                </div>
+                                <div>
+                                    <label class="input-label">Apellidos</label>
+                                    <input type="text" id="p-lastname" class="input-field" placeholder="Ej: Pérez">
+                                </div>
+                                <div>
+                                    <label class="input-label">Promoción (Año)</label>
+                                    <input type="text" id="p-year" class="input-field" placeholder="Ej: 2020">
+                                </div>
+                                <div>
+                                    <label class="input-label">Ubicación (Ciudad, País)</label>
+                                    <input type="text" id="p-location" class="input-field" placeholder="Ej: Medellín, Colombia">
+                                </div>
+                                <div class="md:col-span-2">
+                                    <label class="input-label">¿Qué expectativas/proyecciones tiene sobre usted?</label>
+                                    <textarea id="p-expectations" class="input-field h-24 resize-y" placeholder="Ej: Consolidarme en liderazgo de proyectos, emprender y aportar como mentor en la red."></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 2. PERFIL ACADÉMICO -->
+                        <div class="section-card">
+                            <h3 class="text-lg font-bold mb-6 flex items-center gap-2 text-gray-900 border-b border-gray-100 pb-3">
+                                <i class="ph-duotone ph-student text-brand-600 text-2xl"></i> Perfil Académico y Profesional
+                            </h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div class="md:col-span-2">
+                                    <label class="input-label">Situación Actual</label>
+                                    <select id="p-status" class="input-field">
+                                        <option value="trabajando">Trabajando</option>
+                                        <option value="estudiando">Estudiando</option>
+                                        <option value="trabajando-estudiando">Trabajando y estudiando</option>
+                                        <option value="emprendiendo">Emprendiendo</option>
+                                        <option value="profesor">Profesor</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="input-label">Puesto / Rol Actual</label>
+                                    <input type="text" id="p-role" class="input-field" placeholder="Ej: Gerente de Ventas">
+                                </div>
+                                <div>
+                                    <label class="input-label">Área de Interés</label>
+                                    <input type="text" id="p-area" class="input-field" placeholder="Ej: Tecnología, Finanzas">
+                                </div>
+                                <div class="md:col-span-2">
+                                    <label class="input-label">Estudios Recientes</label>
+                                    <input type="text" id="p-studies" class="input-field" placeholder="Ej: Maestría en Marketing Digital">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 3. ESPECIALIZACIÓN -->
+                        <div class="section-card">
+                            <h3 class="text-lg font-bold mb-6 flex items-center gap-2 text-gray-900 border-b border-gray-100 pb-3">
+                                <i class="ph-duotone ph-star text-brand-600 text-2xl"></i> Especialización
+                            </h3>
+                            <div class="space-y-6">
+                                <div>
+                                    <label class="input-label">Extracto / Bio (Breve descripción)</label>
+                                    <textarea id="p-bio" class="input-field h-36 resize-y" placeholder="Cuéntanos sobre tu experiencia y objetivos..."></textarea>
+                                </div>
+                                <div>
+                                    <label class="input-label">Habilidades Clave (Separadas por comas)</label>
+                                    <textarea id="p-skills" class="input-field h-28 resize-y" placeholder="Ej: Liderazgo, Python, Negociación"></textarea>
+                                </div>
+                                <div>
+                                    <label class="input-label">Intereses de Conexión</label>
+                                    <input type="text" id="p-topics" class="input-field" placeholder="Ej: Mentoria, Inversiones, Proyectos">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 4. CONTACTO -->
+                        <div class="section-card">
+                            <h3 class="text-lg font-bold mb-6 flex items-center gap-2 text-gray-900 border-b border-gray-100 pb-3">
+                                <i class="ph-duotone ph-share-network text-brand-600 text-2xl"></i> Redes de Contacto
+                            </h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label class="input-label">Celular / WhatsApp</label>
+                                    <div class="relative">
+                                        <i class="ph ph-whatsapp-logo absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-lg"></i>
+                                        <input type="text" id="p-phone" class="input-field pl-11" placeholder="+57 300 123 4567">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="input-label">LinkedIn (URL)</label>
+                                    <div class="relative">
+                                        <i class="ph ph-linkedin-logo absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-lg"></i>
+                                        <input type="text" id="p-linkedin" class="input-field pl-11" placeholder="linkedin.com/in/usuario">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+
+                    <div class="mt-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 flex items-start gap-2">
+                        <i class="ph-bold ph-warning-circle text-base mt-0.5"></i>
+                        <p><strong>Recordatorio:</strong> después de editar tu perfil, haz clic en <strong>“Guardar Cambios”</strong> para no perder la información.</p>
+                    </div>
+                    
+                    <div class="flex justify-center pt-6 border-t border-gray-100">
+                        <button onclick="authLogic.logout()" class="text-red-500 font-bold text-sm hover:text-red-700 flex items-center gap-2 transition px-4 py-2 rounded-lg hover:bg-red-50">
+                            <i class="ph-bold ph-sign-out"></i> Cerrar Sesión
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- VISTA: ADMIN -->
+        <div id="view-admin" class="hidden w-full max-w-7xl mx-auto pb-10 animate-fade-in">
+            <div class="mb-8">
+                <h2 class="text-3xl font-bold text-gray-900 tracking-tight flex items-center gap-3">
+                    <i class="ph-bold ph-shield-star text-brand-600"></i> Gestión del Ecosistema
+                </h2>
+                <p class="text-gray-500 mt-1 text-sm">Gestiona la comunidad y el contenido de la plataforma.</p>
+            </div>
+
+            <div class="flex gap-6 mb-6 border-b border-gray-200">
+                <button onclick="adminLogic.switchTab('users')" id="tab-users" class="pb-3 text-sm font-bold border-b-2 border-brand-600 text-brand-600 transition">Gestión de Usuarios</button>
+                <button onclick="adminLogic.switchTab('news')" id="tab-news-admin" class="pb-3 text-sm font-bold border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition">Gestión de Noticias</button>
+            </div>
+
+            <div id="admin-users-tab" class="space-y-4">
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm whitespace-nowrap">
+                            <thead class="bg-gray-50/50 text-gray-500 border-b border-gray-100">
+                                <tr>
+                                    <th class="px-6 py-4 font-semibold">Egresado</th>
+                                    <th class="px-6 py-4 font-semibold">Email</th>
+                                    <th class="px-6 py-4 font-semibold">Recibe Novedades</th>
+                                    <th class="px-6 py-4 font-semibold">Estado Cuenta</th>
+                                    <th class="px-6 py-4 font-semibold text-right">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-users-body" class="divide-y divide-gray-50"></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div id="admin-user-editor" class="hidden bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-gray-100">
+                    <div class="flex items-center justify-between gap-4 mb-6">
+                        <h3 class="text-lg font-bold text-gray-900 flex items-center gap-2">
+                            <i class="ph-bold ph-user-gear text-brand-600 text-xl"></i> Editar perfil de egresado
+                        </h3>
+                        <button type="button" onclick="adminLogic.cancelUserEdit()" class="px-4 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-sm font-semibold text-gray-700 transition">Cancelar</button>
+                    </div>
+                    <form id="admin-user-form" class="grid grid-cols-1 md:grid-cols-2 gap-4" onsubmit="adminLogic.saveUserProfile(event)">
+                        <input id="admin-edit-user-id" type="hidden">
+                        <div><label class="input-label">Nombre</label><input id="admin-edit-first-name" class="input-field" required></div>
+                        <div><label class="input-label">Apellido</label><input id="admin-edit-last-name" class="input-field"></div>
+                        <div><label class="input-label">Rol / Cargo</label><input id="admin-edit-role" class="input-field"></div>
+                        <div><label class="input-label">Ubicación</label><input id="admin-edit-location" class="input-field"></div>
+                        <div><label class="input-label">Año de graduación</label><input id="admin-edit-year" class="input-field"></div>
+                        <div><label class="input-label">Estado actual</label><input id="admin-edit-status" class="input-field" placeholder="trabajando / estudiando"></div>
+                        <div><label class="input-label">Área</label><input id="admin-edit-area" class="input-field"></div>
+                        <div><label class="input-label">Estudios</label><input id="admin-edit-studies" class="input-field"></div>
+                        <div class="md:col-span-2"><label class="input-label">Biografía</label><textarea id="admin-edit-bio" class="input-field h-24 resize-none"></textarea></div>
+                        <div><label class="input-label">Habilidades (coma separadas)</label><input id="admin-edit-skills" class="input-field"></div>
+                        <div><label class="input-label">LinkedIn</label><input id="admin-edit-linkedin" class="input-field"></div>
+                        <div><label class="input-label">Teléfono</label><input id="admin-edit-phone" class="input-field"></div>
+                        <div class="md:col-span-2"><label class="input-label">Proyecciones / expectativas</label><textarea id="admin-edit-expectations" class="input-field h-24 resize-none" placeholder="Metas, expectativas o proyecciones del estudiante"></textarea></div>
+                        <div class="md:col-span-2 flex justify-end">
+                            <button type="submit" class="px-6 py-3 bg-brand-600 text-white font-bold rounded-xl shadow-lg shadow-brand-500/30 hover:bg-brand-700 transition">Guardar cambios</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div id="admin-news-tab" class="hidden space-y-8">
+                <div class="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-gray-100">
+                    <h3 id="admin-news-form-title" class="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2">
+                        <i class="ph-duotone ph-newspaper text-brand-600 text-xl"></i> Publicar Nueva Noticia
+                    </h3>
+                    <form class="grid grid-cols-1 md:grid-cols-2 gap-6" onsubmit="adminLogic.addNews(event)">
+                        <div>
+                            <label class="input-label">Título</label>
+                            <input id="admin-news-title" type="text" required class="input-field" placeholder="Ej: Nueva Alianza Estratégica">
+                        </div>
+                        <div>
+                            <label class="input-label">Categoría</label>
+                            <input id="admin-news-category" type="text" required class="input-field" placeholder="Ej: Evento, Empleo, Noticia">
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="input-label">Resumen / Contenido</label>
+                            <textarea id="admin-news-summary" required class="input-field h-24 resize-none" placeholder="Breve descripción de la noticia... Incluye enlaces con https:// o www."></textarea>
+                            <p class="mt-2 text-xs text-gray-500 flex items-center gap-1"><i class="ph-bold ph-link"></i> Los enlaces incluidos aparecerán como enlaces clicables al publicar.</p>
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="input-label">URL de Imagen (Opcional)</label>
+                            <input id="admin-news-img" type="url" class="input-field" placeholder="https://ejemplo.com/imagen.jpg">
+                        </div>
+                        <div class="md:col-span-2 flex justify-end">
+                            <div class="flex gap-3">
+                                <button type="button" id="admin-news-cancel-edit" onclick="adminLogic.cancelNewsEdit()" class="hidden px-5 py-3 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition">Cancelar edición</button>
+                                <button type="submit" id="admin-news-submit-btn" class="px-6 py-3 bg-brand-600 text-white font-bold rounded-xl shadow-lg shadow-brand-500/30 hover:bg-brand-700 transition">Publicar Noticia</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div class="p-6 border-b border-gray-100">
+                        <h3 class="text-lg font-bold text-gray-900">Noticias Publicadas</h3>
+                    </div>
+                    <div id="admin-news-list" class="divide-y divide-gray-50"></div>
+                </div>
+            </div>
+        </div>
+
     </main>
 
+    <!-- 3.5 NAVEGACIÓN MÓVIL -->
+    <nav id="mobile-nav" class="hidden md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur border-t border-gray-200 grid grid-cols-6">
+        <button id="mnav-home" onclick="router.navigate('home')" class="py-3 text-xs font-semibold text-gray-500 flex flex-col items-center justify-center gap-1 min-w-0">
+            <i class="ph ph-house text-lg"></i><span>Inicio</span>
+        </button>
+        <button id="mnav-dir" onclick="router.navigate('directory')" class="py-3 text-xs font-semibold text-gray-500 flex flex-col items-center justify-center gap-1 min-w-0">
+            <i class="ph ph-users text-lg"></i><span>Directorio</span>
+        </button>
+        <button id="mnav-news" onclick="router.navigate('news')" class="py-3 text-xs font-semibold text-gray-500 flex flex-col items-center justify-center gap-1 min-w-0">
+            <i class="ph ph-newspaper text-lg"></i><span>Novedades</span>
+        </button>
+        <button id="mnav-exams" onclick="router.navigate('exam-modules')" class="py-3 text-xs font-semibold text-gray-500 flex flex-col items-center justify-center gap-1 min-w-0">
+            <i class="ph ph-books text-lg"></i><span>Práctica</span>
+        </button>
+        <button id="mnav-msg" onclick="router.navigate('messages')" class="py-3 text-xs font-semibold text-gray-500 flex flex-col items-center justify-center gap-1 min-w-0">
+            <i class="ph ph-chats-circle text-lg"></i><span>Mensajes</span>
+        </button>
+        <button id="mnav-profile" onclick="router.navigate('profile')" class="py-3 text-xs font-semibold text-gray-500 flex flex-col items-center justify-center gap-1 min-w-0">
+            <i class="ph ph-user-circle text-lg"></i><span>Perfil</span>
+        </button>
+    </nav>
+
+    <!-- 3. MODAL DE NOTICIAS -->
+    <div id="modal-news" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm bg-black/40">
+        <div class="bg-white rounded-3xl w-full max-w-2xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden animate-fade-in relative">
+            <button onclick="uiLogic.closeNewsModal()" class="absolute top-4 right-4 bg-white/50 hover:bg-white p-2 rounded-full backdrop-blur-md transition z-10" aria-label="Cerrar noticia"><i class="ph-bold ph-x text-xl"></i></button>
+            <div class="h-64 relative shrink-0">
+                <img id="news-modal-img" src="" class="w-full h-full object-cover">
+                <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+                <div class="absolute bottom-6 left-6 right-6 text-white">
+                    <span id="news-modal-cat" class="px-3 py-1 bg-brand-600 rounded-lg text-xs font-bold uppercase tracking-wide mb-2 inline-block">Categoría</span>
+                    <h2 id="news-modal-title" class="text-2xl md:text-3xl font-bold leading-tight">Título</h2>
+                </div>
+            </div>
+            <div class="p-8 overflow-y-auto">
+                <div class="flex items-center gap-4 text-sm text-gray-500 mb-6 border-b border-gray-100 pb-4">
+                    <span class="flex items-center gap-1"><i class="ph-bold ph-calendar"></i> <span id="news-modal-date">Fecha</span></span>
+                    <span class="flex items-center gap-1"><i class="ph-bold ph-user"></i> Admin</span>
+                </div>
+                <p id="news-modal-body" class="text-gray-600 leading-relaxed text-lg whitespace-pre-wrap break-words">Contenido...</p>
+                <div class="mt-8 pt-6 border-t border-gray-100 flex justify-end">
+                    <button onclick="uiLogic.closeNewsModal()" class="px-6 py-2.5 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. SLIDE PANEL DE PERFIL PÚBLICO -->
+        <div id="slide-panel-overlay" class="fixed inset-0 z-[60] hidden">
+            <div class="absolute inset-0 bg-black/20 backdrop-blur-sm transition-opacity" onclick="directoryLogic.closeProfile()"></div>
+            <div id="slide-panel-content" class="absolute right-0 top-0 h-full w-full max-w-md bg-white shadow-2xl overflow-y-auto animate-slide-in-right flex flex-col">
+                <div class="relative h-40 bg-gradient-to-r from-brand-600 to-brand-900 shrink-0">
+                    <button onclick="directoryLogic.closeProfile()" class="absolute top-4 left-4 text-white hover:bg-white/20 p-2 rounded-full transition z-10" aria-label="Cerrar perfil"><i class="ph-bold ph-arrow-right text-xl"></i></button>
+                    <img id="sp-img" src="" class="absolute left-6 -bottom-14 w-28 h-28 rounded-2xl border-[4px] border-white shadow-lg bg-white object-cover z-10">
+                </div>
+                <div class="px-6 pt-16 pb-10 flex-1">
+                    <div class="flex justify-between items-end mb-4">
+                        <span id="sp-year" class="mb-2 px-3 py-1 bg-brand-50 text-brand-600 rounded-lg text-xs font-bold border border-brand-100">Promoción</span>
+                    </div>
+                <div class="mb-6">
+                    <h2 id="sp-name" class="text-2xl font-bold text-gray-900 leading-tight">Nombre Usuario</h2>
+                    <p id="sp-role" class="text-lg text-brand-600 font-medium mt-1">Cargo / Puesto</p>
+                    <div class="flex items-center gap-2 text-gray-500 text-sm mt-2"><i class="ph-fill ph-map-pin"></i> <span id="sp-location">Ubicación</span></div>
+                </div>
+                <div class="flex gap-3 mb-8">
+                    <button onclick="chatLogic.startChatFromDirectory()" class="flex-1 bg-brand-600 text-white font-bold py-2.5 rounded-xl shadow-md shadow-brand-500/30 hover:bg-brand-700 transition flex justify-center items-center gap-2"><i class="ph-bold ph-chat-circle-text"></i> Mensaje</button>
+                    <a id="sp-linkedin-btn" href="#" target="_blank" class="hidden w-12 flex items-center justify-center bg-blue-50 text-[#0077b5] rounded-xl border border-blue-100 hover:bg-blue-100 transition"><i class="ph-bold ph-linkedin-logo text-xl"></i></a>
+                    <a id="sp-whatsapp-btn" href="#" target="_blank" class="hidden w-12 flex items-center justify-center bg-green-50 text-[#25D366] rounded-xl border border-green-100 hover:bg-green-100 transition"><i class="ph-bold ph-whatsapp-logo text-xl"></i></a>
+                </div>
+                <div class="space-y-6">
+                    <div>
+                        <h4 class="text-sm font-bold text-gray-900 uppercase tracking-wide mb-3">Sobre mí</h4>
+                        <p id="sp-bio" class="text-gray-600 text-sm leading-relaxed bg-gray-50 p-4 rounded-xl border border-gray-100">Sin información disponible.</p>
+                    </div>
+                    <div>
+                        <h4 class="text-sm font-bold text-gray-900 uppercase tracking-wide mb-3">Proyecciones</h4>
+                        <p id="sp-expectations" class="text-gray-600 text-sm leading-relaxed bg-gray-50 p-4 rounded-xl border border-gray-100">No especificadas.</p>
+                    </div>
+                    <div>
+                        <h4 class="text-sm font-bold text-gray-900 uppercase tracking-wide mb-3">Información Académica</h4>
+                        <div class="detail-row"><div class="detail-icon"><i class="ph-duotone ph-student"></i></div><div><p class="text-xs text-gray-500 font-semibold uppercase">Estudios</p><p id="sp-studies" class="text-gray-900 font-medium text-sm">No especificado</p></div></div>
+                        <div class="detail-row"><div class="detail-icon"><i class="ph-duotone ph-briefcase"></i></div><div><p class="text-xs text-gray-500 font-semibold uppercase">Área / Sector</p><p id="sp-area" class="text-gray-900 font-medium text-sm">No especificado</p></div></div>
+                    </div>
+                    <div>
+                        <h4 class="text-sm font-bold text-gray-900 uppercase tracking-wide mb-3">Habilidades</h4>
+                        <div id="sp-skills" class="flex flex-wrap gap-2"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase (compat para script clásico) -->
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore-compat.js"></script>
     <script src="shared.js"></script>
     <script>
-        // Landing page — no automatic redirect.
-        // If already logged in, buttons still work as links to their pages.
-        auth.onAuthStateChanged((user) => {
-            // No automatic redirect from landing page.
-            // Users can choose to go to register or directory via links.
+        const firebaseConfig = {
+          apiKey: "AIzaSyBoVTqroZ7zR-3a5QGy5CzK19a4422t0Rg",
+          authDomain: "red-egresados-65a1a.firebaseapp.com",
+          projectId: "red-egresados-65a1a",
+          storageBucket: "red-egresados-65a1a.firebasestorage.app",
+          messagingSenderId: "874010522484",
+          appId: "1:874010522484:web:28881821d110defd3b7221",
+          measurementId: "G-85C6M45M7N"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        const artifactsRoot = db
+          .collection('artifacts')
+          .doc(firebaseConfig.appId);
+
+        const alumniCollection = artifactsRoot
+          .collection('public')
+          .doc('data')
+          .collection('alumni');
+
+        const newsCollection = artifactsRoot
+          .collection('public')
+          .doc('data')
+          .collection('news');
+
+        const userChatsCollection = (uid) => artifactsRoot
+          .collection('users')
+          .doc(uid)
+          .collection('chats');
+
+        const userChatMessagesCollection = (uid, chatId) => userChatsCollection(uid)
+          .doc(chatId)
+          .collection('messages');
+
+        // ── Constantes ────────────────────────────────────────────────────────────
+        const STATUS = {
+            TRABAJANDO: 'trabajando',
+            ESTUDIANDO: 'estudiando',
+            TRABAJANDO_ESTUDIANDO: 'trabajando-estudiando',
+            EMPRENDIENDO: 'emprendiendo',
+            PROFESOR: 'profesor',
+            SIN_DEFINIR: 'sin-definir'
+        };
+
+        const ACCOUNT_STATUS = {
+            ACTIVO: 'activo',
+            SUSPENDIDO: 'suspendido'
+        };
+
+        const DIRECTORY_PAGE_SIZE = 12;
+
+        // ── Utilidades ────────────────────────────────────────────────────────────
+        function sanitizeHTML(str) {
+            const div = document.createElement('div');
+            div.textContent = String(str ?? '');
+            return div.innerHTML;
+        }
+
+        function renderTextWithLinks(element, text) {
+            const content = String(text ?? '');
+            const urlPattern = /(?:https?:\/\/|www\.)[^\s<]+/gi;
+            const fragment = document.createDocumentFragment();
+            let lastIndex = 0;
+
+            for (const match of content.matchAll(urlPattern)) {
+                const matchedUrl = match[0];
+                const cleanUrl = matchedUrl.replace(/[.,!?;:)'"\]]+$/g, '');
+                const trailingText = matchedUrl.slice(cleanUrl.length);
+
+                fragment.append(document.createTextNode(content.slice(lastIndex, match.index)));
+
+                const link = document.createElement('a');
+                link.href = /^www\./i.test(cleanUrl) ? `https://${cleanUrl}` : cleanUrl;
+                link.textContent = cleanUrl;
+                link.target = '_blank';
+                link.rel = 'noopener noreferrer';
+                link.className = 'text-brand-600 font-semibold underline decoration-brand-300 underline-offset-2 hover:text-brand-800 transition';
+                fragment.append(link);
+
+                if (trailingText) fragment.append(document.createTextNode(trailingText));
+                lastIndex = match.index + matchedUrl.length;
+            }
+
+            fragment.append(document.createTextNode(content.slice(lastIndex)));
+            element.replaceChildren(fragment);
+        }
+
+        function debounce(fn, delay = 300) {
+            let timer;
+            return (...args) => { clearTimeout(timer); timer = setTimeout(() => fn(...args), delay); };
+        }
+
+        function isValidLinkedInUrl(url) {
+            if (!url) return false;
+            const normalized = url.startsWith('http') ? url : `https://${url}`;
+            try {
+                const u = new URL(normalized);
+                return u.hostname.includes('linkedin.com');
+            } catch { return false; }
+        }
+
+        function normalizeLinkedInUrl(url) {
+            if (!url) return '';
+            return url.startsWith('http') ? url : `https://${url}`;
+        }
+
+        function isValidPhone(phone) {
+            const digits = String(phone || '').replace(/[^0-9+]/g, '');
+            return digits.replace(/\+/g, '').length >= 7;
+        }
+
+        // ── Estado global ─────────────────────────────────────────────────────────
+        const state = {
+            user: null,
+            view: 'home',
+            data: {
+                alumni: [],
+                news: [
+                    { id: 1, title: "Encuentro Anual de Egresados 2024", category: "Evento", date: "15 Oct", summary: "Únete a nosotros para una noche de networking y celebración.", img: "https://placehold.co/600x400/1e3a8a/FFF?text=Evento" },
+                    { id: 2, title: "Senior Developer Vacancy", category: "Empleo", date: "Hace 2h", summary: "Empresa aliada busca desarrollador Full Stack con experiencia.", img: "https://placehold.co/600x400/2563eb/FFF?text=Empleo" },
+                ],
+                chats: []
+            },
+            examModules: [
+                {
+                    code: 'TOEFL',
+                    title: 'Módulo TOEFL',
+                    language: 'Inglés académico',
+                    level: 'Preparación internacional',
+                    icon: 'ph-duotone ph-globe-hemisphere-west',
+                    accent: 'blue',
+                    description: 'Borrador para practicar habilidades del examen TOEFL sin incluir speaking en esta primera versión.',
+                    practices: [
+                        { name: 'Reading', focus: 'Comprensión de textos académicos', format: 'Lecturas cortas + preguntas de selección', status: 'Básico' },
+                        { name: 'Listening', focus: 'Comprensión auditiva', format: 'Audio o video + preguntas guiadas', status: 'Básico' },
+                        { name: 'Writing', focus: 'Respuesta escrita estructurada', format: 'Prompt + planeador + autoevaluación', status: 'Borrador' }
+                    ],
+                    excluded: 'Speaking queda por fuera temporalmente por requerir evaluación oral especializada.'
+                },
+                {
+                    code: 'DELF',
+                    title: 'Módulo DELF',
+                    language: 'Francés',
+                    level: 'Preparación A1-B2',
+                    icon: 'ph-duotone ph-flag',
+                    accent: 'purple',
+                    description: 'Borrador para organizar prácticas del DELF enfocadas en comprensión y producción escrita.',
+                    practices: [
+                        { name: 'Compréhension écrite', focus: 'Comprensión de textos en francés', format: 'Texto corto + preguntas de comprensión', status: 'Básico' },
+                        { name: 'Compréhension orale', focus: 'Escucha de situaciones cotidianas o académicas', format: 'Audio + preguntas por nivel', status: 'Básico' },
+                        { name: 'Production écrite', focus: 'Escritura de mensajes, opiniones o textos breves', format: 'Consigna + estructura sugerida', status: 'Borrador' }
+                    ],
+                    excluded: 'Production orale queda por fuera temporalmente por requerir interacción y evaluación oral.'
+                }
+            ],
+            profile: {
+                firstName: "", lastName: "", graduationYear: "", location: "",
+                status: STATUS.TRABAJANDO, role: "", area: "", studies: "",
+                bio: "", skills: "", topics: "", expectations: "", phone: "", linkedin: "",
+                onboardingCompleted: false
+            },
+            guestMode: false,
+            activeChatId: null,
+            messagesByChat: {},
+            selectedDirectoryUserId: null,
+            directoryLoading: false,
+            directoryPage: 1,
+            adminEmail: 'juanda.fonsecag@gmail.com',
+            adminTab: 'users',
+            editingNewsId: null,
+            listeners: {
+                chats: null,
+                messages: null
+            }
+        };
+
+        function getDisplayNameFromProfileOrAuth() {
+            const fullName = `${state.profile.firstName || ''} ${state.profile.lastName || ''}`.trim();
+            return fullName || state.user?.displayName || 'Usuario';
+        }
+
+        function refreshHeaderIdentity() {
+            const fallbackName = state.user?.displayName || state.user?.email?.split('@')[0] || 'Usuario';
+            const name = getDisplayNameFromProfileOrAuth() || fallbackName;
+            const authPhoto = state.user?.photoURL || '';
+            const avatar = state.profile.photoURL || authPhoto || buildAvatarUrl(name);
+            const avatarEl = document.getElementById('header-avatar');
+            const triggerEl = document.getElementById('profile-menu-trigger');
+            if (avatarEl) avatarEl.src = avatar;
+            if (triggerEl) triggerEl.title = `Perfil de ${name}`;
+        }
+
+        function getUserAvatarUrl() {
+            return state.profile.photoURL || buildAvatarUrl(getDisplayNameFromProfileOrAuth());
+        }
+
+        function isAdminUser() {
+            const email = String(state.user?.email || '').toLowerCase().trim();
+            const allowedExact = [state.adminEmail, 'juanda.fonsecag'];
+            const allowedPrefixes = ['juanda.fonsecag@'];
+            return allowedExact.includes(email) || allowedPrefixes.some(prefix => email.startsWith(prefix));
+        }
+
+        const AUTH_ERROR_MESSAGES = {
+            'auth/user-not-found': 'No existe la cuenta.',
+            'auth/wrong-password': 'La contraseña es incorrecta.',
+            'auth/invalid-credential': 'Correo o contraseña incorrectos.',
+            'auth/invalid-email': 'El correo no tiene un formato válido.',
+            'auth/email-already-in-use': 'Ese correo ya está registrado.',
+            'auth/weak-password': 'La contraseña es muy débil.',
+            'auth/popup-closed-by-user': 'Cerraste la ventana de Google antes de terminar.',
+            'auth/cancelled-popup-request': 'Se canceló la solicitud con Google.',
+            'auth/network-request-failed': 'No hay conexión a internet. Intenta nuevamente.'
+        };
+
+        function getFriendlyAuthError(error, fallback = 'Ocurrió un error de autenticación.') {
+            return AUTH_ERROR_MESSAGES[error?.code] || fallback;
+        }
+
+        const authLogic = {
+            login: async (e) => {
+                e.preventDefault();
+                const email = document.getElementById('login-email').value.trim();
+                const password = document.getElementById('login-password').value;
+                const feedback = document.getElementById('auth-feedback');
+
+                try {
+                    state.guestMode = false;
+                    await auth.signInWithEmailAndPassword(email, password);
+                    feedback.textContent = '';
+                    feedback.classList.remove('text-red-600');
+                } catch (error) {
+                    feedback.classList.add('text-red-600');
+                    feedback.textContent = getFriendlyAuthError(error, 'No pudimos iniciar sesión.');
+                }
+            },
+            registerWithEmail: async () => {
+                const newsletterInput = document.getElementById('register-newsletter');
+                if (newsletterInput) newsletterInput.checked = true;
+                if (state.user) {
+                    router.navigate('profile');
+                    return;
+                }
+                router.navigate('register');
+            },
+            submitRegister: async (e) => {
+                e.preventDefault();
+                const email = document.getElementById('register-email').value.trim();
+                const password = document.getElementById('register-password').value;
+                const confirm = document.getElementById('register-password-confirm').value;
+                const acceptedPrivacy = document.getElementById('register-privacy').checked;
+                const wantsNewsletter = document.getElementById('register-newsletter').checked;
+                const feedback = document.getElementById('register-feedback');
+
+                if (!email || !password) {
+                    feedback.textContent = 'Completa email y contraseña.';
+                    return;
+                }
+                if (password.length < 6) {
+                    feedback.textContent = 'La contraseña debe tener al menos 6 caracteres.';
+                    return;
+                }
+                if (password !== confirm) {
+                    feedback.textContent = 'Las contraseñas no coinciden.';
+                    return;
+                }
+                if (!acceptedPrivacy) {
+                    feedback.textContent = 'Debes aceptar la política de tratamiento de datos.';
+                    return;
+                }
+
+                try {
+                    state.guestMode = false;
+                    const cred = await auth.createUserWithEmailAndPassword(email, password);
+                    const payload = {
+                        email,
+                        privacyAccepted: true,
+                        newsletterOptIn: wantsNewsletter,
+                        newsletterOptInUpdatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                        onboardingCompleted: false,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    };
+                    await alumniCollection.doc(cred.user.uid).set(payload, { merge: true });
+                    emailLogic.prepareWelcomeStructure(email);
+                    feedback.textContent = 'Cuenta creada correctamente.';
+                } catch (error) {
+                    feedback.textContent = getFriendlyAuthError(error, 'No pudimos crear la cuenta.');
+                }
+            },
+            registerWithGoogle: async () => {
+                const feedback = document.getElementById('register-feedback');
+                const provider = new firebase.auth.GoogleAuthProvider();
+                const acceptedPrivacy = document.getElementById('register-privacy').checked;
+                if (!acceptedPrivacy) {
+                    feedback.textContent = 'Debes aceptar la política de tratamiento de datos.';
+                    return;
+                }
+                try {
+                    state.guestMode = false;
+                    const result = await auth.signInWithPopup(provider);
+                    await alumniCollection.doc(result.user.uid).set({
+                        email: result.user.email || '',
+                        privacyAccepted: true,
+                        newsletterOptIn: true,
+                        newsletterOptInUpdatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                        onboardingCompleted: false,
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    }, { merge: true });
+                    feedback.textContent = 'Preferencias guardadas correctamente.';
+                } catch (error) {
+                    feedback.textContent = getFriendlyAuthError(error, 'No pudimos registrarte con Google.');
+                }
+            },
+            loginWithGoogle: async () => {
+                const feedback = document.getElementById('auth-feedback');
+                const provider = new firebase.auth.GoogleAuthProvider();
+                try {
+                    state.guestMode = false;
+                    await auth.signInWithPopup(provider);
+                    feedback.textContent = '';
+                    feedback.classList.remove('text-red-600');
+                } catch (error) {
+                    feedback.classList.add('text-red-600');
+                    feedback.textContent = getFriendlyAuthError(error, 'No pudimos iniciar sesión con Google.');
+                }
+            },
+            browseAsGuest: async () => {
+                state.guestMode = true;
+                state.user = { uid: 'guest-view', displayName: 'Invitado' };
+                refreshHeaderIdentity();
+                const adminBtn = document.getElementById('nav-admin');
+                if (adminBtn) adminBtn.classList.add('hidden');
+                router.navigate('directory');
+                await loadAlumni();
+            },
+            logout: async () => {
+                if (!state.guestMode) {
+                    await auth.signOut();
+                }
+                state.guestMode = false;
+                state.user = null;
+                refreshHeaderIdentity();
+                const adminBtn = document.getElementById('nav-admin');
+                if (adminBtn) adminBtn.classList.add('hidden');
+                router.navigate('auth');
+            }
+        };
+
+        const emailLogic = {
+            prepareWelcomeStructure: (toEmail) => {
+                const structure = {
+                    to: toEmail,
+                    subject: '¡Gracias por unirte a CONNECTING!',
+                    text: 'Gracias por registrarte en CONNECTING. Ya puedes iniciar sesión y completar tu perfil.',
+                    html: `<h2>¡Bienvenido(a) a CONNECTING!</h2><p>Gracias por registrarte en la red de egresados.</p><p>Te invitamos a completar tu perfil para conectar mejor con la comunidad.</p>`
+                };
+                console.info('Estructura de correo de bienvenida lista:', structure);
+                return structure;
+            }
+        };
+
+        function hasValidFirstName(value) {
+            return String(value || '').trim().length >= 2;
+        }
+
+        const onboardingLogic = {
+            save: async (e) => {
+                e.preventDefault();
+                if(!state.user) return;
+
+                const btn = document.getElementById('btn-save-onboarding');
+                const originalText = btn.innerHTML;
+                btn.disabled = true;
+                btn.innerHTML = `<i class="ph-bold ph-spinner animate-spin"></i> Guardando...`;
+
+                const payload = {
+                    firstName: document.getElementById('ob-name').value.trim(),
+                    lastName: document.getElementById('ob-lastname').value.trim(),
+                    graduationYear: document.getElementById('ob-year').value.trim(),
+                    location: document.getElementById('ob-location').value.trim(),
+                    status: document.getElementById('ob-status').value,
+                    email: state.user.email || '',
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                };
+
+                try {
+                    const docRef = alumniCollection.doc(state.user.uid);
+                    const exists = (await docRef.get()).exists;
+                    if (!exists) payload.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+                    await docRef.set(payload, { merge: true });
+
+                    state.profile = { ...state.profile, ...payload };
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                    router.navigate('onboarding-profile');
+                } catch (error) {
+                    alert('Hubo un error al guardar los datos: ' + (error.message || 'error desconocido'));
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                }
+            },
+            skip: async () => {
+                if(!state.user) return;
+                router.navigate('onboarding-profile');
+            },
+            populateProfileDetails: () => {
+                const p = state.profile;
+                const fields = {
+                    'ob-role': p.role || '',
+                    'ob-area': p.area || '',
+                    'ob-studies': p.studies || '',
+                    'ob-expectations': p.expectations || '',
+                    'ob-bio': p.bio || '',
+                    'ob-skills': p.skills || '',
+                    'ob-topics': p.topics || '',
+                    'ob-phone': p.phone || '',
+                    'ob-linkedin': p.linkedin || ''
+                };
+                Object.entries(fields).forEach(([id, value]) => {
+                    const el = document.getElementById(id);
+                    if (el) el.value = value;
+                });
+            },
+            saveProfileDetails: async (e) => {
+                e.preventDefault();
+                if(!state.user) return;
+
+                const phoneValue = document.getElementById('ob-phone').value.trim();
+                if (phoneValue && !isValidPhone(phoneValue)) {
+                    alert('El número de teléfono debe tener al menos 7 dígitos. También puedes dejarlo vacío.');
+                    return;
+                }
+                const linkedinValue = document.getElementById('ob-linkedin').value.trim();
+                if (linkedinValue && !isValidLinkedInUrl(linkedinValue)) {
+                    alert('El enlace de LinkedIn no es válido. Debe ser una URL de linkedin.com o dejarse vacío.');
+                    return;
+                }
+
+                const btn = document.getElementById('btn-save-onboarding-profile');
+                const originalText = btn.innerHTML;
+                btn.disabled = true;
+                btn.innerHTML = `<i class="ph-bold ph-spinner animate-spin"></i> Guardando...`;
+
+                const payload = {
+                    role: document.getElementById('ob-role').value.trim(),
+                    area: document.getElementById('ob-area').value.trim(),
+                    studies: document.getElementById('ob-studies').value.trim(),
+                    bio: document.getElementById('ob-bio').value.trim(),
+                    skills: document.getElementById('ob-skills').value.split(',').map(s => s.trim()).filter(Boolean),
+                    topics: document.getElementById('ob-topics').value.trim(),
+                    expectations: document.getElementById('ob-expectations').value.trim(),
+                    phone: phoneValue,
+                    linkedin: linkedinValue ? normalizeLinkedInUrl(linkedinValue) : '',
+                    onboardingCompleted: true,
+                    email: state.user.email || '',
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                };
+
+                try {
+                    const docRef = alumniCollection.doc(state.user.uid);
+                    const exists = (await docRef.get()).exists;
+                    if (!exists) payload.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+                    await docRef.set(payload, { merge: true });
+
+                    state.profile = {
+                        ...state.profile,
+                        ...payload,
+                        skills: (payload.skills || []).join(', ')
+                    };
+                    await onboardingLogic.finish();
+                } catch (error) {
+                    alert('Hubo un error al guardar esta parte del perfil: ' + (error.message || 'error desconocido'));
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                }
+            },
+            skipProfileDetails: async () => {
+                if(!state.user) return;
+                try {
+                    await alumniCollection.doc(state.user.uid).set({
+                        onboardingCompleted: true,
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    }, { merge: true });
+
+                    state.profile.onboardingCompleted = true;
+                    await onboardingLogic.finish();
+                } catch (error) {
+                    alert('Error al omitir: ' + (error.message || 'error desconocido'));
+                }
+            },
+            finish: async () => {
+                await loadAlumni();
+                await loadChatsForUser(state.user.uid);
+                alert('¡Gracias por completar tu primer ingreso! Puedes editar o ampliar estos datos cuando quieras desde tu perfil.');
+                router.navigate('directory');
+            }
+        };
+
+        async function loadAlumni() {
+            state.directoryLoading = true;
+            if (state.view === 'directory') directoryLogic.render();
+            try {
+                const snapshot = await alumniCollection.get();
+                state.data.alumni = snapshot.docs.map((doc) => {
+                const d = doc.data();
+                return {
+                    id: doc.id,
+                    name: `${d.firstName || ''} ${d.lastName || ''}`.trim() || 'Sin nombre',
+                    firstName: (d.firstName || '').trim(),
+                    lastName: (d.lastName || '').trim(),
+                    email: d.email || '',
+                    newsletterOptIn: Boolean(d.newsletterOptIn),
+                    role: d.role || 'Sin rol',
+                    status: d.status || 'sin-definir',
+                    statusLabel: formatStatusLabel(d.status),
+                    accountStatus: d.accountStatus || 'activo',
+                    company: d.studies || formatStatusLabel(d.status),
+                    img: d.photoURL || buildAvatarUrl(`${d.firstName || 'Usuario'} ${d.lastName || ''}`.trim()),
+                    tags: [d.area || 'General', formatStatusLabel(d.status)].filter(Boolean),
+                    fullStudies: d.studies || 'No especificado',
+                    location: d.location || 'Ubicación no disponible',
+                    bio: d.bio || 'Sin biografía disponible.',
+                    year: d.graduationYear || '---',
+                    area: d.area || 'General',
+                    skills: Array.isArray(d.skills) ? d.skills : (d.skills ? String(d.skills).split(',') : []),
+                    phone: d.phone || '',
+                    linkedin: d.linkedin || '',
+                    expectations: d.expectations || ''
+                };
+                });
+            } catch (error) {
+                state.data.alumni = state.data.alumni.length ? state.data.alumni : [];
+            } finally {
+                state.directoryLoading = false;
+                if (state.view === 'directory') directoryLogic.render();
+            }
+        }
+
+        function buildAvatarUrl(name = 'Usuario') {
+            const palette = ['9333ea', '2563eb', 'db2777', '0d9488', 'ea580c', '4f46e5', '16a34a', '0891b2'];
+            const seed = String(name || 'Usuario').toLowerCase().trim();
+            let hash = 0;
+            for (let i = 0; i < seed.length; i++) hash = (hash * 31 + seed.charCodeAt(i)) >>> 0;
+            const background = palette[hash % palette.length];
+            return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=${background}&color=fff`;
+        }
+
+        function formatStatusLabel(status) {
+            const statusMap = {
+                trabajando: 'Trabajando',
+                estudiando: 'Estudiando',
+                'trabajando-estudiando': 'Trabajando y estudiando',
+                emprendiendo: 'Emprendiendo',
+                profesor: 'Profesor'
+            };
+            const key = String(status || '').trim().toLowerCase();
+            return statusMap[key] || 'Sin definir';
+        }
+
+        async function loadProfile(uid) {
+            const doc = await alumniCollection.doc(uid).get();
+            if (!doc.exists) {
+                state.profile = {
+                    firstName: state.user?.displayName?.split(' ')[0] || '',
+                    lastName: state.user?.displayName?.split(' ').slice(1).join(' ') || '',
+                    graduationYear: '',
+                    location: '',
+                    status: 'trabajando',
+                    role: '',
+                    area: '',
+                    studies: '',
+                    bio: '',
+                    skills: '',
+                    topics: '',
+                    expectations: '',
+                    phone: '',
+                    linkedin: '',
+                    photoURL: state.user?.photoURL || '',
+                    onboardingCompleted: false
+                };
+                refreshHeaderIdentity();
+                return;
+            }
+            const d = doc.data();
+            state.profile = {
+                firstName: d.firstName || '',
+                lastName: d.lastName || '',
+                graduationYear: d.graduationYear || '',
+                location: d.location || '',
+                status: d.status || 'trabajando',
+                role: d.role || '',
+                area: d.area || '',
+                studies: d.studies || '',
+                bio: d.bio || '',
+                skills: Array.isArray(d.skills) ? d.skills.join(', ') : (d.skills || ''),
+                topics: d.topics || '',
+                expectations: d.expectations || '',
+                phone: d.phone || '',
+                linkedin: d.linkedin || '',
+                photoURL: d.photoURL || '',
+                onboardingCompleted: d.onboardingCompleted || false
+            };
+            refreshHeaderIdentity();
+        }
+
+        function formatChatTime(ts) {
+            if (!ts || typeof ts.toDate !== 'function') return '';
+            return ts.toDate().toLocaleString('es-CO', { hour: '2-digit', minute: '2-digit' });
+        }
+
+        function formatNewsDate(ts) {
+            if (!ts || typeof ts.toDate !== 'function') return 'Reciente';
+            return ts.toDate().toLocaleDateString('es-CO', { day: '2-digit', month: 'short' });
+        }
+
+        async function loadNews() {
+            try {
+                const snap = await newsCollection.orderBy('createdAt', 'desc').get();
+                state.data.news = snap.docs.map((doc) => {
+                    const d = doc.data();
+                    return {
+                        id: doc.id,
+                        title: d.title || 'Sin título',
+                        category: d.category || 'Noticia',
+                        date: formatNewsDate(d.createdAt),
+                        summary: d.summary || '',
+                        img: d.img || 'https://placehold.co/600x400/7e22ce/FFF?text=Noticia'
+                    };
+                });
+            } catch (error) {
+                // Si falla Firestore, mantenemos estado actual como fallback visual.
+            }
+        }
+
+        async function loadChatsForUser(uid) {
+            try {
+                const snap = await userChatsCollection(uid).orderBy('updatedAt', 'desc').get();
+                state.data.chats = snap.docs.map((doc) => {
+                    const d = doc.data();
+                    return {
+                        id: doc.id,
+                        peerId: d.peerId || '',
+                        name: d.peerName || 'Usuario',
+                        img: d.peerPhotoURL || buildAvatarUrl(d.peerName || 'Usuario'),
+                        lastMsg: d.lastMsg || 'Sin mensajes',
+                        time: formatChatTime(d.updatedAt)
+                    };
+                });
+            } catch (error) {
+                state.data.chats = [];
+            }
+        }
+
+        async function loadMessagesForChat(uid, chatId) {
+            try {
+                const snap = await userChatMessagesCollection(uid, chatId).orderBy('createdAt', 'asc').get();
+                state.messagesByChat[chatId] = snap.docs.map((doc) => {
+                    const d = doc.data();
+                    return {
+                        text: d.text || '',
+                        sender: d.senderId === uid ? 'me' : 'them',
+                        createdAt: d.createdAt,
+                    };
+                });
+            } catch (error) {
+                state.messagesByChat[chatId] = [];
+            }
+        }
+
+        function watchChatsInRealtime(uid) {
+            if (state.listeners.chats) state.listeners.chats();
+            state.listeners.chats = userChatsCollection(uid)
+                .orderBy('updatedAt', 'desc')
+                .onSnapshot((snap) => {
+                    state.data.chats = snap.docs.map((doc) => {
+                        const d = doc.data();
+                        return {
+                            id: doc.id,
+                            peerId: d.peerId || '',
+                            name: d.peerName || 'Usuario',
+                            img: d.peerPhotoURL || buildAvatarUrl(d.peerName || 'Usuario'),
+                            lastMsg: d.lastMsg || 'Sin mensajes',
+                            time: formatChatTime(d.updatedAt)
+                        };
+                    });
+                    if (state.view === 'messages') chatLogic.renderList();
+                }, () => {
+                    state.data.chats = [];
+                    if (state.view === 'messages') chatLogic.renderList();
+                });
+        }
+
+        function watchMessagesInRealtime(uid, chatId) {
+            if (state.listeners.messages) state.listeners.messages();
+            state.listeners.messages = userChatMessagesCollection(uid, chatId)
+                .orderBy('createdAt', 'asc')
+                .onSnapshot((snap) => {
+                    state.messagesByChat[chatId] = snap.docs.map((doc) => {
+                        const d = doc.data();
+                        return {
+                            text: d.text || '',
+                            sender: d.senderId === uid ? 'me' : 'them',
+                            createdAt: d.createdAt,
+                        };
+                    });
+                    if (String(state.activeChatId) === String(chatId)) {
+                        chatLogic.openChat(chatId, { preserveListener: true });
+                    }
+                }, () => {
+                    state.messagesByChat[chatId] = [];
+                    if (String(state.activeChatId) === String(chatId)) {
+                        chatLogic.openChat(chatId, { preserveListener: true });
+                    }
+                });
+        }
+
+        const router = {
+            navigate: (viewId) => {
+                if (viewId !== 'auth' && viewId !== 'register' && viewId !== 'home' && viewId !== 'terms' && viewId !== 'exam-modules' && !state.user) { authLogic.logout(); return; }
+                if (viewId === 'register' && state.user) { viewId = 'profile'; }
+                if (viewId === 'admin' && !isAdminUser()) { viewId = 'directory'; }
+
+                // Libera el listener de mensajes al salir de la vista de mensajes
+                if (state.view === 'messages' && viewId !== 'messages') {
+                    if (state.listeners.messages) {
+                        state.listeners.messages();
+                        state.listeners.messages = null;
+                    }
+                }
+
+                const views = ['view-home', 'view-auth', 'view-register', 'view-terms', 'view-onboarding', 'view-onboarding-profile', 'view-directory', 'view-news', 'view-exam-modules', 'view-messages', 'view-profile', 'view-admin'];
+                views.forEach(id => {
+                    const el = document.getElementById(id);
+                    if(el) el.classList.add('hidden');
+                });
+
+                const nav = document.querySelector('nav');
+                const mobileNav = document.getElementById('mobile-nav');
+                if (viewId === 'auth' || viewId === 'register' || viewId === 'onboarding' || viewId === 'onboarding-profile' || viewId === 'terms') {
+                    nav.classList.add('hidden');
+                    if (mobileNav) mobileNav.classList.add('hidden');
+                } else {
+                    nav.classList.remove('hidden');
+                    if (mobileNav) mobileNav.classList.remove('hidden');
+                    const navButtons = { 'home': 'nav-home', 'directory': 'nav-dir', 'news': 'nav-news', 'exam-modules': 'nav-exams', 'messages': 'nav-msg', 'admin': 'nav-admin' };
+                    const mobileButtons = { 'home': 'mnav-home', 'directory': 'mnav-dir', 'news': 'mnav-news', 'exam-modules': 'mnav-exams', 'messages': 'mnav-msg', 'profile': 'mnav-profile' };
+                    Object.values(navButtons).forEach(btnId => {
+                        const btn = document.getElementById(btnId);
+                        if(btn) btn.classList.remove('text-brand-600', 'bg-brand-50');
+                    });
+                    Object.values(mobileButtons).forEach(btnId => {
+                        const btn = document.getElementById(btnId);
+                        if(btn) btn.classList.remove('text-brand-600', 'bg-brand-50');
+                    });
+                    if (navButtons[viewId]) {
+                        const activeBtn = document.getElementById(navButtons[viewId]);
+                        if(activeBtn) activeBtn.classList.add('text-brand-600', 'bg-brand-50');
+                    }
+                    if (mobileButtons[viewId]) {
+                        const activeMobileBtn = document.getElementById(mobileButtons[viewId]);
+                        if(activeMobileBtn) activeMobileBtn.classList.add('text-brand-600', 'bg-brand-50');
+                    }
+                }
+
+                state.view = viewId;
+                const targetView = document.getElementById(`view-${viewId}`);
+                if (targetView) {
+                    targetView.classList.remove('hidden');
+                    window.scrollTo(0,0);
+                } else {
+                    return;
+                }
+
+                if(viewId === 'directory') directoryLogic.render();
+                if(viewId === 'news') newsLogic.render();
+                if(viewId === 'exam-modules') examModulesLogic.render();
+                if(viewId === 'messages') chatLogic.renderList();
+                if(viewId === 'profile') profileLogic.populate();
+                if(viewId === 'onboarding-profile') onboardingLogic.populateProfileDetails();
+                if(viewId === 'admin') adminLogic.render();
+            }
+        };
+
+        const directoryLogic = {
+            _currentItems: [],
+            render: (items = state.data.alumni) => {
+                directoryLogic._currentItems = items;
+                directoryLogic._renderPage(1);
+            },
+            _renderPage: (page) => {
+                state.directoryPage = page;
+                const items = directoryLogic._currentItems;
+                const grid = document.getElementById('directory-grid');
+                const loadMoreBtn = document.getElementById('directory-load-more');
+
+                if (state.directoryLoading) {
+                    grid.innerHTML = Array.from({ length: 8 }).map(() => `
+                        <div class="bg-white p-6 rounded-2xl border border-gray-100 animate-pulse">
+                            <div class="flex gap-4 mb-4">
+                                <div class="w-14 h-14 rounded-xl bg-gray-100"></div>
+                                <div class="flex-1 space-y-2">
+                                    <div class="h-4 bg-gray-100 rounded w-3/4"></div>
+                                    <div class="h-3 bg-gray-100 rounded w-1/2"></div>
+                                    <div class="h-3 bg-gray-100 rounded w-2/3"></div>
+                                </div>
+                            </div>
+                            <div class="h-3 bg-gray-100 rounded w-full mb-2"></div>
+                            <div class="h-3 bg-gray-100 rounded w-5/6"></div>
+                        </div>
+                    `).join('');
+                    if (loadMoreBtn) loadMoreBtn.classList.add('hidden');
+                    return;
+                }
+
+                const shown = items.slice(0, page * DIRECTORY_PAGE_SIZE);
+                const hasMore = items.length > shown.length;
+
+                if (items.length === 0) {
+                    grid.innerHTML = `
+                        <div class="col-span-full flex flex-col items-center justify-center py-16 text-center">
+                            <i class="ph ph-users-three text-5xl text-gray-300 mb-4"></i>
+                            <p class="text-gray-500 font-semibold">No se encontraron egresados</p>
+                            <p class="text-gray-400 text-sm mt-1">Intenta con otro nombre, año o categoría.</p>
+                        </div>`;
+                    if (loadMoreBtn) loadMoreBtn.classList.add('hidden');
+                    return;
+                }
+
+                grid.innerHTML = shown.map(alum => `
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition group cursor-pointer h-full flex flex-col" onclick="directoryLogic.openProfile('${sanitizeHTML(alum.id)}')">
+                        <div class="flex items-start justify-between">
+                            <div class="flex gap-4">
+                                <img src="${sanitizeHTML(alum.img)}" alt="Foto de ${sanitizeHTML(alum.name)}" class="w-14 h-14 rounded-xl object-cover shadow-sm group-hover:scale-105 transition shrink-0">
+                                <div class="min-w-0 pt-0.5">
+                                    <h3 class="font-bold text-gray-900 group-hover:text-brand-600 transition leading-tight break-words">${sanitizeHTML(alum.name)}</h3>
+                                    <p class="text-xs text-brand-600 font-semibold uppercase tracking-wide mt-1 leading-tight break-words">${sanitizeHTML(alum.company)}</p>
+                                    <p class="text-[11px] font-bold text-brand-600 mt-1 leading-tight">Promoción ${sanitizeHTML(alum.year || '---')}</p>
+                                    <p class="text-sm text-gray-500 mt-1 line-clamp-1">${sanitizeHTML(alum.role)}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-4 flex gap-2 flex-wrap mb-4 flex-1 content-start">
+                            ${(alum.tags || []).slice(0,3).map(t => `<span class="px-2 py-1 bg-gray-50 text-gray-600 text-xs rounded-md font-medium border border-gray-100">${sanitizeHTML(t)}</span>`).join('')}
+                        </div>
+                        <div class="pt-4 border-t border-gray-50">
+                            <span class="w-full px-4 py-2 bg-gray-50 text-gray-600 text-xs font-bold rounded-lg hover:bg-brand-50 hover:text-brand-600 transition flex justify-center items-center gap-2"><i class="ph-bold ph-user-list"></i> Ver Perfil Completo</span>
+                        </div>
+                    </div>
+                `).join('');
+
+                if (loadMoreBtn) {
+                    loadMoreBtn.classList.toggle('hidden', !hasMore);
+                    loadMoreBtn.classList.toggle('flex', hasMore);
+                }
+            },
+            loadMore: () => {
+                directoryLogic._renderPage(state.directoryPage + 1);
+            },
+            openProfile: (id) => {
+                const user = state.data.alumni.find(u => String(u.id) === String(id));
+                state.selectedDirectoryUserId = String(id);
+                if(!user) return;
+                document.getElementById('sp-img').src = user.img;
+                document.getElementById('sp-name').innerText = user.name;
+                document.getElementById('sp-role').innerText = user.role;
+                document.getElementById('sp-location').innerText = user.location;
+                document.getElementById('sp-year').innerText = `Promoción ${user.year}`;
+                document.getElementById('sp-bio').innerText = user.bio;
+                document.getElementById('sp-expectations').innerText = user.expectations || 'No especificadas.';
+                document.getElementById('sp-studies').innerText = user.fullStudies;
+                document.getElementById('sp-area').innerText = user.area;
+                const skillsContainer = document.getElementById('sp-skills');
+                if (user.skills && user.skills.length > 0) {
+                    skillsContainer.innerHTML = user.skills.map(s => `<span class="px-3 py-1 bg-brand-50 text-brand-700 rounded-full text-xs font-bold border border-brand-100">${sanitizeHTML(String(s).trim())}</span>`).join('');
+                } else {
+                    skillsContainer.innerHTML = '<span class="text-gray-400 text-xs italic">No especificadas</span>';
+                }
+                const waBtn = document.getElementById('sp-whatsapp-btn');
+                if (user.phone && isValidPhone(user.phone)) {
+                    waBtn.classList.remove('hidden');
+                    waBtn.href = `https://wa.me/${String(user.phone).replace(/[^0-9]/g, '')}`;
+                } else { waBtn.classList.add('hidden'); }
+                const liBtn = document.getElementById('sp-linkedin-btn');
+                if (isValidLinkedInUrl(user.linkedin)) {
+                    liBtn.classList.remove('hidden');
+                    liBtn.href = normalizeLinkedInUrl(user.linkedin);
+                } else { liBtn.classList.add('hidden'); }
+                document.getElementById('slide-panel-overlay').classList.remove('hidden');
+            },
+            closeProfile: () => {
+                document.getElementById('slide-panel-overlay').classList.add('hidden');
+            },
+            filter: () => {
+                const term = document.getElementById('directory-search').value.toLowerCase().trim();
+                const yearTerm = (document.getElementById('directory-year')?.value || '').trim();
+                const selected = document.getElementById('directory-filter')?.value || 'all';
+                const filtered = state.data.alumni.filter(u => {
+                    const matchesTerm = u.name.toLowerCase().includes(term) ||
+                        (u.role || '').toLowerCase().includes(term) ||
+                        (u.company || '').toLowerCase().includes(term);
+                    if (!matchesTerm) return false;
+
+                    const yearValue = String(u.year || '').trim();
+                    if (yearTerm && !yearValue.includes(yearTerm)) return false;
+
+                    if (selected === 'all') return true;
+                    const tags = (u.tags || []).map(t => String(t).toLowerCase());
+                    return tags.includes(selected);
+                });
+                directoryLogic.render(filtered);
+            }
+        };
+
+
+        const examModulesLogic = {
+            render: () => {
+                const grid = document.getElementById('exam-modules-grid');
+                if (!grid) return;
+                grid.innerHTML = state.examModules.map((module) => {
+                    const accent = module.accent === 'purple'
+                        ? { soft: 'bg-purple-50 text-purple-700 border-purple-100', solid: 'bg-purple-600', ring: 'group-hover:border-purple-200' }
+                        : { soft: 'bg-blue-50 text-blue-700 border-blue-100', solid: 'bg-blue-600', ring: 'group-hover:border-blue-200' };
+                    return `
+                        <article class="bg-white rounded-[2rem] border border-gray-100 shadow-sm hover:shadow-xl transition overflow-hidden group ${accent.ring}">
+                            <div class="p-6 md:p-8 border-b border-gray-100">
+                                <div class="flex items-start justify-between gap-4 mb-6">
+                                    <div class="w-16 h-16 ${accent.soft} rounded-2xl border flex items-center justify-center text-3xl">
+                                        <i class="${sanitizeHTML(module.icon)}"></i>
+                                    </div>
+                                    <span class="px-3 py-1 rounded-full text-xs font-bold ${accent.soft} border">${sanitizeHTML(module.code)}</span>
+                                </div>
+                                <p class="text-xs font-bold uppercase tracking-[0.2em] text-gray-400 mb-2">${sanitizeHTML(module.language)} · ${sanitizeHTML(module.level)}</p>
+                                <h3 class="text-2xl font-extrabold text-gray-900 mb-3">${sanitizeHTML(module.title)}</h3>
+                                <p class="text-gray-500 leading-relaxed">${sanitizeHTML(module.description)}</p>
+                            </div>
+                            <div class="p-6 md:p-8 space-y-4">
+                                ${module.practices.map((practice, index) => `
+                                    <div class="rounded-2xl border border-gray-100 bg-gray-50/70 p-4 hover:bg-white hover:shadow-sm transition">
+                                        <div class="flex items-start gap-3">
+                                            <div class="w-9 h-9 rounded-xl ${accent.solid} text-white flex items-center justify-center font-bold text-sm shrink-0">${index + 1}</div>
+                                            <div class="min-w-0">
+                                                <div class="flex flex-wrap items-center gap-2 mb-1">
+                                                    <h4 class="font-bold text-gray-900">${sanitizeHTML(practice.name)}</h4>
+                                                    <span class="px-2 py-0.5 rounded-md bg-white border border-gray-200 text-[11px] font-bold text-gray-500">${sanitizeHTML(practice.status)}</span>
+                                                </div>
+                                                <p class="text-sm text-gray-600 mb-1">${sanitizeHTML(practice.focus)}</p>
+                                                <p class="text-xs text-gray-400 font-medium">Formato: ${sanitizeHTML(practice.format)}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                                <div class="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 flex gap-2">
+                                    <i class="ph-bold ph-warning-circle mt-0.5"></i>
+                                    <p><strong>No incluido por ahora:</strong> ${sanitizeHTML(module.excluded)}</p>
+                                </div>
+                            </div>
+                        </article>
+                    `;
+                }).join('');
+            }
+        };
+
+        const newsLogic = {
+            render: () => {
+                const feed = document.getElementById('news-feed');
+                if (!state.data.news.length) {
+                    feed.innerHTML = '<div class="col-span-full bg-white rounded-2xl border border-gray-100 p-8 text-center text-sm text-gray-500">Aún no hay novedades publicadas.</div>';
+                    return;
+                }
+                feed.innerHTML = state.data.news.map((item, idx) => `
+                    <div class="bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-lg transition cursor-pointer group" onclick="uiLogic.openNewsModal(${idx})">
+                        <div class="h-48 overflow-hidden relative">
+                            <img src="${sanitizeHTML(item.img)}" alt="${sanitizeHTML(item.title)}" class="w-full h-full object-cover transition duration-500 group-hover:scale-105">
+                            <span class="absolute top-4 left-4 bg-white/90 backdrop-blur text-xs font-bold px-3 py-1 rounded-lg shadow-sm">${sanitizeHTML(item.category)}</span>
+                        </div>
+                        <div class="p-6">
+                            <div class="text-xs font-bold text-brand-600 mb-2 uppercase">${sanitizeHTML(item.date)}</div>
+                            <h3 class="font-bold text-lg text-gray-900 mb-3 leading-tight group-hover:text-brand-600 transition">${sanitizeHTML(item.title)}</h3>
+                            <p class="text-base text-gray-500 leading-relaxed line-clamp-4 min-h-[6.5rem]">${sanitizeHTML(item.summary)}</p>
+                            <button class="mt-4 text-sm font-bold text-gray-900 flex items-center gap-1 group-hover:gap-2 transition-all">Leer más <i class="ph-bold ph-arrow-right"></i></button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        };
+
+        const adminLogic = {
+            switchTab: (tab) => {
+                state.adminTab = tab;
+                const usersBtn = document.getElementById('tab-users');
+                const newsBtn = document.getElementById('tab-news-admin');
+                const usersTab = document.getElementById('admin-users-tab');
+                const newsTab = document.getElementById('admin-news-tab');
+                if (!usersBtn || !newsBtn || !usersTab || !newsTab) return;
+                if (tab === 'users') {
+                    usersBtn.className = 'pb-3 text-sm font-bold border-b-2 border-brand-600 text-brand-600 transition';
+                    newsBtn.className = 'pb-3 text-sm font-bold border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition';
+                    usersTab.classList.remove('hidden');
+                    newsTab.classList.add('hidden');
+                } else {
+                    newsBtn.className = 'pb-3 text-sm font-bold border-b-2 border-brand-600 text-brand-600 transition';
+                    usersBtn.className = 'pb-3 text-sm font-bold border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition';
+                    newsTab.classList.remove('hidden');
+                    usersTab.classList.add('hidden');
+                }
+            },
+            renderUsers: () => {
+                const tbody = document.getElementById('admin-users-body');
+                if (!tbody) return;
+                if (!state.data.alumni.length) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-6 text-center text-gray-500">Sin usuarios para mostrar.</td></tr>';
+                    return;
+                }
+                tbody.innerHTML = state.data.alumni.map((user) => {
+                    const accountStatus = user.accountStatus || ACCOUNT_STATUS.ACTIVO;
+                    const badge = accountStatus === ACCOUNT_STATUS.SUSPENDIDO
+                        ? 'bg-red-50 text-red-600 border-red-100'
+                        : 'bg-green-50 text-green-600 border-green-100';
+                    const statusText = accountStatus === ACCOUNT_STATUS.SUSPENDIDO ? 'Suspendido' : 'Activo';
+                    const toggleTitle = accountStatus === ACCOUNT_STATUS.SUSPENDIDO ? 'Activar' : 'Suspender';
+                    const toggleIcon = accountStatus === ACCOUNT_STATUS.SUSPENDIDO ? 'ph-check-circle' : 'ph-prohibit';
+                    return `
+                        <tr class="hover:bg-gray-50 transition">
+                            <td class="px-6 py-4">
+                                <div class="flex items-center gap-3">
+                                    <img src="${sanitizeHTML(user.img)}" alt="Foto de ${sanitizeHTML(user.name)}" class="w-10 h-10 rounded-full object-cover border border-gray-100">
+                                    <div>
+                                        <div class="font-bold text-gray-900">${sanitizeHTML(user.name)}</div>
+                                        <div class="text-xs text-gray-500">${sanitizeHTML(user.role || user.status || '')}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 text-gray-600 text-sm">${sanitizeHTML(user.email || 'No disponible')}</td>
+                            <td class="px-6 py-4 text-sm">
+                                <span class="px-2.5 py-1 text-xs font-bold rounded-lg border ${user.newsletterOptIn ? 'bg-blue-50 text-blue-600 border-blue-100' : 'bg-gray-50 text-gray-500 border-gray-200'}">
+                                    ${user.newsletterOptIn ? 'Sí' : 'No'}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4"><span class="px-2.5 py-1 text-xs font-bold rounded-lg border ${badge}">${statusText}</span></td>
+                            <td class="px-6 py-4 text-right space-x-2">
+                                <button onclick="adminLogic.openUserEditor('${user.id}')" class="p-2 rounded-lg text-blue-600 hover:bg-blue-50 transition" title="Ver / editar perfil"><i class="ph-bold ph-user-circle-gear text-lg"></i></button>
+                                <button onclick="adminLogic.toggleUserStatus('${user.id}', '${accountStatus}')" class="p-2 rounded-lg text-amber-600 hover:bg-amber-50 transition" title="${toggleTitle}"><i class="ph-bold ${toggleIcon} text-lg"></i></button>
+                                <button onclick="adminLogic.removeUser('${user.id}')" class="p-2 rounded-lg text-red-600 hover:bg-red-50 transition" title="Eliminar"><i class="ph-bold ph-trash text-lg"></i></button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            },
+            openUserEditor: (uid) => {
+                const user = state.data.alumni.find((item) => String(item.id) === String(uid));
+                if (!user) return;
+                document.getElementById('admin-edit-user-id').value = user.id;
+                document.getElementById('admin-edit-first-name').value = user.firstName || '';
+                document.getElementById('admin-edit-last-name').value = user.lastName || '';
+                document.getElementById('admin-edit-role').value = user.role || '';
+                document.getElementById('admin-edit-location').value = user.location || '';
+                document.getElementById('admin-edit-year').value = user.year === '---' ? '' : (user.year || '');
+                document.getElementById('admin-edit-status').value = user.status || '';
+                document.getElementById('admin-edit-area').value = user.area || '';
+                document.getElementById('admin-edit-studies').value = user.fullStudies === 'No especificado' ? '' : (user.fullStudies || '');
+                document.getElementById('admin-edit-bio').value = user.bio === 'Sin biografía disponible.' ? '' : (user.bio || '');
+                document.getElementById('admin-edit-skills').value = Array.isArray(user.skills) ? user.skills.join(', ') : '';
+                document.getElementById('admin-edit-linkedin').value = user.linkedin || '';
+                document.getElementById('admin-edit-phone').value = user.phone || '';
+                document.getElementById('admin-edit-expectations').value = user.expectations || '';
+                document.getElementById('admin-user-editor').classList.remove('hidden');
+                document.getElementById('admin-user-editor').scrollIntoView({ behavior: 'smooth', block: 'start' });
+            },
+            cancelUserEdit: () => {
+                const form = document.getElementById('admin-user-form');
+                if (form) form.reset();
+                document.getElementById('admin-user-editor').classList.add('hidden');
+            },
+            saveUserProfile: async (e) => {
+                e.preventDefault();
+                const uid = document.getElementById('admin-edit-user-id').value;
+                if (!uid) return;
+                const payload = {
+                    firstName: document.getElementById('admin-edit-first-name').value.trim(),
+                    lastName: document.getElementById('admin-edit-last-name').value.trim(),
+                    role: document.getElementById('admin-edit-role').value.trim(),
+                    location: document.getElementById('admin-edit-location').value.trim(),
+                    graduationYear: document.getElementById('admin-edit-year').value.trim(),
+                    status: document.getElementById('admin-edit-status').value.trim() || 'trabajando',
+                    area: document.getElementById('admin-edit-area').value.trim(),
+                    studies: document.getElementById('admin-edit-studies').value.trim(),
+                    bio: document.getElementById('admin-edit-bio').value.trim(),
+                    skills: document.getElementById('admin-edit-skills').value.split(',').map((s) => s.trim()).filter(Boolean),
+                    linkedin: document.getElementById('admin-edit-linkedin').value.trim(),
+                    phone: document.getElementById('admin-edit-phone').value.trim(),
+                    expectations: document.getElementById('admin-edit-expectations').value.trim(),
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                };
+                if (!hasValidFirstName(payload.firstName)) {
+                    alert('El nombre es obligatorio y debe tener al menos 2 caracteres.');
+                    return;
+                }
+                try {
+                    await alumniCollection.doc(uid).set(payload, { merge: true });
+                    await loadAlumni();
+                    adminLogic.renderUsers();
+                    adminLogic.cancelUserEdit();
+                } catch (error) {
+                    alert(`No se pudo guardar el perfil: ${error.message}`);
+                }
+            },
+            toggleUserStatus: async (uid, currentStatus) => {
+                const next = currentStatus === 'suspendido' ? 'activo' : 'suspendido';
+                try {
+                    await alumniCollection.doc(uid).set({ accountStatus: next, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+                    await loadAlumni();
+                    adminLogic.renderUsers();
+                } catch (error) {
+                    alert(`No se pudo actualizar el estado del usuario: ${error.message}`);
+                }
+            },
+            removeUser: async (uid) => {
+                if (!confirm('¿Eliminar este usuario del directorio?')) return;
+                try {
+                    await alumniCollection.doc(uid).delete();
+                    await loadAlumni();
+                    adminLogic.renderUsers();
+                } catch (error) {
+                    alert(`No se pudo eliminar el usuario: ${error.message}`);
+                }
+            },
+            renderNewsList: () => {
+                const list = document.getElementById('admin-news-list');
+                if (!list) return;
+                if (!state.data.news.length) {
+                    list.innerHTML = '<div class="p-6 text-sm text-gray-500">Aún no hay noticias publicadas.</div>';
+                    return;
+                }
+                list.innerHTML = state.data.news.map((item, idx) => `
+                    <div class="p-6 flex flex-col md:flex-row items-start md:items-center gap-4 hover:bg-gray-50 transition">
+                        <img src="${sanitizeHTML(item.img)}" alt="${sanitizeHTML(item.title)}" class="w-20 h-20 rounded-xl object-cover shadow-sm shrink-0">
+                        <div class="flex-1">
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="text-xs font-bold bg-gray-100 text-gray-600 px-2 py-0.5 rounded">${sanitizeHTML(item.category)}</span>
+                                <span class="text-xs text-gray-400">${sanitizeHTML(item.date)}</span>
+                            </div>
+                            <h4 class="font-bold text-gray-900">${sanitizeHTML(item.title)}</h4>
+                            <p class="text-sm text-gray-500 line-clamp-1 mt-1">${sanitizeHTML(item.summary)}</p>
+                        </div>
+                        <div class="flex items-center gap-1 shrink-0">
+                            <button onclick="adminLogic.startNewsEdit('${sanitizeHTML(item.id)}')" class="p-3 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-xl transition" title="Editar noticia" aria-label="Editar noticia"><i class="ph-bold ph-pencil-simple text-xl"></i></button>
+                            <button onclick="adminLogic.deleteNews('${sanitizeHTML(item.id)}')" class="p-3 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-xl transition" title="Eliminar noticia" aria-label="Eliminar noticia"><i class="ph-bold ph-trash text-xl"></i></button>
+                        </div>
+                    </div>
+                `).join('');
+            },
+            startNewsEdit: (id) => {
+                const item = state.data.news.find(n => String(n.id) === String(id));
+                if (!item) return;
+                state.editingNewsId = String(id);
+                document.getElementById('admin-news-title').value = item.title || '';
+                document.getElementById('admin-news-category').value = item.category || '';
+                document.getElementById('admin-news-summary').value = item.summary || '';
+                document.getElementById('admin-news-img').value = item.img || '';
+                document.getElementById('admin-news-form-title').innerHTML = '<i class="ph-duotone ph-pencil-simple-line text-brand-600 text-xl"></i> Editar Noticia';
+                document.getElementById('admin-news-submit-btn').innerText = 'Guardar Cambios';
+                document.getElementById('admin-news-cancel-edit').classList.remove('hidden');
+            },
+            cancelNewsEdit: () => {
+                state.editingNewsId = null;
+                const form = document.querySelector('#admin-news-tab form');
+                if (form) form.reset();
+                document.getElementById('admin-news-form-title').innerHTML = '<i class="ph-duotone ph-newspaper text-brand-600 text-xl"></i> Publicar Nueva Noticia';
+                document.getElementById('admin-news-submit-btn').innerText = 'Publicar Noticia';
+                document.getElementById('admin-news-cancel-edit').classList.add('hidden');
+            },
+            addNews: async (e) => {
+                e.preventDefault();
+                const title = document.getElementById('admin-news-title').value.trim();
+                const category = document.getElementById('admin-news-category').value.trim();
+                const summary = document.getElementById('admin-news-summary').value.trim();
+                const img = document.getElementById('admin-news-img').value.trim() || 'https://placehold.co/600x400/7e22ce/FFF?text=Noticia';
+                try {
+                    const payload = {
+                        title,
+                        category,
+                        summary,
+                        img,
+                        createdBy: state.user?.email || '',
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    };
+                    if (state.editingNewsId) {
+                        await newsCollection.doc(state.editingNewsId).set(payload, { merge: true });
+                    } else {
+                        await newsCollection.add({
+                            ...payload,
+                            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                    }
+                    await loadNews();
+                    newsLogic.render();
+                    adminLogic.renderNewsList();
+                    adminLogic.cancelNewsEdit();
+                } catch (error) {
+                    alert(`No se pudo publicar la noticia: ${error.message}`);
+                }
+            },
+            deleteNews: async (id) => {
+                if (!confirm('¿Eliminar esta noticia?')) return;
+                try {
+                    await newsCollection.doc(String(id)).delete();
+                    await loadNews();
+                    newsLogic.render();
+                    adminLogic.renderNewsList();
+                } catch (error) {
+                    alert(`No se pudo eliminar la noticia: ${error.message}`);
+                }
+            },
+            render: async () => {
+                if (!isAdminUser()) {
+                    router.navigate('directory');
+                    return;
+                }
+                if (!state.data.alumni.length) await loadAlumni();
+                await loadNews();
+                adminLogic.renderUsers();
+                adminLogic.renderNewsList();
+                adminLogic.switchTab(state.adminTab || 'users');
+            }
+        };
+
+        const chatLogic = {
+            renderList: () => {
+                const list = document.getElementById('chat-list');
+                const listPanel = document.getElementById('chat-list-panel');
+                const activeArea = document.getElementById('active-chat-area');
+                const isMobile = window.innerWidth < 768;
+                if (isMobile && listPanel && activeArea) {
+                    listPanel.classList.remove('hidden');
+                    activeArea.classList.add('hidden');
+                    activeArea.classList.remove('flex');
+                }
+                if (!state.data.chats.length) {
+                    list.innerHTML = `
+                        <div class="flex flex-col items-center justify-center h-full py-12 px-6 text-center">
+                            <i class="ph ph-chats-circle text-4xl text-gray-300 mb-3"></i>
+                            <p class="text-sm font-semibold text-gray-500">Sin conversaciones aún</p>
+                            <p class="text-xs text-gray-400 mt-1">Busca un egresado en el <button onclick="router.navigate('directory')" class="text-brand-600 font-bold hover:underline">Directorio</button> y pulsa "Mensaje".</p>
+                        </div>`;
+                    state.activeChatId = null;
+                    return;
+                }
+                if (!state.activeChatId) {
+                    const first = state.data.chats[0];
+                    if (first?.id) chatLogic.openChat(first.id);
+                }
+                list.innerHTML = state.data.chats.map(chat => `
+                    <div onclick="chatLogic.openChat('${sanitizeHTML(chat.id)}')" class="p-4 hover:bg-white cursor-pointer border-b border-gray-100 flex gap-3 transition ${String(state.activeChatId) === String(chat.id) ? 'bg-white' : ''}">
+                        <div class="relative">
+                            <img src="${sanitizeHTML(chat.img)}" alt="Foto de ${sanitizeHTML(chat.name)}" class="w-12 h-12 rounded-full object-cover">
+                            <span class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></span>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex justify-between items-baseline mb-1">
+                                <h4 class="font-bold text-sm text-gray-900 truncate">${sanitizeHTML(chat.name)}</h4>
+                                <span class="text-xs text-gray-400">${sanitizeHTML(chat.time || '')}</span>
+                            </div>
+                            <p class="text-xs text-gray-500 truncate">${sanitizeHTML(chat.lastMsg || 'Sin mensajes')}</p>
+                        </div>
+                    </div>
+                `).join('');
+            },
+            startChatFromDirectory: async () => {
+                const user = state.data.alumni.find(u => String(u.id) === String(state.selectedDirectoryUserId));
+                if (!user || !state.user || state.guestMode) return;
+                await chatLogic.startChatWithUser(user);
+            },
+            startChatWithUser: async (targetUser) => {
+                const myUid = state.user?.uid;
+                if (!myUid || !targetUser?.id || String(targetUser.id) === String(myUid)) return;
+                const chatId = [myUid, String(targetUser.id)].sort().join('__');
+                const myName = getDisplayNameFromProfileOrAuth();
+                const myPhoto = getUserAvatarUrl();
+                const meChatRef = userChatsCollection(myUid).doc(chatId);
+                const otherChatRef = userChatsCollection(String(targetUser.id)).doc(chatId);
+                try {
+                    await Promise.all([
+                        meChatRef.set({
+                            peerId: String(targetUser.id),
+                            peerName: targetUser.name,
+                            peerPhotoURL: targetUser.img,
+                            lastMsg: 'Sin mensajes',
+                            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                        }, { merge: true }),
+                        otherChatRef.set({
+                            peerId: myUid,
+                            peerName: myName,
+                            peerPhotoURL: myPhoto,
+                            lastMsg: 'Sin mensajes',
+                            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                        }, { merge: true })
+                    ]);
+                    state.selectedDirectoryUserId = String(targetUser.id);
+                    await loadChatsForUser(myUid);
+                    router.navigate('messages');
+                    await chatLogic.openChat(chatId);
+                    directoryLogic.closeProfile();
+                } catch (error) {
+                    alert(`No se pudo iniciar el chat: ${error.code || error.message || 'error desconocido'}`);
+                }
+            },
+            openChat: async (id, options = {}) => {
+                const { preserveListener = false } = options;
+                const chatId = String(id);
+                const chat = state.data.chats.find(c => String(c.id) === chatId);
+                if (!chat) return;
+                const listPanel = document.getElementById('chat-list-panel');
+                const activeArea = document.getElementById('active-chat-area');
+                if (window.innerWidth < 768 && listPanel && activeArea) {
+                    listPanel.classList.add('hidden');
+                    activeArea.classList.remove('hidden');
+                    activeArea.classList.add('flex');
+                }
+                state.activeChatId = chatId;
+                document.getElementById('chat-header-img').src = chat.img;
+                document.getElementById('chat-header-name').innerText = chat.name;
+                if (!state.messagesByChat[chatId] && state.user && !state.guestMode) {
+                    await loadMessagesForChat(state.user.uid, chatId);
+                }
+                if (state.user && !state.guestMode && !preserveListener) {
+                    watchMessagesInRealtime(state.user.uid, chatId);
+                }
+                const body = document.getElementById('chat-body');
+                const messages = state.messagesByChat[chatId] || [];
+                if (messages.length === 0) {
+                    body.innerHTML = `
+                        <div class="flex flex-col items-center justify-center py-6">
+                            <span class="text-xs bg-gray-100 px-3 py-1 rounded-full text-gray-500">Sin mensajes</span>
+                        </div>
+                    `;
+                    return;
+                }
+
+                body.innerHTML = messages.map((m) => `
+                    <div class="flex flex-col ${m.sender === 'me' ? 'items-end' : 'items-start'}">
+                        <div class="chat-bubble ${m.sender === 'me' ? 'chat-me' : 'chat-them'}">${sanitizeHTML(m.text)}</div>
+                        <span class="text-[10px] text-gray-400 mt-1 ${m.sender === 'me' ? 'mr-1' : 'ml-1'}">${m.createdAt ? 'Guardado' : 'Ahora'}</span>
+                    </div>
+                `).join('');
+                body.scrollTop = body.scrollHeight;
+            },
+            send: async (e) => {
+                e.preventDefault();
+                if (!state.user || state.guestMode || !state.activeChatId) return;
+                const input = document.getElementById('chat-input');
+                const text = input.value.trim();
+                if(!text) return;
+
+                const chat = state.data.chats.find(c => String(c.id) === String(state.activeChatId));
+                if (!chat?.peerId) return;
+
+                if (!state.messagesByChat[state.activeChatId]) state.messagesByChat[state.activeChatId] = [];
+                state.messagesByChat[state.activeChatId].push({ text, sender: 'me', createdAt: new Date() });
+                chat.lastMsg = text;
+                chat.time = 'Ahora';
+                chatLogic.renderList();
+
+                const msgId = userChatMessagesCollection(state.user.uid, state.activeChatId).doc().id;
+                const payload = {
+                    text,
+                    senderId: state.user.uid,
+                    recipientId: chat.peerId,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                };
+                const chatMetaForMe = {
+                    peerId: chat.peerId,
+                    peerName: chat.name,
+                    peerPhotoURL: chat.img,
+                    lastMsg: text,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                };
+                const myName = getDisplayNameFromProfileOrAuth();
+                const myPhoto = getUserAvatarUrl();
+                const chatMetaForOther = {
+                    peerId: state.user.uid,
+                    peerName: myName,
+                    peerPhotoURL: myPhoto,
+                    lastMsg: text,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                };
+
+                try {
+                    const batch = db.batch();
+                    batch.set(userChatMessagesCollection(state.user.uid, state.activeChatId).doc(msgId), payload);
+                    batch.set(userChatMessagesCollection(chat.peerId, state.activeChatId).doc(msgId), payload);
+                    batch.set(userChatsCollection(state.user.uid).doc(state.activeChatId), chatMetaForMe, { merge: true });
+                    batch.set(userChatsCollection(chat.peerId).doc(state.activeChatId), chatMetaForOther, { merge: true });
+                    await batch.commit();
+                } catch (error) {
+                    alert(`No se pudo enviar el mensaje: ${error.code || error.message || 'error desconocido'}`);
+                }
+
+                input.value = '';
+                await chatLogic.openChat(state.activeChatId);
+            },
+            backToList: () => {
+                const listPanel = document.getElementById('chat-list-panel');
+                const activeArea = document.getElementById('active-chat-area');
+                if (window.innerWidth >= 768 || !listPanel || !activeArea) return;
+                listPanel.classList.remove('hidden');
+                activeArea.classList.add('hidden');
+                activeArea.classList.remove('flex');
+            }
+        };
+
+        const profileLogic = {
+            populate: () => {
+                const p = state.profile;
+                document.getElementById('display-name').innerText = `${p.firstName} ${p.lastName}`.trim() || 'Tu Nombre';
+                document.getElementById('display-role').innerText = p.role || 'Tu Cargo';
+                document.getElementById('p-name').value = p.firstName || '';
+                document.getElementById('p-lastname').value = p.lastName || '';
+                document.getElementById('p-year').value = p.graduationYear || '';
+                document.getElementById('p-location').value = p.location || '';
+                document.getElementById('p-status').value = p.status || 'trabajando';
+                document.getElementById('p-role').value = p.role || '';
+                document.getElementById('p-area').value = p.area || '';
+                document.getElementById('p-studies').value = p.studies || '';
+                document.getElementById('p-bio').value = p.bio || '';
+                document.getElementById('p-skills').value = p.skills || '';
+                document.getElementById('p-topics').value = p.topics || '';
+                document.getElementById('p-expectations').value = p.expectations || '';
+                document.getElementById('p-phone').value = p.phone || '';
+                document.getElementById('p-linkedin').value = p.linkedin || '';
+                const fullName = `${p.firstName || ''} ${p.lastName || ''}`.trim() || state.user?.displayName || 'Usuario';
+                const avatar = p.photoURL || buildAvatarUrl(fullName);
+                document.getElementById('profile-avatar').src = avatar;
+                refreshHeaderIdentity();
+            },
+            save: async () => {
+                if (!state.user) { alert('Debes iniciar sesión para actualizar tu cuenta.'); return; }
+                const firstNameValue = document.getElementById('p-name').value.trim();
+                const phoneValue = document.getElementById('p-phone').value.trim();
+                if (phoneValue && !isValidPhone(phoneValue)) {
+                    alert('El número de teléfono debe tener al menos 7 dígitos.');
+                    return;
+                }
+                const linkedinValue = document.getElementById('p-linkedin').value.trim();
+                if (linkedinValue && !isValidLinkedInUrl(linkedinValue)) {
+                    alert('El enlace de LinkedIn no es válido. Debe ser una URL de linkedin.com (ej: https://linkedin.com/in/tu-perfil).');
+                    return;
+                }
+
+                const btn = document.getElementById('btn-save-profile');
+                const original = btn.innerHTML;
+                btn.disabled = true;
+                btn.innerHTML = `<i class="ph-bold ph-spinner animate-spin"></i> Guardando...`;
+
+                const payload = {
+                    firstName: firstNameValue,
+                    lastName: document.getElementById('p-lastname').value.trim(),
+                    graduationYear: document.getElementById('p-year').value.trim(),
+                    location: document.getElementById('p-location').value.trim(),
+                    status: document.getElementById('p-status').value,
+                    role: document.getElementById('p-role').value.trim(),
+                    area: document.getElementById('p-area').value.trim(),
+                    studies: document.getElementById('p-studies').value.trim(),
+                    bio: document.getElementById('p-bio').value.trim(),
+                    skills: document.getElementById('p-skills').value.split(',').map(s => s.trim()).filter(Boolean),
+                    topics: document.getElementById('p-topics').value.trim(),
+                    expectations: document.getElementById('p-expectations').value.trim(),
+                    phone: phoneValue,
+                    linkedin: linkedinValue ? normalizeLinkedInUrl(linkedinValue) : '',
+                    email: state.user.email || '',
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                };
+
+                try {
+                    const docRef = alumniCollection.doc(state.user.uid);
+                    const exists = (await docRef.get()).exists;
+                    if (!exists) payload.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+                    await docRef.set(payload, { merge: true });
+
+                    state.profile = {
+                        ...state.profile,
+                        ...payload,
+                        skills: (payload.skills || []).join(', ')
+                    };
+
+                    document.getElementById('display-name').innerText = `${state.profile.firstName} ${state.profile.lastName}`.trim() || state.user?.displayName || 'Tu Nombre';
+                    document.getElementById('display-role').innerText = state.profile.role || 'Tu Cargo';
+                    const expectationsEl = document.getElementById('display-expectations');
+                    if (expectationsEl) expectationsEl.innerText = state.profile.expectations || 'Aún no has agregado esta información.';
+                    const avatar = state.profile.photoURL || buildAvatarUrl(`${state.profile.firstName} ${state.profile.lastName}`.trim() || state.user?.displayName || 'Usuario');
+                    document.getElementById('profile-avatar').src = avatar;
+                    refreshHeaderIdentity();
+                    await loadAlumni();
+
+                    btn.className = btn.className.replace('bg-brand-600', 'bg-green-600');
+                    btn.innerHTML = `<i class="ph-bold ph-check"></i> ¡Guardado!`;
+                } catch (error) {
+                    btn.className = btn.className.replace('bg-brand-600', 'bg-red-600');
+                    btn.innerHTML = `<i class="ph-bold ph-warning-circle"></i> Error`; 
+                }
+
+                setTimeout(() => {
+                    btn.className = btn.className.replace('bg-green-600', 'bg-brand-600').replace('bg-red-600', 'bg-brand-600');
+                    btn.innerHTML = original;
+                    btn.disabled = false;
+                }, 2000);
+            }
+        };
+
+        const uiLogic = {
+            openNewsModal: (idx) => {
+                const item = state.data.news[idx];
+                document.getElementById('news-modal-img').src = item.img;
+                document.getElementById('news-modal-cat').innerText = item.category;
+                document.getElementById('news-modal-title').innerText = item.title;
+                document.getElementById('news-modal-date').innerText = item.date;
+                renderTextWithLinks(document.getElementById('news-modal-body'), item.summary || 'Sin contenido adicional.');
+                document.getElementById('modal-news').classList.remove('hidden');
+            },
+            closeNewsModal: () => document.getElementById('modal-news').classList.add('hidden'),
+            toggleAuthModal: () => router.navigate(state.user ? 'profile' : 'register')
+        };
+
+        directoryLogic.debouncedFilter = debounce(() => directoryLogic.filter(), 280);
+
+        window.router = router;
+        window.authLogic = authLogic;
+        window.onboardingLogic = onboardingLogic;
+        window.emailLogic = emailLogic;
+        window.directoryLogic = directoryLogic;
+        window.newsLogic = newsLogic;
+        window.adminLogic = adminLogic;
+        window.chatLogic = chatLogic;
+        window.profileLogic = profileLogic;
+        window.uiLogic = uiLogic;
+
+        auth.onAuthStateChanged(async (user) => {
+            if (state.guestMode) return;
+            state.user = user;
+            const adminBtn = document.getElementById('nav-admin');
+            const registerBtn = document.getElementById('login-register-btn');
+            if (user) {
+                if (registerBtn) registerBtn.classList.add('hidden');
+                await loadProfile(user.uid);
+                watchChatsInRealtime(user.uid);
+                if (adminBtn) {
+                    if (isAdminUser()) adminBtn.classList.remove('hidden');
+                    else adminBtn.classList.add('hidden');
+                }
+
+                if (!state.profile.onboardingCompleted) {
+                    if (user.displayName && !state.profile.firstName) {
+                        const nameParts = user.displayName.split(' ');
+                        const obName = document.getElementById('ob-name');
+                        const obLast = document.getElementById('ob-lastname');
+                        if (obName) obName.value = nameParts[0] || '';
+                        if (obLast) obLast.value = nameParts.slice(1).join(' ') || '';
+                    }
+                    router.navigate('onboarding');
+                } else {
+                    router.navigate('directory');
+                    await loadAlumni();
+                    await loadNews();
+                }
+            } else {
+                if (registerBtn) registerBtn.classList.remove('hidden');
+                if (adminBtn) adminBtn.classList.add('hidden');
+                state.data.alumni = [];
+                state.data.chats = [];
+                state.activeChatId = null;
+                state.messagesByChat = {};
+                state.selectedDirectoryUserId = null;
+                if (state.listeners.chats) { state.listeners.chats(); state.listeners.chats = null; }
+                if (state.listeners.messages) { state.listeners.messages(); state.listeners.messages = null; }
+                state.profile = { firstName: '', lastName: '', graduationYear: '', location: '', status: 'trabajando', role: '', area: '', studies: '', bio: '', skills: '', topics: '', expectations: '', phone: '', linkedin: '', onboardingCompleted: false };
+                refreshHeaderIdentity();
+                router.navigate('home');
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            router.navigate('home');
+            loadNews();
         });
     </script>
 </body>
