@@ -221,6 +221,7 @@ function goto(page) {
 }
 
 function renderNav(activePage='') {
+    document.getElementById('theme-floating-toggle')?.remove();
     const active=(id)=>activePage===id?'text-brand-600 bg-brand-50 px-3 py-1 rounded-lg':'text-gray-500 hover:text-brand-600';
     const mactive=(id)=>activePage===id?'text-brand-600':'text-gray-500';
     document.body.insertAdjacentHTML('afterbegin', `
@@ -238,6 +239,7 @@ function renderNav(activePage='') {
                 <a href="admin.html" class="hidden font-medium transition ${active('admin')}" id="nav-admin">Admin</a>
             </div>
             <div class="flex items-center gap-2">
+                <button type="button" class="theme-toggle" data-theme-toggle onclick="toggleThemeMode()" aria-label="Cambiar tema"></button>
                 <a href="profile.html" id="profile-menu-trigger" class="h-10 w-10 rounded-full bg-brand-50 overflow-hidden ring-2 ring-transparent hover:ring-brand-300 transition-all shadow-sm" title="Ver perfil">
                     <img src="https://ui-avatars.com/api/?name=Usuario&background=22c55e&color=fff" alt="Perfil" class="object-cover w-full h-full" id="header-avatar">
                 </a>
@@ -253,4 +255,5 @@ function renderNav(activePage='') {
             <a href="profile.html" class="py-3 text-xs font-semibold flex flex-col items-center gap-1 ${mactive('profile')}"><i class="ph ph-user-circle text-lg"></i><span>Perfil</span></a>
         </nav>
     `);
+    setThemeMode(document.documentElement.classList.contains('dark') ? 'dark' : 'light');
 }

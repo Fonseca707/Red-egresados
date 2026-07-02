@@ -46,6 +46,7 @@
         </div>
 
         <div class="flex items-center gap-2">
+            <button type="button" class="theme-toggle" data-theme-toggle onclick="toggleThemeMode()" aria-label="Cambiar tema"></button>
             <!-- Avatar Usuario -->
             <button id="profile-menu-trigger" onclick="router.navigate('profile')" class="h-10 w-10 rounded-full bg-brand-50 overflow-hidden ring-2 ring-transparent hover:ring-brand-300 transition-all focus:outline-none shadow-sm" title="Ver perfil">
                 <img src="https://ui-avatars.com/api/?name=Usuario&background=22c55e&color=fff" alt="Perfil" class="object-cover w-full h-full" id="header-avatar">
@@ -832,8 +833,8 @@
 
             <div id="admin-users-tab" class="space-y-4">
                 <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left text-sm whitespace-nowrap">
+                    <div class="admin-table-scroll">
+                        <table class="w-full min-w-[980px] text-left text-sm whitespace-nowrap">
                             <thead class="bg-gray-50/50 text-gray-500 border-b border-gray-100">
                                 <tr>
                                     <th class="px-6 py-4 font-semibold">Egresado</th>
@@ -1012,6 +1013,7 @@
     </div>
 
     <!-- Firebase (compat para script clásico) -->
+    <script src="theme.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore-compat.js"></script>
@@ -1834,7 +1836,9 @@
                 if (viewId === 'auth' || viewId === 'register' || viewId === 'onboarding' || viewId === 'onboarding-profile' || viewId === 'terms') {
                     nav.classList.add('hidden');
                     if (mobileNav) mobileNav.classList.add('hidden');
+                    ensureFloatingThemeToggle();
                 } else {
+                    document.getElementById('theme-floating-toggle')?.remove();
                     nav.classList.remove('hidden');
                     if (mobileNav) mobileNav.classList.remove('hidden');
                     const navButtons = { 'home': 'nav-home', 'directory': 'nav-dir', 'news': 'nav-news', 'exam-modules': 'nav-exams', 'messages': 'nav-msg', 'admin': 'nav-admin' };

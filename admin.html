@@ -81,7 +81,7 @@
 
             <div id="admin-users-tab" class="space-y-4">
                 <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                    <div id="admin-users-table-container" class="overflow-x-auto"></div>
+                    <div id="admin-users-table-container" class="admin-table-scroll"></div>
                 </div>
                 <div id="admin-user-editor" class="hidden bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-gray-100">
                     <div class="flex items-center justify-between gap-4 mb-6">
@@ -188,6 +188,7 @@
         </div>
     </main>
 
+    <script src="theme.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore-compat.js"></script>
@@ -298,7 +299,7 @@
                     <th class="px-6 py-4 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Acciones</th>`;
                 const colspan = isSuperAdmin ? 7 : 5;
                 if (!users.length) {
-                    container.innerHTML = `<table class="w-full"><thead class="bg-gray-50 border-b border-gray-100"><tr>${headerCols}</tr></thead><tbody><tr><td colspan="${colspan}" class="px-6 py-6 text-center text-gray-500">Sin usuarios para mostrar.</td></tr></tbody></table>`;
+                    container.innerHTML = `<table class="w-full min-w-[980px]"><thead class="bg-gray-50 border-b border-gray-100"><tr>${headerCols}</tr></thead><tbody><tr><td colspan="${colspan}" class="px-6 py-6 text-center text-gray-500">Sin usuarios para mostrar.</td></tr></tbody></table>`;
                     return;
                 }
                 const rows = users.map(user => {
@@ -345,7 +346,7 @@
                         </tr>`;
                 }).join('');
                 container.innerHTML = `
-                    <table class="w-full">
+                    <table class="w-full min-w-[1040px]">
                         <thead class="bg-gray-50 border-b border-gray-100"><tr>${headerCols}</tr></thead>
                         <tbody class="divide-y divide-gray-50">${rows}</tbody>
                     </table>`;
