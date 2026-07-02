@@ -47,8 +47,8 @@
 
             <form onsubmit="authLogic.login(event)" class="space-y-5">
                 <div>
-                    <label class="input-label">Email Personal</label>
-                    <input id="login-email" type="email" required placeholder="tu.nombre@gmail.com" class="input-field">
+                    <label class="input-label">Correo o usuario</label>
+                    <input id="login-email" type="text" required autocomplete="username" placeholder="wanda.cg o tu.nombre@gmail.com" class="input-field">
                 </div>
                 <div>
                     <label class="input-label">Contraseña</label>
@@ -78,13 +78,14 @@
         const authLogic = {
             login: async (e) => {
                 e.preventDefault();
-                const email = document.getElementById('login-email').value.trim();
+                const identity = document.getElementById('login-email').value.trim();
                 const password = document.getElementById('login-password').value;
                 const feedback = document.getElementById('auth-feedback');
                 try {
                     state.guestMode = false;
                     sessionStorage.removeItem('guestMode');
-                    await auth.signInWithEmailAndPassword(email, password);
+                    const authEmail = await resolveAuthEmail(identity);
+                    await auth.signInWithEmailAndPassword(authEmail, password);
                 } catch (error) {
                     feedback.classList.add('text-red-600');
                     feedback.textContent = getFriendlyAuthError(error, 'No pudimos iniciar sesión.');

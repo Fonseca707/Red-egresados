@@ -46,8 +46,8 @@
 
             <form onsubmit="authLogic.submitRegister(event)" class="space-y-4">
                 <div>
-                    <label class="input-label">Email</label>
-                    <input id="register-email" type="email" required placeholder="tu.nombre@email.com" class="input-field">
+                    <label class="input-label">Correo o usuario</label>
+                    <input id="register-email" type="text" required autocomplete="username" placeholder="wanda.cg o tu.nombre@email.com" class="input-field">
                 </div>
                 <div>
                     <label class="input-label">Contraseña</label>
@@ -89,15 +89,21 @@
         const authLogic = {
             submitRegister: async (e) => {
                 e.preventDefault();
-                const email = document.getElementById('register-email').value.trim();
+                const identity = document.getElementById('register-email').value.trim();
                 const password = document.getElementById('register-password').value;
                 const confirm = document.getElementById('register-password-confirm').value;
                 const acceptedPrivacy = document.getElementById('register-privacy').checked;
                 const wantsNewsletter = document.getElementById('register-newsletter').checked;
                 const feedback = document.getElementById('register-feedback');
 
-                if (!email || !password) {
-                    feedback.textContent = 'Completa email y contraseña.';
+                if (!identity || !password) {
+                    feedback.textContent = 'Completa usuario/correo y contraseña.';
+                    return;
+                }
+                const usesUsername = !isEmailIdentity(identity);
+                const username = usesUsername ? normalizeUsername(identity) : '';
+                if (usesUsername && !isValidUsername(username)) {
+                    feedback.textContent = 'El usuario debe tener entre 3 y 30 caracteres.';
                     return;
                 }
                 if (password.length < 6) {
@@ -116,9 +122,21 @@
                 try {
                     state.guestMode = false;
                     sessionStorage.removeItem('guestMode');
+                    const email = authEmailForIdentity(identity);
+                    const contactEmail = isEmailIdentity(identity) ? identity.toLowerCase() : '';
+                    if (username) {
+                        const existingUsername = await usernamesCollection.doc(username).get();
+                        if (existingUsername.exists) {
+                            feedback.textContent = 'Ese usuario ya esta en uso.';
+                            return;
+                        }
+                    }
                     const cred = await auth.createUserWithEmailAndPassword(email, password);
                     const payload = {
                         email,
+                        contactEmail,
+                        username,
+                        school: DEFAULT_SCHOOL,
                         privacyAccepted: true,
                         newsletterOptIn: wantsNewsletter,
                         newsletterOptInUpdatedAt: firebase.firestore.FieldValue.serverTimestamp(),
@@ -127,6 +145,7 @@
                         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
                     };
                     await alumniCollection.doc(cred.user.uid).set(payload, { merge: true });
+                    if (username) await reserveUsername(username, cred.user.uid, email, { contactEmail });
                     feedback.textContent = 'Cuenta creada correctamente.';
                     // onAuthStateChanged will redirect to directory/onboarding
                 } catch (error) {
@@ -147,6 +166,8 @@
                     const result = await auth.signInWithPopup(provider);
                     await alumniCollection.doc(result.user.uid).set({
                         email: result.user.email || '',
+                        contactEmail: result.user.email || '',
+                        school: DEFAULT_SCHOOL,
                         privacyAccepted: true,
                         newsletterOptIn: true,
                         newsletterOptInUpdatedAt: firebase.firestore.FieldValue.serverTimestamp(),

@@ -128,6 +128,7 @@
                     location: document.getElementById('ob-location').value.trim(),
                     status: document.getElementById('ob-status').value,
                     onboardingCompleted: true,
+                    school: state.profile.school || DEFAULT_SCHOOL,
                     email: state.user.email || '',
                     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
                 };
@@ -151,6 +152,7 @@
                 try {
                     await alumniCollection.doc(state.user.uid).set({
                         onboardingCompleted: true,
+                        school: state.profile.school || DEFAULT_SCHOOL,
                         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
                     }, { merge: true });
 

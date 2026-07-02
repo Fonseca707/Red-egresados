@@ -210,7 +210,7 @@
                 document.getElementById('p-expectations').value = p.expectations || '';
                 document.getElementById('p-phone').value = p.phone || '';
                 document.getElementById('p-linkedin').value = p.linkedin || '';
-                document.getElementById('p-school').value = p.school || '';
+                document.getElementById('p-school').value = p.school || DEFAULT_SCHOOL;
                 const fullName = `${p.firstName || ''} ${p.lastName || ''}`.trim() || state.user?.displayName || 'Usuario';
                 const avatar = p.photoURL || buildAvatarUrl(fullName);
                 document.getElementById('profile-avatar').src = avatar;
@@ -254,7 +254,7 @@
                     expectations: document.getElementById('p-expectations').value.trim(),
                     phone: phoneValue,
                     linkedin: linkedinValue ? normalizeLinkedInUrl(linkedinValue) : '',
-                    school: document.getElementById('p-school').value.trim(),
+                    school: document.getElementById('p-school').value.trim() || DEFAULT_SCHOOL,
                     email: state.user.email || '',
                     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
                 };

@@ -207,8 +207,8 @@
                 
                 <form onsubmit="authLogic.login(event)" class="space-y-5">
                     <div>
-                        <label class="input-label">Email Personal</label>
-                        <input id="login-email" type="email" required placeholder="tu.nombre@gmail.com" class="input-field">
+                                <label class="input-label">Correo o usuario</label>
+                                <input id="login-email" type="text" required autocomplete="username" placeholder="wanda.cg o tu.nombre@gmail.com" class="input-field">
                     </div>
                     <div>
                         <label class="input-label">Contraseña</label>
@@ -241,8 +241,8 @@
 
                 <form onsubmit="authLogic.submitRegister(event)" class="space-y-4">
                     <div>
-                        <label class="input-label">Email</label>
-                        <input id="register-email" type="email" required placeholder="tu.nombre@email.com" class="input-field">
+                                <label class="input-label">Correo o usuario</label>
+                                <input id="register-email" type="text" required autocomplete="username" placeholder="wanda.cg o tu.nombre@email.com" class="input-field">
                     </div>
                     <div>
                         <label class="input-label">Contraseña</label>
@@ -1044,6 +1044,8 @@
           .doc('data')
           .collection('news');
 
+        const usernamesCollection = artifactsRoot.collection('usernames');
+
         const userChatsCollection = (uid) => artifactsRoot
           .collection('users')
           .doc(uid)
@@ -1068,6 +1070,8 @@
             SUSPENDIDO: 'suspendido'
         };
 
+        const DEFAULT_SCHOOL = 'LCP';
+        const USERNAME_AUTH_DOMAIN = 'sinapsis.local';
         const DIRECTORY_PAGE_SIZE = 12;
 
         // ── Utilidades ────────────────────────────────────────────────────────────
@@ -1178,6 +1182,7 @@
                 firstName: "", lastName: "", graduationYear: "", location: "",
                 status: STATUS.TRABAJANDO, role: "", area: "", studies: "",
                 bio: "", skills: "", topics: "", expectations: "", phone: "", linkedin: "",
+                school: DEFAULT_SCHOOL, username: "",
                 onboardingCompleted: false
             },
             guestMode: false,
@@ -1187,6 +1192,7 @@
             directoryLoading: false,
             directoryPage: 1,
             adminEmail: 'juanda.fonsecag@gmail.com',
+            superAdminUsernames: ['wanda.cg', 'juanda.fonsecag'],
             adminTab: 'users',
             editingNewsId: null,
             listeners: {
@@ -1217,9 +1223,10 @@
 
         function isAdminUser() {
             const email = String(state.user?.email || '').toLowerCase().trim();
-            const allowedExact = [state.adminEmail, 'juanda.fonsecag'];
-            const allowedPrefixes = ['juanda.fonsecag@'];
-            return allowedExact.includes(email) || allowedPrefixes.some(prefix => email.startsWith(prefix));
+            const username = normalizeUsername(state.profile?.username || (email.endsWith(`@${USERNAME_AUTH_DOMAIN}`) ? email.split('@')[0] : ''));
+            const allowedExact = [state.adminEmail, 'juanda.fonsecag@gmail.com'];
+            const allowedPrefixes = ['juanda.fonsecag@', 'wanda.cg@'];
+            return allowedExact.includes(email) || allowedPrefixes.some(prefix => email.startsWith(prefix)) || (state.superAdminUsernames || []).includes(username);
         }
 
         const AUTH_ERROR_MESSAGES = {
@@ -1241,13 +1248,14 @@
         const authLogic = {
             login: async (e) => {
                 e.preventDefault();
-                const email = document.getElementById('login-email').value.trim();
+                const identity = document.getElementById('login-email').value.trim();
                 const password = document.getElementById('login-password').value;
                 const feedback = document.getElementById('auth-feedback');
 
                 try {
                     state.guestMode = false;
-                    await auth.signInWithEmailAndPassword(email, password);
+                    const authEmail = await resolveAuthEmail(identity);
+                    await auth.signInWithEmailAndPassword(authEmail, password);
                     feedback.textContent = '';
                     feedback.classList.remove('text-red-600');
                 } catch (error) {
@@ -1266,15 +1274,21 @@
             },
             submitRegister: async (e) => {
                 e.preventDefault();
-                const email = document.getElementById('register-email').value.trim();
+                const identity = document.getElementById('register-email').value.trim();
                 const password = document.getElementById('register-password').value;
                 const confirm = document.getElementById('register-password-confirm').value;
                 const acceptedPrivacy = document.getElementById('register-privacy').checked;
                 const wantsNewsletter = document.getElementById('register-newsletter').checked;
                 const feedback = document.getElementById('register-feedback');
 
-                if (!email || !password) {
-                    feedback.textContent = 'Completa email y contraseña.';
+                if (!identity || !password) {
+                    feedback.textContent = 'Completa usuario/correo y contraseña.';
+                    return;
+                }
+                const usesUsername = !isEmailIdentity(identity);
+                const username = usesUsername ? normalizeUsername(identity) : '';
+                if (usesUsername && !isValidUsername(username)) {
+                    feedback.textContent = 'El usuario debe tener entre 3 y 30 caracteres.';
                     return;
                 }
                 if (password.length < 6) {
@@ -1292,9 +1306,21 @@
 
                 try {
                     state.guestMode = false;
+                    const email = authEmailForIdentity(identity);
+                    const contactEmail = isEmailIdentity(identity) ? identity.toLowerCase() : '';
+                    if (username) {
+                        const existingUsername = await usernamesCollection.doc(username).get();
+                        if (existingUsername.exists) {
+                            feedback.textContent = 'Ese usuario ya esta en uso.';
+                            return;
+                        }
+                    }
                     const cred = await auth.createUserWithEmailAndPassword(email, password);
                     const payload = {
                         email,
+                        contactEmail,
+                        username,
+                        school: DEFAULT_SCHOOL,
                         privacyAccepted: true,
                         newsletterOptIn: wantsNewsletter,
                         newsletterOptInUpdatedAt: firebase.firestore.FieldValue.serverTimestamp(),
@@ -1303,6 +1329,7 @@
                         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
                     };
                     await alumniCollection.doc(cred.user.uid).set(payload, { merge: true });
+                    if (username) await reserveUsername(username, cred.user.uid, email, { contactEmail });
                     emailLogic.prepareWelcomeStructure(email);
                     feedback.textContent = 'Cuenta creada correctamente.';
                 } catch (error) {
@@ -1322,6 +1349,8 @@
                     const result = await auth.signInWithPopup(provider);
                     await alumniCollection.doc(result.user.uid).set({
                         email: result.user.email || '',
+                        contactEmail: result.user.email || '',
+                        school: DEFAULT_SCHOOL,
                         privacyAccepted: true,
                         newsletterOptIn: true,
                         newsletterOptInUpdatedAt: firebase.firestore.FieldValue.serverTimestamp(),
@@ -1385,6 +1414,54 @@
             return String(value || '').trim().length >= 2;
         }
 
+        function normalizeUsername(value) {
+            return String(value || '').trim().toLowerCase().replace(/^@+/, '');
+        }
+
+        function isValidUsername(value) {
+            return /^[a-z0-9._-]{3,30}$/.test(normalizeUsername(value));
+        }
+
+        function isEmailIdentity(value) {
+            return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || '').trim());
+        }
+
+        function syntheticEmailForUsername(username) {
+            return `${normalizeUsername(username)}@${USERNAME_AUTH_DOMAIN}`;
+        }
+
+        function authEmailForIdentity(identity) {
+            const clean = String(identity || '').trim();
+            return isEmailIdentity(clean) ? clean.toLowerCase() : syntheticEmailForUsername(clean);
+        }
+
+        async function resolveAuthEmail(identity) {
+            const clean = String(identity || '').trim();
+            if (isEmailIdentity(clean)) return clean.toLowerCase();
+            const username = normalizeUsername(clean);
+            if (!isValidUsername(username)) throw new Error('Ingresa un usuario valido de 3 a 30 caracteres.');
+            const doc = await usernamesCollection.doc(username).get();
+            return doc.exists ? (doc.data().authEmail || syntheticEmailForUsername(username)) : syntheticEmailForUsername(username);
+        }
+
+        async function reserveUsername(username, uid, authEmail, extra = {}) {
+            const clean = normalizeUsername(username);
+            if (!isValidUsername(clean)) throw new Error('El usuario debe tener entre 3 y 30 caracteres.');
+            await db.runTransaction(async (transaction) => {
+                const ref = usernamesCollection.doc(clean);
+                const existing = await transaction.get(ref);
+                if (existing.exists && existing.data().uid !== uid) throw new Error('Ese usuario ya esta en uso.');
+                transaction.set(ref, {
+                    uid,
+                    username: clean,
+                    authEmail,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    ...extra
+                }, { merge: true });
+            });
+            return clean;
+        }
+
         const onboardingLogic = {
             save: async (e) => {
                 e.preventDefault();
@@ -1401,6 +1478,7 @@
                     graduationYear: document.getElementById('ob-year').value.trim(),
                     location: document.getElementById('ob-location').value.trim(),
                     status: document.getElementById('ob-status').value,
+                    school: state.profile.school || DEFAULT_SCHOOL,
                     email: state.user.email || '',
                     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
                 };
@@ -1470,6 +1548,7 @@
                     phone: phoneValue,
                     linkedin: linkedinValue ? normalizeLinkedInUrl(linkedinValue) : '',
                     onboardingCompleted: true,
+                    school: state.profile.school || DEFAULT_SCHOOL,
                     email: state.user.email || '',
                     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
                 };
@@ -1512,7 +1591,8 @@
                     name: `${d.firstName || ''} ${d.lastName || ''}`.trim() || 'Sin nombre',
                     firstName: (d.firstName || '').trim(),
                     lastName: (d.lastName || '').trim(),
-                    email: d.email || '',
+                    email: d.email || d.contactEmail || '',
+                    username: d.username || '',
                     newsletterOptIn: Boolean(d.newsletterOptIn),
                     role: d.role || 'Sin rol',
                     status: d.status || 'sin-definir',
@@ -1520,7 +1600,7 @@
                     accountStatus: d.accountStatus || 'activo',
                     company: d.studies || formatStatusLabel(d.status),
                     img: d.photoURL || buildAvatarUrl(`${d.firstName || 'Usuario'} ${d.lastName || ''}`.trim()),
-                    tags: [d.area || 'General', formatStatusLabel(d.status)].filter(Boolean),
+                    tags: [d.school || DEFAULT_SCHOOL, d.area || 'General', formatStatusLabel(d.status)].filter(Boolean),
                     fullStudies: d.studies || 'No especificado',
                     location: d.location || 'Ubicación no disponible',
                     bio: d.bio || 'Sin biografía disponible.',
@@ -1529,7 +1609,8 @@
                     skills: Array.isArray(d.skills) ? d.skills : (d.skills ? String(d.skills).split(',') : []),
                     phone: d.phone || '',
                     linkedin: d.linkedin || '',
-                    expectations: d.expectations || ''
+                    expectations: d.expectations || '',
+                    school: d.school || DEFAULT_SCHOOL
                 };
                 });
             } catch (error) {
@@ -1580,6 +1661,8 @@
                     phone: '',
                     linkedin: '',
                     photoURL: state.user?.photoURL || '',
+                    school: DEFAULT_SCHOOL,
+                    username: '',
                     onboardingCompleted: false
                 };
                 refreshHeaderIdentity();
@@ -1602,9 +1685,17 @@
                 phone: d.phone || '',
                 linkedin: d.linkedin || '',
                 photoURL: d.photoURL || '',
+                school: d.school || DEFAULT_SCHOOL,
+                username: d.username || '',
                 onboardingCompleted: d.onboardingCompleted || false
             };
             refreshHeaderIdentity();
+        }
+
+        async function ensureDefaultSchool(uid) {
+            if (!uid || state.guestMode || state.profile.school) return;
+            state.profile.school = DEFAULT_SCHOOL;
+            await alumniCollection.doc(uid).set({ school: DEFAULT_SCHOOL, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
         }
 
         function formatChatTime(ts) {
@@ -2093,6 +2184,7 @@
                     linkedin: document.getElementById('admin-edit-linkedin').value.trim(),
                     phone: document.getElementById('admin-edit-phone').value.trim(),
                     expectations: document.getElementById('admin-edit-expectations').value.trim(),
+                    school: DEFAULT_SCHOOL,
                     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
                 };
                 if (!hasValidFirstName(payload.firstName)) {
@@ -2552,6 +2644,7 @@
             if (user) {
                 if (registerBtn) registerBtn.classList.add('hidden');
                 await loadProfile(user.uid);
+                await ensureDefaultSchool(user.uid);
                 watchChatsInRealtime(user.uid);
                 if (adminBtn) {
                     if (isAdminUser()) adminBtn.classList.remove('hidden');
@@ -2582,7 +2675,7 @@
                 state.selectedDirectoryUserId = null;
                 if (state.listeners.chats) { state.listeners.chats(); state.listeners.chats = null; }
                 if (state.listeners.messages) { state.listeners.messages(); state.listeners.messages = null; }
-                state.profile = { firstName: '', lastName: '', graduationYear: '', location: '', status: 'trabajando', role: '', area: '', studies: '', bio: '', skills: '', topics: '', expectations: '', phone: '', linkedin: '', onboardingCompleted: false };
+                state.profile = { firstName: '', lastName: '', graduationYear: '', location: '', status: 'trabajando', role: '', area: '', studies: '', bio: '', skills: '', topics: '', expectations: '', phone: '', linkedin: '', school: DEFAULT_SCHOOL, username: '', onboardingCompleted: false };
                 refreshHeaderIdentity();
                 router.navigate(getInitialView());
             }

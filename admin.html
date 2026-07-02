@@ -51,6 +51,20 @@
                 <button onclick="adminLogic.switchTab('subadmins')" id="tab-subadmins" class="hidden pb-3 text-sm font-bold border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition">Sub-Administradores</button>
             </div>
 
+            <section id="admin-dashboard" class="mb-6 space-y-4">
+                <div id="admin-stats-grid" class="grid grid-cols-2 lg:grid-cols-4 gap-3"></div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+                        <h3 class="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2"><i class="ph-bold ph-chart-bar text-brand-600"></i> Estados de estudiantes</h3>
+                        <div id="admin-status-chart" class="space-y-3"></div>
+                    </div>
+                    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+                        <h3 class="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2"><i class="ph-bold ph-graduation-cap text-brand-600"></i> Promociones</h3>
+                        <div id="admin-year-chart" class="space-y-3"></div>
+                    </div>
+                </div>
+            </section>
+
             <!-- Herramienta de migración -->
             <div id="migration-banner" class="mb-6 bg-amber-50 border border-amber-200 rounded-2xl px-5 py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div class="flex items-start gap-3">
@@ -147,6 +161,23 @@
                         <p class="text-purple-700 text-xs mt-0.5">Los sub-admins pueden ver y editar únicamente los usuarios de su colegio asignado. Para asignar uno, usa el botón <i class="ph-bold ph-shield-star"></i> en la tabla de Usuarios.</p>
                     </div>
                 </div>
+                <div id="create-subadmin-card" class="hidden bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-gray-100">
+                    <h3 class="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2">
+                        <i class="ph-bold ph-user-plus text-purple-600"></i> Crear administrador de colegio
+                    </h3>
+                    <form id="create-subadmin-form" class="grid grid-cols-1 md:grid-cols-2 gap-4" onsubmit="adminLogic.createSubAdmin(event)">
+                        <div><label class="input-label">Usuario</label><input id="subadmin-username" class="input-field" required placeholder="ej: admin.lcp"></div>
+                        <div><label class="input-label">Contraseña inicial</label><input id="subadmin-password" type="password" minlength="6" class="input-field" required></div>
+                        <div><label class="input-label">Nombre</label><input id="subadmin-first-name" class="input-field" required></div>
+                        <div><label class="input-label">Apellido</label><input id="subadmin-last-name" class="input-field"></div>
+                        <div><label class="input-label">Colegio</label><input id="subadmin-school" class="input-field" value="LCP" required></div>
+                        <div><label class="input-label">Correo de contacto (opcional)</label><input id="subadmin-contact-email" type="email" class="input-field" placeholder="admin@colegio.edu"></div>
+                        <div class="md:col-span-2 flex items-center justify-between gap-4">
+                            <p id="subadmin-feedback" class="text-xs text-gray-500"></p>
+                            <button id="btn-create-subadmin" type="submit" class="px-6 py-3 bg-purple-600 text-white font-bold rounded-xl hover:bg-purple-700 transition">Crear administrador</button>
+                        </div>
+                    </form>
+                </div>
                 <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                     <div class="p-6 border-b border-gray-100">
                         <h3 class="text-lg font-bold text-gray-900">Sub-Admins activos</h3>
@@ -182,13 +213,75 @@
                 });
                 if (tab === 'subadmins') adminLogic.renderSubAdmins();
             },
+            getVisibleUsers: () => {
+                return state.adminRole === 'superadmin'
+                    ? state.data.alumni
+                    : state.data.alumni.filter(u => u.school === state.adminSchool);
+            },
+            countBy: (items, getter) => {
+                return items.reduce((acc, item) => {
+                    const key = getter(item) || 'Sin definir';
+                    acc[key] = (acc[key] || 0) + 1;
+                    return acc;
+                }, {});
+            },
+            renderBarChart: (containerId, counts, emptyText) => {
+                const container = document.getElementById(containerId);
+                if (!container) return;
+                const entries = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 6);
+                const max = Math.max(1, ...entries.map(([, count]) => count));
+                if (!entries.length) {
+                    container.innerHTML = `<div class="text-sm text-gray-500">${emptyText}</div>`;
+                    return;
+                }
+                container.innerHTML = entries.map(([label, count]) => `
+                    <div>
+                        <div class="flex items-center justify-between text-xs font-bold text-gray-600 mb-1">
+                            <span>${sanitizeHTML(label)}</span><span>${count}</span>
+                        </div>
+                        <div class="h-2.5 rounded-full bg-gray-100 overflow-hidden">
+                            <div class="h-full rounded-full bg-brand-600" style="width:${Math.max(8, Math.round((count / max) * 100))}%"></div>
+                        </div>
+                    </div>
+                `).join('');
+            },
+            renderDashboard: () => {
+                const users = adminLogic.getVisibleUsers();
+                const active = users.filter(u => (u.accountStatus || ACCOUNT_STATUS.ACTIVO) !== ACCOUNT_STATUS.SUSPENDIDO).length;
+                const suspended = users.length - active;
+                const withLcp = users.filter(u => (u.school || DEFAULT_SCHOOL) === DEFAULT_SCHOOL).length;
+                const incomplete = users.filter(u => !u.role || !u.year || !u.location).length;
+                const stats = [
+                    { label:'Estudiantes', value:users.length, icon:'ph-users-three', color:'text-brand-600 bg-brand-50' },
+                    { label:'Activos', value:active, icon:'ph-check-circle', color:'text-green-600 bg-green-50' },
+                    { label:'Suspendidos', value:suspended, icon:'ph-prohibit', color:'text-amber-600 bg-amber-50' },
+                    { label:'Etiqueta LCP', value:withLcp, icon:'ph-identification-badge', color:'text-blue-600 bg-blue-50' },
+                    { label:'Perfiles incompletos', value:incomplete, icon:'ph-warning-circle', color:'text-red-600 bg-red-50' },
+                    { label:'Newsletter', value:users.filter(u => u.newsletterOptIn).length, icon:'ph-envelope-simple', color:'text-purple-600 bg-purple-50' }
+                ];
+                const grid = document.getElementById('admin-stats-grid');
+                if (grid) {
+                    grid.innerHTML = stats.map(stat => `
+                        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+                            <div class="flex items-center justify-between gap-3">
+                                <div>
+                                    <p class="text-xs font-bold uppercase tracking-wide text-gray-400">${sanitizeHTML(stat.label)}</p>
+                                    <p class="text-2xl font-extrabold text-gray-900 mt-1">${stat.value}</p>
+                                </div>
+                                <div class="w-10 h-10 rounded-xl ${stat.color} flex items-center justify-center"><i class="ph-bold ${stat.icon} text-xl"></i></div>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+                adminLogic.renderBarChart('admin-status-chart', adminLogic.countBy(users, u => u.statusLabel || formatStatusLabel(u.status)), 'Sin estados para mostrar.');
+                adminLogic.renderBarChart('admin-year-chart', adminLogic.countBy(users.filter(u => u.year && u.year !== '---'), u => u.year), 'Sin promociones registradas.');
+            },
             renderUsers: () => {
                 const container = document.getElementById('admin-users-table-container');
                 if (!container) return;
+                adminLogic.renderDashboard();
                 const isSuperAdmin = state.adminRole === 'superadmin';
-                const users = isSuperAdmin
-                    ? state.data.alumni
-                    : state.data.alumni.filter(u => u.school === state.adminSchool);
+                const users = adminLogic.getVisibleUsers();
                 const subAdminUids = new Set((state.data.subAdmins || []).map(sa => sa.uid));
                 const headerCols = isSuperAdmin ? `
                     <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Egresado</th>
@@ -315,7 +408,7 @@
                     linkedin: document.getElementById('admin-edit-linkedin').value.trim(),
                     phone: document.getElementById('admin-edit-phone').value.trim(),
                     expectations: document.getElementById('admin-edit-expectations').value.trim(),
-                    school: state.adminRole === 'subadmin' ? (targetUser?.school || state.adminSchool || '') : document.getElementById('admin-edit-school').value.trim(),
+                    school: state.adminRole === 'subadmin' ? (targetUser?.school || state.adminSchool || DEFAULT_SCHOOL) : (document.getElementById('admin-edit-school').value.trim() || DEFAULT_SCHOOL),
                     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
                 };
                 if (!hasValidFirstName(payload.firstName)) {
@@ -378,6 +471,76 @@
                     } catch (e) { alert(`Error al asignar sub-admin: ${e.message}`); }
                 }
             },
+            createSubAdmin: async (e) => {
+                e.preventDefault();
+                if (state.adminRole !== 'superadmin') return;
+                const btn = document.getElementById('btn-create-subadmin');
+                const feedback = document.getElementById('subadmin-feedback');
+                const original = btn.innerHTML;
+                const username = normalizeUsername(document.getElementById('subadmin-username').value);
+                const password = document.getElementById('subadmin-password').value;
+                const firstName = document.getElementById('subadmin-first-name').value.trim();
+                const lastName = document.getElementById('subadmin-last-name').value.trim();
+                const school = document.getElementById('subadmin-school').value.trim() || DEFAULT_SCHOOL;
+                const contactEmail = document.getElementById('subadmin-contact-email').value.trim().toLowerCase();
+
+                if (!isValidUsername(username)) {
+                    feedback.textContent = 'El usuario debe tener entre 3 y 30 caracteres.';
+                    return;
+                }
+                if (contactEmail && !isEmailIdentity(contactEmail)) {
+                    feedback.textContent = 'El correo de contacto no es valido.';
+                    return;
+                }
+
+                btn.disabled = true;
+                btn.innerHTML = '<i class="ph-bold ph-spinner animate-spin"></i> Creando...';
+                feedback.textContent = '';
+                try {
+                    const existingUsername = await usernamesCollection.doc(username).get();
+                    if (existingUsername.exists) {
+                        feedback.textContent = 'Ese usuario ya esta en uso.';
+                        return;
+                    }
+                    const secondaryAuth = getSecondaryAuth();
+                    const authEmail = contactEmail || syntheticEmailForUsername(username);
+                    const cred = await secondaryAuth.createUserWithEmailAndPassword(authEmail, password);
+                    await reserveUsername(username, cred.user.uid, authEmail, { contactEmail });
+                    await alumniCollection.doc(cred.user.uid).set({
+                        firstName,
+                        lastName,
+                        username,
+                        email: authEmail,
+                        contactEmail,
+                        school,
+                        role: 'Administrador de colegio',
+                        accountStatus: ACCOUNT_STATUS.ACTIVO,
+                        onboardingCompleted: true,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    }, { merge: true });
+                    await adminsCollection.doc(cred.user.uid).set({
+                        role: 'subadmin',
+                        school,
+                        username,
+                        assignedBy: state.user?.uid || '',
+                        assignedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    }, { merge: true });
+                    await secondaryAuth.signOut();
+                    e.target.reset();
+                    document.getElementById('subadmin-school').value = DEFAULT_SCHOOL;
+                    await loadAlumni();
+                    await loadSubAdmins();
+                    adminLogic.renderUsers();
+                    adminLogic.renderSubAdmins();
+                    feedback.textContent = `Administrador ${username} creado para ${school}.`;
+                } catch (error) {
+                    feedback.textContent = error.message || 'No se pudo crear el administrador.';
+                } finally {
+                    btn.disabled = false;
+                    btn.innerHTML = original;
+                }
+            },
             revokeSubAdmin: async (uid) => {
                 if (!confirm('¿Revocar el rol de sub-administrador?')) return;
                 try {
@@ -388,6 +551,8 @@
                 } catch (e) { alert(`Error al revocar sub-admin: ${e.message}`); }
             },
             renderSubAdmins: () => {
+                const card = document.getElementById('create-subadmin-card');
+                if (card) card.classList.toggle('hidden', state.adminRole !== 'superadmin');
                 const list = document.getElementById('admin-subadmins-list');
                 if (!list) return;
                 const subAdmins = state.data.subAdmins || [];
@@ -505,17 +670,25 @@
             },
             migrateSchoolLCP: async () => {
                 const btn = document.getElementById('btn-migrate-school');
-                if (!confirm('¿Asignar el colegio "LCP" a todos los usuarios que aún no lo tienen? Esta acción no sobreescribirá usuarios que ya tengan un colegio asignado.')) return;
+                if (!confirm('¿Asignar la etiqueta "LCP" a todos los usuarios actuales? Mientras solo exista un colegio, esta etiqueta quedará como valor estándar.')) return;
                 btn.disabled = true;
                 btn.innerHTML = `<i class="ph-bold ph-spinner animate-spin"></i> Migrando...`;
                 try {
                     const snap = await alumniCollection.get();
-                    const batch = db.batch();
+                    let batch = db.batch();
                     let count = 0;
-                    snap.docs.forEach(doc => {
-                        if (!doc.data().school) {
-                            batch.set(doc.ref, { school: 'LCP', updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+                    let writes = 0;
+                    const commits = [];
+                    snap.docs.forEach((doc) => {
+                        if (doc.data().school !== DEFAULT_SCHOOL) {
+                            batch.set(doc.ref, { school: DEFAULT_SCHOOL, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
                             count++;
+                            writes++;
+                            if (writes === 450) {
+                                commits.push(batch.commit());
+                                batch = db.batch();
+                                writes = 0;
+                            }
                         }
                     });
                     if (count === 0) {
@@ -523,7 +696,8 @@
                         setTimeout(() => { btn.innerHTML = `<i class="ph-bold ph-database"></i> Ejecutar migración`; btn.disabled = false; }, 2000);
                         return;
                     }
-                    await batch.commit();
+                    if (writes > 0) commits.push(batch.commit());
+                    await Promise.all(commits);
                     await loadAlumni();
                     adminLogic.renderUsers();
                     btn.className = btn.className.replace('bg-amber-600', 'bg-green-600').replace('hover:bg-amber-700', 'hover:bg-green-700');
