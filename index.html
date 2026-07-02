@@ -225,7 +225,7 @@
                 <p id="auth-feedback" class="text-xs text-red-600 mt-3 text-center font-semibold"></p>
                 
                 <div class="mt-8 text-center border-t border-gray-100 pt-6 space-y-2">
-                    <button id="login-register-btn" onclick="authLogic.registerWithEmail()" class="text-sm text-brand-600 font-bold hover:underline">Crear cuenta con email</button>
+                    <button id="login-register-btn" onclick="authLogic.registerWithEmail()" class="text-sm text-brand-600 font-bold hover:underline">Crear cuenta</button>
                     <button onclick="authLogic.browseAsGuest()" class="block w-full text-sm text-gray-600 font-semibold hover:text-brand-600 transition">Revisar la red como invitado</button>
                 </div>
             </div>
@@ -1047,6 +1047,7 @@
           .collection('news');
 
         const usernamesCollection = artifactsRoot.collection('usernames');
+        const adminsCollection = artifactsRoot.collection('admins');
 
         const userChatsCollection = (uid) => artifactsRoot
           .collection('users')
@@ -1197,6 +1198,8 @@
             superAdminUsernames: ['wanda.cg', 'juanda.fonsecag'],
             adminTab: 'users',
             editingNewsId: null,
+            adminRole: null,
+            adminSchool: null,
             listeners: {
                 chats: null,
                 messages: null
@@ -1229,6 +1232,31 @@
             const allowedExact = [state.adminEmail, 'juanda.fonsecag@gmail.com'];
             const allowedPrefixes = ['juanda.fonsecag@', 'wanda.cg@'];
             return allowedExact.includes(email) || allowedPrefixes.some(prefix => email.startsWith(prefix)) || (state.superAdminUsernames || []).includes(username);
+        }
+
+        async function loadAdminRole(uid) {
+            if (isAdminUser()) {
+                state.adminRole = 'superadmin';
+                state.adminSchool = null;
+                return;
+            }
+            try {
+                const doc = await adminsCollection.doc(uid).get();
+                if (doc.exists && doc.data().role === 'subadmin') {
+                    state.adminRole = 'subadmin';
+                    state.adminSchool = doc.data().school || null;
+                } else {
+                    state.adminRole = null;
+                    state.adminSchool = null;
+                }
+            } catch (error) {
+                state.adminRole = null;
+                state.adminSchool = null;
+            }
+        }
+
+        function canAccessAdmin() {
+            return isAdminUser() || state.adminRole === 'subadmin';
         }
 
         const AUTH_ERROR_MESSAGES = {
@@ -1813,9 +1841,12 @@
 
         const router = {
             navigate: (viewId) => {
+                if (viewId === 'admin') {
+                    window.location.href = 'admin.html';
+                    return;
+                }
                 if (viewId !== 'auth' && viewId !== 'register' && viewId !== 'home' && viewId !== 'terms' && viewId !== 'exam-modules' && !state.user) { authLogic.logout(); return; }
                 if (viewId === 'register' && state.user) { viewId = 'profile'; }
-                if (viewId === 'admin' && !isAdminUser()) { viewId = 'directory'; }
 
                 // Libera el listener de mensajes al salir de la vista de mensajes
                 if (state.view === 'messages' && viewId !== 'messages') {
@@ -2649,9 +2680,10 @@
                 if (registerBtn) registerBtn.classList.add('hidden');
                 await loadProfile(user.uid);
                 await ensureDefaultSchool(user.uid);
+                await loadAdminRole(user.uid);
                 watchChatsInRealtime(user.uid);
                 if (adminBtn) {
-                    if (isAdminUser()) adminBtn.classList.remove('hidden');
+                    if (canAccessAdmin()) adminBtn.classList.remove('hidden');
                     else adminBtn.classList.add('hidden');
                 }
 
@@ -2677,6 +2709,8 @@
                 state.activeChatId = null;
                 state.messagesByChat = {};
                 state.selectedDirectoryUserId = null;
+                state.adminRole = null;
+                state.adminSchool = null;
                 if (state.listeners.chats) { state.listeners.chats(); state.listeners.chats = null; }
                 if (state.listeners.messages) { state.listeners.messages(); state.listeners.messages = null; }
                 state.profile = { firstName: '', lastName: '', graduationYear: '', location: '', status: 'trabajando', role: '', area: '', studies: '', bio: '', skills: '', topics: '', expectations: '', phone: '', linkedin: '', school: DEFAULT_SCHOOL, username: '', onboardingCompleted: false };

@@ -5,18 +5,32 @@ function installThemeStyles() {
     style.textContent = `
         :root { color-scheme: light; }
         html.dark { color-scheme: dark; }
-        html.dark body { background:#0f172a !important; color:#e5e7eb !important; }
+        html.dark body { background:#0b1120 !important; color:#e5e7eb !important; }
         html.dark .glass-nav,
-        html.dark nav.glass-nav { background:rgba(15,23,42,0.9) !important; border-color:rgba(51,65,85,0.9) !important; }
+        html.dark nav.glass-nav { background:rgba(15,23,42,0.94) !important; border-color:rgba(51,65,85,0.9) !important; }
         html.dark [class~="bg-white"],
         html.dark [class~="bg-stone-50"],
         html.dark [class~="bg-gray-50"],
         html.dark [class~="bg-white/95"],
         html.dark [class~="bg-stone-50/60"] { background-color:#111827 !important; }
-        html.dark [class~="bg-gray-100"] { background-color:#1f2937 !important; }
+        html.dark [class~="bg-gray-100"],
+        html.dark [class~="bg-gray-50/50"],
+        html.dark [class~="bg-gray-50/70"] { background-color:#1e293b !important; }
+        html.dark [class~="bg-brand-50"] { background-color:#052e1a !important; }
+        html.dark [class~="bg-blue-50"] { background-color:#0b2545 !important; }
+        html.dark [class~="bg-purple-50"] { background-color:#2e1065 !important; }
+        html.dark [class~="bg-amber-50"] { background-color:#422006 !important; }
+        html.dark [class~="bg-red-50"] { background-color:#450a0a !important; }
+        html.dark [class~="bg-green-50"] { background-color:#052e16 !important; }
         html.dark [class~="border-gray-100"],
         html.dark [class~="border-gray-200"],
-        html.dark [class~="border-stone-200"] { border-color:#263244 !important; }
+        html.dark [class~="border-stone-200"],
+        html.dark [class~="border-brand-100"],
+        html.dark [class~="border-blue-100"],
+        html.dark [class~="border-purple-100"],
+        html.dark [class~="border-amber-200"],
+        html.dark [class~="border-green-100"],
+        html.dark [class~="border-red-100"] { border-color:#334155 !important; }
         html.dark [class~="divide-gray-50"] > :not([hidden]) ~ :not([hidden]) { border-color:#263244 !important; }
         html.dark [class~="text-gray-900"],
         html.dark [class~="text-stone-800"] { color:#f8fafc !important; }
@@ -26,6 +40,19 @@ function installThemeStyles() {
         html.dark [class~="text-gray-500"],
         html.dark [class~="text-stone-500"],
         html.dark [class~="text-gray-400"] { color:#94a3b8 !important; }
+        html.dark [class~="text-brand-600"],
+        html.dark [class~="text-brand-700"] { color:#86efac !important; }
+        html.dark [class~="text-blue-600"],
+        html.dark [class~="text-blue-700"] { color:#93c5fd !important; }
+        html.dark [class~="text-purple-600"],
+        html.dark [class~="text-purple-700"],
+        html.dark [class~="text-purple-900"] { color:#d8b4fe !important; }
+        html.dark [class~="text-amber-600"],
+        html.dark [class~="text-amber-700"],
+        html.dark [class~="text-amber-900"] { color:#fcd34d !important; }
+        html.dark [class~="text-red-500"],
+        html.dark [class~="text-red-600"],
+        html.dark [class~="text-red-700"] { color:#fca5a5 !important; }
         html.dark .input-field,
         html.dark input,
         html.dark textarea,
