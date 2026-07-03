@@ -557,7 +557,7 @@
                 if (!subAdmin) return;
                 const nextEnabled = subAdmin.enabled === false ? true : false;
                 const actionText = nextEnabled ? 'activar' : 'desactivar';
-                if (!confirm(`Â¿Deseas ${actionText} el acceso al panel para este sub-administrador?`)) return;
+                if (!confirm(`¿Deseas ${actionText} el acceso al panel para este sub-administrador?`)) return;
                 try {
                     await adminsCollection.doc(uid).set({
                         enabled: nextEnabled,
