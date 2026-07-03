@@ -48,54 +48,77 @@ No se despliega automáticamente: es un punto de partida para revisar y ajustar 
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    // El superadmin se reconoce por correo, igual que en el cliente
+    // (state.superAdminUsernames). Login por usuario => correo sintetico
+    // usuario@sinapsis.local; login con Google => correo real.
+    function isSuperAdmin() {
+      return request.auth != null && (
+        request.auth.token.email.matches('juanda[.]fonsecag@.*') ||
+        request.auth.token.email.matches('wanda[.]cg@.*')
+      );
+    }
+
     match /artifacts/{appId} {
 
-      // Directorio de egresados: lectura autenticada; cada quien solo edita su doc.
+      // Sub-admin de colegio: tiene documento en admins/{uid}.
+      function isSchoolAdmin() {
+        return request.auth != null &&
+          exists(/databases/$(database)/documents/artifacts/$(appId)/admins/$(request.auth.uid));
+      }
+      function isAdmin() { return isSuperAdmin() || isSchoolAdmin(); }
+
+      // Directorio de egresados: lectura autenticada; cada quien edita su doc
+      // (o un admin, p. ej. al crear un sub-administrador).
       match /public/data/alumni/{userId} {
         allow read: if request.auth != null;
         allow create, update: if request.auth != null
-          && (request.auth.uid == userId || isAdmin(appId));
-        allow delete: if isAdmin(appId);
+          && (request.auth.uid == userId || isAdmin());
+        allow delete: if isAdmin();
       }
 
-      // Noticias: lectura pública/autenticada; escritura solo admin.
+      // Noticias: lectura publica; escritura solo admin.
       match /public/data/news/{newsId} {
         allow read: if true;
-        allow write: if isAdmin(appId);
+        allow write: if isAdmin();
       }
 
       // Usuarios de login (username -> authEmail/uid).
+      // Un usuario reserva su propio username; un admin puede reservar el de
+      // un sub-administrador que esta creando (uid distinto al del admin).
       match /usernames/{username} {
         allow read: if true; // necesario para resolver login por usuario
         allow create, update: if request.auth != null
-          && request.resource.data.uid == request.auth.uid;
+          && (request.resource.data.uid == request.auth.uid || isAdmin());
+        allow delete: if isAdmin();
       }
 
-      // Administradores de colegio: solo superadmin escribe; el afectado puede leerse.
+      // Administradores de colegio: solo el superadmin asigna/revoca.
       match /admins/{userId} {
         allow read: if request.auth != null
-          && (request.auth.uid == userId || isAdmin(appId));
-        allow write: if isAdmin(appId);
+          && (request.auth.uid == userId || isAdmin());
+        allow write: if isSuperAdmin();
       }
 
-      // Chats y mensajes: solo el dueño de la subcolección.
+      // Chats: el dueno de la subcoleccion escribe su copia; ademas el emisor
+      // puede escribir la copia del par (el modelo actual guarda una copia por
+      // usuario, no un chat 1:1 compartido).
       match /users/{userId}/chats/{chatId} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
+        allow read: if request.auth != null && request.auth.uid == userId;
+        allow create, update: if request.auth != null
+          && (request.auth.uid == userId || request.resource.data.peerId == request.auth.uid);
         match /messages/{messageId} {
-          allow read, write: if request.auth != null && request.auth.uid == userId;
+          allow read: if request.auth != null && request.auth.uid == userId;
+          allow create: if request.auth != null
+            && request.resource.data.senderId == request.auth.uid;
         }
       }
-    }
-
-    function isAdmin(appId) {
-      return request.auth != null
-        && exists(/databases/$(database)/documents/artifacts/$(appId)/admins/$(request.auth.uid));
     }
   }
 }
 ```
 
-> Nota: este borrador asume que los superadmins también tienen documento en `admins/{uid}`. Hoy la app identifica superadmins por correo/usuario en el cliente (`state.superAdminUsernames`), no en Firestore; antes de desplegar reglas hay que decidir cómo representar al superadmin del lado del servidor (por ejemplo, un doc `admins/{uid}` con `role: 'superadmin'`), o el superadmin quedará sin permisos de escritura. El modelo de chat actual guarda una copia por usuario, no un chat 1:1 compartido.
+> Por qué fallaba "Crear administrador de colegio" (`Missing or insufficient permissions`): `createSubAdmin` escribe, en el contexto del superadmin, tres documentos con un `uid` distinto al suyo (`usernames/{u}`, `alumni/{nuevoUid}`, `admins/{nuevoUid}`). Sin una regla que reconozca al superadmin del lado del servidor, Firestore lo trata como usuario normal y rechaza esas escrituras. El bloque de arriba resuelve esto con `isSuperAdmin()` (por correo). Alternativa más robusta a futuro: representar al superadmin con un doc `admins/{uid}` con `role: 'superadmin'` y usar Custom Claims en vez de comparar correos.
 
 ## Próximos pasos recomendados
 
