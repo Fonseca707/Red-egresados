@@ -25,7 +25,8 @@ const userChatsCollection = (uid) => artifactsRoot.collection('users').doc(uid).
 const userChatMessagesCollection = (uid, chatId) => userChatsCollection(uid).doc(chatId).collection('messages');
 
 const DEFAULT_SCHOOL = 'LCP';
-const USERNAME_AUTH_DOMAIN = 'sinapsis.local';
+const USERNAME_AUTH_DOMAIN = 'users.sinapsis.app';
+const LEGACY_USERNAME_AUTH_DOMAIN = 'sinapsis.local';
 const STATUS = { TRABAJANDO:'trabajando', ESTUDIANDO:'estudiando', TRABAJANDO_ESTUDIANDO:'trabajando-estudiando', EMPRENDIENDO:'emprendiendo', PROFESOR:'profesor', SIN_DEFINIR:'sin-definir' };
 const ACCOUNT_STATUS = { ACTIVO:'activo', SUSPENDIDO:'suspendido' };
 const DIRECTORY_PAGE_SIZE = 12;
@@ -47,6 +48,12 @@ function isEmailIdentity(value) {
 }
 function syntheticEmailForUsername(username) {
     return `${normalizeUsername(username)}@${USERNAME_AUTH_DOMAIN}`;
+}
+function usernameFromSyntheticEmail(email) {
+    const clean = String(email || '').toLowerCase().trim();
+    const domains = [USERNAME_AUTH_DOMAIN, LEGACY_USERNAME_AUTH_DOMAIN];
+    const domain = domains.find((item) => clean.endsWith(`@${item}`));
+    return domain ? clean.slice(0, -domain.length - 1) : '';
 }
 function authEmailForIdentity(identity) {
     const clean = String(identity || '').trim();
@@ -124,7 +131,7 @@ function refreshHeaderIdentity() {
 }
 function isAdminUser() {
     const e=String(state.user?.email||'').toLowerCase().trim();
-    const username=normalizeUsername(state.profile?.username || (e.endsWith(`@${USERNAME_AUTH_DOMAIN}`) ? e.split('@')[0] : ''));
+    const username=normalizeUsername(state.profile?.username || usernameFromSyntheticEmail(e));
     return [state.adminEmail,'juanda.fonsecag@gmail.com'].includes(e)
         || e.startsWith('juanda.fonsecag@')
         || e.startsWith('wanda.cg@')
