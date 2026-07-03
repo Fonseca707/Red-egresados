@@ -1242,9 +1242,10 @@
             }
             try {
                 const doc = await adminsCollection.doc(uid).get();
-                if (doc.exists && doc.data().role === 'subadmin') {
+                const data = doc.exists ? doc.data() : null;
+                if (doc.exists && data.role === 'subadmin' && data.enabled !== false) {
                     state.adminRole = 'subadmin';
-                    state.adminSchool = doc.data().school || null;
+                    state.adminSchool = data.school || null;
                 } else {
                     state.adminRole = null;
                     state.adminSchool = null;

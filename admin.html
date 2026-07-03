@@ -466,7 +466,7 @@
                     if (!school) { alert('El usuario debe tener un colegio asignado para ser sub-administrador.'); return; }
                     if (!confirm(`¿Asignar como sub-administrador del colegio "${school}"?`)) return;
                     try {
-                        await adminsCollection.doc(uid).set({ role: 'subadmin', school, assignedAt: firebase.firestore.FieldValue.serverTimestamp() });
+                        await adminsCollection.doc(uid).set({ role: 'subadmin', school, enabled: true, assignedAt: firebase.firestore.FieldValue.serverTimestamp() });
                         await loadSubAdmins();
                         adminLogic.renderUsers();
                     } catch (e) { alert(`Error al asignar sub-admin: ${e.message}`); }
@@ -524,6 +524,7 @@
                         role: 'subadmin',
                         school,
                         username,
+                        enabled: true,
                         assignedBy: state.user?.uid || '',
                         assignedAt: firebase.firestore.FieldValue.serverTimestamp()
                     }, { merge: true });
@@ -551,6 +552,22 @@
                     adminLogic.renderUsers();
                 } catch (e) { alert(`Error al revocar sub-admin: ${e.message}`); }
             },
+            toggleSubAdminAccess: async (uid) => {
+                const subAdmin = (state.data.subAdmins || []).find(sa => sa.uid === uid);
+                if (!subAdmin) return;
+                const nextEnabled = subAdmin.enabled === false ? true : false;
+                const actionText = nextEnabled ? 'activar' : 'desactivar';
+                if (!confirm(`Â¿Deseas ${actionText} el acceso al panel para este sub-administrador?`)) return;
+                try {
+                    await adminsCollection.doc(uid).set({
+                        enabled: nextEnabled,
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    }, { merge: true });
+                    await loadSubAdmins();
+                    adminLogic.renderSubAdmins();
+                    adminLogic.renderUsers();
+                } catch (e) { alert(`Error al actualizar el acceso del sub-admin: ${e.message}`); }
+            },
             renderSubAdmins: () => {
                 const card = document.getElementById('create-subadmin-card');
                 if (card) card.classList.toggle('hidden', state.adminRole !== 'superadmin');
@@ -565,6 +582,7 @@
                     const alumnus = state.data.alumni.find(a => a.id === sa.uid);
                     const name = alumnus ? sanitizeHTML(alumnus.name) : sa.uid;
                     const email = alumnus ? sanitizeHTML(alumnus.email || '') : '';
+                    const isEnabled = sa.enabled !== false;
                     const imgTag = alumnus?.img
                         ? `<img src="${sanitizeHTML(alumnus.img)}" alt="${name}" class="w-10 h-10 rounded-full object-cover border border-gray-100">`
                         : `<div class="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center"><i class="ph-bold ph-shield-star text-purple-600"></i></div>`;
@@ -579,6 +597,8 @@
                             </div>
                             <div class="flex items-center gap-3">
                                 <span class="px-2.5 py-1 text-xs font-bold rounded-lg border bg-brand-50 text-brand-700 border-brand-100">${sanitizeHTML(sa.school || '—')}</span>
+                                <span class="px-2.5 py-1 text-xs font-bold rounded-lg border ${isEnabled ? 'bg-green-50 text-green-600 border-green-100' : 'bg-gray-100 text-gray-500 border-gray-200'}">${isEnabled ? 'Acceso activo' : 'Acceso pausado'}</span>
+                                <button onclick="adminLogic.toggleSubAdminAccess('${sa.uid}')" class="p-2 rounded-lg ${isEnabled ? 'text-amber-600 hover:bg-amber-50' : 'text-green-600 hover:bg-green-50'} transition" title="${isEnabled ? 'Pausar acceso al panel' : 'Activar acceso al panel'}"><i class="ph-bold ${isEnabled ? 'ph-pause-circle' : 'ph-play-circle'} text-lg"></i></button>
                                 <button onclick="adminLogic.revokeSubAdmin('${sa.uid}')" class="p-2 rounded-lg text-red-600 hover:bg-red-50 transition" title="Revocar sub-admin"><i class="ph-bold ph-x-circle text-lg"></i></button>
                             </div>
                         </div>`;

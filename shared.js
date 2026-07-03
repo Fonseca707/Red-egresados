@@ -137,8 +137,9 @@ async function loadAdminRole(uid) {
     if (isAdminUser()) { state.adminRole='superadmin'; state.adminSchool=null; return; }
     try {
         const doc=await adminsCollection.doc(uid).get();
-        if (doc.exists && doc.data().role==='subadmin') {
-            state.adminRole='subadmin'; state.adminSchool=doc.data().school||null;
+        const data = doc.exists ? doc.data() : null;
+        if (doc.exists && data.role==='subadmin' && data.enabled !== false) {
+            state.adminRole='subadmin'; state.adminSchool=data.school||null;
         } else { state.adminRole=null; state.adminSchool=null; }
     } catch(e) { state.adminRole=null; state.adminSchool=null; }
 }
