@@ -23,6 +23,10 @@ Rutas alineadas con tus reglas:
 - Chats por usuario: `artifacts/{appId}/users/{userId}/chats/{chatId}`
 - Mensajes por chat: `artifacts/{appId}/users/{userId}/chats/{chatId}/messages/{messageId}`
 
+## Seguridad y configuración de Firebase
+
+La `firebaseConfig` (incluida `apiKey`) está embebida en el cliente **por diseño**: en apps web de Firebase no es un secreto. La seguridad real depende de las **Reglas de Firestore**, que hoy no están versionadas en el repo. Consulta `docs/security-posture.md` para el detalle y un **borrador de referencia de reglas** alineado con las rutas de esta app.
+
 ## Campos de perfil guardados
 
 - `firstName`, `lastName`
