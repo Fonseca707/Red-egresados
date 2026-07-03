@@ -34,6 +34,69 @@ Este documento resume el estado actual observable en el repositorio para apoyar 
 4. No hay runbook de contingencia o política formal de manejo de fallas.
 5. El repositorio no incluye pipeline de seguridad, análisis estático, escaneo de dependencias o pruebas automatizadas.
 
+## Configuración de Firebase en el frontend (por diseño)
+
+- Las claves de `firebaseConfig` (incluida `apiKey`) viven en el cliente (`shared.js` y `index.html`). **Esto es normal y esperado en apps web de Firebase**: la `apiKey` identifica el proyecto, no es un secreto y no otorga acceso a datos por sí sola.
+- La seguridad real **no** depende de ocultar esa configuración, sino de las **Reglas de Firestore** (y de Storage), más restricciones de dominio/API key en Google Cloud. Por eso la config permanece embebida y versionada; moverla a un archivo aparte no aporta seguridad y complica el despliegue estático.
+- Estado actual: las reglas de Firestore **no están versionadas en este repositorio**, por lo que la frontera de seguridad efectiva no es auditable desde el código. Este es el riesgo #1 y #2 de la sección anterior.
+
+### Borrador de referencia de Reglas de Firestore
+
+No se despliega automáticamente: es un punto de partida para revisar y ajustar en la consola de Firebase antes de publicar. Alinea con las rutas reales que usa la app.
+
+```
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /artifacts/{appId} {
+
+      // Directorio de egresados: lectura autenticada; cada quien solo edita su doc.
+      match /public/data/alumni/{userId} {
+        allow read: if request.auth != null;
+        allow create, update: if request.auth != null
+          && (request.auth.uid == userId || isAdmin(appId));
+        allow delete: if isAdmin(appId);
+      }
+
+      // Noticias: lectura pública/autenticada; escritura solo admin.
+      match /public/data/news/{newsId} {
+        allow read: if true;
+        allow write: if isAdmin(appId);
+      }
+
+      // Usuarios de login (username -> authEmail/uid).
+      match /usernames/{username} {
+        allow read: if true; // necesario para resolver login por usuario
+        allow create, update: if request.auth != null
+          && request.resource.data.uid == request.auth.uid;
+      }
+
+      // Administradores de colegio: solo superadmin escribe; el afectado puede leerse.
+      match /admins/{userId} {
+        allow read: if request.auth != null
+          && (request.auth.uid == userId || isAdmin(appId));
+        allow write: if isAdmin(appId);
+      }
+
+      // Chats y mensajes: solo el dueño de la subcolección.
+      match /users/{userId}/chats/{chatId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+        match /messages/{messageId} {
+          allow read, write: if request.auth != null && request.auth.uid == userId;
+        }
+      }
+    }
+
+    function isAdmin(appId) {
+      return request.auth != null
+        && exists(/databases/$(database)/documents/artifacts/$(appId)/admins/$(request.auth.uid));
+    }
+  }
+}
+```
+
+> Nota: este borrador asume que los superadmins también tienen documento en `admins/{uid}`. Hoy la app identifica superadmins por correo/usuario en el cliente (`state.superAdminUsernames`), no en Firestore; antes de desplegar reglas hay que decidir cómo representar al superadmin del lado del servidor (por ejemplo, un doc `admins/{uid}` con `role: 'superadmin'`), o el superadmin quedará sin permisos de escritura. El modelo de chat actual guarda una copia por usuario, no un chat 1:1 compartido.
+
 ## Próximos pasos recomendados
 
 1. Exportar y versionar reglas de Firestore/Storage.
