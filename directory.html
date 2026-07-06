@@ -155,7 +155,7 @@
         const directoryLogic = {
             _currentItems: [],
             render: (items = state.data.alumni) => {
-                directoryLogic._currentItems = items;
+                directoryLogic._currentItems = rankAlumniForDirectory(items);
                 directoryLogic._renderPage(1);
             },
             _renderPage: (page) => {

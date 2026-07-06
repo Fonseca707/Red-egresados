@@ -103,6 +103,50 @@ function buildAvatarUrl(name='Usuario') {
     for(let i=0;i<s.length;i++) h=(h*31+s.charCodeAt(i))>>>0;
     return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=${p[h%p.length]}&color=fff`;
 }
+function hasProfileValue(value, placeholders = []) {
+    if (Array.isArray(value)) return value.map(v => String(v || '').trim()).filter(Boolean).length > 0;
+    const clean = String(value || '').trim();
+    if (!clean) return false;
+    return !placeholders.map(p => String(p).toLowerCase()).includes(clean.toLowerCase());
+}
+function getProfileCompletenessScore(user = {}) {
+    const checks = [
+        [user.firstName, 6],
+        [user.lastName, 6],
+        [user.username, 5],
+        [user.email, 4],
+        [user.role, 8, ['Sin rol']],
+        [user.status, 6, ['sin-definir']],
+        [user.year, 7, ['---']],
+        [user.location, 7, ['Ubicacion no disponible', 'Ubicación no disponible', 'UbicaciÃ³n no disponible']],
+        [user.fullStudies, 9, ['No especificado']],
+        [user.area, 7, ['General', 'No especificado']],
+        [user.bio, 10, ['Sin biografia disponible.', 'Sin biografía disponible.', 'Sin biografÃ­a disponible.']],
+        [user.expectations, 7, ['No especificadas.', 'No especificadas']],
+        [user.skills, 8],
+        [isValidPhone(user.phone) ? user.phone : '', 5],
+        [isValidLinkedInUrl(user.linkedin) ? user.linkedin : '', 5],
+        [user.photoURL, 5]
+    ];
+    const total = checks.reduce((sum, item) => sum + item[1], 0);
+    const earned = checks.reduce((sum, [value, weight, placeholders]) => (
+        sum + (hasProfileValue(value, placeholders || []) ? weight : 0)
+    ), 0);
+    return Math.round((earned / total) * 100);
+}
+function rankAlumniForDirectory(items = []) {
+    return [...items].map((item) => {
+        const completeness = Number.isFinite(item.profileCompleteness)
+            ? item.profileCompleteness
+            : getProfileCompletenessScore(item);
+        const weight = 1 + (completeness / 100) * 5;
+        return {
+            item: { ...item, profileCompleteness: completeness },
+            key: Math.pow(Math.random(), 1 / weight),
+            fallback: Math.random()
+        };
+    }).sort((a, b) => (b.key - a.key) || (b.fallback - a.fallback)).map(entry => entry.item);
+}
 
 const state = {
     user: null,
@@ -195,7 +239,7 @@ async function loadAlumni() {
     state.directoryLoading=true;
     try {
         const snap=await alumniCollection.get();
-        state.data.alumni=snap.docs.map(doc=>{const d=doc.data();return{id:doc.id,name:`${d.firstName||''} ${d.lastName||''}`.trim()||'Sin nombre',firstName:(d.firstName||'').trim(),lastName:(d.lastName||'').trim(),email:d.email||d.contactEmail||'',username:d.username||'',newsletterOptIn:Boolean(d.newsletterOptIn),role:d.role||'Sin rol',status:d.status||'sin-definir',statusLabel:formatStatusLabel(d.status),accountStatus:d.accountStatus||'activo',company:d.studies||formatStatusLabel(d.status),img:d.photoURL||buildAvatarUrl(`${d.firstName||'Usuario'} ${d.lastName||''}`.trim()),tags:[d.school||DEFAULT_SCHOOL,d.area||'General',formatStatusLabel(d.status)].filter(Boolean),fullStudies:d.studies||'No especificado',location:d.location||'Ubicación no disponible',bio:d.bio||'Sin biografía disponible.',year:d.graduationYear||'---',area:d.area||'General',skills:Array.isArray(d.skills)?d.skills:(d.skills?String(d.skills).split(','):[]),phone:d.phone||'',linkedin:d.linkedin||'',expectations:d.expectations||'',school:d.school||DEFAULT_SCHOOL};}).filter(a=>hasValidFirstName(a.firstName));
+        state.data.alumni=snap.docs.map(doc=>{const d=doc.data();const user={id:doc.id,name:`${d.firstName||''} ${d.lastName||''}`.trim()||'Sin nombre',firstName:(d.firstName||'').trim(),lastName:(d.lastName||'').trim(),email:d.email||d.contactEmail||'',username:d.username||'',newsletterOptIn:Boolean(d.newsletterOptIn),role:d.role||'Sin rol',status:d.status||'sin-definir',statusLabel:formatStatusLabel(d.status),accountStatus:d.accountStatus||'activo',company:d.studies||formatStatusLabel(d.status),photoURL:d.photoURL||'',img:d.photoURL||buildAvatarUrl(`${d.firstName||'Usuario'} ${d.lastName||''}`.trim()),tags:[d.school||DEFAULT_SCHOOL,d.area||'General',formatStatusLabel(d.status)].filter(Boolean),fullStudies:d.studies||'No especificado',location:d.location||'Ubicación no disponible',bio:d.bio||'Sin biografía disponible.',year:d.graduationYear||'---',area:d.area||'General',skills:Array.isArray(d.skills)?d.skills:(d.skills?String(d.skills).split(','):[]),phone:d.phone||'',linkedin:d.linkedin||'',expectations:d.expectations||'',school:d.school||DEFAULT_SCHOOL};return{...user,profileCompleteness:getProfileCompletenessScore(user)};}).filter(a=>hasValidFirstName(a.firstName));
     } catch(e){ state.data.alumni=state.data.alumni.length?state.data.alumni:[];}
     finally{ state.directoryLoading=false; }
 }

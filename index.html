@@ -1380,7 +1380,7 @@
                 const snapshot = await alumniCollection.get();
                 state.data.alumni = snapshot.docs.map((doc) => {
                 const d = doc.data();
-                return {
+                const user = {
                     id: doc.id,
                     name: `${d.firstName || ''} ${d.lastName || ''}`.trim() || 'Sin nombre',
                     firstName: (d.firstName || '').trim(),
@@ -1393,6 +1393,7 @@
                     statusLabel: formatStatusLabel(d.status),
                     accountStatus: d.accountStatus || 'activo',
                     company: d.studies || formatStatusLabel(d.status),
+                    photoURL: d.photoURL || '',
                     img: d.photoURL || buildAvatarUrl(`${d.firstName || 'Usuario'} ${d.lastName || ''}`.trim()),
                     tags: [d.school || DEFAULT_SCHOOL, d.area || 'General', formatStatusLabel(d.status)].filter(Boolean),
                     fullStudies: d.studies || 'No especificado',
@@ -1406,6 +1407,7 @@
                     expectations: d.expectations || '',
                     school: d.school || DEFAULT_SCHOOL
                 };
+                return { ...user, profileCompleteness: getProfileCompletenessScore(user) };
                 }).filter((a) => hasValidFirstName(a.firstName));
             } catch (error) {
                 state.data.alumni = state.data.alumni.length ? state.data.alumni : [];
@@ -1537,7 +1539,7 @@
         const directoryLogic = {
             _currentItems: [],
             render: (items = state.data.alumni) => {
-                directoryLogic._currentItems = items;
+                directoryLogic._currentItems = rankAlumniForDirectory(items);
                 directoryLogic._renderPage(1);
             },
             _renderPage: (page) => {
