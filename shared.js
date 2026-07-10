@@ -21,6 +21,8 @@ const alumniCollection = artifactsRoot.collection('public').doc('data').collecti
 const adminsCollection = artifactsRoot.collection('admins');
 const usernamesCollection = artifactsRoot.collection('usernames');
 const newsCollection = artifactsRoot.collection('public').doc('data').collection('news');
+const organizationsCollection = artifactsRoot.collection('public').doc('data').collection('organizaciones');
+const hitosCollection = (uid) => alumniCollection.doc(uid).collection('hitos');
 const userChatsCollection = (uid) => artifactsRoot.collection('users').doc(uid).collection('chats');
 const userChatMessagesCollection = (uid, chatId) => userChatsCollection(uid).doc(chatId).collection('messages');
 
@@ -126,7 +128,9 @@ function getProfileCompletenessScore(user = {}) {
         [user.skills, 8],
         [isValidPhone(user.phone) ? user.phone : '', 5],
         [isValidLinkedInUrl(user.linkedin) ? user.linkedin : '', 5],
-        [user.photoURL, 5]
+        [user.photoURL, 5],
+        [Number(user.hitosCount) > 0 ? 'ruta' : '', 8],
+        [Number(user.hitosCount) >= 3 ? 'ruta-completa' : '', 6]
     ];
     const total = checks.reduce((sum, item) => sum + item[1], 0);
     const earned = checks.reduce((sum, [value, weight, placeholders]) => (
@@ -146,6 +150,145 @@ function rankAlumniForDirectory(items = []) {
             fallback: Math.random()
         };
     }).sort((a, b) => (b.key - a.key) || (b.fallback - a.fallback)).map(entry => entry.item);
+}
+
+// ===== TRAYECTORIA (Sinapsis: hitos + organizaciones) =====
+// Cada egresado es una secuencia de hitos; la "ruta" (línea de tiempo) emerge de ellos.
+// Las organizaciones se normalizan en una colección propia para poder agregar datos por institución.
+const HITO_TYPES = {
+    colegio:        { label: 'Colegio',            icon: 'ph-graduation-cap' },
+    educacion:      { label: 'Educación superior', icon: 'ph-student' },
+    practica:       { label: 'Práctica / Pasantía',icon: 'ph-briefcase' },
+    empleo:         { label: 'Empleo',             icon: 'ph-buildings' },
+    emprendimiento: { label: 'Emprendimiento',     icon: 'ph-rocket-launch' },
+    logro:          { label: 'Logro',              icon: 'ph-trophy' }
+};
+function hitoTypeInfo(tipo) { return HITO_TYPES[tipo] || { label: 'Hito', icon: 'ph-flag' }; }
+function slugifyOrgName(name) {
+    return String(name || '').trim().toLowerCase()
+        .normalize('NFD').replace(/[̀-ͯ]/g, '')
+        .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60);
+}
+async function upsertOrganization(nombre, tipo = 'otro') {
+    const clean = String(nombre || '').trim();
+    const slug = slugifyOrgName(clean);
+    if (!slug) return null;
+    try {
+        await organizationsCollection.doc(slug).set({
+            nombre: clean, tipo,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        }, { merge: true });
+    } catch (e) { /* la org normalizada es best-effort; el hito guarda el nombre igual */ }
+    return slug;
+}
+async function loadOrganizations() {
+    try {
+        const snap = await organizationsCollection.get();
+        return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    } catch (e) { return []; }
+}
+function fillOrgDatalist(datalistId, orgs) {
+    const dl = document.getElementById(datalistId);
+    if (!dl) return;
+    dl.innerHTML = orgs.map(o => `<option value="${sanitizeHTML(o.nombre)}"></option>`).join('');
+}
+function sortHitos(hitos = []) {
+    return [...hitos].sort((a, b) => {
+        const ay = Number(a.anioInicio) || 0, by = Number(b.anioInicio) || 0;
+        if (ay !== by) return ay - by;
+        return (a.actual ? 1 : 0) - (b.actual ? 1 : 0);
+    });
+}
+async function loadHitos(uid) {
+    if (!uid) return [];
+    try {
+        const snap = await hitosCollection(uid).get();
+        return sortHitos(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    } catch (e) { return []; }
+}
+async function saveHito(uid, hito, hitoId = null) {
+    const payload = {
+        tipo: hito.tipo || 'logro',
+        organizacion: String(hito.organizacion || '').trim(),
+        organizacionId: hito.organizacionId || slugifyOrgName(hito.organizacion) || '',
+        rol: String(hito.rol || '').trim(),
+        anioInicio: hito.anioInicio ? Number(hito.anioInicio) : null,
+        anioFin: hito.actual ? null : (hito.anioFin ? Number(hito.anioFin) : null),
+        actual: Boolean(hito.actual),
+        descripcion: String(hito.descripcion || '').trim(),
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    };
+    const col = hitosCollection(uid);
+    if (hitoId) { await col.doc(hitoId).set(payload, { merge: true }); return hitoId; }
+    payload.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+    const ref = await col.add(payload);
+    return ref.id;
+}
+async function deleteHito(uid, hitoId) { await hitosCollection(uid).doc(hitoId).delete(); }
+async function syncHitosCount(uid, count) {
+    try {
+        await alumniCollection.doc(uid).set({
+            hitosCount: count,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        }, { merge: true });
+    } catch (e) {}
+}
+// Ruta derivada para perfiles antiguos sin hitos: se arma desde los campos planos, solo para mostrar.
+function deriveLegacyHitos(profile = {}) {
+    const hitos = [];
+    if (profile.graduationYear || profile.school) {
+        hitos.push({ tipo: 'colegio', organizacion: profile.school || DEFAULT_SCHOOL, rol: 'Bachiller', anioInicio: null, anioFin: Number(profile.graduationYear) || null, actual: false, descripcion: '', legacy: true });
+    }
+    if (hasProfileValue(profile.studies, ['No especificado'])) {
+        hitos.push({ tipo: 'educacion', organizacion: '', rol: profile.studies, anioInicio: Number(profile.graduationYear) || null, anioFin: null, actual: String(profile.status || '').includes('estudiando'), descripcion: '', legacy: true });
+    }
+    if (hasProfileValue(profile.role, ['Sin rol'])) {
+        hitos.push({ tipo: profile.status === 'emprendiendo' ? 'emprendimiento' : 'empleo', organizacion: '', rol: profile.role, anioInicio: null, anioFin: null, actual: true, descripcion: '', legacy: true });
+    }
+    return sortHitos(hitos);
+}
+function formatHitoYears(h) {
+    const inicio = h.anioInicio || '';
+    const fin = h.actual ? 'Hoy' : (h.anioFin || '');
+    if (inicio && fin) return `${inicio} — ${fin}`;
+    return String(inicio || fin || '');
+}
+// Renderizador compartido de la línea de tiempo (perfil propio, perfil público, rutas destacadas).
+function renderTimelineHTML(hitos = [], { editable = false, editorNS = 'rutaLogic' } = {}) {
+    if (!hitos.length) {
+        return `<div class="text-center py-8 text-gray-400">
+            <i class="ph ph-path text-4xl mb-2 block"></i>
+            <p class="text-sm font-medium">Aún no hay hitos en esta ruta.</p>
+        </div>`;
+    }
+    return `<ol class="relative border-l-2 border-brand-100 ml-5 space-y-6">` + hitos.map(h => {
+        const info = hitoTypeInfo(h.tipo);
+        const years = formatHitoYears(h);
+        const actions = (editable && h.id) ? `
+            <span class="flex gap-1 shrink-0">
+                <button type="button" onclick="${editorNS}.editHito('${sanitizeHTML(h.id)}')" class="p-1.5 rounded-lg text-gray-400 hover:text-brand-600 hover:bg-brand-50 transition" title="Editar hito"><i class="ph-bold ph-pencil-simple"></i></button>
+                <button type="button" onclick="${editorNS}.removeHito('${sanitizeHTML(h.id)}')" class="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition" title="Eliminar hito"><i class="ph-bold ph-trash"></i></button>
+            </span>` : '';
+        return `
+        <li class="ml-6 relative">
+            <span class="absolute -left-[2.45rem] top-0 w-9 h-9 rounded-xl flex items-center justify-center text-lg shadow-sm ${h.actual ? 'bg-brand-600 text-white' : 'bg-brand-50 text-brand-600 border border-brand-100'}">
+                <i class="ph-duotone ${info.icon}"></i>
+            </span>
+            <div class="flex items-start justify-between gap-2">
+                <div class="min-w-0">
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <span class="text-[11px] font-bold uppercase tracking-wide text-brand-600">${sanitizeHTML(info.label)}</span>
+                        ${years ? `<span class="text-[11px] font-semibold text-gray-400">${sanitizeHTML(years)}</span>` : ''}
+                        ${h.actual ? '<span class="text-[10px] font-bold px-2 py-0.5 bg-brand-600 text-white rounded-full">Actual</span>' : ''}
+                    </div>
+                    <p class="font-bold text-gray-900 leading-tight mt-0.5">${sanitizeHTML(h.organizacion || h.rol || 'Sin detalle')}</p>
+                    ${h.organizacion && h.rol ? `<p class="text-sm text-gray-500">${sanitizeHTML(h.rol)}</p>` : ''}
+                    ${h.descripcion ? `<p class="text-xs text-gray-400 mt-1 leading-relaxed">${sanitizeHTML(h.descripcion)}</p>` : ''}
+                </div>
+                ${actions}
+            </div>
+        </li>`;
+    }).join('') + `</ol>`;
 }
 
 const state = {
@@ -239,7 +382,7 @@ async function loadAlumni() {
     state.directoryLoading=true;
     try {
         const snap=await alumniCollection.get();
-        state.data.alumni=snap.docs.map(doc=>{const d=doc.data();const user={id:doc.id,name:`${d.firstName||''} ${d.lastName||''}`.trim()||'Sin nombre',firstName:(d.firstName||'').trim(),lastName:(d.lastName||'').trim(),email:d.email||d.contactEmail||'',username:d.username||'',newsletterOptIn:Boolean(d.newsletterOptIn),role:d.role||'Sin rol',status:d.status||'sin-definir',statusLabel:formatStatusLabel(d.status),accountStatus:d.accountStatus||'activo',company:d.studies||formatStatusLabel(d.status),photoURL:d.photoURL||'',img:d.photoURL||buildAvatarUrl(`${d.firstName||'Usuario'} ${d.lastName||''}`.trim()),tags:[d.school||DEFAULT_SCHOOL,d.area||'General',formatStatusLabel(d.status)].filter(Boolean),fullStudies:d.studies||'No especificado',location:d.location||'Ubicación no disponible',bio:d.bio||'Sin biografía disponible.',year:d.graduationYear||'---',area:d.area||'General',skills:Array.isArray(d.skills)?d.skills:(d.skills?String(d.skills).split(','):[]),phone:d.phone||'',linkedin:d.linkedin||'',expectations:d.expectations||'',school:d.school||DEFAULT_SCHOOL};return{...user,profileCompleteness:getProfileCompletenessScore(user)};}).filter(a=>hasValidFirstName(a.firstName));
+        state.data.alumni=snap.docs.map(doc=>{const d=doc.data();const user={id:doc.id,name:`${d.firstName||''} ${d.lastName||''}`.trim()||'Sin nombre',firstName:(d.firstName||'').trim(),lastName:(d.lastName||'').trim(),email:d.email||d.contactEmail||'',username:d.username||'',newsletterOptIn:Boolean(d.newsletterOptIn),role:d.role||'Sin rol',status:d.status||'sin-definir',statusLabel:formatStatusLabel(d.status),accountStatus:d.accountStatus||'activo',company:d.studies||formatStatusLabel(d.status),photoURL:d.photoURL||'',img:d.photoURL||buildAvatarUrl(`${d.firstName||'Usuario'} ${d.lastName||''}`.trim()),tags:[d.school||DEFAULT_SCHOOL,d.area||'General',formatStatusLabel(d.status)].filter(Boolean),fullStudies:d.studies||'No especificado',location:d.location||'Ubicación no disponible',bio:d.bio||'Sin biografía disponible.',year:d.graduationYear||'---',area:d.area||'General',skills:Array.isArray(d.skills)?d.skills:(d.skills?String(d.skills).split(','):[]),phone:d.phone||'',linkedin:d.linkedin||'',expectations:d.expectations||'',school:d.school||DEFAULT_SCHOOL,hitosCount:Number(d.hitosCount)||0,graduationYear:d.graduationYear||'',studies:d.studies||''};return{...user,profileCompleteness:getProfileCompletenessScore(user)};}).filter(a=>hasValidFirstName(a.firstName));
     } catch(e){ state.data.alumni=state.data.alumni.length?state.data.alumni:[];}
     finally{ state.directoryLoading=false; }
 }

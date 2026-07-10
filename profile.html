@@ -59,6 +59,68 @@
                         </button>
                     </div>
 
+                    <!-- 0. MI RUTA (línea de tiempo de hitos) -->
+                    <div class="section-card" id="ruta-card">
+                        <div class="flex items-center justify-between mb-6 border-b border-gray-100 pb-3">
+                            <h3 class="text-lg font-bold flex items-center gap-2 text-gray-900">
+                                <i class="ph-duotone ph-path text-brand-600 text-2xl"></i> Mi Ruta
+                            </h3>
+                            <button type="button" onclick="rutaLogic.openForm()" class="px-4 py-2 bg-brand-50 text-brand-700 text-xs font-bold rounded-lg border border-brand-100 hover:bg-brand-100 transition flex items-center gap-1">
+                                <i class="ph-bold ph-plus-circle"></i> Agregar hito
+                            </button>
+                        </div>
+                        <div id="timeline-container"></div>
+
+                        <!-- Formulario de hito (oculto por defecto) -->
+                        <div id="hito-form" class="hidden mt-6 bg-stone-50 border border-stone-200 rounded-2xl p-5">
+                            <h4 class="text-sm font-bold text-gray-900 mb-4" id="hito-form-title">Nuevo hito</h4>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="input-label">Tipo</label>
+                                    <select id="h-tipo" class="input-field">
+                                        <option value="colegio">Colegio</option>
+                                        <option value="educacion">Educación superior</option>
+                                        <option value="practica">Práctica / Pasantía</option>
+                                        <option value="empleo">Empleo</option>
+                                        <option value="emprendimiento">Emprendimiento</option>
+                                        <option value="logro">Logro</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="input-label">Organización / Institución</label>
+                                    <input type="text" id="h-org" list="org-options" class="input-field" placeholder="Ej: Universidad de los Andes">
+                                    <datalist id="org-options"></datalist>
+                                </div>
+                                <div class="md:col-span-2">
+                                    <label class="input-label">Rol / Título / Nombre del logro</label>
+                                    <input type="text" id="h-rol" class="input-field" placeholder="Ej: Ing. Industrial, Gerente de operaciones…">
+                                </div>
+                                <div class="flex gap-3 items-center md:col-span-2">
+                                    <div>
+                                        <label class="input-label">Año inicio</label>
+                                        <input type="number" id="h-inicio" min="1950" max="2100" class="input-field !w-32" placeholder="2020">
+                                    </div>
+                                    <div>
+                                        <label class="input-label">Año fin</label>
+                                        <input type="number" id="h-fin" min="1950" max="2100" class="input-field !w-32" placeholder="2024">
+                                    </div>
+                                    <label class="flex items-center gap-2 text-xs font-bold text-gray-500 mt-5 whitespace-nowrap">
+                                        <input type="checkbox" id="h-actual" class="h-4 w-4 rounded border-gray-300 text-brand-600"> Es mi situación actual
+                                    </label>
+                                </div>
+                                <div class="md:col-span-2">
+                                    <label class="input-label">Descripción (opcional)</label>
+                                    <textarea id="h-desc" class="input-field h-20 resize-y" placeholder="Un par de frases sobre este paso de tu historia…"></textarea>
+                                </div>
+                            </div>
+                            <div class="flex gap-3 mt-4">
+                                <button type="button" onclick="rutaLogic.saveForm()" id="btn-save-hito" class="px-6 py-2.5 bg-brand-600 text-white text-sm font-bold rounded-xl hover:bg-brand-700 transition">Guardar hito</button>
+                                <button type="button" onclick="rutaLogic.closeForm()" class="px-6 py-2.5 bg-gray-100 text-gray-600 text-sm font-bold rounded-xl hover:bg-gray-200 transition">Cancelar</button>
+                            </div>
+                            <p id="hito-feedback" class="text-xs text-red-500 mt-2"></p>
+                        </div>
+                    </div>
+
                     <form id="profileForm" class="space-y-8">
                         <!-- 1. INFORMACIÓN BÁSICA -->
                         <div class="section-card">
@@ -293,6 +355,93 @@
             }
         };
 
+        const rutaLogic = {
+            hitos: [],
+            editingId: null,
+
+            load: async () => {
+                rutaLogic.hitos = await loadHitos(state.user.uid);
+                // Perfiles antiguos sin hitos: mostrar ruta derivada de los campos planos como punto de partida.
+                const display = rutaLogic.hitos.length ? rutaLogic.hitos : deriveLegacyHitos(state.profile);
+                document.getElementById('timeline-container').innerHTML = renderTimelineHTML(display, { editable: true });
+                if (!rutaLogic.hitos.length && display.length) {
+                    document.getElementById('timeline-container').insertAdjacentHTML('beforeend',
+                        `<p class="text-xs text-gray-400 mt-4 text-center">Esta ruta se armó con tu información básica. Agrega hitos para hacerla tuya.</p>`);
+                }
+            },
+
+            openForm: (hito = null) => {
+                rutaLogic.editingId = hito?.id || null;
+                document.getElementById('hito-form-title').textContent = hito ? 'Editar hito' : 'Nuevo hito';
+                document.getElementById('h-tipo').value = hito?.tipo || 'educacion';
+                document.getElementById('h-org').value = hito?.organizacion || '';
+                document.getElementById('h-rol').value = hito?.rol || '';
+                document.getElementById('h-inicio').value = hito?.anioInicio || '';
+                document.getElementById('h-fin').value = hito?.anioFin || '';
+                document.getElementById('h-actual').checked = Boolean(hito?.actual);
+                document.getElementById('h-desc').value = hito?.descripcion || '';
+                document.getElementById('hito-feedback').textContent = '';
+                document.getElementById('hito-form').classList.remove('hidden');
+                document.getElementById('h-org').focus();
+            },
+
+            closeForm: () => {
+                document.getElementById('hito-form').classList.add('hidden');
+                rutaLogic.editingId = null;
+            },
+
+            editHito: (id) => {
+                const hito = rutaLogic.hitos.find(h => h.id === id);
+                if (hito) rutaLogic.openForm(hito);
+            },
+
+            removeHito: async (id) => {
+                if (!confirm('¿Eliminar este hito de tu ruta?')) return;
+                try {
+                    await deleteHito(state.user.uid, id);
+                    rutaLogic.hitos = rutaLogic.hitos.filter(h => h.id !== id);
+                    await syncHitosCount(state.user.uid, rutaLogic.hitos.length);
+                    await rutaLogic.load();
+                } catch (e) {
+                    alert('No se pudo eliminar el hito: ' + (e.message || 'error desconocido'));
+                }
+            },
+
+            saveForm: async () => {
+                const feedback = document.getElementById('hito-feedback');
+                const hito = {
+                    tipo: document.getElementById('h-tipo').value,
+                    organizacion: document.getElementById('h-org').value.trim(),
+                    rol: document.getElementById('h-rol').value.trim(),
+                    anioInicio: document.getElementById('h-inicio').value.trim(),
+                    anioFin: document.getElementById('h-fin').value.trim(),
+                    actual: document.getElementById('h-actual').checked,
+                    descripcion: document.getElementById('h-desc').value.trim()
+                };
+                if (!hito.organizacion && !hito.rol) {
+                    feedback.textContent = 'Indica al menos la organización o el rol/título.'; return;
+                }
+                const btn = document.getElementById('btn-save-hito');
+                btn.disabled = true;
+                try {
+                    if (hito.organizacion) {
+                        hito.organizacionId = await upsertOrganization(hito.organizacion,
+                            hito.tipo === 'educacion' ? 'universidad' : (hito.tipo === 'colegio' ? 'colegio' : 'empresa'));
+                    }
+                    await saveHito(state.user.uid, hito, rutaLogic.editingId);
+                    rutaLogic.closeForm();
+                    rutaLogic.hitos = await loadHitos(state.user.uid);
+                    await syncHitosCount(state.user.uid, rutaLogic.hitos.length);
+                    await rutaLogic.load();
+                } catch (e) {
+                    feedback.textContent = 'No se pudo guardar: ' + (e.message || 'error desconocido');
+                } finally {
+                    btn.disabled = false;
+                }
+            }
+        };
+        window.rutaLogic = rutaLogic;
+
         const authLogic = {
             logout: async () => {
                 await auth.signOut();
@@ -310,6 +459,8 @@
             const ready = await hydrateAuthenticatedUser(user);
             if (!ready) return;
             profileLogic.populate();
+            rutaLogic.load();
+            loadOrganizations().then(orgs => fillOrgDatalist('org-options', orgs));
         });
     </script>
 </body>

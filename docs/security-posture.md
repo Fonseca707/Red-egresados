@@ -75,6 +75,23 @@ service cloud.firestore {
         allow create, update: if request.auth != null
           && (request.auth.uid == userId || isAdmin());
         allow delete: if isAdmin();
+
+        // Hitos de la trayectoria (la "ruta" del egresado): visibles para
+        // cualquier autenticado; solo el dueño (o un admin) los edita.
+        match /hitos/{hitoId} {
+          allow read: if request.auth != null;
+          allow write: if request.auth != null
+            && (request.auth.uid == userId || isAdmin());
+        }
+      }
+
+      // Organizaciones normalizadas (universidades, empresas, colegios) para
+      // autocompletar y agregados. Cualquier autenticado puede aportar una;
+      // solo admin depura/borra.
+      match /public/data/organizaciones/{orgId} {
+        allow read: if request.auth != null;
+        allow create, update: if request.auth != null;
+        allow delete: if isAdmin();
       }
 
       // Noticias: lectura publica; escritura solo admin.

@@ -123,6 +123,10 @@
                 </div>
                 <div class="space-y-6">
                     <div>
+                        <h4 class="text-sm font-bold text-gray-900 uppercase tracking-wide mb-3 flex items-center gap-2"><i class="ph-duotone ph-path text-brand-600"></i> Su Ruta</h4>
+                        <div id="sp-timeline" class="bg-gray-50 p-4 rounded-xl border border-gray-100"></div>
+                    </div>
+                    <div>
                         <h4 class="text-sm font-bold text-gray-900 uppercase tracking-wide mb-3">Sobre mí</h4>
                         <p id="sp-bio" class="text-gray-600 text-sm leading-relaxed bg-gray-50 p-4 rounded-xl border border-gray-100">Sin información disponible.</p>
                     </div>
@@ -257,6 +261,16 @@
                     liBtn.href = normalizeLinkedInUrl(user.linkedin);
                 } else { liBtn.classList.add('hidden'); }
                 document.getElementById('slide-panel-overlay').classList.remove('hidden');
+                directoryLogic.loadTimeline(user);
+            },
+            loadTimeline: async (user) => {
+                const container = document.getElementById('sp-timeline');
+                container.innerHTML = '<p class="text-xs text-gray-400 text-center py-4"><i class="ph-bold ph-spinner animate-spin"></i> Cargando ruta…</p>';
+                let hitos = await loadHitos(user.id);
+                if (!hitos.length) hitos = deriveLegacyHitos(user);
+                // Evitar que una respuesta lenta pise la ruta de otro perfil abierto después.
+                if (String(state.selectedDirectoryUserId) !== String(user.id)) return;
+                container.innerHTML = renderTimelineHTML(hitos);
             },
             closeProfile: () => {
                 document.getElementById('slide-panel-overlay').classList.add('hidden');
