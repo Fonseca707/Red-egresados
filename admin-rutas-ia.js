@@ -15,27 +15,14 @@
 //    fuente:'migracion-ia' para poder auditarlos o revertirlos.
 //
 // Privacidad: a la IA se envían solo los campos del perfil (sin nombre, sin
-// correo). Motor: DeepSeek (clave local de ia-config.local.js o localStorage).
+// correo). Motor: DeepSeek vía el proxy SINAPSIS_IA_PROXY (shared.js) —
+// el navegador nunca maneja la clave.
 // ─────────────────────────────────────────────────────────────────────────────
 
 const rutasIaLogic = {
     proposals: [],  // {user, hitos:[...], incluir:true}
     skipped: [],    // {user, motivo}
     running: false,
-
-    getKey() { return window.SINAPSIS_IA_KEY || localStorage.getItem('sinapsis_ia_key') || ''; },
-
-    // Si no hay clave (p. ej. en la web publicada, donde ia-config.local.js no
-    // existe por ser repo público), se pide una vez y queda SOLO en este navegador.
-    ensureKey() {
-        if (this.getKey()) return true;
-        const k = prompt('Pega tu clave de la API de DeepSeek (sk-…).\nSe guarda únicamente en este navegador, nunca en el código.');
-        if (k && k.trim().startsWith('sk-')) {
-            localStorage.setItem('sinapsis_ia_key', k.trim());
-            return true;
-        }
-        return false;
-    },
 
     // ── Normalización para validar contra el texto fuente ───────────────────
     norm(str) {
@@ -67,7 +54,6 @@ const rutasIaLogic = {
     // ── Análisis (borrador, no escribe nada) ─────────────────────────────────
     async analyze() {
         if (this.running) return;
-        if (!this.ensureKey()) return;
         this.running = true;
         this.proposals = [];
         this.skipped = [];
@@ -112,9 +98,9 @@ const rutasIaLogic = {
 - En "educacion", el campo "rol" es la carrera o programa (ej. "Medicina") si aparece en los datos.
 - "actual" es true solo si el texto indica que sigue en eso (ej. estado "Estudiando" o "Trabajando").
 Devuelve JSON: {"hitos":[{"tipo":"...","organizacion":"...o null","rol":"...o null","anioInicio":null,"anioFin":null,"actual":false}]}`;
-        const res = await fetch('https://api.deepseek.com/chat/completions', {
+        const res = await fetch(SINAPSIS_IA_PROXY, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${this.getKey()}` },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 model: 'deepseek-v4-flash',
                 messages: [
@@ -263,7 +249,6 @@ Devuelve JSON: {"hitos":[{"tipo":"...","organizacion":"...o null","rol":"...o nu
 
     async chooseDestacadas() {
         if (this.running) return;
-        if (!this.ensureKey()) return;
         this.running = true;
         this.destacadasProposal = null;
         const status = document.getElementById('rutas-ia-status');
@@ -290,9 +275,9 @@ Devuelve JSON: {"hitos":[{"tipo":"...","organizacion":"...o null","rol":"...o nu
 2. Que inspire a estudiantes de colegio (llegar a universidad reconocida, empleo real, emprendimiento).
 3. Diversidad entre las elegidas: áreas y promociones distintas (no elijas 4 iguales).
 No inventes nada: usa solo lo que hay en la lista. Devuelve JSON: {"seleccion":[{"id":"...","razon":"una frase corta"}]}`;
-            const res = await fetch('https://api.deepseek.com/chat/completions', {
+            const res = await fetch(SINAPSIS_IA_PROXY, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${this.getKey()}` },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     model: 'deepseek-v4-flash',
                     messages: [

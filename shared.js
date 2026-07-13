@@ -29,6 +29,9 @@ const userChatsCollection = (uid) => artifactsRoot.collection('users').doc(uid).
 const userChatMessagesCollection = (uid, chatId) => userChatsCollection(uid).doc(chatId).collection('messages');
 
 const DEFAULT_SCHOOL = 'LCP';
+// Proxy de IA (Cloudflare Worker): el navegador nunca ve la clave de DeepSeek.
+// Código del Worker en proxy-ia/; la clave vive como secreto en Cloudflare.
+const SINAPSIS_IA_PROXY = 'https://sinapsis-ia.sinapsis-lcp.workers.dev';
 const USERNAME_AUTH_DOMAIN = 'users.sinapsis.app';
 const LEGACY_USERNAME_AUTH_DOMAIN = 'sinapsis.local';
 const STATUS = { TRABAJANDO:'trabajando', ESTUDIANDO:'estudiando', TRABAJANDO_ESTUDIANDO:'trabajando-estudiando', EMPRENDIENDO:'emprendiendo', PROFESOR:'profesor', SIN_DEFINIR:'sin-definir' };

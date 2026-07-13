@@ -5,14 +5,10 @@
 // Depende de: shared.js (state, loadAlumni, loadHitos, deriveLegacyHitos,
 // formatHitoYears, sanitizeHTML).
 //
-// Motor: API de DeepSeek (deepseek-v4-flash, thinking desactivado).
-// Clave de API: viene de `ia-config.local.js` (archivo GITIGNORADO, solo en la
-// máquina de desarrollo) o, si no existe, de localStorage de este navegador.
-// NUNCA en el repositorio: el repo es público. Para producción el plan es un
-// proxy (p. ej. Cloudflare Worker) y aquí solo cambiaría callIA().
+// Motor: DeepSeek (deepseek-v4-flash, thinking desactivado) a través del
+// proxy SINAPSIS_IA_PROXY (shared.js): el navegador nunca maneja la clave.
 // ─────────────────────────────────────────────────────────────────────────────
 
-const ORIENTADORA_KEY_STORAGE = 'sinapsis_ia_key';
 const ORIENTADORA_MODEL = localStorage.getItem('sinapsis_ia_model') || 'deepseek-v4-flash';
 
 const orientadoraLogic = {
@@ -20,14 +16,6 @@ const orientadoraLogic = {
     busy: false,
     messages: [],   // {role: 'user'|'model', text}
     context: null,  // rutas reales compiladas (se construye una vez por sesión)
-
-    getKey() { return window.SINAPSIS_IA_KEY || localStorage.getItem(ORIENTADORA_KEY_STORAGE) || ''; },
-    setKey(value) {
-        const v = String(value || '').trim();
-        if (v) localStorage.setItem(ORIENTADORA_KEY_STORAGE, v);
-        else localStorage.removeItem(ORIENTADORA_KEY_STORAGE);
-        this.renderPanel();
-    },
 
     // ── Montaje ──────────────────────────────────────────────────────────────
     mount() {
@@ -58,7 +46,6 @@ const orientadoraLogic = {
     renderPanel() {
         const panel = document.getElementById('orientadora-panel');
         if (!panel) return;
-        if (!this.getKey()) return this.renderSetup(panel);
         panel.innerHTML = `
             <div class="px-4 py-3 bg-brand-600 text-white flex items-center justify-between gap-2 shrink-0">
                 <div class="flex items-center gap-2 min-w-0">
@@ -68,10 +55,7 @@ const orientadoraLogic = {
                         <p class="text-[11px] opacity-80 leading-tight">Con rutas reales de egresados</p>
                     </div>
                 </div>
-                <div class="flex items-center gap-1 shrink-0">
-                    <button onclick="orientadoraLogic.setKey('')" title="Cambiar clave de API" class="p-1.5 rounded-lg hover:bg-white/15 transition"><i class="ph-bold ph-key"></i></button>
-                    <button onclick="orientadoraLogic.toggle()" class="p-1.5 rounded-lg hover:bg-white/15 transition"><i class="ph-bold ph-x"></i></button>
-                </div>
+                <button onclick="orientadoraLogic.toggle()" class="p-1.5 rounded-lg hover:bg-white/15 transition shrink-0"><i class="ph-bold ph-x"></i></button>
             </div>
             <div id="orientadora-messages" class="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50/70">
                 ${this.messages.map(m => this.bubbleHTML(m)).join('')}
@@ -87,22 +71,6 @@ const orientadoraLogic = {
         const box = document.getElementById('orientadora-messages');
         if (box) box.scrollTop = box.scrollHeight;
         if (!this.busy) document.getElementById('orientadora-input')?.focus();
-    },
-
-    renderSetup(panel) {
-        panel.innerHTML = `
-            <div class="px-4 py-3 bg-brand-600 text-white flex items-center justify-between gap-2 shrink-0">
-                <p class="font-extrabold text-sm"><i class="ph-duotone ph-compass"></i> Orientadora de carrera</p>
-                <button onclick="orientadoraLogic.toggle()" class="p-1.5 rounded-lg hover:bg-white/15 transition"><i class="ph-bold ph-x"></i></button>
-            </div>
-            <div class="flex-1 p-5 flex flex-col justify-center gap-3 bg-gray-50/70">
-                <i class="ph-duotone ph-key text-3xl text-brand-600"></i>
-                <p class="font-bold text-gray-900 text-sm">Configura la clave de API (solo una vez por navegador)</p>
-                <p class="text-xs text-gray-500 leading-relaxed">Pega una clave de DeepSeek (platform.deepseek.com). Se guarda únicamente en este navegador — nunca en el código. En producción irá detrás de un proxy.</p>
-                <input id="orientadora-key-input" type="password" placeholder="sk-…" class="rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-brand-400">
-                <button onclick="orientadoraLogic.setKey(document.getElementById('orientadora-key-input').value)"
-                    class="px-4 py-2.5 rounded-xl bg-brand-600 text-white font-bold text-sm hover:bg-brand-700 transition">Guardar y empezar</button>
-            </div>`;
     },
 
     bubbleHTML(m) {
@@ -182,8 +150,8 @@ ${rutas || '(la red aún no tiene rutas registradas: orienta solo con conocimien
             const detail = String(err?.message || err);
             this.messages.push({
                 role: 'model',
-                text: detail.includes('401') || detail.includes('403') || detail.toLowerCase().includes('invalid')
-                    ? 'Tu clave de API parece inválida o venció. Tócala con el botón de la llave (arriba) para cambiarla.'
+                text: detail.includes('429')
+                    ? 'Hay muchas consultas en este momento. Espera un minuto e inténtalo de nuevo.'
                     : 'No pude responder en este momento. Revisa tu conexión e inténtalo de nuevo.'
             });
         } finally {
@@ -193,8 +161,6 @@ ${rutas || '(la red aún no tiene rutas registradas: orienta solo con conocimien
     },
 
     async callIA(systemPrompt) {
-        // FUTURO: en producción, cambiar esta URL por el proxy (Cloudflare Worker)
-        // y eliminar el manejo de clave en el cliente.
         const messages = [
             { role: 'system', content: systemPrompt },
             ...this.messages
@@ -202,12 +168,9 @@ ${rutas || '(la red aún no tiene rutas registradas: orienta solo con conocimien
                 .slice(-12)
                 .map(m => ({ role: m.role === 'model' ? 'assistant' : 'user', content: m.text }))
         ];
-        const res = await fetch('https://api.deepseek.com/chat/completions', {
+        const res = await fetch(SINAPSIS_IA_PROXY, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${this.getKey()}`
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 model: ORIENTADORA_MODEL,
                 messages,

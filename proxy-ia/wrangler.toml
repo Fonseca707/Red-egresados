@@ -1,0 +1,6 @@
+name = "sinapsis-ia"
+main = "worker.js"
+compatibility_date = "2026-07-01"
+
+# La clave NO va aquí: se guarda como secreto con
+#   npx wrangler secret put DEEPSEEK_API_KEY
