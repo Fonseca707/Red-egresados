@@ -119,31 +119,37 @@
                 </div>
             </section>
 
-            <section class="py-12 mt-8 lg:mt-16">
+            <!-- Agregados: ocultos hasta cruzar el umbral de rutas completas
+                 (modo historias del plan: nunca delatar una red pequeña).
+                 historias.js los llena y los muestra cuando corresponde. -->
+            <section id="home-stats-section" class="hidden py-12 mt-8 lg:mt-16">
                 <div class="bg-brand-900 rounded-3xl p-8 md:p-12 shadow-xl relative overflow-hidden">
                     <div class="absolute top-0 right-0 -mr-20 -mt-20 w-72 h-72 rounded-full bg-brand-500 opacity-20 blur-3xl"></div>
                     <div class="absolute bottom-0 left-0 -ml-20 -mb-20 w-72 h-72 rounded-full bg-brand-600 opacity-20 blur-3xl"></div>
 
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-8 text-center relative z-10">
-                        <div>
-                            <div class="text-4xl md:text-5xl font-extrabold text-white mb-2">--</div>
-                            <div class="text-brand-200 text-xs md:text-sm font-bold uppercase tracking-widest">--</div>
+                        <div data-stat>
+                            <div data-stat-value class="text-4xl md:text-5xl font-extrabold text-white mb-2">--</div>
+                            <div data-stat-label class="text-brand-200 text-xs md:text-sm font-bold uppercase tracking-widest">--</div>
                         </div>
-                        <div>
-                            <div class="text-4xl md:text-5xl font-extrabold text-white mb-2">--</div>
-                            <div class="text-brand-200 text-xs md:text-sm font-bold uppercase tracking-widest">--</div>
+                        <div data-stat>
+                            <div data-stat-value class="text-4xl md:text-5xl font-extrabold text-white mb-2">--</div>
+                            <div data-stat-label class="text-brand-200 text-xs md:text-sm font-bold uppercase tracking-widest">--</div>
                         </div>
-                        <div>
-                            <div class="text-4xl md:text-5xl font-extrabold text-white mb-2">--</div>
-                            <div class="text-brand-200 text-xs md:text-sm font-bold uppercase tracking-widest">--</div>
+                        <div data-stat>
+                            <div data-stat-value class="text-4xl md:text-5xl font-extrabold text-white mb-2">--</div>
+                            <div data-stat-label class="text-brand-200 text-xs md:text-sm font-bold uppercase tracking-widest">--</div>
                         </div>
-                        <div>
-                            <div class="text-4xl md:text-5xl font-extrabold text-white mb-2">--</div>
-                            <div class="text-brand-200 text-xs md:text-sm font-bold uppercase tracking-widest">--</div>
+                        <div data-stat>
+                            <div data-stat-value class="text-4xl md:text-5xl font-extrabold text-white mb-2">--</div>
+                            <div data-stat-label class="text-brand-200 text-xs md:text-sm font-bold uppercase tracking-widest">--</div>
                         </div>
                     </div>
                 </div>
             </section>
+
+            <!-- Modo historias: rutas destacadas narrativas (renderiza historias.js) -->
+            <div id="historias-section"></div>
 
             <section class="py-16 md:py-24">
                 <div class="text-center mb-16">
@@ -1034,6 +1040,7 @@
     <script src="delf-practice.js"></script>
     <script src="ia-config.local.js" onerror="this.remove()"></script>
     <script src="orientadora.js"></script>
+    <script src="historias.js"></script>
     <script>
         function renderTextWithLinks(element, text) {
             const content = String(text ?? '');
