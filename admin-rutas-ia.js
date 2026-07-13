@@ -25,6 +25,18 @@ const rutasIaLogic = {
 
     getKey() { return window.SINAPSIS_IA_KEY || localStorage.getItem('sinapsis_ia_key') || ''; },
 
+    // Si no hay clave (p. ej. en la web publicada, donde ia-config.local.js no
+    // existe por ser repo público), se pide una vez y queda SOLO en este navegador.
+    ensureKey() {
+        if (this.getKey()) return true;
+        const k = prompt('Pega tu clave de la API de DeepSeek (sk-…).\nSe guarda únicamente en este navegador, nunca en el código.');
+        if (k && k.trim().startsWith('sk-')) {
+            localStorage.setItem('sinapsis_ia_key', k.trim());
+            return true;
+        }
+        return false;
+    },
+
     // ── Normalización para validar contra el texto fuente ───────────────────
     norm(str) {
         return String(str || '').toLowerCase()
@@ -55,10 +67,7 @@ const rutasIaLogic = {
     // ── Análisis (borrador, no escribe nada) ─────────────────────────────────
     async analyze() {
         if (this.running) return;
-        if (!this.getKey()) {
-            alert('No hay clave de IA configurada en este navegador (ia-config.local.js o localStorage sinapsis_ia_key). Ejecuta esta herramienta desde el equipo de desarrollo.');
-            return;
-        }
+        if (!this.ensureKey()) return;
         this.running = true;
         this.proposals = [];
         this.skipped = [];
@@ -254,10 +263,7 @@ Devuelve JSON: {"hitos":[{"tipo":"...","organizacion":"...o null","rol":"...o nu
 
     async chooseDestacadas() {
         if (this.running) return;
-        if (!this.getKey()) {
-            alert('No hay clave de IA configurada en este navegador (ia-config.local.js). Ejecuta esta herramienta desde el equipo de desarrollo.');
-            return;
-        }
+        if (!this.ensureKey()) return;
         this.running = true;
         this.destacadasProposal = null;
         const status = document.getElementById('rutas-ia-status');
@@ -379,6 +385,60 @@ No inventes nada: usa solo lo que hay en la lista. Devuelve JSON: {"seleccion":[
     }
 };
 window.rutasIaLogic = rutasIaLogic;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Semillas de PRUEBA (solo superadmin): crea perfiles ficticios con datos
+// variados y promociones antiguas para ensayar las herramientas de IA
+// (rutas, destacadas) y la web con contenido. Usan correo *.example.com,
+// así la tarjeta de limpieza los detecta y borra cuando ya no hagan falta.
+// ─────────────────────────────────────────────────────────────────────────────
+const semillasLogic = {
+    perfiles: [
+        { firstName: 'Mariana', lastName: 'Ospina Cardona', graduationYear: '2012', status: 'trabajando', area: 'Salud', studies: 'Medicina - Universidad Tecnológica de Pereira', role: 'Médica general en el Hospital San Jorge', location: 'Pereira, Colombia', bio: 'Me gradué del Liceo en 2012 y estudié Medicina en la UTP. Hice el rural en Quinchía y desde 2021 trabajo en urgencias del Hospital San Jorge.', skills: ['Medicina de urgencias', 'APH', 'Docencia'] },
+        { firstName: 'Andrés Felipe', lastName: 'Gil Marín', graduationYear: '2010', status: 'trabajando', area: 'Tecnología', studies: 'Ingeniería de Sistemas - Universidad Nacional sede Manizales', role: 'Desarrollador senior en Globant', location: 'Medellín, Colombia', bio: 'Del Liceo salí en 2010 a estudiar Ingeniería de Sistemas en la Nacional. Empecé como practicante en Arus en 2015 y hoy soy desarrollador senior en Globant, trabajando remoto.', skills: ['Java', 'React', 'AWS'] },
+        { firstName: 'Valentina', lastName: 'Ríos Betancur', graduationYear: '2015', status: 'emprendiendo', area: 'Derecho', studies: 'Derecho - Universidad Libre de Pereira', role: 'Fundadora de Ríos Legal, firma de abogados', location: 'Pereira, Colombia', bio: 'Estudié Derecho en la Libre y trabajé tres años en la Cámara de Comercio de Pereira. En 2023 fundé mi propia firma, Ríos Legal, enfocada en derecho comercial para pymes.', skills: ['Derecho comercial', 'Conciliación', 'Contratos'] },
+        { firstName: 'Santiago', lastName: 'Mejía Londoño', graduationYear: '2008', status: 'trabajando', area: 'Administración', studies: 'Administración de Negocios - EAFIT', role: 'Gerente comercial regional en Bancolombia', location: 'Medellín, Colombia', bio: 'Promoción 2008. Estudié Administración en EAFIT y llevo doce años en Bancolombia, donde empecé como analista y hoy soy gerente comercial para el Eje Cafetero.', skills: ['Banca', 'Liderazgo', 'Negociación'] },
+        { firstName: 'Laura', lastName: 'Cataño Vélez', graduationYear: '2018', status: 'trabajando', area: 'Diseño', studies: 'Diseño Visual - Universidad Católica de Pereira', role: 'Diseñadora en Publicis Groupe', location: 'Bogotá, Colombia', bio: 'Me gradué en 2018, estudié Diseño Visual en la Católica e hice mi práctica en una agencia local. Desde 2024 diseño campañas digitales en Publicis en Bogotá.', skills: ['Branding', 'Motion graphics', 'Illustrator'] },
+        { firstName: 'Julián', lastName: 'Restrepo Ángel', graduationYear: '2014', status: 'emprendiendo', area: 'Gastronomía', studies: 'Cocina Profesional - SENA Risaralda', role: 'Chef y dueño del restaurante La Huerta', location: 'Pereira, Colombia', bio: 'Salí del Liceo en 2014 y me formé como cocinero en el SENA. Trabajé en restaurantes de Bogotá y en 2022 volví a Pereira a abrir La Huerta, cocina local de temporada.', skills: ['Cocina de autor', 'Gestión de restaurante'] },
+        { firstName: 'Carolina', lastName: 'Duque Ramírez', graduationYear: '2016', status: 'trabajando-estudiando', area: 'Ambiental', studies: 'Ingeniería Ambiental - Universidad Tecnológica de Pereira', role: 'Consultora ambiental en la CARDER', location: 'Pereira, Colombia', bio: 'Ingeniera ambiental de la UTP, promoción 2016 del Liceo. Trabajo en la CARDER en proyectos de cuencas y estoy cursando una maestría en desarrollo sostenible.', skills: ['Gestión de cuencas', 'SIG', 'Educación ambiental'] },
+        { firstName: 'Daniel', lastName: 'Zuluaga Henao', graduationYear: '2020', status: 'profesor', area: 'Artes', studies: 'Licenciatura en Música - Universidad Tecnológica de Pereira', role: 'Profesor de música y productor independiente', location: 'Pereira, Colombia', bio: 'Promoción 2020. Estudié Licenciatura en Música en la UTP, doy clases en un colegio de Dosquebradas y produzco artistas locales en mi estudio casero.', skills: ['Piano', 'Producción musical', 'Pedagogía'] }
+    ],
+
+    async crear() {
+        if (!confirm(`Se crearán ${this.perfiles.length} perfiles de PRUEBA (correos example.com, promociones 2008-2020) para ensayar las herramientas. Luego puedes borrarlos con la tarjeta de limpieza. ¿Continuar?`)) return;
+        const status = document.getElementById('rutas-ia-status');
+        let n = 0, base = 30; // numeración alta para no chocar con las semillas viejas
+        for (const p of this.perfiles) {
+            try {
+                if (status) status.textContent = `Creando ${p.firstName} ${p.lastName}… (${n}/${this.perfiles.length})`;
+                await alumniCollection.add({
+                    ...p,
+                    email: '',
+                    contactEmail: `sinapsis.prueba${base + n}@example.com`,
+                    school: DEFAULT_SCHOOL,
+                    newsletterOptIn: n % 2 === 0,
+                    accountStatus: 'activo',
+                    hitosCount: 0,
+                    photoURL: '',
+                    phone: '',
+                    linkedin: '',
+                    expectations: 'Aportar mi experiencia a los estudiantes del Liceo.',
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                n++;
+            } catch (e) {
+                if (status) status.textContent = `Error creando ${p.firstName}: ${e.message}`;
+                break;
+            }
+        }
+        await loadAlumni();
+        adminLogic.renderUsers();
+        limpiezaLogic.renderCard();
+        if (status) status.textContent = `${n} perfiles de prueba creados. Ya puedes correr "Analizar perfiles".`;
+    }
+};
+window.semillasLogic = semillasLogic;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Limpieza de perfiles de PRUEBA (solo superadmin): los registros semilla con
