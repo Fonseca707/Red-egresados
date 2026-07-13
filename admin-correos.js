@@ -14,6 +14,7 @@ const correosLogic = {
     selected: new Set(),
     search: '',
     yearFilter: 'all',
+    newsFilter: 'all', // 'all' | 'optin' (casilla de newsletter marcada al registrarse)
     prepared: null, // [{emails:[...]}] lotes listos para abrir
 
     // ── Destinatarios válidos ────────────────────────────────────────────────
@@ -40,6 +41,7 @@ const correosLogic = {
         const term = this.search.toLowerCase().trim();
         return this.allRecipients().filter(u => {
             if (this.yearFilter !== 'all' && String(u.year) !== this.yearFilter) return false;
+            if (this.newsFilter === 'optin' && !u.newsletterOptIn) return false;
             if (!term) return true;
             return u.name.toLowerCase().includes(term) || u.sendEmail.includes(term);
         });
@@ -74,6 +76,7 @@ const correosLogic = {
                     <p class="text-sm font-bold text-gray-900 truncate">${sanitizeHTML(u.name)}</p>
                     <p class="text-xs text-gray-500 truncate">${sanitizeHTML(u.sendEmail)}${this.isTestEmail(u.sendEmail) ? ' <span class="text-amber-600 font-bold">(prueba)</span>' : ''}</p>
                 </div>
+                ${u.newsletterOptIn ? '<i class="ph-fill ph-envelope-simple-open text-brand-500 shrink-0" title="Aceptó recibir información al registrarse"></i>' : '<i class="ph ph-envelope-simple text-gray-300 shrink-0" title="Sin casilla de newsletter (registro anterior a la casilla)"></i>'}
                 <span class="text-[11px] font-bold text-brand-600 shrink-0">${sanitizeHTML(String(u.year || '—'))}</span>
             </label>`).join('')
             : '<p class="text-sm text-gray-400 text-center py-8">Ningún egresado coincide con el filtro.</p>';
@@ -131,6 +134,7 @@ const correosLogic = {
     },
     onSearch(value) { this.search = value; this.render(); },
     onYearFilter(value) { this.yearFilter = value; this.render(); },
+    onNewsFilter(value) { this.newsFilter = value; this.render(); },
     onComposeInput() { if (!this.prepared) this.renderSendArea(); },
 
     selectedEmails() {

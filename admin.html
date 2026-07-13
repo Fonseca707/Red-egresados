@@ -80,6 +80,22 @@
                 </button>
             </div>
 
+            <!-- Herramienta de UNA vez (solo superadmin): rutas desde datos existentes con IA -->
+            <div id="rutas-ia-card" class="hidden section-card border border-brand-100">
+                <div class="flex flex-col md:flex-row md:items-start gap-4">
+                    <i class="ph-duotone ph-magic-wand text-brand-600 text-2xl mt-0.5 shrink-0"></i>
+                    <div class="flex-1">
+                        <h3 class="font-extrabold text-gray-900">Generar rutas desde los datos existentes (IA · una sola vez)</h3>
+                        <p class="text-sm text-gray-500 mt-1">Para egresados del registro anterior (sin línea de tiempo): la IA lee lo que ya escribieron (estudios, cargo, biografía) y propone una ruta <strong>solo si los datos alcanzan</strong> — no inventa organizaciones, años ni cargos, y cada propuesta se valida contra el texto original. Nada se guarda sin tu revisión.</p>
+                        <p id="rutas-ia-status" class="text-xs font-bold text-brand-600 mt-2"></p>
+                        <div id="rutas-ia-report"></div>
+                    </div>
+                    <button onclick="rutasIaLogic.analyze()" class="shrink-0 px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-bold text-sm rounded-xl transition flex items-center gap-2 shadow-sm">
+                        <i class="ph-bold ph-magnifying-glass"></i> Analizar perfiles
+                    </button>
+                </div>
+            </div>
+
             <div id="admin-users-tab" class="space-y-4">
                 <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                     <div id="admin-users-table-container" class="admin-table-scroll"></div>
@@ -172,6 +188,11 @@
                                     class="rounded-xl border border-gray-200 px-3 py-2.5 text-sm font-semibold text-gray-600 focus:outline-none focus:border-brand-400">
                                     <option value="all">Todas las promociones</option>
                                 </select>
+                                <select onchange="correosLogic.onNewsFilter(this.value)"
+                                    class="rounded-xl border border-gray-200 px-3 py-2.5 text-sm font-semibold text-gray-600 focus:outline-none focus:border-brand-400">
+                                    <option value="all">Con y sin casilla</option>
+                                    <option value="optin">Solo con casilla de newsletter</option>
+                                </select>
                             </div>
                             <label class="flex items-center justify-between gap-2 px-4 py-2 rounded-xl bg-gray-50 border border-gray-100 cursor-pointer">
                                 <span class="flex items-center gap-2.5 text-sm font-bold text-gray-700">
@@ -233,7 +254,9 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore-compat.js"></script>
     <script src="shared.js"></script>
+    <script src="ia-config.local.js" onerror="this.remove()"></script>
     <script src="admin-correos.js"></script>
+    <script src="admin-rutas-ia.js"></script>
     <script>
         renderNav('admin');
 
@@ -790,6 +813,7 @@
             if (adminBtn) adminBtn.classList.remove('hidden');
             if (isSuperAdmin) {
                 document.getElementById('tab-subadmins')?.classList.remove('hidden');
+                document.getElementById('rutas-ia-card')?.classList.remove('hidden');
             } else {
                 document.getElementById('migration-banner')?.classList.add('hidden');
                 document.getElementById('tab-news-admin')?.classList.add('hidden');
