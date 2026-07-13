@@ -68,18 +68,20 @@ service cloud.firestore {
       }
       function isAdmin() { return isSuperAdmin() || isSchoolAdmin(); }
 
-      // Directorio de egresados: lectura autenticada; cada quien edita su doc
-      // (o un admin, p. ej. al crear un sub-administrador).
+      // Directorio de egresados: lectura PUBLICA porque el modo invitado
+      // explora el directorio sin login (browseAsGuest no autentica).
+      // Trade-off: los datos de perfil quedan legibles sin login; la
+      // alternativa mas protectora es Anonymous Auth + lectura autenticada.
       match /public/data/alumni/{userId} {
-        allow read: if request.auth != null;
+        allow read: if true;
         allow create, update: if request.auth != null
           && (request.auth.uid == userId || isAdmin());
         allow delete: if isAdmin();
 
-        // Hitos de la trayectoria (la "ruta" del egresado): visibles para
-        // cualquier autenticado; solo el dueño (o un admin) los edita.
+        // Hitos de la trayectoria: visibles tambien en modo invitado
+        // (el slide panel del directorio carga la ruta del egresado).
         match /hitos/{hitoId} {
-          allow read: if request.auth != null;
+          allow read: if true;
           allow write: if request.auth != null
             && (request.auth.uid == userId || isAdmin());
         }

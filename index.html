@@ -620,6 +620,16 @@
             </div>
         </div>
 
+        <!-- VISTA: PRÁCTICA TOEFL (formato 2026) -->
+        <div id="view-toefl-practice" class="hidden pb-10">
+            <div id="toefl-root"><!-- Renderizado por toefl-practice.js --></div>
+        </div>
+
+        <!-- VISTA: PRÁCTICA DELF B1 (nouveau format) -->
+        <div id="view-delf-practice" class="hidden pb-10">
+            <div id="delf-root"><!-- Renderizado por delf-practice.js --></div>
+        </div>
+
         <!-- VISTA: MENSAJES -->
         <div id="view-messages" class="hidden h-[calc(100vh-8rem)] max-w-6xl mx-auto bg-white rounded-3xl shadow-xl border border-gray-200 overflow-hidden flex animate-fade-in">
             <!-- Lista de Chats -->
@@ -1018,6 +1028,12 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore-compat.js"></script>
     <script src="shared.js"></script>
+    <script src="toefl-data.js"></script>
+    <script src="toefl-practice.js"></script>
+    <script src="delf-data.js"></script>
+    <script src="delf-practice.js"></script>
+    <script src="ia-config.local.js" onerror="this.remove()"></script>
+    <script src="orientadora.js"></script>
     <script>
         function renderTextWithLinks(element, text) {
             const content = String(text ?? '');
@@ -1058,13 +1074,13 @@
                     level: 'Preparación internacional',
                     icon: 'ph-duotone ph-globe-hemisphere-west',
                     accent: 'blue',
-                    description: 'Borrador para practicar habilidades del examen TOEFL sin incluir speaking en esta primera versión.',
+                    description: 'Práctica basada en el nuevo formato oficial del TOEFL iBT (enero 2026): Reading adaptativo en 2 módulos y Writing con 3 tareas cronometradas.',
                     practices: [
-                        { name: 'Reading', focus: 'Comprensión de textos académicos', format: 'Lecturas cortas + preguntas de selección', status: 'Básico' },
-                        { name: 'Listening', focus: 'Comprensión auditiva', format: 'Audio o video + preguntas guiadas', status: 'Básico' },
-                        { name: 'Writing', focus: 'Respuesta escrita estructurada', format: 'Prompt + planeador + autoevaluación', status: 'Borrador' }
+                        { name: 'Reading', focus: 'Complete the Words, Read in Daily Life y pasaje académico', format: 'Adaptativo: 2 módulos con cronómetro (~27 min)', status: 'Disponible', action: "toeflLogic.start('reading')" },
+                        { name: 'Writing', focus: 'Build a Sentence, Write an Email y Academic Discussion', format: '3 tareas cronometradas (~23 min) + rúbrica de bandas 1–6', status: 'Disponible', action: "toeflLogic.start('writing')" },
+                        { name: 'Listening', focus: 'Comprensión auditiva', format: 'Audio o video + preguntas guiadas', status: 'Próximamente' }
                     ],
-                    excluded: 'Speaking queda por fuera temporalmente por requerir evaluación oral especializada.'
+                    excluded: 'Speaking y Listening quedan por fuera temporalmente; Speaking requiere evaluación oral especializada.'
                 },
                 {
                     code: 'DELF',
@@ -1073,13 +1089,13 @@
                     level: 'Preparación A1-B2',
                     icon: 'ph-duotone ph-flag',
                     accent: 'purple',
-                    description: 'Borrador para organizar prácticas del DELF enfocadas en comprensión y producción escrita.',
+                    description: 'Práctica del DELF B1 con el formato nuevo oficial: comprensión 100% preguntas cerradas y producción escrita con la grilla de 25 puntos.',
                     practices: [
-                        { name: 'Compréhension écrite', focus: 'Comprensión de textos en francés', format: 'Texto corto + preguntas de comprensión', status: 'Básico' },
-                        { name: 'Compréhension orale', focus: 'Escucha de situaciones cotidianas o académicas', format: 'Audio + preguntas por nivel', status: 'Básico' },
-                        { name: 'Production écrite', focus: 'Escritura de mensajes, opiniones o textos breves', format: 'Consigna + estructura sugerida', status: 'Borrador' }
+                        { name: 'Compréhension écrite (B1)', focus: '3 ejercicios: anuncios con criterios + 2 artículos de prensa', format: '45 min con cronómetro · 25 pts · todo QCM/Oui-Non', status: 'Disponible', action: "delfLogic.start('ce')" },
+                        { name: 'Production écrite (B1)', focus: 'Ensayo/artículo de opinión de 160 palabras mínimo', format: '45 min con cronómetro · grilla oficial /25 + respuesta modelo', status: 'Disponible', action: "delfLogic.start('pe')" },
+                        { name: 'Compréhension orale', focus: 'Escucha de situaciones cotidianas o académicas', format: 'Audio + preguntas por nivel', status: 'Próximamente' }
                     ],
-                    excluded: 'Production orale queda por fuera temporalmente por requerir interacción y evaluación oral.'
+                    excluded: 'Production orale y compréhension orale quedan por fuera temporalmente; la oral requiere interacción y evaluación especializada.'
                 }
         ];
 
@@ -1470,8 +1486,16 @@
                     window.location.href = 'admin.html';
                     return;
                 }
-                if (viewId !== 'auth' && viewId !== 'register' && viewId !== 'home' && viewId !== 'terms' && viewId !== 'exam-modules' && !state.user) { authLogic.logout(); return; }
+                if (viewId !== 'auth' && viewId !== 'register' && viewId !== 'home' && viewId !== 'terms' && viewId !== 'exam-modules' && viewId !== 'toefl-practice' && viewId !== 'delf-practice' && !state.user) { authLogic.logout(); return; }
                 if (viewId === 'register' && state.user) { viewId = 'profile'; }
+
+                // Detiene el cronómetro si se abandona una práctica por la navegación
+                if (state.view === 'toefl-practice' && viewId !== 'toefl-practice' && typeof toeflLogic !== 'undefined') {
+                    toeflLogic.stopTimer();
+                }
+                if (state.view === 'delf-practice' && viewId !== 'delf-practice' && typeof delfLogic !== 'undefined') {
+                    delfLogic.stopTimer();
+                }
 
                 // Libera el listener de mensajes al salir de la vista de mensajes
                 if (state.view === 'messages' && viewId !== 'messages') {
@@ -1481,7 +1505,7 @@
                     }
                 }
 
-                const views = ['view-home', 'view-auth', 'view-register', 'view-terms', 'view-onboarding', 'view-onboarding-profile', 'view-directory', 'view-news', 'view-exam-modules', 'view-messages', 'view-profile', 'view-admin'];
+                const views = ['view-home', 'view-auth', 'view-register', 'view-terms', 'view-onboarding', 'view-onboarding-profile', 'view-directory', 'view-news', 'view-exam-modules', 'view-toefl-practice', 'view-delf-practice', 'view-messages', 'view-profile', 'view-admin'];
                 views.forEach(id => {
                     const el = document.getElementById(id);
                     if(el) el.classList.add('hidden');
@@ -1700,6 +1724,7 @@
                                                 </div>
                                                 <p class="text-sm text-gray-600 mb-1">${sanitizeHTML(practice.focus)}</p>
                                                 <p class="text-xs text-gray-400 font-medium">Formato: ${sanitizeHTML(practice.format)}</p>
+                                                ${practice.action ? `<button onclick="${practice.action}" class="mt-3 px-4 py-2 ${accent.solid} text-white text-xs font-bold rounded-lg hover:opacity-90 transition flex items-center gap-1.5"><i class="ph-bold ph-play"></i> Practicar ahora</button>` : ''}
                                             </div>
                                         </div>
                                     </div>

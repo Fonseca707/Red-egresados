@@ -1,2 +1,5 @@
 firebase-config.js
 .DS_Store
+
+# Config local de IA (clave de API) — nunca subir
+ia-config.local.js
