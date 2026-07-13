@@ -90,9 +90,14 @@
                         <p id="rutas-ia-status" class="text-xs font-bold text-brand-600 mt-2"></p>
                         <div id="rutas-ia-report"></div>
                     </div>
-                    <button onclick="rutasIaLogic.analyze()" class="shrink-0 px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-bold text-sm rounded-xl transition flex items-center gap-2 shadow-sm">
-                        <i class="ph-bold ph-magnifying-glass"></i> Analizar perfiles
-                    </button>
+                    <div class="flex flex-col gap-2 shrink-0">
+                        <button onclick="rutasIaLogic.analyze()" class="px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-bold text-sm rounded-xl transition flex items-center gap-2 shadow-sm">
+                            <i class="ph-bold ph-magnifying-glass"></i> Analizar perfiles
+                        </button>
+                        <button onclick="rutasIaLogic.chooseDestacadas()" class="px-5 py-2.5 bg-white border border-brand-200 text-brand-700 hover:bg-brand-50 font-bold text-sm rounded-xl transition flex items-center gap-2">
+                            <i class="ph-bold ph-star"></i> Elegir historias destacadas
+                        </button>
+                    </div>
                 </div>
             </div>
 

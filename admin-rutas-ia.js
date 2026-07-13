@@ -245,7 +245,137 @@ Devuelve JSON: {"hitos":[{"tipo":"...","organizacion":"...o null","rol":"...o nu
         if (holder) holder.innerHTML = `
             <div class="mt-4 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800 font-bold">
                 <i class="ph-bold ph-check-circle"></i> ${ok} rutas creadas. Los egresados pueden ajustarlas desde "Mi Ruta" en su perfil. Esta herramienta era de una sola pasada: los perfiles que ya tienen hitos no se vuelven a tocar.
+            </div>
+            <p class="text-xs text-gray-500 mt-2">Siguiente paso sugerido: <strong>Elegir historias destacadas</strong> (botón de al lado) para que la portada muestre las 4 mejores rutas.</p>`;
+    },
+
+    // ═════ Historias destacadas: la IA elige las 4 rutas más prometedoras ═════
+    destacadasProposal: null, // [{user, razon, incluir}]
+
+    async chooseDestacadas() {
+        if (this.running) return;
+        if (!this.getKey()) {
+            alert('No hay clave de IA configurada en este navegador (ia-config.local.js). Ejecuta esta herramienta desde el equipo de desarrollo.');
+            return;
+        }
+        this.running = true;
+        this.destacadasProposal = null;
+        const status = document.getElementById('rutas-ia-status');
+        try {
+            if (status) status.textContent = 'Reuniendo las rutas de la red…';
+            const users = adminLogic.getVisibleUsers().filter(u =>
+                (u.hitosCount || 0) >= 2 &&
+                u.accountStatus !== ACCOUNT_STATUS.SUSPENDIDO &&
+                !/example\.com$|prueba/i.test(u.contactEmail || u.email || ''));
+            if (users.length < 2) {
+                if (status) status.textContent = 'Aún no hay suficientes rutas reales (mínimo 2 con hitos). Corre primero la generación de rutas.';
+                this.running = false;
+                return;
+            }
+            const resumenes = [];
+            for (const u of users) {
+                const hitos = await loadHitos(u.id);
+                const ruta = hitos.map(h => [hitoTypeInfo(h.tipo).label, [h.rol, h.organizacion].filter(Boolean).join(' en ')].filter(Boolean).join(': ')).join(' -> ');
+                resumenes.push({ id: u.id, promocion: String(u.year || ''), area: u.area !== 'General' ? u.area : null, hitos: hitos.length, ruta });
+            }
+            if (status) status.textContent = `Pidiendo a la IA elegir entre ${resumenes.length} rutas…`;
+            const system = `Eres el curador de la portada de una red de egresados de colegio. Te doy una lista de rutas (trayectorias) reales. Elige EXACTAMENTE ${Math.min(4, resumenes.length)} para destacar en la portada pública, con estos criterios en orden:
+1. Ruta más completa y con progresión clara (educación -> práctica/empleo, organizaciones nombradas).
+2. Que inspire a estudiantes de colegio (llegar a universidad reconocida, empleo real, emprendimiento).
+3. Diversidad entre las elegidas: áreas y promociones distintas (no elijas 4 iguales).
+No inventes nada: usa solo lo que hay en la lista. Devuelve JSON: {"seleccion":[{"id":"...","razon":"una frase corta"}]}`;
+            const res = await fetch('https://api.deepseek.com/chat/completions', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${this.getKey()}` },
+                body: JSON.stringify({
+                    model: 'deepseek-v4-flash',
+                    messages: [
+                        { role: 'system', content: system },
+                        { role: 'user', content: JSON.stringify(resumenes) }
+                    ],
+                    temperature: 0,
+                    max_tokens: 600,
+                    response_format: { type: 'json_object' },
+                    thinking: { type: 'disabled' }
+                })
+            });
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const data = await res.json();
+            const parsed = JSON.parse(data?.choices?.[0]?.message?.content || '{}');
+            const byId = new Map(users.map(u => [u.id, u]));
+            const seleccion = (Array.isArray(parsed.seleccion) ? parsed.seleccion : [])
+                .filter(s => byId.has(s.id))
+                .slice(0, 4)
+                .map(s => ({ user: byId.get(s.id), razon: String(s.razon || '').slice(0, 140), incluir: true }));
+            if (!seleccion.length) throw new Error('La IA no devolvió una selección válida');
+            this.destacadasProposal = seleccion;
+            if (status) status.textContent = '';
+            this.renderDestacadas();
+        } catch (e) {
+            if (status) status.textContent = `Error: ${String(e.message || e).slice(0, 100)}`;
+        } finally {
+            this.running = false;
+        }
+    },
+
+    toggleDestacada(i) {
+        this.destacadasProposal[i].incluir = !this.destacadasProposal[i].incluir;
+        this.renderDestacadas();
+    },
+
+    renderDestacadas() {
+        const holder = document.getElementById('rutas-ia-report');
+        if (!holder || !this.destacadasProposal) return;
+        const n = this.destacadasProposal.filter(p => p.incluir).length;
+        const actuales = adminLogic.getVisibleUsers().filter(u => u.rutaDestacada).length;
+        holder.innerHTML = `
+            <div class="space-y-3 mt-4">
+                <p class="text-sm font-bold text-gray-900">Propuesta de historias destacadas para la portada${actuales ? ` (reemplaza a las ${actuales} actuales)` : ''}:</p>
+                ${this.destacadasProposal.map((p, i) => `
+                    <label class="flex items-start gap-3 p-3 rounded-xl border ${p.incluir ? 'border-brand-200 bg-brand-50/50' : 'border-gray-100 bg-gray-50 opacity-60'} cursor-pointer transition">
+                        <input type="checkbox" ${p.incluir ? 'checked' : ''} onchange="rutasIaLogic.toggleDestacada(${i})" class="accent-brand-600 mt-1 shrink-0">
+                        <img src="${sanitizeHTML(p.user.img)}" alt="" class="w-10 h-10 rounded-lg object-cover shrink-0">
+                        <div class="min-w-0">
+                            <p class="text-sm font-bold text-gray-900">${sanitizeHTML(p.user.name)} <span class="text-xs font-semibold text-gray-400">· promoción ${sanitizeHTML(String(p.user.year || '—'))} · ${p.user.hitosCount} hitos</span></p>
+                            <p class="text-xs text-gray-500 mt-0.5">${sanitizeHTML(p.razon)}</p>
+                        </div>
+                    </label>`).join('')}
+                <button onclick="rutasIaLogic.applyDestacadas()" ${n ? '' : 'disabled'}
+                    class="px-6 py-3 rounded-xl font-bold transition ${n ? 'bg-brand-600 text-white hover:bg-brand-700 shadow-lg shadow-brand-600/20' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}">
+                    <i class="ph-bold ph-star"></i> Publicar ${n} historia${n === 1 ? '' : 's'} en la portada
+                </button>
             </div>`;
+    },
+
+    async applyDestacadas() {
+        const chosen = this.destacadasProposal?.filter(p => p.incluir) || [];
+        if (!chosen.length || this.running) return;
+        this.running = true;
+        const status = document.getElementById('rutas-ia-status');
+        try {
+            const chosenIds = new Set(chosen.map(p => p.user.id));
+            // Quita el destaque anterior y marca los nuevos
+            const previas = adminLogic.getVisibleUsers().filter(u => u.rutaDestacada && !chosenIds.has(u.id));
+            for (const u of previas) {
+                await alumniCollection.doc(u.id).set({ rutaDestacada: false, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+            }
+            for (const p of chosen) {
+                await alumniCollection.doc(p.user.id).set({ rutaDestacada: true, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+            }
+            await loadAlumni();
+            adminLogic.renderUsers();
+            if (status) status.textContent = '';
+            const holder = document.getElementById('rutas-ia-report');
+            if (holder) holder.innerHTML = `
+                <div class="mt-4 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800 font-bold">
+                    <i class="ph-bold ph-star"></i> ${chosen.length} historias destacadas publicadas: la portada las mostrará de primeras. Puedes repetir la selección cuando la red crezca.
+                </div>`;
+            this.destacadasProposal = null;
+        } catch (e) {
+            if (status) status.textContent = `Error al publicar: ${String(e.message || e).slice(0, 100)}`;
+        } finally {
+            this.running = false;
+        }
     }
 };
 window.rutasIaLogic = rutasIaLogic;

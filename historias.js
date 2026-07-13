@@ -19,11 +19,14 @@ const historiasLogic = {
             if (!state.data.alumni.length) await loadAlumni();
             const activos = state.data.alumni.filter(a => a.accountStatus !== 'suspendido');
 
-            // Candidatos: los perfiles más completos primero (criterio ya usado
-            // por el directorio); se piden hitos hasta reunir HISTORIAS_MAX rutas.
-            const candidatos = [...activos]
-                .sort((a, b) => (b.profileCompleteness || 0) - (a.profileCompleteness || 0))
-                .slice(0, 10);
+            // Candidatos: primero las historias DESTACADAS (curadas con IA desde
+            // el panel admin, flag rutaDestacada); si faltan cupos, se completan
+            // con los perfiles más completos (criterio del directorio).
+            const destacados = activos.filter(a => a.rutaDestacada);
+            const resto = activos
+                .filter(a => !a.rutaDestacada)
+                .sort((a, b) => (b.profileCompleteness || 0) - (a.profileCompleteness || 0));
+            const candidatos = [...destacados, ...resto].slice(0, 10);
             const historias = [];
             for (const alum of candidatos) {
                 let hitos = alum.hitosCount > 0 ? await loadHitos(alum.id) : [];
