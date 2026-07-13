@@ -13,6 +13,8 @@ const firebaseConfig = {
 if (!firebase.apps.length) {
     firebase.initializeApp(firebaseConfig);
 }
+// Analytics (evidencia de uso para la investigación): registra vistas por página.
+try { if (firebase.analytics) firebase.analytics(); } catch (e) {}
 const auth = firebase.auth();
 const db = firebase.firestore();
 const _appId = "1:874010522484:web:28881821d110defd3b7221";

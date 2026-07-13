@@ -379,3 +379,64 @@ No inventes nada: usa solo lo que hay en la lista. Devuelve JSON: {"seleccion":[
     }
 };
 window.rutasIaLogic = rutasIaLogic;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Limpieza de perfiles de PRUEBA (solo superadmin): los registros semilla con
+// correo example.com/prueba son visibles en el directorio público y delatan
+// artificialidad. Detecta, lista y borra solo tras confirmación.
+// ─────────────────────────────────────────────────────────────────────────────
+const limpiezaLogic = {
+    detect() {
+        return adminLogic.getVisibleUsers().filter(u =>
+            /example\.com$|prueba/i.test(u.contactEmail || '') ||
+            /example\.com$|prueba/i.test(u.email || ''));
+    },
+
+    renderCard() {
+        const card = document.getElementById('limpieza-card');
+        if (!card) return;
+        const test = this.detect();
+        if (!test.length) { card.classList.add('hidden'); return; }
+        card.classList.remove('hidden');
+        card.innerHTML = `
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div class="flex items-start gap-3">
+                    <i class="ph-duotone ph-broom text-red-500 text-2xl mt-0.5 shrink-0"></i>
+                    <div>
+                        <p class="font-bold text-red-900 text-sm">${test.length} perfiles de prueba visibles en el directorio público</p>
+                        <p class="text-red-700 text-xs mt-0.5">${test.slice(0, 6).map(u => sanitizeHTML(u.name)).join(', ')}${test.length > 6 ? ` y ${test.length - 6} más` : ''}. Mezclados con egresados reales delatan artificialidad.</p>
+                        <p id="limpieza-status" class="text-xs font-bold text-red-600 mt-1"></p>
+                    </div>
+                </div>
+                <button onclick="limpiezaLogic.clean()" class="shrink-0 px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold text-sm rounded-xl transition flex items-center gap-2 shadow-sm">
+                    <i class="ph-bold ph-trash"></i> Eliminar los ${test.length}
+                </button>
+            </div>`;
+    },
+
+    async clean() {
+        const test = this.detect();
+        if (!test.length) return;
+        if (!confirm(`Se eliminarán DEFINITIVAMENTE ${test.length} perfiles de prueba del directorio (con sus hitos y usernames). Los perfiles reales no se tocan. ¿Continuar?`)) return;
+        const status = document.getElementById('limpieza-status');
+        let ok = 0;
+        for (const u of test) {
+            try {
+                if (status) status.textContent = `Eliminando ${u.name}… (${ok}/${test.length})`;
+                const hitosSnap = await hitosCollection(u.id).get();
+                for (const h of hitosSnap.docs) await h.ref.delete();
+                if (u.username) await usernamesCollection.doc(u.username).delete().catch(() => {});
+                await alumniCollection.doc(u.id).delete();
+                ok++;
+            } catch (e) {
+                if (status) status.textContent = `Error con ${u.name}: ${e.message}`;
+            }
+        }
+        await loadAlumni();
+        adminLogic.renderUsers();
+        if (status) status.textContent = '';
+        this.renderCard();
+        alert(`${ok} perfiles de prueba eliminados.`);
+    }
+};
+window.limpiezaLogic = limpiezaLogic;

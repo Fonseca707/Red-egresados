@@ -4,6 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sinapsis | Directorio</title>
+    <meta name="description" content="Directorio de egresados del Liceo Campestre de Pereira: conoce sus trayectorias y conecta con ellos.">
+    <meta name="theme-color" content="#16a34a">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Sinapsis">
+    <meta property="og:title" content="Sinapsis | Directorio de Egresados">
+    <meta property="og:description" content="Trayectorias reales de egresados del Liceo Campestre de Pereira: del colegio a donde están hoy.">
+    <meta property="og:url" content="https://fonseca707.github.io/Red-egresados/directory.html">
+    <meta property="og:image" content="https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=1200&q=80">
+    <meta name="twitter:card" content="summary_large_image">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
@@ -120,6 +129,7 @@
                     <button onclick="chatLogic.startChatFromDirectory()" class="flex-1 bg-brand-600 text-white font-bold py-2.5 rounded-xl shadow-md shadow-brand-500/30 hover:bg-brand-700 transition flex justify-center items-center gap-2"><i class="ph-bold ph-chat-circle-text"></i> Mensaje</button>
                     <a id="sp-linkedin-btn" href="#" target="_blank" class="hidden w-12 flex items-center justify-center bg-blue-50 text-[#0077b5] rounded-xl border border-blue-100 hover:bg-blue-100 transition"><i class="ph-bold ph-linkedin-logo text-xl"></i></a>
                     <a id="sp-whatsapp-btn" href="#" target="_blank" class="hidden w-12 flex items-center justify-center bg-green-50 text-[#25D366] rounded-xl border border-green-100 hover:bg-green-100 transition"><i class="ph-bold ph-whatsapp-logo text-xl"></i></a>
+                    <button id="sp-share-btn" onclick="directoryLogic.shareProfile()" title="Copiar enlace de este perfil" class="w-12 flex items-center justify-center bg-gray-50 text-gray-500 rounded-xl border border-gray-200 hover:bg-brand-50 hover:text-brand-600 transition"><i class="ph-bold ph-link text-xl"></i></button>
                 </div>
                 <div class="space-y-6">
                     <div>
@@ -150,6 +160,7 @@
 
     <script src="theme.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-analytics-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore-compat.js"></script>
     <script src="shared.js"></script>
@@ -261,7 +272,19 @@
                     liBtn.href = normalizeLinkedInUrl(user.linkedin);
                 } else { liBtn.classList.add('hidden'); }
                 document.getElementById('slide-panel-overlay').classList.remove('hidden');
+                // URL compartible del perfil (sin recargar)
+                const shareUrl = new URL(window.location.href);
+                shareUrl.searchParams.set('perfil', String(id));
+                history.replaceState(null, '', shareUrl);
                 directoryLogic.loadTimeline(user);
+            },
+            shareProfile: async () => {
+                const url = window.location.href;
+                const btn = document.getElementById('sp-share-btn');
+                try {
+                    await navigator.clipboard.writeText(url);
+                    if (btn) { btn.innerHTML = '<i class="ph-bold ph-check text-xl"></i>'; setTimeout(() => { btn.innerHTML = '<i class="ph-bold ph-link text-xl"></i>'; }, 1500); }
+                } catch { prompt('Copia el enlace del perfil:', url); }
             },
             loadTimeline: async (user) => {
                 const container = document.getElementById('sp-timeline');
@@ -274,6 +297,9 @@
             },
             closeProfile: () => {
                 document.getElementById('slide-panel-overlay').classList.add('hidden');
+                const cleanUrl = new URL(window.location.href);
+                cleanUrl.searchParams.delete('perfil');
+                history.replaceState(null, '', cleanUrl);
             },
             filter: () => {
                 const term = document.getElementById('directory-search').value.toLowerCase().trim();
@@ -366,6 +392,11 @@
             }
             await loadAlumni();
             directoryLogic.render();
+            // Deep link: abrir el perfil pedido en la URL (?perfil=<id>)
+            const requestedProfile = new URLSearchParams(window.location.search).get('perfil');
+            if (requestedProfile && state.data.alumni.some(u => String(u.id) === String(requestedProfile))) {
+                directoryLogic.openProfile(requestedProfile);
+            }
         });
     </script>
 </body>

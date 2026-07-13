@@ -80,6 +80,9 @@
                 </button>
             </div>
 
+            <!-- Limpieza de perfiles de prueba (solo superadmin; se autollena) -->
+            <div id="limpieza-card" class="hidden mb-6 bg-red-50 border border-red-200 rounded-2xl px-5 py-4"></div>
+
             <!-- Herramienta de UNA vez (solo superadmin): rutas desde datos existentes con IA -->
             <div id="rutas-ia-card" class="hidden section-card border border-brand-100">
                 <div class="flex flex-col md:flex-row md:items-start gap-4">
@@ -256,6 +259,7 @@
 
     <script src="theme.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-analytics-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore-compat.js"></script>
     <script src="shared.js"></script>
@@ -831,6 +835,7 @@
             }
             adminLogic.renderUsers();
             adminLogic.switchTab('users');
+            if (isSuperAdmin) limpiezaLogic.renderCard();
         });
     </script>
 </body>
