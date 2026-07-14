@@ -5,3 +5,4 @@ firebase-config.js
 ia-config.local.js
 proxy-ia/.wrangler/
 backups/
+.wrangler/
