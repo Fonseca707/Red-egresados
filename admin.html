@@ -201,6 +201,9 @@
 
             <!-- TAB: SUB-ADMINISTRADORES (solo super admin) -->
             <div id="admin-correos-tab" class="hidden space-y-6">
+                <!-- Interruptor maestro de los correos automáticos -->
+                <div id="auto-correos-card" class="section-card border-2"></div>
+
                 <div class="section-card">
                     <div class="flex items-start gap-3 mb-6">
                         <div class="w-12 h-12 bg-brand-50 text-brand-600 rounded-2xl flex items-center justify-center text-2xl shrink-0"><i class="ph-duotone ph-envelope-simple"></i></div>
@@ -308,7 +311,7 @@
                     if (p) p.classList.toggle('hidden', key !== tab);
                 });
                 if (tab === 'subadmins') adminLogic.renderSubAdmins();
-                if (tab === 'correos') correosLogic.render();
+                if (tab === 'correos') { correosLogic.render(); autoCorreosLogic.cargarEstado(); }
             },
             getVisibleUsers: () => {
                 return state.adminRole === 'superadmin'

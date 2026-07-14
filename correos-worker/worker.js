@@ -20,9 +20,16 @@
 //                        (se repite máximo 1 vez al año)
 //   mensaje-nuevo      → chat sin leer (lo dispara la web, endpoint POST)
 //
+// INTERRUPTOR MAESTRO: si el estado en KV es "pausado", NADA sale de aquí —
+// ni el cron, ni los avisos de mensaje. Se controla desde el panel admin y
+// vive en el Worker (no en la web), así que funciona aunque la web esté caída.
+// Por seguridad, arranca PAUSADO: hay que encenderlo a propósito.
+//
 // Endpoints:
+//   GET  /estado         → { pausado: bool } (público, lo lee el panel)
+//   POST /interruptor    → enciende/pausa (requiere ?clave=PANEL_SECRET)
 //   GET  /previsualizar  → qué se enviaría hoy, SIN enviar (para probar)
-//   POST /ejecutar       → fuerza la corrida (requiere ?clave=CRON_SECRET)
+//   POST /ejecutar       → fuerza la corrida (requiere ?clave=PANEL_SECRET)
 //   POST /mensaje-nuevo  → aviso de mensaje (lo llama la web)
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -149,7 +156,10 @@ function plantilla(tipo, alum, env, extra = {}) {
 }
 
 // ── Envío por Resend ─────────────────────────────────────────────────────────
+// Única puerta de salida: aquí se vuelve a comprobar el interruptor, para que
+// ningún camino (cron, /ejecutar, /mensaje-nuevo) pueda saltárselo por error.
 async function enviar(env, para, asunto, html) {
+    if (await estaPausado(env)) throw new Error('PAUSADO: los correos automáticos están apagados');
     const res = await fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: {
@@ -210,7 +220,26 @@ async function calcular(env) {
 // paciencia de los egresados. El resto queda para el día siguiente.
 const MAX_POR_CORRIDA = 60;
 
+// ── Interruptor maestro ──────────────────────────────────────────────────────
+const CLAVE_INTERRUPTOR = '_sistema:interruptor';
+// Ausencia de valor = PAUSADO (fail-safe: si el KV falla o nunca se configuró,
+// no se manda nada). Solo el valor exacto 'activo' habilita los envíos.
+async function estaPausado(env) {
+    try {
+        const v = await env.CORREOS_ESTADO.get(CLAVE_INTERRUPTOR);
+        return v !== 'activo';
+    } catch {
+        return true; // ante cualquier duda, no enviar
+    }
+}
+
 async function procesar(env, { simular = false } = {}) {
+    const pausado = await estaPausado(env);
+    // Si está pausado, se calcula igual (para poder previsualizar) pero no sale nada.
+    if (pausado && !simular) {
+        return { pausado: true, enviados: 0, hechos: [], saltados: [], errores: [],
+                 mensaje: 'Correos automáticos PAUSADOS: no se envió nada.' };
+    }
     const pendientes = await calcular(env);
     const hechos = [], saltados = [], errores = [];
     const yaHoy = new Set(); // máximo UN correo por persona por corrida
@@ -250,7 +279,7 @@ async function procesar(env, { simular = false } = {}) {
             errores.push({ para, tipo: p.tipo, error: String(e.message || e) });
         }
     }
-    return { simulado: simular, enviados: hechos.length, hechos, saltados, errores };
+    return { simulado: simular, pausado, enviados: hechos.length, hechos, saltados, errores };
 }
 
 // ── Entradas ─────────────────────────────────────────────────────────────────
@@ -275,6 +304,24 @@ export default {
 
         if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors(origen) });
 
+        // Estado del interruptor (lo consulta el panel admin al abrir)
+        if (url.pathname === '/estado') {
+            const pausado = await estaPausado(env);
+            const desde = await env.CORREOS_ESTADO.get(CLAVE_INTERRUPTOR + ':desde');
+            return new Response(JSON.stringify({ pausado, desde: desde || null }), { headers });
+        }
+
+        // Interruptor maestro: encender / pausar (protegido con clave)
+        if (url.pathname === '/interruptor' && request.method === 'POST') {
+            if (url.searchParams.get('clave') !== env.PANEL_SECRET) {
+                return new Response(JSON.stringify({ error: 'Clave incorrecta' }), { status: 403, headers });
+            }
+            const { activar } = await request.json().catch(() => ({}));
+            await env.CORREOS_ESTADO.put(CLAVE_INTERRUPTOR, activar ? 'activo' : 'pausado');
+            await env.CORREOS_ESTADO.put(CLAVE_INTERRUPTOR + ':desde', new Date().toISOString());
+            return new Response(JSON.stringify({ pausado: !activar }), { headers });
+        }
+
         // Previsualizar: qué se enviaría hoy, sin enviar nada
         if (url.pathname === '/previsualizar') {
             const r = await procesar(env, { simular: true });
@@ -283,8 +330,8 @@ export default {
 
         // Forzar corrida manual (protegida con clave)
         if (url.pathname === '/ejecutar' && request.method === 'POST') {
-            if (url.searchParams.get('clave') !== env.CRON_SECRET) {
-                return new Response('No autorizado', { status: 403, headers: cors(origen) });
+            if (url.searchParams.get('clave') !== env.PANEL_SECRET) {
+                return new Response(JSON.stringify({ error: 'Clave incorrecta' }), { status: 403, headers });
             }
             const r = await procesar(env);
             return new Response(JSON.stringify(r, null, 2), { headers });
@@ -293,6 +340,9 @@ export default {
         // Aviso de mensaje nuevo (lo llama la web al enviar un chat)
         if (url.pathname === '/mensaje-nuevo' && request.method === 'POST') {
             if (!ORIGENES.includes(origen)) return new Response('Origen no permitido', { status: 403 });
+            if (await estaPausado(env)) {
+                return new Response(JSON.stringify({ enviado: false, motivo: 'correos automáticos pausados' }), { headers });
+            }
             try {
                 const { destinatarioUid, deNombre } = await request.json();
                 if (!destinatarioUid) return new Response('Falta destinatarioUid', { status: 400, headers });

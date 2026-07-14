@@ -9,6 +9,120 @@
 
 const CORREOS_BATCH_SIZE = 40;      // destinatarios por lote (límite práctico de URL)
 const SYNTHETIC_DOMAINS = ['users.sinapsis.app', 'sinapsis.local'];
+const CORREOS_WORKER = 'https://sinapsis-correos.sinapsis-lcp.workers.dev';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Interruptor maestro de los correos automáticos (bienvenida, recordatorios,
+// pulso, avisos de mensaje). El estado real vive en el Worker: esto solo lo
+// consulta y lo cambia. Arranca PAUSADO y hay que encenderlo a propósito.
+// La clave del panel no se guarda: se pide en cada cambio.
+// ─────────────────────────────────────────────────────────────────────────────
+const autoCorreosLogic = {
+    pausado: true,
+    desde: null,
+    cargando: true,
+
+    async cargarEstado() {
+        this.cargando = true;
+        this.render();
+        try {
+            const res = await fetch(`${CORREOS_WORKER}/estado`);
+            const d = await res.json();
+            this.pausado = Boolean(d.pausado);
+            this.desde = d.desde || null;
+        } catch {
+            this.pausado = true;
+            this.desde = null;
+        }
+        this.cargando = false;
+        this.render();
+    },
+
+    async cambiar(activar) {
+        const aviso = activar
+            ? 'Vas a ACTIVAR los correos automáticos. A partir de ahora el sistema enviará correos reales a los egresados que dieron su consentimiento (bienvenida, recordatorios, pulso y avisos de mensaje).\n\n¿Continuar?'
+            : 'Vas a PAUSAR todos los correos automáticos. No saldrá ningún correo hasta que los actives de nuevo.\n\n¿Continuar?';
+        if (!confirm(aviso)) return;
+        const clave = prompt('Clave del panel de correos (te la pide para confirmar que eres tú):');
+        if (!clave) return;
+        const btn = document.getElementById('auto-correos-btn');
+        if (btn) { btn.disabled = true; btn.textContent = 'Aplicando…'; }
+        try {
+            const res = await fetch(`${CORREOS_WORKER}/interruptor?clave=${encodeURIComponent(clave.trim())}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ activar })
+            });
+            const d = await res.json();
+            if (!res.ok) throw new Error(d.error || `HTTP ${res.status}`);
+            this.pausado = Boolean(d.pausado);
+            this.desde = new Date().toISOString();
+            this.render();
+        } catch (e) {
+            alert(`No se pudo cambiar el interruptor: ${e.message}`);
+            this.render();
+        }
+    },
+
+    async previsualizar() {
+        const box = document.getElementById('auto-correos-preview');
+        if (!box) return;
+        box.innerHTML = '<p class="text-xs text-gray-400"><i class="ph-bold ph-spinner animate-spin"></i> Calculando…</p>';
+        try {
+            const res = await fetch(`${CORREOS_WORKER}/previsualizar`);
+            const d = await res.json();
+            const porTipo = (d.hechos || []).reduce((acc, h) => { acc[h.tipo] = (acc[h.tipo] || 0) + 1; return acc; }, {});
+            box.innerHTML = `
+                <div class="rounded-xl border border-gray-100 bg-white p-4 text-sm">
+                    <p class="font-bold text-gray-900 mb-2"><i class="ph-bold ph-eye text-brand-600"></i> Si se ejecutara ahora, saldrían ${d.enviados || 0} correo${d.enviados === 1 ? '' : 's'} <span class="font-normal text-gray-400">(simulacro: no se envió nada)</span></p>
+                    ${Object.keys(porTipo).length ? `<ul class="space-y-1 mb-2">${Object.entries(porTipo).map(([t, n]) => `<li class="text-xs text-gray-600">• <strong>${sanitizeHTML(t)}</strong>: ${n}</li>`).join('')}</ul>` : ''}
+                    ${(d.hechos || []).length ? `<details class="text-xs text-gray-400"><summary class="cursor-pointer font-bold hover:text-gray-600">Ver destinatarios</summary><ul class="mt-1.5 space-y-0.5 max-h-40 overflow-y-auto">${d.hechos.map(h => `<li>${sanitizeHTML(h.para)} — ${sanitizeHTML(h.tipo)}</li>`).join('')}</ul></details>` : ''}
+                    <p class="text-xs text-gray-400 mt-2">Saltados (ya enviados o sin consentimiento): ${(d.saltados || []).length}</p>
+                </div>`;
+        } catch (e) {
+            box.innerHTML = `<p class="text-xs text-red-500">No se pudo consultar: ${sanitizeHTML(e.message)}</p>`;
+        }
+    },
+
+    render() {
+        const card = document.getElementById('auto-correos-card');
+        if (!card) return;
+        if (this.cargando) {
+            card.innerHTML = '<p class="text-sm text-gray-400"><i class="ph-bold ph-spinner animate-spin"></i> Consultando el estado de los correos automáticos…</p>';
+            return;
+        }
+        const activo = !this.pausado;
+        card.innerHTML = `
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                <div class="flex items-start gap-3">
+                    <div class="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shrink-0 ${activo ? 'bg-green-50 text-green-600 border border-green-100' : 'bg-red-50 text-red-500 border border-red-100'}">
+                        <i class="ph-duotone ${activo ? 'ph-paper-plane-tilt' : 'ph-pause-circle'}"></i>
+                    </div>
+                    <div>
+                        <p class="font-extrabold text-gray-900 flex items-center gap-2">
+                            Correos automáticos
+                            <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wide ${activo ? 'bg-green-50 text-green-700 border border-green-100' : 'bg-red-50 text-red-600 border border-red-100'}">${activo ? 'Activos' : 'Pausados'}</span>
+                        </p>
+                        <p class="text-sm text-gray-500 mt-0.5">${activo
+                            ? 'El sistema envía bienvenidas, recordatorios de ruta, pulso anual y avisos de mensaje a quienes dieron su consentimiento.'
+                            : 'No sale ningún correo automático. Puedes probar y previsualizar con total tranquilidad.'}</p>
+                        ${this.desde ? `<p class="text-xs text-gray-400 mt-1">Último cambio: ${new Date(this.desde).toLocaleString()}</p>` : ''}
+                    </div>
+                </div>
+                <div class="flex gap-2 shrink-0">
+                    <button onclick="autoCorreosLogic.previsualizar()" class="px-4 py-2.5 rounded-xl border border-gray-200 text-gray-600 text-sm font-bold hover:bg-gray-50 transition flex items-center gap-1.5">
+                        <i class="ph-bold ph-eye"></i> Previsualizar
+                    </button>
+                    <button id="auto-correos-btn" onclick="autoCorreosLogic.cambiar(${!activo})"
+                        class="px-5 py-2.5 rounded-xl text-white text-sm font-bold transition flex items-center gap-1.5 shadow-sm ${activo ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'}">
+                        <i class="ph-bold ${activo ? 'ph-pause' : 'ph-play'}"></i> ${activo ? 'Pausar envíos' : 'Activar envíos'}
+                    </button>
+                </div>
+            </div>
+            <div id="auto-correos-preview" class="mt-4"></div>`;
+    }
+};
+window.autoCorreosLogic = autoCorreosLogic;
 
 const correosLogic = {
     selected: new Set(),
