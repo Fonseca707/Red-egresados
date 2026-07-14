@@ -265,6 +265,23 @@ function deriveLegacyHitos(profile = {}) {
     }
     return sortHitos(hitos);
 }
+// Convierte la ruta derivada en hitos reales. Se llama la primera vez que el egresado guarda un hito
+// propio: sin esto, el hito derivado (bachillerato, estudios, empleo) desaparece al dejar de estar vacía
+// la subcolección, y parece que se hubiera borrado.
+async function materializeLegacyHitos(uid, profile = {}) {
+    if (!uid) return [];
+    const existentes = await loadHitos(uid);
+    if (existentes.length) return existentes;
+    const derivados = deriveLegacyHitos(profile);
+    for (const h of derivados) {
+        if (h.organizacion) {
+            h.organizacionId = await upsertOrganization(h.organizacion,
+                h.tipo === 'educacion' ? 'universidad' : (h.tipo === 'colegio' ? 'colegio' : 'empresa'));
+        }
+        await saveHito(uid, h);
+    }
+    return loadHitos(uid);
+}
 function formatHitoYears(h) {
     const inicio = h.anioInicio || '';
     const fin = h.actual ? 'Hoy' : (h.anioFin || '');
@@ -465,7 +482,7 @@ const state = {
     data: { alumni:[], news:[], chats:[], subAdmins:[] },
     profile: { firstName:'',lastName:'',graduationYear:'',location:'',status:'trabajando',role:'',area:'',studies:'',bio:'',skills:'',topics:'',expectations:'',phone:'',linkedin:'',photoURL:'',school:DEFAULT_SCHOOL,username:'',onboardingCompleted:false },
     guestMode: false, activeChatId:null, messagesByChat:{}, selectedDirectoryUserId:null,
-    directoryLoading:false, directoryPage:1, adminEmail:'juanda.fonsecag@gmail.com', superAdminUsernames:['wanda.cg','juanda.fonsecag'], adminTab:'users', editingNewsId:null,
+    directoryLoading:false, directoryPage:1, adminEmail:'juanda.fonsecag@gmail.com', adminTab:'users', editingNewsId:null,
     adminRole: null, adminSchool: null,
     listeners: { chats:null, messages:null }
 };
@@ -485,13 +502,12 @@ function refreshHeaderIdentity() {
     const el=document.getElementById('header-avatar'); const tr=document.getElementById('profile-menu-trigger');
     if(el) el.src=avatar; if(tr) tr.title=`Perfil de ${name}`;
 }
+// Solo correo EXACTO: los prefijos ('juanda.fonsecag@...') eran falsificables
+// registrando ese usuario con otro dominio. Debe coincidir con isSuperAdmin()
+// de docs/firestore.rules, que es la frontera real (esto solo decide la UI).
 function isAdminUser() {
     const e=String(state.user?.email||'').toLowerCase().trim();
-    const username=normalizeUsername(state.profile?.username || usernameFromSyntheticEmail(e));
-    return [state.adminEmail,'juanda.fonsecag@gmail.com'].includes(e)
-        || e.startsWith('juanda.fonsecag@')
-        || e.startsWith('wanda.cg@')
-        || (state.superAdminUsernames || []).includes(username);
+    return [state.adminEmail,'juanda.fonsecag@gmail.com'].includes(e);
 }
 const AUTH_ERROR_MESSAGES={'auth/user-not-found':'No existe la cuenta.','auth/wrong-password':'La contraseña es incorrecta.','auth/invalid-credential':'Correo o contraseña incorrectos.','auth/invalid-email':'El correo no tiene un formato válido.','auth/email-already-in-use':'Ese correo ya está registrado.','auth/weak-password':'La contraseña es muy débil.','auth/popup-closed-by-user':'Cerraste la ventana de Google antes de terminar.','auth/cancelled-popup-request':'Se canceló la solicitud con Google.','auth/network-request-failed':'No hay conexión a internet. Intenta nuevamente.'};
 function getFriendlyAuthError(e,fb='Ocurrió un error.') { return AUTH_ERROR_MESSAGES[e?.code]||fb; }

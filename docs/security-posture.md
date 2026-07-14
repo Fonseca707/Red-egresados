@@ -49,14 +49,14 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // El superadmin se reconoce por correo, igual que en el cliente
-    // (state.superAdminUsernames). Login por usuario => correo sintetico
-    // usuario@sinapsis.local; login con Google => correo real.
+    // El superadmin se reconoce por su correo EXACTO y VERIFICADO.
+    // ⚠️ Nunca usar patrones tipo 'juanda.fonsecag@.*': cualquiera puede
+    // registrarse con juanda.fonsecag@otrodominio.com (sin verificar el
+    // correo) y el token pasaria el patron => superadmin regalado.
     function isSuperAdmin() {
-      return request.auth != null && (
-        request.auth.token.email.matches('juanda[.]fonsecag@.*') ||
-        request.auth.token.email.matches('wanda[.]cg@.*')
-      );
+      return request.auth != null
+        && request.auth.token.email_verified == true
+        && request.auth.token.email == 'juanda.fonsecag@gmail.com';
     }
 
     match /artifacts/{appId} {

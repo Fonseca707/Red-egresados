@@ -54,7 +54,7 @@
                             <h2 class="text-3xl font-bold text-gray-900" id="display-name">Tu Nombre</h2>
                             <p class="text-brand-600 font-medium" id="display-role">Tu Cargo</p>
                         </div>
-                        <button onclick="profileLogic.save()" id="btn-save-profile" class="bg-brand-600 text-white px-8 py-3 rounded-xl font-bold shadow-lg shadow-brand-500/30 hover:bg-brand-700 transition flex items-center gap-2" aria-label="Guardar cambios del perfil">
+                        <button onclick="profileLogic.save()" id="btn-save-profile" class="btn-save-profile bg-brand-600 text-white px-8 py-3 rounded-xl font-bold shadow-lg shadow-brand-500/30 hover:bg-brand-700 transition flex items-center gap-2" aria-label="Guardar cambios del perfil">
                             <i class="ph-bold ph-floppy-disk"></i> Guardar Cambios
                         </button>
                     </div>
@@ -256,6 +256,12 @@
                         <p><strong>Recordatorio:</strong> después de editar tu perfil, haz clic en <strong>"Guardar Cambios"</strong> para no perder la información.</p>
                     </div>
 
+                    <div class="mt-4 flex justify-end">
+                        <button onclick="profileLogic.save()" id="btn-save-profile-bottom" class="btn-save-profile w-full sm:w-auto bg-brand-600 text-white px-8 py-3 rounded-xl font-bold shadow-lg shadow-brand-500/30 hover:bg-brand-700 transition flex items-center justify-center gap-2" aria-label="Guardar cambios del perfil">
+                            <i class="ph-bold ph-floppy-disk"></i> Guardar Cambios
+                        </button>
+                    </div>
+
                     <div class="flex justify-center pt-6 border-t border-gray-100">
                         <button onclick="authLogic.logout()" class="text-red-500 font-bold text-sm hover:text-red-700 flex items-center gap-2 transition px-4 py-2 rounded-lg hover:bg-red-50">
                             <i class="ph-bold ph-sign-out"></i> Cerrar Sesión
@@ -271,7 +277,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-analytics-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore-compat.js"></script>
-    <script src="shared.js?v=6"></script>
+    <script src="shared.js?v=8"></script>
     <script>
         renderNav('profile');
 
@@ -318,10 +324,15 @@
                     return;
                 }
 
-                const btn = document.getElementById('btn-save-profile');
-                const original = btn.innerHTML;
-                btn.disabled = true;
-                btn.innerHTML = `<i class="ph-bold ph-spinner animate-spin"></i> Guardando...`;
+                // Hay dos botones de guardar (arriba y al final del formulario): ambos reflejan el mismo estado.
+                const btns = Array.from(document.querySelectorAll('.btn-save-profile'));
+                const originals = btns.map(b => b.innerHTML);
+                const setBtns = (html, colorFrom = null, colorTo = null) => btns.forEach(b => {
+                    if (colorFrom) b.className = b.className.replace(colorFrom, colorTo);
+                    b.innerHTML = html;
+                });
+                btns.forEach(b => { b.disabled = true; });
+                setBtns(`<i class="ph-bold ph-spinner animate-spin"></i> Guardando...`);
 
                 const payload = {
                     firstName: firstNameValue,
@@ -361,17 +372,17 @@
                     document.getElementById('profile-avatar').src = avatar;
                     refreshHeaderIdentity();
 
-                    btn.className = btn.className.replace('bg-brand-600', 'bg-green-600');
-                    btn.innerHTML = `<i class="ph-bold ph-check"></i> ¡Guardado!`;
+                    setBtns(`<i class="ph-bold ph-check"></i> ¡Guardado!`, 'bg-brand-600', 'bg-green-600');
                 } catch (error) {
-                    btn.className = btn.className.replace('bg-brand-600', 'bg-red-600');
-                    btn.innerHTML = `<i class="ph-bold ph-warning-circle"></i> Error`;
+                    setBtns(`<i class="ph-bold ph-warning-circle"></i> Error`, 'bg-brand-600', 'bg-red-600');
                 }
 
                 setTimeout(() => {
-                    btn.className = btn.className.replace('bg-green-600', 'bg-brand-600').replace('bg-red-600', 'bg-brand-600');
-                    btn.innerHTML = original;
-                    btn.disabled = false;
+                    btns.forEach((b, i) => {
+                        b.className = b.className.replace('bg-green-600', 'bg-brand-600').replace('bg-red-600', 'bg-brand-600');
+                        b.innerHTML = originals[i];
+                        b.disabled = false;
+                    });
                 }, 2000);
             }
         };
@@ -412,6 +423,38 @@
                     document.getElementById('timeline-container').insertAdjacentHTML('beforeend',
                         `<p class="text-xs text-gray-400 mt-4 text-center">Esta ruta se armó con tu información básica. Agrega hitos para hacerla tuya.</p>`);
                 }
+                rutaLogic.renderSugerenciaColegio();
+            },
+
+            // Rutas que empezaron con hitos propios pero no tienen el colegio: se ofrece reponerlo.
+            renderSugerenciaColegio: () => {
+                const cont = document.getElementById('timeline-container');
+                const faltaColegio = rutaLogic.hitos.length
+                    && !rutaLogic.hitos.some(h => h.tipo === 'colegio')
+                    && (state.profile.graduationYear || state.profile.school)
+                    && localStorage.getItem('sinapsis-sugerencia-colegio') !== 'off';
+                if (!faltaColegio) return;
+                cont.insertAdjacentHTML('beforeend', `
+                    <div class="mt-4 flex items-center gap-3 bg-brand-50 border border-brand-100 rounded-xl px-4 py-3">
+                        <i class="ph-bold ph-graduation-cap text-brand-600"></i>
+                        <p class="text-xs text-gray-700 flex-1">Tu ruta no empieza en el colegio. ¿Agregas tu bachillerato?</p>
+                        <button type="button" onclick="rutaLogic.agregarColegio()" class="text-xs font-bold text-brand-700 hover:underline">Agregar</button>
+                        <button type="button" onclick="rutaLogic.descartarSugerenciaColegio()" class="text-gray-400 hover:text-gray-600" aria-label="Descartar"><i class="ph ph-x"></i></button>
+                    </div>`);
+            },
+
+            agregarColegio: () => {
+                rutaLogic.openForm({
+                    tipo: 'colegio',
+                    organizacion: state.profile.school || DEFAULT_SCHOOL,
+                    rol: 'Bachiller',
+                    anioFin: state.profile.graduationYear || ''
+                });
+            },
+
+            descartarSugerenciaColegio: () => {
+                localStorage.setItem('sinapsis-sugerencia-colegio', 'off');
+                rutaLogic.load();
             },
 
             descargarImagen: () => {
@@ -478,6 +521,10 @@
                 const btn = document.getElementById('btn-save-hito');
                 btn.disabled = true;
                 try {
+                    // Antes del primer hito propio, fijar la ruta derivada para que no se pierda.
+                    if (!rutaLogic.editingId && !rutaLogic.hitos.length) {
+                        rutaLogic.hitos = await materializeLegacyHitos(state.user.uid, state.profile);
+                    }
                     if (hito.organizacion) {
                         hito.organizacionId = await upsertOrganization(hito.organizacion,
                             hito.tipo === 'educacion' ? 'universidad' : (hito.tipo === 'colegio' ? 'colegio' : 'empresa'));
