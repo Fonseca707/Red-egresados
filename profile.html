@@ -76,6 +76,21 @@
                         </div>
                         <div id="timeline-container"></div>
 
+                        <!-- Invitación con nombre: crecer por promociones -->
+                        <div class="mt-6 rounded-2xl border border-brand-100 bg-brand-50 px-5 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <div class="flex items-start gap-3">
+                                <i class="ph-duotone ph-hand-heart text-brand-600 text-2xl shrink-0"></i>
+                                <div>
+                                    <p class="text-sm font-bold text-gray-900">Invita a tus compañeros de promoción</p>
+                                    <p class="text-xs text-gray-500 mt-0.5">Recibirán un enlace con tu nombre para unirse a la red.</p>
+                                </div>
+                            </div>
+                            <div class="flex gap-2 shrink-0">
+                                <button type="button" onclick="invitarLogic.whatsapp()" class="px-4 py-2 bg-brand-600 text-white text-xs font-bold rounded-lg hover:bg-brand-700 transition flex items-center gap-1.5"><i class="ph-bold ph-whatsapp-logo"></i> WhatsApp</button>
+                                <button type="button" id="btn-invitar-copiar" onclick="invitarLogic.copiar()" class="px-4 py-2 bg-white border border-gray-200 text-gray-600 text-xs font-bold rounded-lg hover:bg-gray-50 transition flex items-center gap-1.5"><i class="ph-bold ph-link"></i> Copiar enlace</button>
+                            </div>
+                        </div>
+
                         <!-- Formulario de hito (oculto por defecto) -->
                         <div id="hito-form" class="hidden mt-6 bg-stone-50 border border-stone-200 rounded-2xl p-5">
                             <h4 class="text-sm font-bold text-gray-900 mb-4" id="hito-form-title">Nuevo hito</h4>
@@ -360,6 +375,29 @@
                 }, 2000);
             }
         };
+
+        const invitarLogic = {
+            link: () => {
+                const url = new URL('register.html', window.location.href);
+                url.searchParams.set('invita', state.user.uid);
+                return url.toString();
+            },
+            mensaje: () => {
+                const nombre = state.profile.firstName || 'Un egresado';
+                return `Hola, soy ${nombre}, egresado del Liceo Campestre de Pereira. Estamos reuniendo a nuestra promoción en Sinapsis, la red de egresados del colegio. Regístrate aquí: ${invitarLogic.link()}`;
+            },
+            whatsapp: () => {
+                window.open(`https://wa.me/?text=${encodeURIComponent(invitarLogic.mensaje())}`, '_blank');
+            },
+            copiar: async () => {
+                const btn = document.getElementById('btn-invitar-copiar');
+                try {
+                    await navigator.clipboard.writeText(invitarLogic.link());
+                    if (btn) { btn.innerHTML = '<i class="ph-bold ph-check"></i> Copiado'; setTimeout(() => { btn.innerHTML = '<i class="ph-bold ph-link"></i> Copiar enlace'; }, 1500); }
+                } catch { prompt('Copia tu enlace de invitación:', invitarLogic.link()); }
+            }
+        };
+        window.invitarLogic = invitarLogic;
 
         const rutaLogic = {
             hitos: [],

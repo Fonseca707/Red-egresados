@@ -64,6 +64,25 @@
                         <div id="admin-year-chart" class="space-y-3"></div>
                     </div>
                 </div>
+
+                <!-- Vista colegio: a dónde llegan los egresados (agrega desde las rutas) -->
+                <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                        <h3 class="text-sm font-bold text-gray-900 flex items-center gap-2"><i class="ph-bold ph-flow-arrow text-brand-600"></i> A dónde llegan los egresados <span class="text-[10px] font-bold px-2 py-0.5 bg-brand-50 text-brand-700 border border-brand-100 rounded-full uppercase">desde las rutas</span></h3>
+                        <button onclick="agregadosLogic.calcular()" id="btn-agregados" class="px-4 py-2 bg-brand-50 text-brand-700 text-xs font-bold rounded-lg border border-brand-100 hover:bg-brand-100 transition flex items-center gap-1.5 shrink-0"><i class="ph-bold ph-calculator"></i> Calcular</button>
+                    </div>
+                    <p id="agregados-vacio" class="text-sm text-gray-400">Pulsa "Calcular" para agregar las rutas de la red (universidades y organizaciones a las que llegan los egresados).</p>
+                    <div id="agregados-charts" class="hidden grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div>
+                            <p class="text-xs font-bold uppercase tracking-widest text-gray-400 mb-3">Educación superior</p>
+                            <div id="admin-unis-chart" class="space-y-3"></div>
+                        </div>
+                        <div>
+                            <p class="text-xs font-bold uppercase tracking-widest text-gray-400 mb-3">Empleo, prácticas y emprendimiento</p>
+                            <div id="admin-orgs-chart" class="space-y-3"></div>
+                        </div>
+                    </div>
+                </div>
             </section>
 
             <!-- Herramienta de migración -->

@@ -39,7 +39,7 @@
 <body class="text-stone-800 font-sans min-h-screen flex flex-col">
 
     <main class="flex-1 flex items-center justify-center px-4 py-12">
-        <div class="bg-white p-8 md:p-12 rounded-[2.5rem] shadow-[0_20px_50px_rgb(0,0,0,0.08)] border border-gray-100 w-full max-w-3xl relative overflow-hidden animate-fade-in">
+        <div class="bg-white p-5 sm:p-8 md:p-12 rounded-[2.5rem] shadow-[0_20px_50px_rgb(0,0,0,0.08)] border border-gray-100 w-full max-w-3xl relative overflow-hidden animate-fade-in">
             <div class="absolute -top-10 -right-10 w-56 h-56 bg-brand-50 rounded-full blur-2xl -z-10 opacity-70"></div>
 
             <div class="text-center mb-6">
@@ -90,7 +90,7 @@
                         </div>
                         <div>
                             <label class="input-label">Celular / WhatsApp</label>
-                            <input id="ob-phone" type="text" placeholder="+57 300 123 4567" class="input-field">
+                            <input id="ob-phone" type="tel" inputmode="tel" placeholder="+57 300 123 4567" class="input-field">
                         </div>
                         <div>
                             <label class="input-label">LinkedIn (URL)</label>
@@ -230,7 +230,7 @@
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                             <input type="text" data-f="org" list="org-options" placeholder="Institución (Ej: U. de los Andes)" class="input-field">
                             <input type="text" data-f="titulo" placeholder="Título / Programa (Ej: Ing. Industrial)" class="input-field">
-                            <div class="flex gap-2 items-center md:col-span-2">
+                            <div class="flex flex-wrap gap-2 items-center md:col-span-2">
                                 <input type="number" data-f="inicio" placeholder="Año inicio" min="1950" max="2100" class="input-field !w-32">
                                 <input type="number" data-f="fin" placeholder="Año fin" min="1950" max="2100" class="input-field !w-32">
                                 <label class="flex items-center gap-2 text-xs font-bold text-gray-500 whitespace-nowrap"><input type="checkbox" data-f="actual" class="h-4 w-4 rounded border-gray-300 text-brand-600"> En curso</label>
@@ -252,7 +252,7 @@
                                 <option value="practica">Práctica / Pasantía</option>
                                 <option value="emprendimiento">Emprendimiento</option>
                             </select>
-                            <div class="flex gap-2 items-center">
+                            <div class="flex flex-wrap gap-2 items-center">
                                 <input type="number" data-f="inicio" placeholder="Año inicio" min="1950" max="2100" class="input-field !w-32">
                                 <label class="flex items-center gap-2 text-xs font-bold text-gray-500 whitespace-nowrap"><input type="checkbox" data-f="actual" checked class="h-4 w-4 rounded border-gray-300 text-brand-600"> Actual</label>
                                 <button type="button" onclick="document.getElementById('work-${id}').remove()" class="ml-auto p-2 text-gray-400 hover:text-red-500 transition" title="Quitar"><i class="ph-bold ph-trash"></i></button>

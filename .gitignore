@@ -4,3 +4,4 @@ firebase-config.js
 # Config local de IA (clave de API) — nunca subir
 ia-config.local.js
 proxy-ia/.wrangler/
+backups/

@@ -2381,6 +2381,7 @@
                     await loadAlumni();
                     await loadNews();
                     router.navigate(getInitialView() || 'directory');
+                    checkPulsoRuta();
                 }
             } else {
                 if (registerBtn) registerBtn.classList.remove('hidden');

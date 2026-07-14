@@ -372,6 +372,36 @@ No inventes nada: usa solo lo que hay en la lista. Devuelve JSON: {"seleccion":[
 window.rutasIaLogic = rutasIaLogic;
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Vista colegio: agregados desde las rutas (a qué universidades y organizaciones
+// llegan los egresados). Se calcula bajo demanda leyendo los hitos de los
+// perfiles con ruta; alimenta el argumento central del proyecto de grado.
+// ─────────────────────────────────────────────────────────────────────────────
+const agregadosLogic = {
+    async calcular() {
+        const btn = document.getElementById('btn-agregados');
+        if (btn) { btn.disabled = true; btn.innerHTML = '<i class="ph-bold ph-spinner animate-spin"></i> Calculando…'; }
+        try {
+            const conRuta = adminLogic.getVisibleUsers().filter(u => (u.hitosCount || 0) > 0);
+            const listas = await Promise.all(conRuta.map(u => loadHitos(u.id)));
+            const unis = {}, orgs = {};
+            listas.flat().forEach(h => {
+                const org = String(h.organizacion || '').trim();
+                if (!org) return;
+                if (h.tipo === 'educacion') unis[org] = (unis[org] || 0) + 1;
+                if (['empleo', 'practica', 'emprendimiento'].includes(h.tipo)) orgs[org] = (orgs[org] || 0) + 1;
+            });
+            document.getElementById('agregados-vacio').classList.add('hidden');
+            document.getElementById('agregados-charts').classList.remove('hidden');
+            adminLogic.renderBarChart('admin-unis-chart', unis, 'Aún no hay hitos de educación con organización.');
+            adminLogic.renderBarChart('admin-orgs-chart', orgs, 'Aún no hay hitos laborales con organización.');
+        } finally {
+            if (btn) { btn.disabled = false; btn.innerHTML = '<i class="ph-bold ph-calculator"></i> Recalcular'; }
+        }
+    }
+};
+window.agregadosLogic = agregadosLogic;
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Semillas de PRUEBA (solo superadmin): crea perfiles ficticios con datos
 // variados y promociones antiguas para ensayar las herramientas de IA
 // (rutas, destacadas) y la web con contenido. Usan correo *.example.com,

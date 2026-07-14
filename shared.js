@@ -397,6 +397,54 @@ const rutaImagen = {
     }
 };
 
+// ── Pulso de un clic: si el hito abierto lleva >1 año sin tocarse, se pregunta
+// "¿Sigues en X?" con respuesta de un clic. Mantiene fresca la red sin backend.
+const PULSO_SNOOZE_KEY = 'sinapsis_pulso_snooze';
+async function checkPulsoRuta() {
+    if (!state.user || state.guestMode) return;
+    if (document.getElementById('pulso-banner')) return;
+    try {
+        if (Date.now() < Number(localStorage.getItem(PULSO_SNOOZE_KEY) || 0)) return;
+        const hitos = await loadHitos(state.user.uid);
+        const abierto = hitos.find(h => h.actual);
+        if (!abierto) return;
+        const upd = abierto.updatedAt?.toDate ? abierto.updatedAt.toDate() : null;
+        if (!upd || (Date.now() - upd.getTime()) < 365 * 24 * 3600 * 1000) return;
+        const etiqueta = [abierto.rol, abierto.organizacion].filter(Boolean).join(' en ') || 'lo mismo';
+        const banner = document.createElement('div');
+        banner.id = 'pulso-banner';
+        banner.className = 'fixed bottom-20 md:bottom-6 left-1/2 -translate-x-1/2 z-50 w-[calc(100vw-2rem)] max-w-md bg-white rounded-2xl border border-gray-200 shadow-2xl p-4 animate-slide-up';
+        banner.innerHTML = `
+            <div class="flex items-start gap-3">
+                <div class="w-10 h-10 rounded-xl bg-brand-50 text-brand-600 border border-brand-100 flex items-center justify-center text-xl shrink-0"><i class="ph-duotone ph-path"></i></div>
+                <div class="min-w-0 flex-1">
+                    <p class="text-sm font-bold text-gray-900">¿Sigues en ${sanitizeHTML(etiqueta)}?</p>
+                    <p class="text-xs text-gray-500 mt-0.5">Tu ruta lleva un tiempo sin actualizarse.</p>
+                    <div class="flex gap-2 mt-3">
+                        <button onclick="confirmarPulso('${sanitizeHTML(abierto.id)}')" class="px-4 py-2 bg-brand-600 text-white text-xs font-bold rounded-lg hover:bg-brand-700 transition">Sí, sigo ahí</button>
+                        <a href="profile.html" class="px-4 py-2 bg-gray-50 border border-gray-200 text-gray-600 text-xs font-bold rounded-lg hover:bg-gray-100 transition">Actualizar mi ruta</a>
+                    </div>
+                </div>
+                <button onclick="snoozePulso()" class="p-1 text-gray-300 hover:text-gray-500 transition shrink-0" title="Recordar en 30 días"><i class="ph-bold ph-x"></i></button>
+            </div>`;
+        document.body.appendChild(banner);
+    } catch (e) {}
+}
+async function confirmarPulso(hitoId) {
+    try {
+        await hitosCollection(state.user.uid).doc(hitoId).set({ updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+    } catch (e) {}
+    const b = document.getElementById('pulso-banner');
+    if (b) {
+        b.innerHTML = '<p class="text-sm font-bold text-brand-700 text-center py-1"><i class="ph-bold ph-check-circle"></i> Gracias, tu ruta quedó al día.</p>';
+        setTimeout(() => b.remove(), 2200);
+    }
+}
+function snoozePulso() {
+    localStorage.setItem(PULSO_SNOOZE_KEY, String(Date.now() + 30 * 24 * 3600 * 1000));
+    document.getElementById('pulso-banner')?.remove();
+}
+
 const state = {
     user: null,
     data: { alumni:[], news:[{id:1,title:"Encuentro Anual de Egresados 2024",category:"Evento",date:"15 Oct",summary:"Únete a nosotros para una noche de networking y celebración.",img:"https://placehold.co/600x400/1e3a8a/FFF?text=Evento"},{id:2,title:"Senior Developer Vacancy",category:"Empleo",date:"Hace 2h",summary:"Empresa aliada busca desarrollador Full Stack con experiencia.",img:"https://placehold.co/600x400/2563eb/FFF?text=Empleo"}], chats:[], subAdmins:[] },
