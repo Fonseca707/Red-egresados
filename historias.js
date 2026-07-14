@@ -48,6 +48,7 @@ const historiasLogic = {
             // Agregados: solo con masa crítica (nunca mostrar números pequeños)
             const rutasCompletas = activos.filter(a => (a.hitosCount || 0) >= 2).length;
             this.renderStats(activos, rutasCompletas);
+            this.renderHeroSocial(activos);
 
             // Con menos de 2 historias no se muestra nada: una fila medio vacía
             // también delata una red que apenas comienza.
@@ -56,6 +57,26 @@ const historiasLogic = {
         } catch (e) {
             holder.innerHTML = '';
         }
+    },
+
+    // Prueba social del hero con caras reales (nunca inventadas). Sin decir el
+    // número exacto si la red es pequeña: se habla de promociones, que siempre
+    // suenan sólidas (principio de Juan: no delatar el tamaño de la red).
+    renderHeroSocial(activos) {
+        const wrap = document.getElementById('hero-social');
+        if (!wrap || activos.length < 4) return;
+        const conFoto = activos.filter(a => a.photoURL);
+        const muestra = [...(conFoto.length >= 4 ? conFoto : activos)]
+            .sort((a, b) => (b.profileCompleteness || 0) - (a.profileCompleteness || 0))
+            .slice(0, 4);
+        document.getElementById('hero-avatars').innerHTML = muestra.map(a => `
+            <img class="w-10 h-10 rounded-full border-2 border-white object-cover" src="${sanitizeHTML(a.img)}" alt="Egresado ${sanitizeHTML(a.name)}" title="${sanitizeHTML(a.name)}">`).join('') +
+            `<div class="w-10 h-10 rounded-full border-2 border-white bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-500">+</div>`;
+        const promos = new Set(activos.map(a => String(a.year)).filter(y => y && y !== '---')).size;
+        document.getElementById('hero-social-text').innerHTML = promos >= 3
+            ? `Egresados de ${promos} promociones <span class="font-normal text-gray-500">ya están en la red.</span>`
+            : `Egresados del Liceo <span class="font-normal text-gray-500">ya están en la red.</span>`;
+        wrap.classList.remove('hidden');
     },
 
     renderStats(activos, rutasCompletas) {

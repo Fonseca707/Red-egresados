@@ -447,7 +447,9 @@ function snoozePulso() {
 
 const state = {
     user: null,
-    data: { alumni:[], news:[{id:1,title:"Encuentro Anual de Egresados 2024",category:"Evento",date:"15 Oct",summary:"Únete a nosotros para una noche de networking y celebración.",img:"https://placehold.co/600x400/1e3a8a/FFF?text=Evento"},{id:2,title:"Senior Developer Vacancy",category:"Empleo",date:"Hace 2h",summary:"Empresa aliada busca desarrollador Full Stack con experiencia.",img:"https://placehold.co/600x400/2563eb/FFF?text=Empleo"}], chats:[], subAdmins:[] },
+    // news arranca vacío: las noticias demo (eventos y vacantes inventados)
+    // se mostraban cuando Firestore no traía nada y hacían ver la red falsa.
+    data: { alumni:[], news:[], chats:[], subAdmins:[] },
     profile: { firstName:'',lastName:'',graduationYear:'',location:'',status:'trabajando',role:'',area:'',studies:'',bio:'',skills:'',topics:'',expectations:'',phone:'',linkedin:'',photoURL:'',school:DEFAULT_SCHOOL,username:'',onboardingCompleted:false },
     guestMode: false, activeChatId:null, messagesByChat:{}, selectedDirectoryUserId:null,
     directoryLoading:false, directoryPage:1, adminEmail:'juanda.fonsecag@gmail.com', superAdminUsernames:['wanda.cg','juanda.fonsecag'], adminTab:'users', editingNewsId:null,

@@ -85,7 +85,7 @@
                         Cultiva tu red <br class="hidden lg:block"><span class="text-brand-600">Cosecha tu futuro</span>
                     </h1>
                     <p class="text-lg md:text-xl text-gray-500 mb-10 max-w-2xl mx-auto lg:mx-0 leading-relaxed">
-                         Únete a la red de egresados en Risaralda. Expande tu red de contactos, encuentra socios líderes en la industria y descubre oportunidades exclusivas diseñadas para ti.
+                        La red de egresados del Liceo Campestre de Pereira. Descubre las trayectorias reales de quienes salieron de tus mismas aulas, conecta con ellos y encuentra el camino que quieres recorrer.
                     </p>
                     <div class="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
                         <a href="register.html" class="px-8 py-4 bg-brand-600 text-white font-bold rounded-xl shadow-lg shadow-brand-500/30 hover:bg-brand-700 hover:-translate-y-1 transition transform flex items-center justify-center gap-2 text-lg">
@@ -96,16 +96,12 @@
                         </a>
                     </div>
 
-                    <div class="mt-10 flex items-center justify-center lg:justify-start gap-4">
-                        <div class="flex -space-x-3">
-                            <img class="w-10 h-10 rounded-full border-2 border-white object-cover" src="https://ui-avatars.com/api/?name=Ana&background=10B981&color=fff" alt="User">
-                            <img class="w-10 h-10 rounded-full border-2 border-white object-cover" src="https://ui-avatars.com/api/?name=Carlos&background=F59E0B&color=fff" alt="User">
-                            <img class="w-10 h-10 rounded-full border-2 border-white object-cover" src="https://ui-avatars.com/api/?name=Laura&background=3B82F6&color=fff" alt="User">
-                            <img class="w-10 h-10 rounded-full border-2 border-white object-cover" src="https://ui-avatars.com/api/?name=David&background=8B5CF6&color=fff" alt="User">
-                            <div class="w-10 h-10 rounded-full border-2 border-white bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-500"></div>
-                        </div>
+                    <!-- Prueba social: caras REALES de la red (historias.js la llena;
+                         oculta mientras no haya egresados con foto/perfil). -->
+                    <div id="hero-social" class="hidden mt-10 flex items-center justify-center lg:justify-start gap-4">
+                        <div id="hero-avatars" class="flex -space-x-3"></div>
                         <div class="text-sm text-gray-500">
-                             <span class="font-bold text-gray-900">Decenas</span> de egresados <br>ya están conectados.
+                            <span id="hero-social-text" class="font-bold text-gray-900"></span>
                         </div>
                     </div>
                 </div>
@@ -162,8 +158,8 @@
 
             <section class="py-16 md:py-24">
                 <div class="text-center mb-16">
-                    <h2 class="text-sm font-bold text-brand-600 uppercase tracking-widest mb-3">Beneficios Exclusivos</h2>
-                    <h3 class="text-3xl md:text-4xl font-extrabold text-gray-900">Todo lo que necesitas para crecer</h3>
+                    <h2 class="text-sm font-bold text-brand-600 uppercase tracking-widest mb-3">Qué encuentras aquí</h2>
+                    <h3 class="text-3xl md:text-4xl font-extrabold text-gray-900">Una red que se recorre</h3>
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -171,30 +167,30 @@
                         <div class="w-16 h-16 bg-brand-50 text-brand-600 rounded-2xl flex items-center justify-center text-3xl mb-6 group-hover:bg-brand-600 group-hover:text-white transition duration-300">
                             <i class="ph-duotone ph-address-book"></i>
                         </div>
-                        <h4 class="text-xl font-bold text-gray-900 mb-3">Directorio Inteligente</h4>
-                        <p class="text-gray-500 leading-relaxed">Encuentra y conecta fácilmente con colegas por industria, empresa, ubicación o año de graduación.</p>
+                        <h4 class="text-xl font-bold text-gray-900 mb-3">Directorio de egresados</h4>
+                        <p class="text-gray-500 leading-relaxed">Busca por promoción, área o nombre, y conecta con quienes ya recorrieron el camino que te interesa.</p>
                     </div>
                     <div class="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm hover:shadow-xl transition duration-300 group transform hover:-translate-y-1">
                         <div class="w-16 h-16 bg-brand-50 text-brand-600 rounded-2xl flex items-center justify-center text-3xl mb-6 group-hover:bg-brand-600 group-hover:text-white transition duration-300">
-                            <i class="ph-duotone ph-briefcase"></i>
+                            <i class="ph-duotone ph-path"></i>
                         </div>
-                        <h4 class="text-xl font-bold text-gray-900 mb-3">Bolsa de Beneficios</h4>
-                        <p class="text-gray-500 leading-relaxed">Accede a ofertas laborales o beneficios exclusivos publicadas por medio de nuestra red de aliados y otros egresados.</p>
+                        <h4 class="text-xl font-bold text-gray-900 mb-3">Trayectorias reales</h4>
+                        <p class="text-gray-500 leading-relaxed">Cada egresado cuenta su ruta paso a paso: del Liceo a la universidad, a su primer trabajo y a donde está hoy.</p>
                     </div>
                     <div class="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm hover:shadow-xl transition duration-300 group transform hover:-translate-y-1">
                         <div class="w-16 h-16 bg-brand-50 text-brand-600 rounded-2xl flex items-center justify-center text-3xl mb-6 group-hover:bg-brand-600 group-hover:text-white transition duration-300">
                             <i class="ph-duotone ph-chats-circle"></i>
                         </div>
-                        <h4 class="text-xl font-bold text-gray-900 mb-3">Networking y Mentoría</h4>
-                        <p class="text-gray-500 leading-relaxed">Chatea directamente con expertos, busca consejos para tu carrera o conviértete en mentor de las nuevas generaciones.</p>
+                        <h4 class="text-xl font-bold text-gray-900 mb-3">Mensajes y orientación</h4>
+                        <p class="text-gray-500 leading-relaxed">Escríbele directamente a un egresado para preguntarle por su carrera, o consulta a la orientadora sobre tus opciones.</p>
                     </div>
                 </div>
             </section>
 
             <section class="pb-16">
                 <div class="bg-gradient-to-b from-gray-50 to-gray-100 rounded-3xl p-10 md:p-16 text-center border border-gray-200 shadow-inner">
-                    <h2 class="text-3xl md:text-4xl font-extrabold text-gray-900 mb-4">¿Listo para integrarte al ecosistema?</h2>
-                    <p class="text-lg text-gray-600 mb-8 max-w-2xl mx-auto">No pierdas la oportunidad de ser parte de la comunidad de profesionales más activa. El registro te tomará menos de 2 minutos.</p>
+                    <h2 class="text-3xl md:text-4xl font-extrabold text-gray-900 mb-4">Tu ruta también empezó en el Liceo</h2>
+                    <p class="text-lg text-gray-600 mb-8 max-w-2xl mx-auto">Cuenta por dónde has pasado y en qué andas hoy. Para un estudiante que viene detrás, tu camino es el mapa que no tiene.</p>
                     <a href="register.html" class="inline-block px-10 py-4 bg-gray-900 text-white text-lg font-bold rounded-xl shadow-xl hover:bg-black transition transform hover:scale-105">
                         Crear mi cuenta ahora
                     </a>
@@ -206,7 +202,7 @@
                     <div class="w-7 h-7 bg-brand-600 rounded-lg flex items-center justify-center text-white font-bold text-xs">S</div>
                     <span class="font-bold text-lg tracking-tight text-gray-900">Sinap<span class="text-brand-600">sis</span></span>
                 </div>
-                <p>&copy; 2026 Ecosistema Sinapsis. Fluyendo de forma natural.</p>
+                <p>&copy; 2026 Sinapsis · Red de Egresados del Liceo Campestre de Pereira.</p>
             </footer>
 
         </div>
@@ -218,7 +214,7 @@
                 <div class="text-center mb-8">
                     <div class="w-14 h-14 bg-brand-600 rounded-2xl flex items-center justify-center text-white text-3xl font-bold mx-auto mb-4 shadow-lg shadow-brand-500/30">S</div>
                     <h1 class="text-2xl font-bold text-gray-900">Hola de nuevo</h1>
-                    <p class="text-gray-500 text-sm mt-2">Red exclusiva de egresados</p>
+                    <p class="text-gray-500 text-sm mt-2">Red de egresados del Liceo Campestre de Pereira</p>
                 </div>
                 
                 <form onsubmit="authLogic.login(event)" class="space-y-5">
@@ -624,10 +620,10 @@
         <div id="view-exam-modules" class="hidden max-w-7xl mx-auto animate-slide-up pb-12">
             <div class="mb-8 text-center md:text-left">
                 <span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-brand-50 text-brand-700 text-xs font-bold uppercase tracking-widest border border-brand-100">
-                    <i class="ph-duotone ph-books"></i> Borrador programable
+                    <i class="ph-duotone ph-books"></i> Práctica gratuita
                 </span>
-                <h2 class="text-3xl md:text-4xl font-extrabold text-gray-900 mt-4 mb-3">Módulos de preparación en idiomas</h2>
-                <p class="text-gray-500 max-w-3xl">Estructura inicial para practicar componentes de exámenes internacionales desde la plataforma. Por ahora se excluyen prácticas orales como speaking/production orale porque requieren revisión especializada.</p>
+                <h2 class="text-3xl md:text-4xl font-extrabold text-gray-900 mt-4 mb-3">Preparación en idiomas</h2>
+                <p class="text-gray-500 max-w-3xl">Practica con el formato oficial vigente del TOEFL iBT (2026) y del DELF, con cronómetro y calificación como en el examen real. Por ahora no incluimos las pruebas orales, que requieren evaluación especializada.</p>
             </div>
 
             <div id="exam-modules-grid" class="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -1108,7 +1104,7 @@
                     code: 'DELF',
                     title: 'Módulo DELF',
                     language: 'Francés',
-                    level: 'Preparación A1-B2',
+                    level: 'Nivel B1',
                     icon: 'ph-duotone ph-flag',
                     accent: 'purple',
                     description: 'Práctica del DELF B1 con el formato nuevo oficial: comprensión 100% preguntas cerradas y producción escrita con la grilla de 25 puntos.',
