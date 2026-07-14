@@ -1014,8 +1014,13 @@
                     <a id="sp-linkedin-btn" href="#" target="_blank" class="hidden w-12 flex items-center justify-center bg-blue-50 text-[#0077b5] rounded-xl border border-blue-100 hover:bg-blue-100 transition"><i class="ph-bold ph-linkedin-logo text-xl"></i></a>
                     <a id="sp-whatsapp-btn" href="#" target="_blank" class="hidden w-12 flex items-center justify-center bg-green-50 text-[#25D366] rounded-xl border border-green-100 hover:bg-green-100 transition"><i class="ph-bold ph-whatsapp-logo text-xl"></i></a>
                     <button id="sp-share-btn" onclick="directoryLogic.shareProfile()" title="Copiar enlace de este perfil" class="w-12 flex items-center justify-center bg-gray-50 text-gray-500 rounded-xl border border-gray-200 hover:bg-brand-50 hover:text-brand-600 transition"><i class="ph-bold ph-link text-xl"></i></button>
+                    <button onclick="directoryLogic.descargarRuta()" title="Descargar su ruta como imagen" class="w-12 flex items-center justify-center bg-gray-50 text-gray-500 rounded-xl border border-gray-200 hover:bg-brand-50 hover:text-brand-600 transition"><i class="ph-bold ph-download-simple text-xl"></i></button>
                 </div>
                 <div class="space-y-6">
+                    <div>
+                        <h4 class="text-sm font-bold text-gray-900 uppercase tracking-wide mb-3 flex items-center gap-2"><i class="ph-duotone ph-path text-brand-600"></i> Su Ruta</h4>
+                        <div id="sp-timeline" class="bg-gray-50 p-4 rounded-xl border border-gray-100"></div>
+                    </div>
                     <div>
                         <h4 class="text-sm font-bold text-gray-900 uppercase tracking-wide mb-3">Sobre mí</h4>
                         <p id="sp-bio" class="text-gray-600 text-sm leading-relaxed bg-gray-50 p-4 rounded-xl border border-gray-100">Sin información disponible.</p>
@@ -1196,6 +1201,7 @@
                         newsletterOptIn: wantsNewsletter,
                         newsletterOptInUpdatedAt: firebase.firestore.FieldValue.serverTimestamp(),
                         onboardingCompleted: false,
+                        referredBy: sessionStorage.getItem('sinapsis_invita') || '',
                         createdAt: firebase.firestore.FieldValue.serverTimestamp(),
                         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
                     };
@@ -1226,6 +1232,7 @@
                         newsletterOptIn: true,
                         newsletterOptInUpdatedAt: firebase.firestore.FieldValue.serverTimestamp(),
                         onboardingCompleted: false,
+                        referredBy: sessionStorage.getItem('sinapsis_invita') || '',
                         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
                     }, { merge: true });
                     feedback.textContent = 'Preferencias guardadas correctamente.';
@@ -1567,6 +1574,7 @@
                     return;
                 }
 
+                if(viewId === 'home' && typeof historiasLogic !== 'undefined') historiasLogic.init(true);
                 if(viewId === 'directory') directoryLogic.render();
                 if(viewId === 'news') newsLogic.render();
                 if(viewId === 'exam-modules') examModulesLogic.render();
@@ -1682,6 +1690,24 @@
                     liBtn.href = normalizeLinkedInUrl(user.linkedin);
                 } else { liBtn.classList.add('hidden'); }
                 document.getElementById('slide-panel-overlay').classList.remove('hidden');
+                directoryLogic.loadTimeline(user);
+            },
+            loadTimeline: async (user) => {
+                const container = document.getElementById('sp-timeline');
+                if (!container) return;
+                container.innerHTML = '<p class="text-xs text-gray-400 text-center py-4"><i class="ph-bold ph-spinner animate-spin"></i> Cargando ruta…</p>';
+                let hitos = await loadHitos(user.id);
+                if (!hitos.length) hitos = deriveLegacyHitos(user);
+                // Evitar que una respuesta lenta pise la ruta de otro perfil abierto después.
+                if (String(state.selectedDirectoryUserId) !== String(user.id)) return;
+                directoryLogic._spHitos = hitos;
+                container.innerHTML = renderTimelineHTML(hitos);
+            },
+            descargarRuta: () => {
+                const user = state.data.alumni.find(u => String(u.id) === String(state.selectedDirectoryUserId));
+                const hitos = directoryLogic._spHitos || [];
+                if (!user || !hitos.length) { alert('Este perfil aún no tiene ruta para compartir.'); return; }
+                rutaImagen.descargar(user, hitos);
             },
             shareProfile: async () => {
                 // Enlace canónico del perfil: la página pública del directorio

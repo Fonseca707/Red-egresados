@@ -12,11 +12,19 @@ const HISTORIAS_UMBRAL_AGREGADOS = 35; // rutas completas para mostrar métricas
 const HISTORIAS_MAX = 4;
 
 const historiasLogic = {
-    async init() {
+    _lastLoad: 0,
+
+    // force=true recarga los datos (p. ej. al volver a Inicio tras usar el admin);
+    // con throttle de 30s para no releer Firestore en cada navegación.
+    async init(force = false) {
         const holder = document.getElementById('historias-section');
         if (!holder) return;
         try {
-            if (!state.data.alumni.length) await loadAlumni();
+            const stale = Date.now() - this._lastLoad > 30_000;
+            if (!state.data.alumni.length || (force && stale)) {
+                await loadAlumni();
+                this._lastLoad = Date.now();
+            }
             const activos = state.data.alumni.filter(a => a.accountStatus !== 'suspendido');
 
             // Candidatos: primero las historias DESTACADAS (curadas con IA desde

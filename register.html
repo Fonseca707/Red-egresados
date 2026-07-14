@@ -180,6 +180,7 @@
                         newsletterOptIn: true,
                         newsletterOptInUpdatedAt: firebase.firestore.FieldValue.serverTimestamp(),
                         onboardingCompleted: false,
+                        referredBy: sessionStorage.getItem('sinapsis_invita') || '',
                         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
                     }, { merge: true });
                     feedback.textContent = 'Preferencias guardadas correctamente.';

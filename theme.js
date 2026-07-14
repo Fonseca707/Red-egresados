@@ -72,6 +72,66 @@ function installThemeStyles() {
         html.dark table thead,
         html.dark [class~="bg-gray-50"] thead { background:#172033 !important; }
         html.dark tr:hover { background:#172033 !important; }
+
+        /* ── Fondos claros restantes ── */
+        html.dark [class~="bg-brand-50/50"],
+        html.dark [class~="bg-brand-100"] { background-color:#052e1a !important; }
+        html.dark [class~="bg-gray-200"] { background-color:#263244 !important; }
+        html.dark [class~="bg-gray-50/30"] { background-color:rgba(30,41,59,0.4) !important; }
+        html.dark [class~="bg-green-100"] { background-color:#052e16 !important; }
+        html.dark [class~="bg-purple-100"] { background-color:#2e1065 !important; }
+        html.dark [class~="bg-yellow-100"] { background-color:#422006 !important; }
+
+        /* ── Bordes claros restantes ── */
+        html.dark [class~="border-brand-200"],
+        html.dark [class~="border-brand-300"],
+        html.dark [class~="border-gray-300"],
+        html.dark [class~="border-green-200"],
+        html.dark [class~="border-red-200"] { border-color:#334155 !important; }
+        html.dark [class~="border-gray-50"] { border-color:#1f2937 !important; }
+        html.dark img[class~="border-white"],
+        html.dark [class~="border-white"] { border-color:#1e293b !important; }
+
+        /* ── Hovers: sin fogonazos blancos en oscuro ── */
+        html.dark [class~="hover:bg-white"]:hover,
+        html.dark [class~="hover:bg-gray-50"]:hover { background-color:#1e293b !important; }
+        html.dark [class~="hover:bg-gray-100"]:hover,
+        html.dark [class~="hover:bg-gray-200"]:hover { background-color:#263244 !important; }
+        html.dark [class~="hover:bg-brand-50"]:hover,
+        html.dark [class~="hover:bg-brand-100"]:hover,
+        html.dark [class~="hover:bg-green-50"]:hover,
+        html.dark [class~="hover:bg-green-100"]:hover { background-color:#052e1a !important; }
+        html.dark [class~="hover:bg-blue-50"]:hover,
+        html.dark [class~="hover:bg-blue-100"]:hover { background-color:#0b2545 !important; }
+        html.dark [class~="hover:bg-purple-50"]:hover { background-color:#2e1065 !important; }
+        html.dark [class~="hover:bg-amber-50"]:hover { background-color:#422006 !important; }
+        html.dark [class~="hover:bg-red-50"]:hover { background-color:#450a0a !important; }
+        html.dark [class~="hover:border-brand-200"]:hover,
+        html.dark [class~="hover:border-blue-300"]:hover,
+        html.dark [class~="hover:border-purple-300"]:hover { border-color:#475569 !important; }
+
+        /* ── Degradados decorativos (hero, conectores de ruta) ── */
+        html.dark [class~="from-brand-200"] { --tw-gradient-from:#14532d !important; --tw-gradient-stops:var(--tw-gradient-from), var(--tw-gradient-to) !important; }
+        html.dark [class~="from-brand-300"] { --tw-gradient-from:#166534 !important; --tw-gradient-stops:var(--tw-gradient-from), var(--tw-gradient-to) !important; }
+        html.dark [class~="to-brand-50"] { --tw-gradient-to:#052e16 !important; }
+        html.dark [class~="to-brand-100"] { --tw-gradient-to:#14532d !important; }
+        html.dark [class~="from-gray-50"] { --tw-gradient-from:#111827 !important; --tw-gradient-stops:var(--tw-gradient-from), var(--tw-gradient-to) !important; }
+        html.dark [class~="to-gray-100"] { --tw-gradient-to:#1e293b !important; }
+
+        /* ── Textos oscuros sobre fondos que se oscurecen ── */
+        html.dark [class~="text-brand-800"],
+        html.dark [class~="text-green-800"] { color:#86efac !important; }
+        html.dark [class~="text-red-900"],
+        html.dark [class~="text-red-800"] { color:#fca5a5 !important; }
+        html.dark [class~="text-gray-300"] { color:#475569 !important; }
+
+        /* ── Estilos hardcodeados por página ── */
+        html.dark .section-card { background:#111827 !important; border-color:#334155 !important; box-shadow:0 8px 30px rgba(0,0,0,0.35) !important; }
+        html.dark .detail-icon { background:#052e1a !important; color:#86efac !important; }
+        html.dark .detail-row { border-color:#263244 !important; }
+        html.dark .traj-row { background:#0f172a !important; border-color:#334155 !important; }
+        html.dark .step-dot.pending { background:#1e293b !important; color:#64748b !important; border-color:#334155 !important; }
+        html.dark .step-dot.done { background:#052e1a !important; color:#86efac !important; border-color:#14532d !important; }
         .theme-toggle { width:2.5rem; height:2.5rem; display:inline-flex; align-items:center; justify-content:center; border-radius:9999px; border:1px solid #e5e7eb; color:#64748b; background:#fff; transition:all .2s ease; }
         .theme-toggle:hover { color:#16a34a; border-color:#86efac; background:#f0fdf4; }
         html.dark .theme-toggle { background:#0f172a; border-color:#334155; color:#cbd5e1; }
