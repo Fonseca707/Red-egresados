@@ -96,12 +96,13 @@ const historiasLogic = {
     },
 
     cardHTML({ alum, hitos }) {
-        // Ruta compacta: máximo 3 tramos, del inicio a "hoy"
+        // Ruta compacta: máximo 3 tramos, del inicio (colegio) a "hoy".
+        // loadHitos ya entrega orden cronológico ascendente (sortHitos).
         const tramos = [];
         const ordenados = [...hitos];
-        const primero = ordenados[ordenados.length - 1];
-        const actual = ordenados.find(h => h.actual) || ordenados[0];
-        const medio = ordenados.find(h => h !== primero && h !== actual);
+        const primero = ordenados[0];
+        const actual = ordenados.find(h => h.actual) || ordenados[ordenados.length - 1];
+        const medio = [...ordenados].reverse().find(h => h !== primero && h !== actual);
         [primero, medio, actual].filter(Boolean).forEach(h => {
             const etiqueta = [h.rol, h.organizacion].filter(Boolean).join(' · ');
             if (etiqueta && !tramos.includes(etiqueta)) tramos.push(etiqueta);
