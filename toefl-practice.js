@@ -2,20 +2,11 @@
 // Motor de práctica TOEFL (formato 2026) — Reading adaptativo + Writing
 // Depende de: toefl-data.js (TOEFL_TESTS), shared.js (sanitizeHTML, state),
 // y del router global de index.html.
-// FUTURO IA: los textos de email/discussion se autoevalúan con rúbrica hoy;
-// el punto de enganche es toeflGraders.gradeWritten() más abajo.
+// El email y la discussion los califica la IA (ia-calificadora.js) con la
+// escala oficial 1-6; si falla, queda la autoevaluación manual como respaldo.
 // ─────────────────────────────────────────────────────────────────────────────
 
 const TOEFL_HISTORY_KEY = 'sinapsis_toefl_history';
-
-const toeflGraders = {
-    // FUTURO IA: reemplazar el modo 'self' por una llamada a un evaluador
-    // (backend o API) que reciba {taskKind, prompt, texto, rúbrica} y devuelva
-    // {band, feedback}. La UI ya soporta mostrar banda + comentario.
-    async gradeWritten(taskKind, task, text) {
-        return { mode: 'self' };
-    }
-};
 
 const toeflLogic = {
     session: null,
@@ -632,19 +623,44 @@ const toeflLogic = {
         document.getElementById('toefl-discussion-text')?.focus();
     },
 
-    submitDiscussion(expired) {
+    async submitDiscussion(expired) {
         this.stopTimer();
         const s = this.session;
         s.discussionExpired = expired;
         s.writingStep = 3;
         this.renderSelfEval();
+        await this.calificarConIA();
     },
 
-    // ── Autoevaluación con rúbrica ───────────────────────────────────────────
+    // La IA corrige los dos textos en paralelo. Si falla, queda la
+    // autoevaluación con rúbrica (la práctica nunca se bloquea).
+    async calificarConIA() {
+        const s = this.session;
+        const w = s.test.writing;
+        s.iaEstado = 'cargando';
+        this.renderSelfEval();
+        const [email, discussion] = await Promise.all([
+            iaCalificadora.calificarToefl('email', w.email, s.emailText).catch(() => null),
+            iaCalificadora.calificarToefl('discussion', w.discussion, s.discussionText).catch(() => null)
+        ]);
+        s.iaResultados = { email, discussion };
+        s.iaEstado = (email || discussion) ? 'listo' : 'error';
+        // La banda de la IA pasa a ser la oficial; el estudiante puede ajustarla.
+        if (email) s.selfBands.email = email.band;
+        if (discussion) s.selfBands.discussion = discussion.band;
+        this.renderSelfEval();
+    },
+
+    // ── Evaluación: IA + comparación con el modelo ───────────────────────────
     renderSelfEval() {
         const s = this.session;
         const w = s.test.writing;
-        const evalBlock = (kind, task, userText) => `
+        const iaCargando = s.iaEstado === 'cargando';
+        const iaError = s.iaEstado === 'error';
+
+        const evalBlock = (kind, task, userText) => {
+            const r = s.iaResultados?.[kind];
+            return `
             <div class="rounded-2xl border border-gray-100 bg-gray-50/70 p-5">
                 <h4 class="font-extrabold text-gray-900 mb-4">${sanitizeHTML(task.title)}</h4>
                 <div class="grid md:grid-cols-2 gap-4 mb-4">
@@ -657,41 +673,39 @@ const toeflLogic = {
                         <p class="text-sm text-gray-700 leading-relaxed whitespace-pre-line">${sanitizeHTML(task.model)}</p>
                     </div>
                 </div>
-                <p class="text-sm font-bold text-gray-600 mb-2">Compara con la rúbrica y elige tu banda:</p>
-                <div class="flex flex-wrap gap-2">
-                    ${w.rubric.map(rb => `
-                        <button onclick="toeflLogic.setSelfBand('${kind}', ${rb.band})" title="${sanitizeHTML(rb.desc)}"
-                            class="px-4 py-2 rounded-xl border text-sm font-extrabold transition ${s.selfBands[kind] === rb.band ? 'bg-blue-600 text-white border-blue-600 shadow-md' : 'bg-white text-gray-600 border-gray-200 hover:border-blue-300'}">
-                            ${rb.band} · ${sanitizeHTML(rb.label)}
-                        </button>`).join('')}
-                </div>
+
+                ${iaCargando ? iaCalificadora.cargandoHTML() : ''}
+                ${r ? iaCalificadora.tarjetaHTML(r, { escala: '/6', acento: 'blue' }) : ''}
+
+                <details class="mt-3" ${r ? '' : 'open'}>
+                    <summary class="text-xs font-bold text-gray-500 cursor-pointer hover:text-blue-600">${r ? '¿No estás de acuerdo? Ajusta la banda tú mismo' : 'Asigna tu banda con la rúbrica'}</summary>
+                    <div class="flex flex-wrap gap-2 mt-2">
+                        ${w.rubric.map(rb => `
+                            <button onclick="toeflLogic.setSelfBand('${kind}', ${rb.band})" title="${sanitizeHTML(rb.desc)}"
+                                class="px-3.5 py-1.5 rounded-xl border text-xs font-extrabold transition ${s.selfBands[kind] === rb.band ? 'bg-blue-600 text-white border-blue-600 shadow-md' : 'bg-white text-gray-600 border-gray-200 hover:border-blue-300'}">
+                                ${rb.band} · ${sanitizeHTML(rb.label)}
+                            </button>`).join('')}
+                    </div>
+                </details>
             </div>`;
+        };
 
         this.root().innerHTML = this.shell({
-            banner: 'Writing · Autoevaluación con rúbrica',
+            banner: 'Writing · Evaluación',
             timed: false,
             body: `
                 <div class="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 md:p-8 space-y-6">
                     <div>
-                        <h3 class="text-2xl font-extrabold text-gray-900 mb-1">Autoevalúa tus respuestas</h3>
-                        <p class="text-gray-500 text-sm">Lee cada descriptor de banda (pasa el cursor sobre los botones) y compárate honestamente con la respuesta modelo. En el TOEFL real esta calificación la hace un sistema automático en escala 1–6.</p>
-                    </div>
-                    <div class="rounded-2xl border border-gray-100 overflow-hidden">
-                        <table class="w-full text-sm">
-                            <tbody>
-                                ${w.rubric.map(rb => `
-                                    <tr class="border-b border-gray-50 last:border-0">
-                                        <td class="px-4 py-2.5 font-extrabold text-blue-600 whitespace-nowrap align-top w-24">Banda ${rb.band}</td>
-                                        <td class="px-4 py-2.5 text-gray-600">${sanitizeHTML(rb.desc)}</td>
-                                    </tr>`).join('')}
-                            </tbody>
-                        </table>
+                        <h3 class="text-2xl font-extrabold text-gray-900 mb-1">Tu escritura, corregida</h3>
+                        <p class="text-gray-500 text-sm">${iaError
+                            ? 'No pudimos conectar con la IA correctora. Puedes autoevaluarte con la rúbrica y la respuesta modelo.'
+                            : 'La IA califica con la escala oficial de bandas 1–6, como el sistema automático del TOEFL real, y te señala qué corregir.'}</p>
                     </div>
                     ${evalBlock('email', w.email, s.emailText)}
                     ${evalBlock('discussion', w.discussion, s.discussionText)}
                     <div class="flex justify-end">
-                        <button onclick="toeflLogic.finishWriting()" ${s.selfBands.email && s.selfBands.discussion ? '' : 'disabled'}
-                            class="px-8 py-3 rounded-xl font-bold transition ${s.selfBands.email && s.selfBands.discussion ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-600/20' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}">
+                        <button onclick="toeflLogic.finishWriting()" ${(s.selfBands.email && s.selfBands.discussion) ? '' : 'disabled'}
+                            class="px-8 py-3 rounded-xl font-bold transition ${(s.selfBands.email && s.selfBands.discussion) ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-600/20' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}">
                             Ver resultados <i class="ph-bold ph-flag-checkered"></i>
                         </button>
                     </div>

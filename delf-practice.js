@@ -1,18 +1,11 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // Motor de práctica DELF B1 (nouveau format) — CE lineal + PE con autoevaluación
 // Depende de: delf-data.js (DELF_TESTS), shared.js (sanitizeHTML), router global.
-// FUTURO IA: enganche en delfGraders.gradeWritten() (mismo patrón que TOEFL).
+// La production écrite la califica la IA (ia-calificadora.js) con la grilla
+// oficial /25; si falla, queda la autoevaluación manual como respaldo.
 // ─────────────────────────────────────────────────────────────────────────────
 
 const DELF_HISTORY_KEY = 'sinapsis_delf_history';
-
-const delfGraders = {
-    // FUTURO IA: reemplazar el modo 'self' por un evaluador que reciba
-    // {consigne, texto, criteria} y devuelva {points: {key: n}, feedback}.
-    async gradeWritten(task, text) {
-        return { mode: 'self' };
-    }
-};
 
 const delfLogic = {
     session: null,
@@ -126,7 +119,7 @@ const delfLogic = {
         ] : [
             ['ph-note-pencil', 'Un solo texto', 'Ensayo, carta o artículo de opinión sobre un tema de actualidad.'],
             ['ph-text-align-left', '160 palabras mínimo', 'Presenta hechos, ventajas/inconvenientes y tu punto de vista con ejemplos.'],
-            ['ph-scales', 'Grille sur 25 points', 'Autoevalúa con la grilla oficial (consigne, faits, opinion, cohérence, lexique, grammaire).']
+            ['ph-robot', 'Corrección con IA', 'La IA califica con la grilla oficial (consigne, faits, opinion, cohérence, lexique, grammaire) y señala qué mejorar.']
         ];
         this.root().innerHTML = this.shell({
             banner: isCE ? 'Compréhension écrite · Práctica' : 'Production écrite · Práctica',
@@ -139,7 +132,7 @@ const delfLogic = {
                     <h2 class="text-3xl font-extrabold text-gray-900 mb-2">${isCE ? 'Compréhension écrite' : 'Production écrite'} — DELF B1</h2>
                     <p class="text-gray-500 mb-8">${isCE
                         ? '45 minutos con cronómetro · 3 ejercicios · 25 puntos. Igual que el examen real: todas las preguntas son cerradas.'
-                        : '45 minutos con cronómetro · 25 puntos. Al final te autoevalúas con la grilla oficial y comparas con una respuesta modelo.'}</p>
+                        : '45 minutos con cronómetro · 25 puntos. Al terminar, una IA corrige tu texto con la grilla oficial y lo comparas con una respuesta modelo.'}</p>
                     <div class="grid md:grid-cols-3 gap-4 mb-6">
                         ${details.map(([icon, name, desc]) => `
                             <div class="rounded-2xl border border-gray-100 bg-gray-50/70 p-4">
@@ -328,11 +321,29 @@ const delfLogic = {
         }
     },
 
-    submitPE(expired) {
+    async submitPE(expired) {
         this.stopTimer();
         const s = this.session;
         s.peExpired = expired;
         s.stage = 'selfeval';
+        this.renderPESelfEval();
+        await this.calificarConIA();
+    },
+
+    // La IA corrige con la grilla oficial /25. Si falla, queda la autoevaluación.
+    async calificarConIA() {
+        const s = this.session;
+        s.iaEstado = 'cargando';
+        this.renderPESelfEval();
+        try {
+            const r = await iaCalificadora.calificarDelf(s.test.pe, s.peText);
+            s.iaResultado = r;
+            s.iaEstado = 'listo';
+            // Los puntos de la IA quedan cargados; el estudiante puede ajustarlos.
+            r.criterios.forEach(c => { s.peSelf[c.clave] = c.puntos; });
+        } catch (e) {
+            s.iaEstado = 'error';
+        }
         this.renderPESelfEval();
     },
 
@@ -340,14 +351,18 @@ const delfLogic = {
         const s = this.session;
         const t = s.test.pe;
         const allSet = t.criteria.every(c => s.peSelf[c.key] !== undefined);
+        const r = s.iaResultado;
+        const iaCargando = s.iaEstado === 'cargando';
         this.root().innerHTML = this.shell({
-            banner: 'Production écrite · Autoevaluación (grille /25)',
+            banner: 'Production écrite · Evaluación (grille /25)',
             timed: false,
             body: `
                 <div class="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 md:p-8 space-y-6">
                     <div>
-                        <h3 class="text-2xl font-extrabold text-gray-900 mb-1">Autoevalúa con la grilla oficial</h3>
-                        <p class="text-gray-500 text-sm">Compara tu texto con la respuesta modelo y asígnate los puntos de cada criterio con honestidad.</p>
+                        <h3 class="text-2xl font-extrabold text-gray-900 mb-1">Tu texto, corregido</h3>
+                        <p class="text-gray-500 text-sm">${s.iaEstado === 'error'
+                            ? 'No pudimos conectar con la IA correctora. Autoevalúate con la grilla y la respuesta modelo.'
+                            : 'La IA corrige con la grilla oficial del DELF B1 sobre 25 puntos y te señala qué mejorar.'}</p>
                     </div>
                     <div class="grid md:grid-cols-2 gap-4">
                         <div class="rounded-2xl bg-gray-50/70 border border-gray-100 p-4">
@@ -359,7 +374,13 @@ const delfLogic = {
                             <p class="text-sm text-gray-700 leading-relaxed whitespace-pre-line">${sanitizeHTML(t.model)}</p>
                         </div>
                     </div>
-                    <div class="space-y-4">
+
+                    ${iaCargando ? iaCalificadora.cargandoHTML('La IA está corrigiendo tu texto en francés…') : ''}
+                    ${r ? iaCalificadora.tarjetaHTML(r, { escala: '/25', acento: 'purple' }) : ''}
+
+                    <details class="space-y-4" ${r ? '' : 'open'}>
+                        <summary class="text-sm font-bold text-gray-500 cursor-pointer hover:text-purple-600">${r ? '¿No estás de acuerdo? Ajusta los puntos tú mismo' : 'Asigna los puntos con la grilla oficial'}</summary>
+                        <div class="space-y-4 mt-3">
                         ${t.criteria.map(c => `
                             <div class="rounded-2xl border border-gray-100 bg-gray-50/70 p-4">
                                 <div class="flex flex-col gap-2 mb-1">
@@ -372,7 +393,8 @@ const delfLogic = {
                                 </div>
                                 <p class="text-xs text-gray-500">${sanitizeHTML(c.desc)}</p>
                             </div>`).join('')}
-                    </div>
+                        </div>
+                    </details>
                     <div class="flex justify-end">
                         <button onclick="delfLogic.finishPE()" ${allSet ? '' : 'disabled'}
                             class="px-8 py-3 rounded-xl font-bold transition ${allSet ? 'bg-purple-600 text-white hover:bg-purple-700 shadow-lg shadow-purple-600/20' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}">
