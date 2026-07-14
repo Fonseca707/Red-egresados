@@ -27,14 +27,16 @@ const historiasLogic = {
             }
             const activos = state.data.alumni.filter(a => a.accountStatus !== 'suspendido');
 
-            // Candidatos: primero las historias DESTACADAS (curadas con IA desde
-            // el panel admin, flag rutaDestacada); si faltan cupos, se completan
-            // con los perfiles más completos (criterio del directorio).
+            // Candidatos: si hay historias DESTACADAS curadas desde el admin
+            // (flag rutaDestacada), la portada muestra SOLO esas — sin rellenos.
+            // Solo si no hay curaduría se cae al ranking por completitud.
             const destacados = activos.filter(a => a.rutaDestacada);
-            const resto = activos
-                .filter(a => !a.rutaDestacada)
-                .sort((a, b) => (b.profileCompleteness || 0) - (a.profileCompleteness || 0));
-            const candidatos = [...destacados, ...resto].slice(0, 10);
+            const candidatos = destacados.length >= 2
+                ? destacados
+                : [...destacados, ...activos
+                    .filter(a => !a.rutaDestacada)
+                    .sort((a, b) => (b.profileCompleteness || 0) - (a.profileCompleteness || 0))
+                  ].slice(0, 10);
             const historias = [];
             for (const alum of candidatos) {
                 let hitos = alum.hitosCount > 0 ? await loadHitos(alum.id) : [];
