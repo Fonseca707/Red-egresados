@@ -237,6 +237,11 @@
                             <div id="admin-correos-list" class="space-y-1.5 max-h-[26rem] overflow-y-auto pr-1"></div>
                         </div>
                         <div class="space-y-3">
+                            <div>
+                                <p class="text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-2">Campañas listas</p>
+                                <div id="correos-campanas" class="grid sm:grid-cols-2 gap-2"></div>
+                                <p id="correos-campana-info" class="text-xs font-bold text-brand-600 mt-2"></p>
+                            </div>
                             <input type="text" id="correos-subject" placeholder="Asunto del correo" oninput="correosLogic.onComposeInput()"
                                 class="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm font-semibold focus:outline-none focus:border-brand-400">
                             <textarea id="correos-body" rows="10" placeholder="Escribe el mensaje… (texto plano; se abre en tu correo para revisarlo antes de enviar)" oninput="correosLogic.onComposeInput()"
@@ -288,7 +293,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore-compat.js"></script>
     <script src="shared.js?v=6"></script>
-    <script src="admin-correos.js?v=2"></script>
+    <script src="admin-correos.js?v=3"></script>
     <script src="admin-rutas-ia.js?v=2"></script>
     <script>
         renderNav('admin');
@@ -311,7 +316,7 @@
                     if (p) p.classList.toggle('hidden', key !== tab);
                 });
                 if (tab === 'subadmins') adminLogic.renderSubAdmins();
-                if (tab === 'correos') { correosLogic.render(); autoCorreosLogic.cargarEstado(); }
+                if (tab === 'correos') { correosLogic.render(); correosLogic.renderCampanas(); autoCorreosLogic.cargarEstado(); }
             },
             getVisibleUsers: () => {
                 return state.adminRole === 'superadmin'

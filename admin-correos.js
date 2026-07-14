@@ -124,12 +124,89 @@ const autoCorreosLogic = {
 };
 window.autoCorreosLogic = autoCorreosLogic;
 
+// Campañas listas para usar: se cargan en el redactor con un clic.
+// La de "completa tu ruta" es la prioritaria: 94% de la red no tiene hitos.
+const CORREOS_CAMPANAS = {
+    ruta: {
+        nombre: 'Completa tu ruta',
+        descripcion: 'A quienes aún no tienen su línea de tiempo. Es la campaña que enciende la red.',
+        soloSinRuta: true,
+        asunto: 'Tu ruta le falta a la red de egresados del Liceo',
+        cuerpo: `Hola,
+
+Te escribo de Sinapsis, la red de egresados del Liceo Campestre de Pereira.
+
+Tu perfil ya está creado, pero todavía no cuenta por dónde has pasado. Y esa es justo la parte que hace útil a esta red: la ruta que recorriste desde que saliste del colegio.
+
+Del Liceo a la universidad. A tu primer trabajo. A lo que haces hoy.
+
+Para un estudiante de once que está eligiendo carrera, tu camino es el mapa que no tiene. No necesita consejos abstractos: necesita ver que alguien que se sentó en su mismo salón hoy es ingeniero, médica, chef o profesora, y por dónde pasó para llegar ahí.
+
+Completar tu ruta toma unos minutos:
+https://fonseca707.github.io/Red-egresados/profile.html
+
+Con dos o tres hitos basta para que aparezca en el directorio y pueda orientar a quien viene detrás.
+
+Gracias por hacer parte de esto.
+
+Juan David Fonseca
+Sinapsis · Red de Egresados LCP`
+    },
+    bienvenida: {
+        nombre: 'Presentación de la red',
+        descripcion: 'Para contarle a la comunidad qué es Sinapsis y qué puede hacer allí.',
+        soloSinRuta: false,
+        asunto: 'Sinapsis: la red de egresados del Liceo ya está en línea',
+        cuerpo: `Hola,
+
+Sinapsis es la red de egresados del Liceo Campestre de Pereira, y ya está en línea:
+https://fonseca707.github.io/Red-egresados
+
+Qué puedes hacer allí:
+
+· Contar tu ruta: del colegio a la universidad, al trabajo, a donde estés hoy. Los estudiantes pueden verla y entender caminos reales, no folletos.
+· Encontrar a otros egresados por promoción o área, y escribirles directamente.
+· Practicar TOEFL y DELF gratis, con el formato oficial vigente y corrección automática.
+
+La red vale por quienes están en ella. Si completas tu perfil, alguien que viene detrás lo va a agradecer.
+
+Juan David Fonseca
+Sinapsis · Red de Egresados LCP`
+    }
+};
+
 const correosLogic = {
     selected: new Set(),
     search: '',
     yearFilter: 'all',
     newsFilter: 'all', // 'all' | 'optin' (casilla de newsletter marcada al registrarse)
     prepared: null, // [{emails:[...]}] lotes listos para abrir
+
+    // Carga una campaña: rellena asunto y mensaje, y preselecciona a quién va.
+    usarCampana(clave) {
+        const c = CORREOS_CAMPANAS[clave];
+        if (!c) return;
+        document.getElementById('correos-subject').value = c.asunto;
+        document.getElementById('correos-body').value = c.cuerpo;
+        this.selected.clear();
+        const candidatos = this.allRecipients().filter(u => c.soloSinRuta ? (u.hitosCount || 0) < 2 : true);
+        candidatos.forEach(u => this.selected.add(u.id));
+        this.prepared = null;
+        this.render();
+        const n = this.selected.size;
+        const info = document.getElementById('correos-campana-info');
+        if (info) info.textContent = `Campaña "${c.nombre}" cargada: ${n} destinatario${n === 1 ? '' : 's'} seleccionado${n === 1 ? '' : 's'}${c.soloSinRuta ? ' (solo quienes no tienen ruta)' : ''}. Revisa el texto antes de enviar.`;
+    },
+
+    renderCampanas() {
+        const box = document.getElementById('correos-campanas');
+        if (!box) return;
+        box.innerHTML = Object.entries(CORREOS_CAMPANAS).map(([k, c]) => `
+            <button onclick="correosLogic.usarCampana('${k}')" class="text-left px-4 py-3 rounded-xl border border-gray-200 bg-white hover:border-brand-300 hover:bg-brand-50 transition">
+                <p class="text-sm font-bold text-gray-900">${sanitizeHTML(c.nombre)}</p>
+                <p class="text-xs text-gray-500 mt-0.5">${sanitizeHTML(c.descripcion)}</p>
+            </button>`).join('');
+    },
 
     // ── Destinatarios válidos ────────────────────────────────────────────────
     isRealEmail(email) {
