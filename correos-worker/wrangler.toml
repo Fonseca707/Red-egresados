@@ -1,0 +1,21 @@
+name = "sinapsis-correos"
+main = "worker.js"
+compatibility_date = "2026-07-01"
+
+# Se despierta solo cada día a las 9:00 (UTC 14:00 = 9:00 Colombia)
+[triggers]
+crons = ["0 14 * * *"]
+
+# Estado de envíos (a quién se le mandó qué y cuándo): evita duplicados.
+[[kv_namespaces]]
+binding = "CORREOS_ESTADO"
+id = "5979fe3a33004c96b5b8406a4dda2f1e"
+
+[vars]
+FIRESTORE_PROJECT = "red-egresados-65a1a"
+FIRESTORE_APP_ID = "1:874010522484:web:28881821d110defd3b7221"
+SITIO = "https://fonseca707.github.io/Red-egresados"
+REMITENTE = "Sinapsis <onboarding@resend.dev>"
+RESPUESTA_A = "juanda.fonsecag@gmail.com"
+
+# Secreto (NO va aquí):  npx wrangler secret put RESEND_API_KEY

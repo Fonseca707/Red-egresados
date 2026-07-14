@@ -32,6 +32,19 @@ const DEFAULT_SCHOOL = 'LCP';
 // Proxy de IA (Cloudflare Worker): el navegador nunca ve la clave de DeepSeek.
 // Código del Worker en proxy-ia/; la clave vive como secreto en Cloudflare.
 const SINAPSIS_IA_PROXY = 'https://sinapsis-ia.sinapsis-lcp.workers.dev';
+
+// Worker de correos (código en correos-worker/): cron diario + aviso de mensaje.
+// El Worker verifica el consentimiento (newsletterOptIn) antes de enviar nada.
+const SINAPSIS_CORREOS = 'https://sinapsis-correos.sinapsis-lcp.workers.dev';
+async function avisarMensajePorCorreo(destinatarioUid, deNombre) {
+    try {
+        await fetch(`${SINAPSIS_CORREOS}/mensaje-nuevo`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ destinatarioUid, deNombre })
+        });
+    } catch (e) { /* el aviso es best-effort: nunca debe romper el chat */ }
+}
 const USERNAME_AUTH_DOMAIN = 'users.sinapsis.app';
 const LEGACY_USERNAME_AUTH_DOMAIN = 'sinapsis.local';
 const STATUS = { TRABAJANDO:'trabajando', ESTUDIANDO:'estudiando', TRABAJANDO_ESTUDIANDO:'trabajando-estudiando', EMPRENDIENDO:'emprendiendo', PROFESOR:'profesor', SIN_DEFINIR:'sin-definir' };

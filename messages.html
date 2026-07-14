@@ -96,7 +96,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-analytics-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore-compat.js"></script>
-    <script src="shared.js?v=5"></script>
+    <script src="shared.js?v=6"></script>
     <script>
         renderNav('messages');
 
@@ -265,6 +265,9 @@
                     batch.set(userChatsCollection(state.user.uid).doc(state.activeChatId), chatMetaForMe, { merge: true });
                     batch.set(userChatsCollection(chat.peerId).doc(state.activeChatId), chatMetaForOther, { merge: true });
                     await batch.commit();
+                    // Aviso por correo al destinatario (el Worker respeta su consentimiento
+                    // y no manda más de uno al día). No se espera: no debe frenar el chat.
+                    avisarMensajePorCorreo(chat.peerId, myName);
                 } catch (error) {
                     alert(`No se pudo enviar el mensaje: ${error.code || error.message || 'error desconocido'}`);
                 }

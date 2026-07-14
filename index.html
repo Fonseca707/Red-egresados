@@ -1045,7 +1045,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-analytics-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore-compat.js"></script>
-    <script src="shared.js?v=5"></script>
+    <script src="shared.js?v=6"></script>
     <script src="toefl-data.js?v=2"></script>
     <script src="toefl-practice.js?v=2"></script>
     <script src="delf-data.js?v=2"></script>
@@ -2191,6 +2191,8 @@
                     batch.set(userChatsCollection(state.user.uid).doc(state.activeChatId), chatMetaForMe, { merge: true });
                     batch.set(userChatsCollection(chat.peerId).doc(state.activeChatId), chatMetaForOther, { merge: true });
                     await batch.commit();
+                    // Aviso por correo al destinatario (el Worker respeta su consentimiento).
+                    avisarMensajePorCorreo(chat.peerId, myName);
                 } catch (error) {
                     alert(`No se pudo enviar el mensaje: ${error.code || error.message || 'error desconocido'}`);
                 }
