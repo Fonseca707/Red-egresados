@@ -65,9 +65,14 @@
                             <h3 class="text-lg font-bold flex items-center gap-2 text-gray-900">
                                 <i class="ph-duotone ph-path text-brand-600 text-2xl"></i> Mi Ruta
                             </h3>
-                            <button type="button" onclick="rutaLogic.openForm()" class="px-4 py-2 bg-brand-50 text-brand-700 text-xs font-bold rounded-lg border border-brand-100 hover:bg-brand-100 transition flex items-center gap-1">
-                                <i class="ph-bold ph-plus-circle"></i> Agregar hito
-                            </button>
+                            <div class="flex gap-2">
+                                <button type="button" onclick="rutaLogic.descargarImagen()" class="px-4 py-2 bg-white text-gray-600 text-xs font-bold rounded-lg border border-gray-200 hover:bg-brand-50 hover:text-brand-700 transition flex items-center gap-1" title="Descarga tu ruta como imagen para compartir en redes o WhatsApp">
+                                    <i class="ph-bold ph-download-simple"></i> Compartir como imagen
+                                </button>
+                                <button type="button" onclick="rutaLogic.openForm()" class="px-4 py-2 bg-brand-50 text-brand-700 text-xs font-bold rounded-lg border border-brand-100 hover:bg-brand-100 transition flex items-center gap-1">
+                                    <i class="ph-bold ph-plus-circle"></i> Agregar hito
+                                </button>
+                            </div>
                         </div>
                         <div id="timeline-container"></div>
 
@@ -369,6 +374,16 @@
                     document.getElementById('timeline-container').insertAdjacentHTML('beforeend',
                         `<p class="text-xs text-gray-400 mt-4 text-center">Esta ruta se armó con tu información básica. Agrega hitos para hacerla tuya.</p>`);
                 }
+            },
+
+            descargarImagen: () => {
+                const display = rutaLogic.hitos.length ? rutaLogic.hitos : deriveLegacyHitos(state.profile);
+                if (!display.length) { alert('Agrega al menos un hito a tu ruta para generar la imagen.'); return; }
+                rutaImagen.descargar({
+                    name: `${state.profile.firstName || ''} ${state.profile.lastName || ''}`.trim() || 'Egresado',
+                    firstName: state.profile.firstName,
+                    year: state.profile.graduationYear
+                }, display);
             },
 
             openForm: (hito = null) => {

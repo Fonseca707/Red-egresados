@@ -130,6 +130,7 @@
                     <a id="sp-linkedin-btn" href="#" target="_blank" class="hidden w-12 flex items-center justify-center bg-blue-50 text-[#0077b5] rounded-xl border border-blue-100 hover:bg-blue-100 transition"><i class="ph-bold ph-linkedin-logo text-xl"></i></a>
                     <a id="sp-whatsapp-btn" href="#" target="_blank" class="hidden w-12 flex items-center justify-center bg-green-50 text-[#25D366] rounded-xl border border-green-100 hover:bg-green-100 transition"><i class="ph-bold ph-whatsapp-logo text-xl"></i></a>
                     <button id="sp-share-btn" onclick="directoryLogic.shareProfile()" title="Copiar enlace de este perfil" class="w-12 flex items-center justify-center bg-gray-50 text-gray-500 rounded-xl border border-gray-200 hover:bg-brand-50 hover:text-brand-600 transition"><i class="ph-bold ph-link text-xl"></i></button>
+                    <button onclick="directoryLogic.descargarRuta()" title="Descargar su ruta como imagen" class="w-12 flex items-center justify-center bg-gray-50 text-gray-500 rounded-xl border border-gray-200 hover:bg-brand-50 hover:text-brand-600 transition"><i class="ph-bold ph-download-simple text-xl"></i></button>
                 </div>
                 <div class="space-y-6">
                     <div>
@@ -293,7 +294,14 @@
                 if (!hitos.length) hitos = deriveLegacyHitos(user);
                 // Evitar que una respuesta lenta pise la ruta de otro perfil abierto después.
                 if (String(state.selectedDirectoryUserId) !== String(user.id)) return;
+                directoryLogic._spHitos = hitos;
                 container.innerHTML = renderTimelineHTML(hitos);
+            },
+            descargarRuta: () => {
+                const user = state.data.alumni.find(u => String(u.id) === String(state.selectedDirectoryUserId));
+                const hitos = directoryLogic._spHitos || [];
+                if (!user || !hitos.length) { alert('Este perfil aún no tiene ruta para compartir.'); return; }
+                rutaImagen.descargar(user, hitos);
             },
             closeProfile: () => {
                 document.getElementById('slide-panel-overlay').classList.add('hidden');

@@ -266,7 +266,8 @@ function renderTimelineHTML(hitos = [], { editable = false, editorNS = 'rutaLogi
             <p class="text-sm font-medium">Aún no hay hitos en esta ruta.</p>
         </div>`;
     }
-    return `<ol class="relative border-l-2 border-brand-100 ml-5 space-y-6">` + hitos.map(h => {
+    const last = hitos.length - 1;
+    return `<ol class="relative">` + hitos.map((h, i) => {
         const info = hitoTypeInfo(h.tipo);
         const years = formatHitoYears(h);
         const actions = (editable && h.id) ? `
@@ -275,26 +276,126 @@ function renderTimelineHTML(hitos = [], { editable = false, editorNS = 'rutaLogi
                 <button type="button" onclick="${editorNS}.removeHito('${sanitizeHTML(h.id)}')" class="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition" title="Eliminar hito"><i class="ph-bold ph-trash"></i></button>
             </span>` : '';
         return `
-        <li class="ml-6 relative">
-            <span class="absolute -left-[2.45rem] top-0 w-9 h-9 rounded-xl flex items-center justify-center text-lg shadow-sm ${h.actual ? 'bg-brand-600 text-white' : 'bg-brand-50 text-brand-600 border border-brand-100'}">
-                <i class="ph-duotone ${info.icon}"></i>
-            </span>
-            <div class="flex items-start justify-between gap-2">
-                <div class="min-w-0">
-                    <div class="flex items-center gap-2 flex-wrap">
-                        <span class="text-[11px] font-bold uppercase tracking-wide text-brand-600">${sanitizeHTML(info.label)}</span>
-                        ${years ? `<span class="text-[11px] font-semibold text-gray-400">${sanitizeHTML(years)}</span>` : ''}
-                        ${h.actual ? '<span class="text-[10px] font-bold px-2 py-0.5 bg-brand-600 text-white rounded-full">Actual</span>' : ''}
+        <li class="relative flex gap-4 ${i < last ? 'pb-2' : ''}">
+            <div class="flex flex-col items-center shrink-0">
+                <span class="relative z-10 w-11 h-11 rounded-2xl flex items-center justify-center text-xl shadow-sm ${h.actual ? 'bg-brand-600 text-white shadow-brand-600/30' : 'bg-white text-brand-600 border border-brand-100'}">
+                    <i class="ph-duotone ${info.icon}"></i>
+                    ${h.actual ? '<span class="absolute -top-1 -right-1 flex h-3 w-3"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-400 opacity-75"></span><span class="relative inline-flex rounded-full h-3 w-3 bg-brand-500 border-2 border-white"></span></span>' : ''}
+                </span>
+                ${i < last ? '<span class="w-0.5 flex-1 my-1 rounded-full bg-gradient-to-b from-brand-300 to-brand-100"></span>' : ''}
+            </div>
+            <div class="min-w-0 flex-1 pb-5">
+                <div class="rounded-2xl border ${h.actual ? 'border-brand-100 bg-brand-50' : 'border-gray-100 bg-white'} px-4 py-3 shadow-sm hover:shadow-md transition group/hito">
+                    <div class="flex items-start justify-between gap-2">
+                        <div class="min-w-0">
+                            <div class="flex items-center gap-2 flex-wrap mb-0.5">
+                                <span class="text-[11px] font-bold uppercase tracking-widest text-brand-600">${sanitizeHTML(info.label)}</span>
+                                ${h.actual ? '<span class="text-[10px] font-bold px-2 py-0.5 bg-brand-600 text-white rounded-full uppercase tracking-wide">Hoy</span>' : ''}
+                            </div>
+                            <p class="font-bold text-gray-900 leading-snug">${sanitizeHTML(h.organizacion || h.rol || 'Sin detalle')}</p>
+                            ${h.organizacion && h.rol ? `<p class="text-sm text-gray-500 leading-snug">${sanitizeHTML(h.rol)}</p>` : ''}
+                            ${h.descripcion ? `<p class="text-xs text-gray-400 mt-1.5 leading-relaxed">${sanitizeHTML(h.descripcion)}</p>` : ''}
+                        </div>
+                        <div class="flex flex-col items-end gap-1 shrink-0">
+                            ${years ? `<span class="text-[11px] font-bold px-2 py-1 rounded-lg bg-gray-50 border border-gray-100 text-gray-500 whitespace-nowrap">${sanitizeHTML(years)}</span>` : ''}
+                            ${actions}
+                        </div>
                     </div>
-                    <p class="font-bold text-gray-900 leading-tight mt-0.5">${sanitizeHTML(h.organizacion || h.rol || 'Sin detalle')}</p>
-                    ${h.organizacion && h.rol ? `<p class="text-sm text-gray-500">${sanitizeHTML(h.rol)}</p>` : ''}
-                    ${h.descripcion ? `<p class="text-xs text-gray-400 mt-1 leading-relaxed">${sanitizeHTML(h.descripcion)}</p>` : ''}
                 </div>
-                ${actions}
             </div>
         </li>`;
     }).join('') + `</ol>`;
 }
+
+// ── Ruta como imagen compartible (canvas, sin librerías ni imágenes externas) ──
+const rutaImagen = {
+    _wrap(ctx, text, maxWidth) {
+        const words = String(text || '').split(' ');
+        const lines = [];
+        let line = '';
+        for (const w of words) {
+            const test = line ? `${line} ${w}` : w;
+            if (ctx.measureText(test).width > maxWidth && line) { lines.push(line); line = w; }
+            else line = test;
+        }
+        if (line) lines.push(line);
+        return lines.slice(0, 2);
+    },
+
+    descargar(user, hitos = []) {
+        const EMOJI = { colegio: '🎓', educacion: '📚', practica: '🧪', empleo: '💼', emprendimiento: '🚀', logro: '🏆' };
+        const W = 1080, HEADER = 250, FOOTER = 110, ROW = 130;
+        const rows = Math.max(hitos.length, 1);
+        const H = HEADER + rows * ROW + 60 + FOOTER;
+        const canvas = document.createElement('canvas');
+        canvas.width = W; canvas.height = H;
+        const ctx = canvas.getContext('2d');
+
+        // Fondo y encabezado con degradado de marca
+        ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, W, H);
+        const grad = ctx.createLinearGradient(0, 0, W, HEADER);
+        grad.addColorStop(0, '#14532d'); grad.addColorStop(1, '#16a34a');
+        ctx.fillStyle = grad; ctx.fillRect(0, 0, W, HEADER);
+        ctx.fillStyle = 'rgba(255,255,255,0.75)';
+        ctx.font = 'bold 26px "Plus Jakarta Sans", "Segoe UI", sans-serif';
+        ctx.fillText('SINAPSIS · RED DE EGRESADOS', 70, 78);
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 56px "Plus Jakarta Sans", "Segoe UI", sans-serif';
+        ctx.fillText(String(user.name || 'Egresado').slice(0, 32), 70, 148);
+        ctx.fillStyle = 'rgba(255,255,255,0.85)';
+        ctx.font = '600 30px "Plus Jakarta Sans", "Segoe UI", sans-serif';
+        ctx.fillText(`Promoción ${user.year || '—'} · Liceo Campestre de Pereira`, 70, 200);
+
+        // Línea de tiempo
+        const lineX = 110;
+        if (hitos.length > 1) {
+            ctx.strokeStyle = '#bbf7d0'; ctx.lineWidth = 6; ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(lineX, HEADER + 70);
+            ctx.lineTo(lineX, HEADER + 70 + (hitos.length - 1) * ROW);
+            ctx.stroke();
+        }
+        hitos.forEach((h, i) => {
+            const y = HEADER + 70 + i * ROW;
+            ctx.fillStyle = h.actual ? '#16a34a' : '#f0fdf4';
+            ctx.beginPath(); ctx.arc(lineX, y, 34, 0, Math.PI * 2); ctx.fill();
+            ctx.strokeStyle = h.actual ? '#15803d' : '#bbf7d0'; ctx.lineWidth = 3; ctx.stroke();
+            ctx.font = '34px "Segoe UI Emoji", sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(EMOJI[h.tipo] || '📍', lineX, y + 12);
+            ctx.textAlign = 'left';
+
+            const info = hitoTypeInfo(h.tipo);
+            const years = formatHitoYears(h);
+            ctx.fillStyle = '#16a34a';
+            ctx.font = 'bold 22px "Plus Jakarta Sans", "Segoe UI", sans-serif';
+            ctx.fillText(`${info.label.toUpperCase()}${years ? `  ·  ${years}` : ''}${h.actual ? '  ·  HOY' : ''}`, 175, y - 22);
+            ctx.fillStyle = '#111827';
+            ctx.font = 'bold 34px "Plus Jakarta Sans", "Segoe UI", sans-serif';
+            const titulo = this._wrap(ctx, h.organizacion || h.rol || 'Sin detalle', W - 250);
+            ctx.fillText(titulo[0], 175, y + 16);
+            if (h.organizacion && h.rol) {
+                ctx.fillStyle = '#6b7280';
+                ctx.font = '500 26px "Plus Jakarta Sans", "Segoe UI", sans-serif';
+                ctx.fillText(this._wrap(ctx, h.rol, W - 250)[0], 175, y + 52);
+            }
+        });
+
+        // Pie con invitación
+        ctx.fillStyle = '#f0fdf4'; ctx.fillRect(0, H - FOOTER, W, FOOTER);
+        ctx.fillStyle = '#15803d';
+        ctx.font = 'bold 26px "Plus Jakarta Sans", "Segoe UI", sans-serif';
+        ctx.fillText('Mi ruta también empezó en el Liceo 🌱', 70, H - FOOTER + 46);
+        ctx.fillStyle = '#4b5563';
+        ctx.font = '500 22px "Plus Jakarta Sans", "Segoe UI", sans-serif';
+        ctx.fillText('Únete a la red: fonseca707.github.io/Red-egresados', 70, H - FOOTER + 82);
+
+        const a = document.createElement('a');
+        a.download = `ruta-${String(user.firstName || 'egresado').toLowerCase()}-sinapsis.png`;
+        a.href = canvas.toDataURL('image/png');
+        a.click();
+    }
+};
 
 const state = {
     user: null,
