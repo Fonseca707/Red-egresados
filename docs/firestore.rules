@@ -57,6 +57,28 @@ service cloud.firestore {
         allow write: if isAdmin();
       }
 
+      // Contacto de terceros (empresas, aliados, contacto general) desde la
+      // landing. CREATE es PUBLICO (quien escribe no tiene cuenta), pero con
+      // FORMA ESTRICTA como barrera anti-spam basica: campos permitidos,
+      // tipos, longitudes y estado inicial fijo. Solo admin lee/gestiona.
+      // Si aparece spam real, el siguiente paso es un captcha (Turnstile).
+      match /public/data/contactos/{contactoId} {
+        function contactoValido() {
+          let d = request.resource.data;
+          return d.keys().hasOnly(['tipo','nombre','organizacion','email','telefono','mensaje','estado','createdAt','userAgent'])
+            && d.tipo in ['empresa','aliado','general']
+            && d.nombre is string && d.nombre.size() >= 2 && d.nombre.size() <= 120
+            && d.email is string && d.email.size() >= 5 && d.email.size() <= 160 && d.email.matches('.+@.+[.].+')
+            && d.mensaje is string && d.mensaje.size() >= 10 && d.mensaje.size() <= 3000
+            && d.organizacion is string && d.organizacion.size() <= 160
+            && d.telefono is string && d.telefono.size() <= 40
+            && d.estado == 'nuevo'
+            && d.createdAt == request.time;
+        }
+        allow create: if contactoValido();
+        allow read, update, delete: if isAdmin();
+      }
+
       // Usuarios de login (username -> authEmail/uid). Lectura publica
       // porque se resuelve ANTES de autenticar. Un usuario reserva su
       // propio username; un admin puede reservar el de un sub-admin nuevo.

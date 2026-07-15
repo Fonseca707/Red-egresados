@@ -49,6 +49,7 @@
                 <button onclick="adminLogic.switchTab('users')" id="tab-users" class="pb-3 text-sm font-bold border-b-2 border-brand-600 text-brand-600 transition">Usuarios</button>
                 <button onclick="adminLogic.switchTab('news')" id="tab-news-admin" class="pb-3 text-sm font-bold border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition">Noticias</button>
                 <button onclick="adminLogic.switchTab('correos')" id="tab-correos" class="pb-3 text-sm font-bold border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition">Correos</button>
+                <button onclick="adminLogic.switchTab('contactos')" id="tab-contactos" class="hidden pb-3 text-sm font-bold border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition">Mensajes<span id="tab-contactos-badge" class="hidden ml-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-brand-600 text-white text-[10px] font-bold align-middle inline-flex items-center justify-center">0</span></button>
                 <button onclick="adminLogic.switchTab('subadmins')" id="tab-subadmins" class="hidden pb-3 text-sm font-bold border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition">Sub-Administradores</button>
             </div>
 
@@ -252,6 +253,24 @@
                 </div>
             </div>
 
+            <!-- TAB: MENSAJES DE TERCEROS (solo super admin) -->
+            <div id="admin-contactos-tab" class="hidden space-y-4">
+                <div class="bg-brand-50 border border-brand-100 rounded-2xl px-5 py-4 flex items-start gap-3">
+                    <i class="ph-duotone ph-paper-plane-tilt text-brand-600 text-2xl mt-0.5 shrink-0"></i>
+                    <div>
+                        <p class="font-bold text-brand-900 text-sm">Mensajes de terceros</p>
+                        <p class="text-brand-700 text-xs mt-0.5">Lo que empresas, instituciones y visitantes envían desde el formulario de contacto de la página de inicio. Responde por correo, marca como leído o archiva.</p>
+                    </div>
+                </div>
+                <div class="flex flex-wrap items-center gap-2">
+                    <button data-filter="nuevo" onclick="contactosAdminLogic.setFilter('nuevo')" class="contacto-filter-btn px-4 py-2 rounded-xl text-xs font-bold transition bg-brand-600 text-white shadow-sm">Nuevos</button>
+                    <button data-filter="all" onclick="contactosAdminLogic.setFilter('all')" class="contacto-filter-btn px-4 py-2 rounded-xl text-xs font-bold transition bg-gray-100 text-gray-500 hover:bg-gray-200">Todos</button>
+                    <button data-filter="archivado" onclick="contactosAdminLogic.setFilter('archivado')" class="contacto-filter-btn px-4 py-2 rounded-xl text-xs font-bold transition bg-gray-100 text-gray-500 hover:bg-gray-200">Archivados</button>
+                    <button onclick="contactosAdminLogic.load()" class="ml-auto px-4 py-2 rounded-xl text-xs font-bold bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 transition inline-flex items-center gap-1.5"><i class="ph-bold ph-arrows-clockwise"></i> Actualizar</button>
+                </div>
+                <div id="admin-contactos-list" class="space-y-3"></div>
+            </div>
+
             <div id="admin-subadmins-tab" class="hidden space-y-4">
                 <div class="bg-purple-50 border border-purple-100 rounded-2xl px-5 py-4 flex items-start gap-3">
                     <i class="ph-duotone ph-shield-star text-purple-600 text-2xl mt-0.5 shrink-0"></i>
@@ -295,6 +314,7 @@
     <script src="shared.js?v=8"></script>
     <script src="admin-correos.js?v=3"></script>
     <script src="admin-rutas-ia.js?v=2"></script>
+    <script src="admin-contactos.js?v=1"></script>
     <script>
         renderNav('admin');
 
@@ -305,6 +325,7 @@
                     users:     { btn:'tab-users',      panel:'admin-users-tab' },
                     news:      { btn:'tab-news-admin', panel:'admin-news-tab' },
                     correos:   { btn:'tab-correos',    panel:'admin-correos-tab' },
+                    contactos: { btn:'tab-contactos',  panel:'admin-contactos-tab' },
                     subadmins: { btn:'tab-subadmins',  panel:'admin-subadmins-tab' }
                 };
                 Object.entries(tabMap).forEach(([key, { btn, panel }]) => {
@@ -317,6 +338,7 @@
                 });
                 if (tab === 'subadmins') adminLogic.renderSubAdmins();
                 if (tab === 'correos') { correosLogic.render(); correosLogic.renderCampanas(); autoCorreosLogic.cargarEstado(); }
+                if (tab === 'contactos') contactosAdminLogic.load();
             },
             getVisibleUsers: () => {
                 return state.adminRole === 'superadmin'
@@ -851,6 +873,7 @@
             if (adminBtn) adminBtn.classList.remove('hidden');
             if (isSuperAdmin) {
                 document.getElementById('tab-subadmins')?.classList.remove('hidden');
+                document.getElementById('tab-contactos')?.classList.remove('hidden');
                 document.getElementById('rutas-ia-card')?.classList.remove('hidden');
             } else {
                 document.getElementById('migration-banner')?.classList.add('hidden');
@@ -861,6 +884,7 @@
                 await loadNews();
                 await loadSubAdmins();
                 adminLogic.renderNewsList();
+                contactosAdminLogic.load();
             }
             adminLogic.renderUsers();
             adminLogic.switchTab('users');
