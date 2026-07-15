@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sinapsis | Preparación en idiomas</title>
+    <meta name="description" content="Practica TOEFL iBT (2026) y DELF B1 con el formato oficial vigente, cronómetro y calificación como en el examen real.">
+    <meta name="theme-color" content="#16a34a">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script>
+        tailwind.config = {
+            theme: { extend: {
+                fontFamily: { sans: ['"Plus Jakarta Sans"', 'sans-serif'] },
+                colors: {
+                    brand: { 50:'#f0fdf4',100:'#dcfce7',200:'#bbf7d0',300:'#86efac',400:'#4ade80',500:'#22c55e',600:'#16a34a',700:'#15803d',800:'#166534',900:'#14532d',950:'#052e16' },
+                    stone: { 50:'#fafaf9',100:'#f5f5f4',200:'#e7e5e4',300:'#d6d3d1',400:'#a8a29e',500:'#78716c',600:'#57534e',700:'#44403c',800:'#292524',900:'#1c1917' },
+                    sun: { 50:'#fffbeb',100:'#fef3c7',200:'#fde68a',400:'#fbbf24',500:'#f59e0b',600:'#d97706' }
+                },
+                animation: { 'fade-in':'fadeIn 0.3s ease-out','slide-up':'slideUp 0.4s ease-out','slide-in-right':'slideInRight 0.4s cubic-bezier(0.16,1,0.3,1)' },
+                keyframes: { fadeIn:{'0%':{opacity:'0'},'100%':{opacity:'1'}},slideUp:{'0%':{transform:'translateY(20px)',opacity:'0'},'100%':{transform:'translateY(0)',opacity:'1'}},slideInRight:{'0%':{transform:'translateX(100%)'},'100%':{transform:'translateX(0)'}} }
+            }}
+        }
+    </script>
+    <style>
+        body { background-color: #fafaf9; }
+        .glass-nav { background: rgba(250,250,249,0.85); backdrop-filter: blur(16px); border-bottom: 1px solid rgba(231,229,228,0.6); }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="text-stone-800 font-sans min-h-screen flex flex-col">
+
+    <!-- El navbar lo inyecta renderNav('exam-modules') desde shared.js -->
+    <main class="flex-1 pt-20 pb-24 md:pb-8 px-4 bg-stone-50/60">
+
+        <!-- VISTA: MÓDULOS DE PRÁCTICA -->
+        <div id="view-exam-modules" class="max-w-7xl mx-auto animate-slide-up pb-12">
+            <div class="mb-8 text-center md:text-left">
+                <span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-brand-50 text-brand-700 text-xs font-bold uppercase tracking-widest border border-brand-100">
+                    <i class="ph-duotone ph-books"></i> Práctica gratuita
+                </span>
+                <h2 class="text-3xl md:text-4xl font-extrabold text-gray-900 mt-4 mb-3">Preparación en idiomas</h2>
+                <p class="text-gray-500 max-w-3xl">Practica con el formato oficial vigente del TOEFL iBT (2026) y del DELF, con cronómetro y calificación como en el examen real. Por ahora no incluimos las pruebas orales, que requieren evaluación especializada.</p>
+            </div>
+
+            <div id="exam-modules-grid" class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Módulos TOEFL y DELF renderizados via JS -->
+            </div>
+        </div>
+
+        <!-- VISTA: PRÁCTICA TOEFL (formato 2026) -->
+        <div id="view-toefl-practice" class="hidden pb-10">
+            <div id="toefl-root"><!-- Renderizado por toefl-practice.js --></div>
+        </div>
+
+        <!-- VISTA: PRÁCTICA DELF B1 (nouveau format) -->
+        <div id="view-delf-practice" class="hidden pb-10">
+            <div id="delf-root"><!-- Renderizado por delf-practice.js --></div>
+        </div>
+
+    </main>
+
+    <script src="theme.js?v=5"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-analytics-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore-compat.js"></script>
+    <script src="shared.js?v=8"></script>
+    <script src="toefl-data.js?v=2"></script>
+    <script src="toefl-practice.js?v=3"></script>
+    <script src="delf-data.js?v=2"></script>
+    <script src="delf-practice.js?v=3"></script>
+    <script src="ia-calificadora.js?v=1"></script>
+    <script src="orientadora.js?v=3"></script>
+    <script>
+        renderNav('exam-modules');
+
+        // Catálogo de módulos de práctica (mismo contenido que la vista original del SPA).
+        state.examModules = [
+            {
+                code: 'TOEFL',
+                title: 'Módulo TOEFL',
+                language: 'Inglés académico',
+                level: 'Preparación internacional',
+                icon: 'ph-duotone ph-globe-hemisphere-west',
+                accent: 'blue',
+                description: 'Práctica basada en el nuevo formato oficial del TOEFL iBT (enero 2026): Reading adaptativo en 2 módulos y Writing con 3 tareas cronometradas.',
+                practices: [
+                    { name: 'Reading', focus: 'Complete the Words, Read in Daily Life y pasaje académico', format: 'Adaptativo: 2 módulos con cronómetro (~27 min)', status: 'Disponible', action: "toeflLogic.start('reading')" },
+                    { name: 'Writing', focus: 'Build a Sentence, Write an Email y Academic Discussion', format: '3 tareas cronometradas (~23 min) + rúbrica de bandas 1–6', status: 'Disponible', action: "toeflLogic.start('writing')" },
+                    { name: 'Listening', focus: 'Comprensión auditiva', format: 'Audio o video + preguntas guiadas', status: 'Próximamente' }
+                ],
+                excluded: 'Speaking y Listening quedan por fuera temporalmente; Speaking requiere evaluación oral especializada.'
+            },
+            {
+                code: 'DELF',
+                title: 'Módulo DELF',
+                language: 'Francés',
+                level: 'Nivel B1',
+                icon: 'ph-duotone ph-flag',
+                accent: 'purple',
+                description: 'Práctica del DELF B1 con el formato nuevo oficial: comprensión 100% preguntas cerradas y producción escrita con la grilla de 25 puntos.',
+                practices: [
+                    { name: 'Compréhension écrite (B1)', focus: '3 ejercicios: anuncios con criterios + 2 artículos de prensa', format: '45 min con cronómetro · 25 pts · todo QCM/Oui-Non', status: 'Disponible', action: "delfLogic.start('ce')" },
+                    { name: 'Production écrite (B1)', focus: 'Ensayo/artículo de opinión de 160 palabras mínimo', format: '45 min con cronómetro · grilla oficial /25 + respuesta modelo', status: 'Disponible', action: "delfLogic.start('pe')" },
+                    { name: 'Compréhension orale', focus: 'Escucha de situaciones cotidianas o académicas', format: 'Audio + preguntas por nivel', status: 'Próximamente' }
+                ],
+                excluded: 'Production orale y compréhension orale quedan por fuera temporalmente; la oral requiere interacción y evaluación especializada.'
+            }
+        ];
+
+        const examModulesLogic = {
+            render: () => {
+                const grid = document.getElementById('exam-modules-grid');
+                if (!grid) return;
+                grid.innerHTML = state.examModules.map((module) => {
+                    const accent = module.accent === 'purple'
+                        ? { soft: 'bg-purple-50 text-purple-700 border-purple-100', solid: 'bg-purple-600', ring: 'group-hover:border-purple-200' }
+                        : { soft: 'bg-blue-50 text-blue-700 border-blue-100', solid: 'bg-blue-600', ring: 'group-hover:border-blue-200' };
+                    return `
+                        <article class="bg-white rounded-[2rem] border border-gray-100 shadow-sm hover:shadow-xl transition overflow-hidden group ${accent.ring}">
+                            <div class="p-6 md:p-8 border-b border-gray-100">
+                                <div class="flex items-start justify-between gap-4 mb-6">
+                                    <div class="w-16 h-16 ${accent.soft} rounded-2xl border flex items-center justify-center text-3xl">
+                                        <i class="${sanitizeHTML(module.icon)}"></i>
+                                    </div>
+                                    <span class="px-3 py-1 rounded-full text-xs font-bold ${accent.soft} border">${sanitizeHTML(module.code)}</span>
+                                </div>
+                                <p class="text-xs font-bold uppercase tracking-[0.2em] text-gray-400 mb-2">${sanitizeHTML(module.language)} · ${sanitizeHTML(module.level)}</p>
+                                <h3 class="text-2xl font-extrabold text-gray-900 mb-3">${sanitizeHTML(module.title)}</h3>
+                                <p class="text-gray-500 leading-relaxed">${sanitizeHTML(module.description)}</p>
+                            </div>
+                            <div class="p-6 md:p-8 space-y-4">
+                                ${module.practices.map((practice, index) => `
+                                    <div class="rounded-2xl border border-gray-100 bg-gray-50/70 p-4 hover:bg-white hover:shadow-sm transition">
+                                        <div class="flex items-start gap-3">
+                                            <div class="w-9 h-9 rounded-xl ${accent.solid} text-white flex items-center justify-center font-bold text-sm shrink-0">${index + 1}</div>
+                                            <div class="min-w-0">
+                                                <div class="flex flex-wrap items-center gap-2 mb-1">
+                                                    <h4 class="font-bold text-gray-900">${sanitizeHTML(practice.name)}</h4>
+                                                    <span class="px-2 py-0.5 rounded-md bg-white border border-gray-200 text-[11px] font-bold text-gray-500">${sanitizeHTML(practice.status)}</span>
+                                                </div>
+                                                <p class="text-sm text-gray-600 mb-1">${sanitizeHTML(practice.focus)}</p>
+                                                <p class="text-xs text-gray-400 font-medium">Formato: ${sanitizeHTML(practice.format)}</p>
+                                                ${practice.action ? `<button onclick="${practice.action}" class="mt-3 px-4 py-2 ${accent.solid} text-white text-xs font-bold rounded-lg hover:opacity-90 transition flex items-center gap-1.5"><i class="ph-bold ph-play"></i> Practicar ahora</button>` : ''}
+                                            </div>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                                <div class="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 flex gap-2">
+                                    <i class="ph-bold ph-warning-circle mt-0.5"></i>
+                                    <p><strong>No incluido por ahora:</strong> ${sanitizeHTML(module.excluded)}</p>
+                                </div>
+                            </div>
+                        </article>
+                    `;
+                }).join('');
+            }
+        };
+        window.examModulesLogic = examModulesLogic;
+
+        // Router local: alterna entre las 3 vistas de examen y delega el resto a las páginas reales.
+        // toefl-practice.js y delf-practice.js llaman router.navigate('toefl-practice' | 'delf-practice' | 'exam-modules').
+        const EXAM_VIEWS = ['view-exam-modules', 'view-toefl-practice', 'view-delf-practice'];
+        const CROSS_PAGES = { home: 'index.html', directory: 'directory.html', news: 'news.html', messages: 'messages.html', profile: 'profile.html', admin: 'admin.html', auth: 'login.html', login: 'login.html', register: 'register.html', terms: 'terms.html', onboarding: 'onboarding.html' };
+        const router = {
+            navigate: (viewId) => {
+                if (CROSS_PAGES[viewId]) { window.location.href = CROSS_PAGES[viewId]; return; }
+
+                // Detiene el cronómetro al abandonar una práctica (igual que el SPA original)
+                if (state.view === 'toefl-practice' && viewId !== 'toefl-practice' && typeof toeflLogic !== 'undefined') toeflLogic.stopTimer();
+                if (state.view === 'delf-practice' && viewId !== 'delf-practice' && typeof delfLogic !== 'undefined') delfLogic.stopTimer();
+
+                EXAM_VIEWS.forEach(id => document.getElementById(id)?.classList.add('hidden'));
+                state.view = viewId;
+                const target = document.getElementById(`view-${viewId}`);
+                if (target) { target.classList.remove('hidden'); window.scrollTo(0, 0); }
+                if (viewId === 'exam-modules') examModulesLogic.render();
+            }
+        };
+        window.router = router;
+
+        // Init: la práctica es pública (no exige sesión). Si hay usuario, hidratamos el header.
+        state.view = 'exam-modules';
+        examModulesLogic.render();
+
+        auth.onAuthStateChanged(async (user) => {
+            if (user && !state.guestMode) {
+                await hydrateAuthenticatedUser(user, { redirectOnboarding: false });
+            } else {
+                refreshHeaderIdentity();
+                updateAdminNavVisibility();
+            }
+        });
+    </script>
+</body>
+</html>

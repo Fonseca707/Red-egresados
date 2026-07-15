@@ -596,7 +596,7 @@ function watchMessagesInRealtime(uid,chatId) {
 }
 
 function goto(page) {
-    const m={home:'index.html',auth:'login.html',login:'login.html',register:'register.html',terms:'terms.html',onboarding:'onboarding.html',directory:'directory.html',news:'news.html',messages:'messages.html',profile:'profile.html',admin:'admin.html'};
+    const m={home:'index.html',auth:'login.html',login:'login.html',register:'register.html',terms:'terms.html',onboarding:'onboarding.html',directory:'directory.html',news:'news.html',messages:'messages.html',profile:'profile.html',admin:'admin.html','exam-modules':'preparacion.html',preparacion:'preparacion.html'};
     window.location.href=m[page]||'index.html';
 }
 
@@ -614,7 +614,7 @@ function renderNav(activePage='') {
                 <a href="index.html" class="font-medium transition ${active('home')}" id="nav-home">Ecosistema</a>
                 <a href="directory.html" class="font-medium transition ${active('directory')}" id="nav-dir">Comunidad</a>
                 <a href="news.html" class="font-medium transition ${active('news')}" id="nav-news">Novedades</a>
-                <a href="index.html?view=exam-modules" class="font-medium transition ${active('exam-modules')}" id="nav-exams">Preparación</a>
+                <a href="preparacion.html" class="font-medium transition ${active('exam-modules')}" id="nav-exams">Preparación</a>
                 <a href="messages.html" class="font-medium transition ${active('messages')}" id="nav-msg">Mensajes</a>
                 <a href="admin.html" class="hidden font-medium transition ${active('admin')}" id="nav-admin">Admin</a>
             </div>
@@ -630,7 +630,7 @@ function renderNav(activePage='') {
             <a href="index.html" class="py-3 text-xs font-semibold flex flex-col items-center gap-1 ${mactive('home')}"><i class="ph ph-house text-lg"></i><span>Inicio</span></a>
             <a href="directory.html" class="py-3 text-xs font-semibold flex flex-col items-center gap-1 ${mactive('directory')}"><i class="ph ph-users text-lg"></i><span>Directorio</span></a>
             <a href="news.html" class="py-3 text-xs font-semibold flex flex-col items-center gap-1 ${mactive('news')}"><i class="ph ph-newspaper text-lg"></i><span>Novedades</span></a>
-            <a href="index.html?view=exam-modules" class="py-3 text-xs font-semibold flex flex-col items-center gap-1 ${mactive('exam-modules')}"><i class="ph ph-graduation-cap text-lg"></i><span>Prep.</span></a>
+            <a href="preparacion.html" class="py-3 text-xs font-semibold flex flex-col items-center gap-1 ${mactive('exam-modules')}"><i class="ph ph-graduation-cap text-lg"></i><span>Prep.</span></a>
             <a href="messages.html" class="py-3 text-xs font-semibold flex flex-col items-center gap-1 ${mactive('messages')}"><i class="ph ph-chats-circle text-lg"></i><span>Mensajes</span></a>
             <a href="profile.html" class="py-3 text-xs font-semibold flex flex-col items-center gap-1 ${mactive('profile')}"><i class="ph ph-user-circle text-lg"></i><span>Perfil</span></a>
         </nav>
