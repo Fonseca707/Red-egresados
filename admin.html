@@ -352,8 +352,17 @@
     <script>
         renderNav('admin');
 
+        // Pestañas que son de la RED entera, no de un colegio: solo superadmin.
+        // El sub-admin no debe ver mensajes de terceros, otros sub-admins ni
+        // colegios ajenos. La frontera real son las reglas de Firestore
+        // (docs/firestore.rules); esto evita además que la pestaña se abra
+        // llamando switchTab() a mano desde la consola.
+        const SUPER_ONLY_TABS = ['contactos', 'colegios', 'subadmins'];
+        const tabPermitida = (tab) => !SUPER_ONLY_TABS.includes(tab) || state.adminRole === 'superadmin';
+
         const adminLogic = {
             switchTab: (tab) => {
+                if (!tabPermitida(tab)) tab = 'users';
                 state.adminTab = tab;
                 const tabMap = {
                     users:     { btn:'tab-users',      panel:'admin-users-tab' },
@@ -366,14 +375,25 @@
                 Object.entries(tabMap).forEach(([key, { btn, panel }]) => {
                     const b = document.getElementById(btn);
                     const p = document.getElementById(panel);
-                    if (b) b.className = key === tab
-                        ? 'pb-3 text-sm font-bold border-b-2 border-brand-600 text-brand-600 transition'
-                        : 'pb-3 text-sm font-bold border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition';
+                    // Reasignar className completo borraba el 'hidden' de las
+                    // pestañas de superadmin: el sub-admin las veía aparecer.
+                    if (b) b.className = (tabPermitida(key) ? '' : 'hidden ')
+                        + (key === tab
+                            ? 'pb-3 text-sm font-bold border-b-2 border-brand-600 text-brand-600 transition'
+                            : 'pb-3 text-sm font-bold border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition');
                     if (p) p.classList.toggle('hidden', key !== tab);
                 });
                 if (tab === 'subadmins') adminLogic.renderSubAdmins();
                 if (tab === 'colegios') colegiosAdminLogic.load();
-                if (tab === 'correos') { correosLogic.render(); correosLogic.renderCampanas(); autoCorreosLogic.cargarEstado(); }
+                // El interruptor de correos automáticos es de toda la red:
+                // el sub-admin no lo ve (sus campañas manuales sí, ya van
+                // solo a los egresados de su colegio vía getVisibleUsers()).
+                if (tab === 'correos') {
+                    correosLogic.render();
+                    correosLogic.renderCampanas();
+                    if (state.adminRole === 'superadmin') autoCorreosLogic.cargarEstado();
+                    else document.getElementById('auto-correos-card')?.classList.add('hidden');
+                }
                 if (tab === 'contactos') contactosAdminLogic.load();
             },
             getVisibleUsers: () => {

@@ -129,7 +129,10 @@ service cloud.firestore {
       // Contacto de terceros (empresas, aliados, contacto general) desde la
       // landing. CREATE es PUBLICO (quien escribe no tiene cuenta), pero con
       // FORMA ESTRICTA como barrera anti-spam basica: campos permitidos,
-      // tipos, longitudes y estado inicial fijo. Solo admin lee/gestiona.
+      // tipos, longitudes y estado inicial fijo. Leerlos/gestionarlos es SOLO
+      // del superadmin: son leads comerciales de la red (empresas, aliados),
+      // no tienen colegio y nada tienen que ver con el alcance de un
+      // sub-admin. Antes decia isAdmin() => cualquier sub-admin los leia.
       // Si aparece spam real, el siguiente paso es un captcha (Turnstile).
       match /public/data/contactos/{contactoId} {
         function contactoValido() {
@@ -145,23 +148,30 @@ service cloud.firestore {
             && d.createdAt == request.time;
         }
         allow create: if contactoValido();
-        allow read, update, delete: if isAdmin();
+        allow read, update, delete: if isSuperAdmin();
       }
 
       // Usuarios de login (username -> authEmail/uid). Lectura publica
       // porque se resuelve ANTES de autenticar. Un usuario reserva su
-      // propio username; un admin puede reservar el de un sub-admin nuevo.
+      // propio username; el superadmin reserva el de un sub-admin nuevo
+      // (lo crea con una app de auth secundaria, escribiendo un uid ajeno).
+      // Antes decia isAdmin(): un sub-admin podia apuntar el username de
+      // cualquiera a su propio uid (secuestro de login) o borrarlo.
       match /usernames/{username} {
         allow read: if true;
         allow create, update: if request.auth != null
-          && (request.resource.data.uid == request.auth.uid || isAdmin());
-        allow delete: if isAdmin();
+          && (request.resource.data.uid == request.auth.uid || isSuperAdmin());
+        allow delete: if isSuperAdmin();
       }
 
       // Administradores de colegio: solo el superadmin asigna/revoca.
+      // Lectura: cada quien SU documento (loadAdminRole lo consulta para
+      // saber su rol) y el superadmin la lista completa. Con isAdmin() un
+      // sub-admin podia listar a los demas sub-admins y sus colegios.
       match /admins/{userId} {
-        allow read: if request.auth != null
-          && (request.auth.uid == userId || isAdmin());
+        allow get: if request.auth != null
+          && (request.auth.uid == userId || isSuperAdmin());
+        allow list: if isSuperAdmin();
         allow write: if isSuperAdmin();
       }
 
