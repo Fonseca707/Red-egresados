@@ -24,6 +24,8 @@ const adminsCollection = artifactsRoot.collection('admins');
 const usernamesCollection = artifactsRoot.collection('usernames');
 const newsCollection = artifactsRoot.collection('public').doc('data').collection('news');
 const organizationsCollection = artifactsRoot.collection('public').doc('data').collection('organizaciones');
+const colegiosCollection = artifactsRoot.collection('public').doc('data').collection('colegios');
+const codigosCollection = artifactsRoot.collection('public').doc('data').collection('codigos');
 const hitosCollection = (uid) => alumniCollection.doc(uid).collection('hitos');
 const userChatsCollection = (uid) => artifactsRoot.collection('users').doc(uid).collection('chats');
 const userChatMessagesCollection = (uid, chatId) => userChatsCollection(uid).doc(chatId).collection('messages');
@@ -168,6 +170,50 @@ function rankAlumniForDirectory(items = []) {
             fallback: Math.random()
         };
     }).sort((a, b) => (b.key - a.key) || (b.fallback - a.fallback)).map(entry => entry.item);
+}
+
+// ===== MULTI-TENANT (colegios, códigos de invitación, módulos) =====
+// Regla dura: el tag de colegio NUNCA se autodeclara — nace del código de
+// invitación (las reglas de Firestore validan código→colegio en la escritura).
+// Sin código, el registro cae en la red general (LCP mientras sea el único
+// colegio). Los módulos pagados (TOEFL/DELF) se activan por colegio en su doc;
+// si el colegio no tiene doc aplican los módulos por defecto (la era LCP).
+const MODULOS_DEFAULT = { toefl: true, delf: true };
+async function loadColegios() {
+    try { const s = await colegiosCollection.get(); return s.docs.map(d => ({ id: d.id, ...d.data() })); }
+    catch (e) { return []; }
+}
+async function getColegio(id) {
+    if (!id) return null;
+    try { const d = await colegiosCollection.doc(String(id).trim()).get(); return d.exists ? { id: d.id, ...d.data() } : null; }
+    catch (e) { return null; }
+}
+// Valida un código de invitación. Devuelve { codigo, colegioId, colegio } o null.
+// La validación definitiva la hacen las reglas de Firestore al escribir el perfil;
+// esto solo decide qué mostrar en el registro.
+async function validarCodigoInvitacion(codigo) {
+    const clean = String(codigo || '').trim();
+    if (!clean) return null;
+    try {
+        const doc = await codigosCollection.doc(clean).get();
+        if (!doc.exists || doc.data().activo !== true) return null;
+        const colegioId = doc.data().colegioId || '';
+        if (!colegioId) return null;
+        return { codigo: clean, colegioId, colegio: await getColegio(colegioId) };
+    } catch (e) { return null; }
+}
+// Módulos disponibles para el usuario actual según su colegio (invitados y
+// usuarios sin tag ven los módulos por defecto).
+async function getModulosUsuario() {
+    const school = (!state.guestMode && state.profile?.school) ? state.profile.school : DEFAULT_SCHOOL;
+    const colegio = await getColegio(school);
+    return (colegio && colegio.modulos) ? { ...MODULOS_DEFAULT, ...colegio.modulos } : { ...MODULOS_DEFAULT };
+}
+// Filtra novedades según la audiencia: 'todos' para cualquiera; las dirigidas
+// a un colegio solo las ve quien tiene ese tag (los invitados ven solo 'todos').
+function newsVisiblesParaUsuario(items = []) {
+    const school = (!state.guestMode && state.profile?.school) ? state.profile.school : '';
+    return items.filter(n => (n.audiencia || 'todos') === 'todos' || n.audiencia === school);
 }
 
 // ===== TRAYECTORIA (Sinapsis: hitos + organizaciones) =====
@@ -572,7 +618,7 @@ async function loadAlumni() {
     finally{ state.directoryLoading=false; }
 }
 async function loadNews() {
-    try { const s=await newsCollection.orderBy('createdAt','desc').get(); state.data.news=s.docs.map(doc=>{const d=doc.data();return{id:doc.id,title:d.title||'Sin título',category:d.category||'Noticia',date:formatNewsDate(d.createdAt),summary:d.summary||'',img:d.img||'https://placehold.co/600x400/7e22ce/FFF?text=Noticia'};}); } catch(e){}
+    try { const s=await newsCollection.orderBy('createdAt','desc').get(); state.data.news=s.docs.map(doc=>{const d=doc.data();return{id:doc.id,title:d.title||'Sin título',category:d.category||'Noticia',date:formatNewsDate(d.createdAt),summary:d.summary||'',img:d.img||'https://placehold.co/600x400/7e22ce/FFF?text=Noticia',audiencia:d.audiencia||'todos'};}); } catch(e){}
 }
 async function loadChatsForUser(uid) {
     try { const s=await userChatsCollection(uid).orderBy('updatedAt','desc').get(); state.data.chats=s.docs.map(doc=>{const d=doc.data();return{id:doc.id,peerId:d.peerId||'',name:d.peerName||'Usuario',img:d.peerPhotoURL||buildAvatarUrl(d.peerName||'Usuario'),lastMsg:d.lastMsg||'Sin mensajes',time:formatChatTime(d.updatedAt)};}); } catch(e){ state.data.chats=[]; }

@@ -23,23 +23,88 @@ service cloud.firestore {
       }
       function isAdmin() { return isSuperAdmin() || isSchoolAdmin(); }
 
+      // Colegio asignado al sub-admin (su alcance). Los sub-admins solo
+      // llegan a los usuarios y novedades de SU colegio.
+      function adminSchool() {
+        return get(/databases/$(database)/documents/artifacts/$(appId)/admins/$(request.auth.uid)).data.get('school', '');
+      }
+
+      // Regla dura multi-tenant: el tag de colegio NUNCA se autodeclara.
+      // Un usuario solo puede escribirse un colegio si presenta un codigo de
+      // invitacion ACTIVO de ese colegio (campo codigoInvitacion del perfil).
+      function codigoValido(school, codigo) {
+        return codigo is string && codigo != ''
+          && exists(/databases/$(database)/documents/artifacts/$(appId)/public/data/codigos/$(codigo))
+          && get(/databases/$(database)/documents/artifacts/$(appId)/public/data/codigos/$(codigo)).data.get('colegioId', '') == school
+          && get(/databases/$(database)/documents/artifacts/$(appId)/public/data/codigos/$(codigo)).data.get('activo', false) == true;
+      }
+      // En CREACION propia: sin school, red general (LCP mientras sea el
+      // unico colegio), o school respaldado por codigo valido.
+      function schoolValidaAlCrear() {
+        let s = request.resource.data.get('school', '');
+        return s == '' || s == 'LCP'
+          || codigoValido(s, request.resource.data.get('codigoInvitacion', ''));
+      }
+      // En ACTUALIZACION propia: school sin cambio, completar el default LCP
+      // cuando faltaba, o cambiarse con codigo valido del colegio destino.
+      function schoolValidaAlActualizar() {
+        let nueva = request.resource.data.get('school', '');
+        let vieja = resource.data.get('school', '');
+        return nueva == vieja
+          || (vieja == '' && nueva == 'LCP')
+          || codigoValido(nueva, request.resource.data.get('codigoInvitacion', ''));
+      }
+
       // Directorio de egresados: lectura PUBLICA porque el modo invitado
       // explora el directorio sin login (browseAsGuest no autentica).
       // Trade-off: los datos de perfil quedan legibles sin login; la
       // alternativa mas protectora es Anonymous Auth + lectura autenticada.
       match /public/data/alumni/{userId} {
         allow read: if true;
-        allow create, update: if request.auth != null
-          && (request.auth.uid == userId || isAdmin());
-        allow delete: if isAdmin();
+        allow create: if request.auth != null && (
+          isSuperAdmin()
+          || (isSchoolAdmin() && request.resource.data.get('school', '') == adminSchool())
+          || (request.auth.uid == userId && schoolValidaAlCrear())
+        );
+        allow update: if request.auth != null && (
+          isSuperAdmin()
+          || (isSchoolAdmin()
+              && resource.data.get('school', '') == adminSchool()
+              && request.resource.data.get('school', '') == adminSchool())
+          || (request.auth.uid == userId && schoolValidaAlActualizar())
+        );
+        allow delete: if isSuperAdmin()
+          || (isSchoolAdmin() && resource.data.get('school', '') == adminSchool());
 
         // Hitos de la trayectoria: visibles tambien en modo invitado
         // (el slide panel del directorio carga la ruta del egresado).
+        // Los sub-admins solo tocan rutas de egresados de su colegio.
         match /hitos/{hitoId} {
           allow read: if true;
-          allow write: if request.auth != null
-            && (request.auth.uid == userId || isAdmin());
+          allow write: if request.auth != null && (
+            request.auth.uid == userId
+            || isSuperAdmin()
+            || (isSchoolAdmin()
+                && get(/databases/$(database)/documents/artifacts/$(appId)/public/data/alumni/$(userId)).data.get('school', '') == adminSchool())
+          );
         }
+      }
+
+      // Colegios (multi-tenant): nombre, modulos pagados (toefl/delf), etc.
+      // Lectura publica: el registro muestra el nombre del colegio del codigo
+      // y la pagina de preparacion consulta los modulos sin exigir sesion.
+      match /public/data/colegios/{colegioId} {
+        allow read: if true;
+        allow write: if isSuperAdmin();
+      }
+
+      // Codigos de invitacion: GET publico (validar un codigo exige conocerlo,
+      // el id ES el codigo), pero LIST solo superadmin para que nadie pueda
+      // enumerar los codigos vigentes.
+      match /public/data/codigos/{codigo} {
+        allow get: if true;
+        allow list: if isSuperAdmin();
+        allow write: if isSuperAdmin();
       }
 
       // Organizaciones normalizadas (autocompletar del onboarding/perfil).
@@ -51,10 +116,14 @@ service cloud.firestore {
         allow delete: if isAdmin();
       }
 
-      // Noticias: lectura publica; escritura solo admin.
+      // Noticias: lectura publica; el superadmin publica a cualquier
+      // audiencia y el sub-admin SOLO a su colegio (campo audiencia).
       match /public/data/news/{newsId} {
         allow read: if true;
-        allow write: if isAdmin();
+        allow create, update: if isSuperAdmin()
+          || (isSchoolAdmin() && request.resource.data.get('audiencia', '') == adminSchool());
+        allow delete: if isSuperAdmin()
+          || (isSchoolAdmin() && resource.data.get('audiencia', '') == adminSchool());
       }
 
       // Contacto de terceros (empresas, aliados, contacto general) desde la

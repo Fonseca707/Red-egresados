@@ -67,7 +67,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-analytics-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore-compat.js"></script>
-    <script src="shared.js?v=8"></script>
+    <script src="shared.js?v=9"></script>
     <script src="toefl-data.js?v=2"></script>
     <script src="toefl-practice.js?v=3"></script>
     <script src="delf-data.js?v=2"></script>
@@ -115,7 +115,23 @@
             render: () => {
                 const grid = document.getElementById('exam-modules-grid');
                 if (!grid) return;
+                // Gate por colegio: los módulos son valor agregado que cada colegio
+                // activa (doc colegios/{tag}.modulos). Sin dato aún → se muestran
+                // (MODULOS_DEFAULT); si el colegio del usuario lo desactivó → tarjeta
+                // bloqueada. Es gate de UI: el gate duro va en el proxy (pendiente).
+                const disponibles = state.modulosDisponibles || null;
+                const habilitado = (code) => !disponibles || disponibles[code.toLowerCase()] !== false;
                 grid.innerHTML = state.examModules.map((module) => {
+                    if (!habilitado(module.code)) {
+                        return `
+                        <article class="bg-white rounded-[2rem] border border-gray-100 shadow-sm overflow-hidden opacity-90">
+                            <div class="p-8 text-center">
+                                <div class="w-16 h-16 bg-gray-50 text-gray-300 rounded-2xl border border-gray-100 flex items-center justify-center text-3xl mx-auto mb-4"><i class="ph-duotone ph-lock-key"></i></div>
+                                <h3 class="text-xl font-extrabold text-gray-900 mb-2">${sanitizeHTML(module.title)}</h3>
+                                <p class="text-sm text-gray-500 max-w-sm mx-auto">Este módulo no está habilitado para tu colegio. Si te interesa, cuéntale a tu institución: es uno de los valores agregados que puede activar para su comunidad.</p>
+                            </div>
+                        </article>`;
+                    }
                     const accent = module.accent === 'purple'
                         ? { soft: 'bg-purple-50 text-purple-700 border-purple-100', solid: 'bg-purple-600', ring: 'group-hover:border-purple-200' }
                         : { soft: 'bg-blue-50 text-blue-700 border-blue-100', solid: 'bg-blue-600', ring: 'group-hover:border-blue-200' };
@@ -193,6 +209,10 @@
                 refreshHeaderIdentity();
                 updateAdminNavVisibility();
             }
+            // Módulos por colegio: se consulta después de conocer el perfil y se
+            // re-renderiza solo si seguimos en el catálogo (no interrumpe una práctica).
+            state.modulosDisponibles = await getModulosUsuario();
+            if (state.view === 'exam-modules') examModulesLogic.render();
         });
     </script>
 </body>

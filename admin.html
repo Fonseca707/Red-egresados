@@ -50,6 +50,7 @@
                 <button onclick="adminLogic.switchTab('news')" id="tab-news-admin" class="pb-3 text-sm font-bold border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition">Noticias</button>
                 <button onclick="adminLogic.switchTab('correos')" id="tab-correos" class="pb-3 text-sm font-bold border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition">Correos</button>
                 <button onclick="adminLogic.switchTab('contactos')" id="tab-contactos" class="hidden pb-3 text-sm font-bold border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition">Mensajes<span id="tab-contactos-badge" class="hidden ml-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-brand-600 text-white text-[10px] font-bold align-middle inline-flex items-center justify-center">0</span></button>
+                <button onclick="adminLogic.switchTab('colegios')" id="tab-colegios" class="hidden pb-3 text-sm font-bold border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition">Colegios</button>
                 <button onclick="adminLogic.switchTab('subadmins')" id="tab-subadmins" class="hidden pb-3 text-sm font-bold border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition">Sub-Administradores</button>
             </div>
 
@@ -176,6 +177,13 @@
                             <input id="admin-news-category" type="text" required class="input-field" placeholder="Ej: Evento, Empleo, Noticia">
                         </div>
                         <div class="md:col-span-2">
+                            <label class="input-label">Audiencia</label>
+                            <select id="admin-news-audiencia" class="input-field">
+                                <option value="todos">Toda la red</option>
+                            </select>
+                            <p class="text-[11px] text-gray-400 mt-1.5">Las novedades dirigidas a un colegio solo las ven los usuarios con su tag.</p>
+                        </div>
+                        <div class="md:col-span-2">
                             <label class="input-label">Resumen / Contenido</label>
                             <textarea id="admin-news-summary" required class="input-field h-24 resize-none" placeholder="Breve descripción de la noticia..."></textarea>
                         </div>
@@ -271,6 +279,31 @@
                 <div id="admin-contactos-list" class="space-y-3"></div>
             </div>
 
+            <!-- TAB: COLEGIOS (solo super admin) -->
+            <div id="admin-colegios-tab" class="hidden space-y-4">
+                <div class="bg-brand-50 border border-brand-100 rounded-2xl px-5 py-4 flex items-start gap-3">
+                    <i class="ph-duotone ph-buildings text-brand-600 text-2xl mt-0.5 shrink-0"></i>
+                    <div>
+                        <p class="font-bold text-brand-900 text-sm">Colegios de la red</p>
+                        <p class="text-brand-700 text-xs mt-0.5">Cada colegio tiene su tag, sus módulos pagados (TOEFL/DELF) y sus códigos de invitación. El enlace de un código es la única vía para que un registro nazca con el tag del colegio — si un código se filtra, desactívalo y genera otro.</p>
+                    </div>
+                </div>
+                <div class="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-gray-100">
+                    <h3 class="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2">
+                        <i class="ph-bold ph-plus-circle text-brand-600"></i> Agregar colegio
+                    </h3>
+                    <form class="grid grid-cols-1 md:grid-cols-2 gap-4" onsubmit="colegiosAdminLogic.crear(event)">
+                        <div><label class="input-label">Tag (corto, único)</label><input id="colegio-tag" class="input-field uppercase" required placeholder="Ej: SANJOSE" maxlength="15"></div>
+                        <div><label class="input-label">Nombre del colegio</label><input id="colegio-nombre-input" class="input-field" required placeholder="Ej: Colegio San José de Pereira"></div>
+                        <div class="md:col-span-2 flex items-center justify-between gap-4">
+                            <p id="colegio-feedback" class="text-xs text-gray-500"></p>
+                            <button type="submit" class="px-6 py-3 bg-brand-600 text-white font-bold rounded-xl hover:bg-brand-700 transition">Crear colegio</button>
+                        </div>
+                    </form>
+                </div>
+                <div id="admin-colegios-list" class="space-y-4"></div>
+            </div>
+
             <div id="admin-subadmins-tab" class="hidden space-y-4">
                 <div class="bg-purple-50 border border-purple-100 rounded-2xl px-5 py-4 flex items-start gap-3">
                     <i class="ph-duotone ph-shield-star text-purple-600 text-2xl mt-0.5 shrink-0"></i>
@@ -311,10 +344,11 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-analytics-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore-compat.js"></script>
-    <script src="shared.js?v=8"></script>
+    <script src="shared.js?v=9"></script>
     <script src="admin-correos.js?v=3"></script>
     <script src="admin-rutas-ia.js?v=2"></script>
     <script src="admin-contactos.js?v=1"></script>
+    <script src="admin-colegios.js?v=1"></script>
     <script>
         renderNav('admin');
 
@@ -326,6 +360,7 @@
                     news:      { btn:'tab-news-admin', panel:'admin-news-tab' },
                     correos:   { btn:'tab-correos',    panel:'admin-correos-tab' },
                     contactos: { btn:'tab-contactos',  panel:'admin-contactos-tab' },
+                    colegios:  { btn:'tab-colegios',   panel:'admin-colegios-tab' },
                     subadmins: { btn:'tab-subadmins',  panel:'admin-subadmins-tab' }
                 };
                 Object.entries(tabMap).forEach(([key, { btn, panel }]) => {
@@ -337,6 +372,7 @@
                     if (p) p.classList.toggle('hidden', key !== tab);
                 });
                 if (tab === 'subadmins') adminLogic.renderSubAdmins();
+                if (tab === 'colegios') colegiosAdminLogic.load();
                 if (tab === 'correos') { correosLogic.render(); correosLogic.renderCampanas(); autoCorreosLogic.cargarEstado(); }
                 if (tab === 'contactos') contactosAdminLogic.load();
             },
@@ -737,20 +773,26 @@
                     list.innerHTML = '<div class="p-6 text-sm text-gray-500">Aún no hay noticias publicadas.</div>';
                     return;
                 }
+                // El sub-admin ve todas, pero solo puede editar/borrar las de su colegio
+                // (las reglas de Firestore lo exigen igual; esto solo alinea la UI).
+                const puedeGestionar = (item) => state.adminRole === 'superadmin'
+                    || (item.audiencia || 'todos') === state.adminSchool;
                 list.innerHTML = state.data.news.map((item) => `
                     <div class="p-6 flex flex-col md:flex-row items-start md:items-center gap-4 hover:bg-gray-50 transition">
                         <img src="${sanitizeHTML(item.img)}" alt="${sanitizeHTML(item.title)}" class="w-20 h-20 rounded-xl object-cover shadow-sm shrink-0">
                         <div class="flex-1">
                             <div class="flex items-center gap-2 mb-1">
                                 <span class="text-xs font-bold bg-gray-100 text-gray-600 px-2 py-0.5 rounded">${sanitizeHTML(item.category)}</span>
+                                <span class="text-xs font-bold px-2 py-0.5 rounded border ${(item.audiencia || 'todos') === 'todos' ? 'bg-blue-50 text-blue-600 border-blue-100' : 'bg-brand-50 text-brand-700 border-brand-100'}">${(item.audiencia || 'todos') === 'todos' ? 'Toda la red' : sanitizeHTML(item.audiencia)}</span>
                                 <span class="text-xs text-gray-400">${sanitizeHTML(item.date)}</span>
                             </div>
                             <h4 class="font-bold text-gray-900">${sanitizeHTML(item.title)}</h4>
                             <p class="text-sm text-gray-500 line-clamp-1 mt-1">${sanitizeHTML(item.summary)}</p>
                         </div>
                         <div class="flex items-center gap-1 shrink-0">
+                            ${puedeGestionar(item) ? `
                             <button onclick="adminLogic.startNewsEdit('${sanitizeHTML(item.id)}')" class="p-3 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-xl transition" title="Editar noticia" aria-label="Editar noticia"><i class="ph-bold ph-pencil-simple text-xl"></i></button>
-                            <button onclick="adminLogic.deleteNews('${sanitizeHTML(item.id)}')" class="p-3 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-xl transition" title="Eliminar noticia" aria-label="Eliminar noticia"><i class="ph-bold ph-trash text-xl"></i></button>
+                            <button onclick="adminLogic.deleteNews('${sanitizeHTML(item.id)}')" class="p-3 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-xl transition" title="Eliminar noticia" aria-label="Eliminar noticia"><i class="ph-bold ph-trash text-xl"></i></button>` : ''}
                         </div>
                     </div>
                 `).join('');
@@ -763,6 +805,7 @@
                 document.getElementById('admin-news-category').value = item.category || '';
                 document.getElementById('admin-news-summary').value = item.summary || '';
                 document.getElementById('admin-news-img').value = item.img || '';
+                document.getElementById('admin-news-audiencia').value = item.audiencia || 'todos';
                 document.getElementById('admin-news-form-title').innerHTML = '<i class="ph-duotone ph-pencil-simple-line text-brand-600 text-xl"></i> Editar Noticia';
                 document.getElementById('admin-news-submit-btn').innerText = 'Guardar Cambios';
                 document.getElementById('admin-news-cancel-edit').classList.remove('hidden');
@@ -781,12 +824,17 @@
                 const category = document.getElementById('admin-news-category').value.trim();
                 const summary = document.getElementById('admin-news-summary').value.trim();
                 const img = document.getElementById('admin-news-img').value.trim() || 'https://placehold.co/600x400/7e22ce/FFF?text=Noticia';
+                // El sub-admin solo publica a su colegio (la regla de Firestore lo exige).
+                const audiencia = state.adminRole === 'subadmin'
+                    ? (state.adminSchool || DEFAULT_SCHOOL)
+                    : (document.getElementById('admin-news-audiencia').value || 'todos');
                 try {
                     const payload = {
                         title,
                         category,
                         summary,
                         img,
+                        audiencia,
                         createdBy: state.user?.email || '',
                         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
                     };
@@ -874,16 +922,30 @@
             if (isSuperAdmin) {
                 document.getElementById('tab-subadmins')?.classList.remove('hidden');
                 document.getElementById('tab-contactos')?.classList.remove('hidden');
+                document.getElementById('tab-colegios')?.classList.remove('hidden');
                 document.getElementById('rutas-ia-card')?.classList.remove('hidden');
             } else {
                 document.getElementById('migration-banner')?.classList.add('hidden');
-                document.getElementById('tab-news-admin')?.classList.add('hidden');
             }
             await loadAlumni();
+            // Audiencia de noticias: el superadmin elige (toda la red o un colegio);
+            // el sub-admin publica SOLO a su colegio (selector fijo).
+            const audienciaSelect = document.getElementById('admin-news-audiencia');
+            if (audienciaSelect) {
+                if (isSuperAdmin) {
+                    const colegios = await loadColegios();
+                    audienciaSelect.innerHTML = '<option value="todos">Toda la red</option>' +
+                        colegios.map(c => `<option value="${sanitizeHTML(c.id)}">Solo ${sanitizeHTML(c.nombre || c.id)} (${sanitizeHTML(c.id)})</option>`).join('');
+                } else {
+                    const school = state.adminSchool || DEFAULT_SCHOOL;
+                    audienciaSelect.innerHTML = `<option value="${sanitizeHTML(school)}">Solo ${sanitizeHTML(school)} (tu colegio)</option>`;
+                    audienciaSelect.disabled = true;
+                }
+            }
+            await loadNews();
+            adminLogic.renderNewsList();
             if (isSuperAdmin) {
-                await loadNews();
                 await loadSubAdmins();
-                adminLogic.renderNewsList();
                 contactosAdminLogic.load();
             }
             adminLogic.renderUsers();

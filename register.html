@@ -49,6 +49,15 @@
                 <p><strong id="invite-name">Un egresado</strong> te invita a unirte a la red de egresados del Liceo.</p>
             </div>
 
+            <div id="colegio-banner" class="hidden mb-6 rounded-2xl border border-brand-100 bg-brand-50 px-4 py-3 text-sm text-brand-800 flex items-start gap-2">
+                <i class="ph-duotone ph-buildings text-brand-600 text-xl shrink-0"></i>
+                <p>Te unes a Sinapsis por invitación de <strong id="colegio-nombre">tu colegio</strong>. Tu cuenta quedará vinculada a su comunidad.</p>
+            </div>
+            <div id="codigo-invalido-banner" class="hidden mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 flex items-start gap-2">
+                <i class="ph-duotone ph-warning-circle text-amber-600 text-xl shrink-0"></i>
+                <p>El código de invitación de este enlace ya no está activo. Puedes registrarte igual en la red general, o pedirle a tu colegio un enlace nuevo.</p>
+            </div>
+
             <form onsubmit="authLogic.submitRegister(event)" class="space-y-4">
                 <div>
                     <label class="input-label">Correo o usuario</label>
@@ -91,7 +100,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-analytics-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore-compat.js"></script>
-    <script src="shared.js?v=8"></script>
+    <script src="shared.js?v=9"></script>
     <script>
         const authLogic = {
             submitRegister: async (e) => {
@@ -143,7 +152,8 @@
                         email,
                         contactEmail,
                         username,
-                        school: DEFAULT_SCHOOL,
+                        school: invitacionColegio ? invitacionColegio.colegioId : DEFAULT_SCHOOL,
+                        codigoInvitacion: invitacionColegio ? invitacionColegio.codigo : '',
                         privacyAccepted: true,
                         newsletterOptIn: wantsNewsletter,
                         newsletterOptInUpdatedAt: firebase.firestore.FieldValue.serverTimestamp(),
@@ -175,7 +185,8 @@
                     await alumniCollection.doc(result.user.uid).set({
                         email: result.user.email || '',
                         contactEmail: result.user.email || '',
-                        school: DEFAULT_SCHOOL,
+                        school: invitacionColegio ? invitacionColegio.colegioId : DEFAULT_SCHOOL,
+                        codigoInvitacion: invitacionColegio ? invitacionColegio.codigo : '',
                         privacyAccepted: true,
                         newsletterOptIn: true,
                         newsletterOptInUpdatedAt: firebase.firestore.FieldValue.serverTimestamp(),
@@ -191,6 +202,24 @@
             }
         };
         window.authLogic = authLogic;
+
+        // Invitación de colegio: ?codigo=XYZ vincula la cuenta nueva al colegio
+        // del código. El tag NUNCA se autodeclara: si el código no es válido se
+        // registra en la red general, y las reglas de Firestore vuelven a
+        // validar código→colegio al escribir el perfil (frontera real).
+        let invitacionColegio = null;
+        (async () => {
+            const codigo = new URLSearchParams(window.location.search).get('codigo');
+            if (!codigo) return;
+            invitacionColegio = await validarCodigoInvitacion(codigo);
+            if (invitacionColegio) {
+                document.getElementById('colegio-nombre').textContent =
+                    invitacionColegio.colegio?.nombre || invitacionColegio.colegioId;
+                document.getElementById('colegio-banner').classList.remove('hidden');
+            } else {
+                document.getElementById('codigo-invalido-banner').classList.remove('hidden');
+            }
+        })();
 
         // Invitación con nombre: ?invita=<uid> muestra quién invita y se guarda
         // como referredBy al crear la cuenta.
