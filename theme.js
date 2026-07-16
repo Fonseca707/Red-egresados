@@ -58,7 +58,9 @@ function installThemeStyles() {
         html.dark [class~="text-purple-900"] { color:#d8b4fe !important; }
         html.dark [class~="text-amber-600"],
         html.dark [class~="text-amber-700"],
-        html.dark [class~="text-amber-900"] { color:#fcd34d !important; }
+        html.dark [class~="text-amber-900"],
+        html.dark [class~="text-sun-600"] { color:#fcd34d !important; }
+        html.dark [class~="hover:text-sun-700"]:hover { color:#fde68a !important; }
         html.dark [class~="text-red-500"],
         html.dark [class~="text-red-600"],
         html.dark [class~="text-red-700"] { color:#fca5a5 !important; }
@@ -87,7 +89,8 @@ function installThemeStyles() {
         html.dark [class~="border-brand-300"],
         html.dark [class~="border-gray-300"],
         html.dark [class~="border-green-200"],
-        html.dark [class~="border-red-200"] { border-color:#334155 !important; }
+        html.dark [class~="border-red-200"],
+        html.dark [class~="border-sun-200"] { border-color:#334155 !important; }
         html.dark [class~="border-gray-50"] { border-color:#1f2937 !important; }
         html.dark img[class~="border-white"],
         html.dark [class~="border-white"] { border-color:#1e293b !important; }
@@ -98,6 +101,7 @@ function installThemeStyles() {
         html.dark [class~="hover:bg-gray-100"]:hover,
         html.dark [class~="hover:bg-gray-200"]:hover { background-color:#263244 !important; }
         html.dark [class~="hover:bg-brand-50"]:hover,
+        html.dark [class~="hover:bg-brand-50/50"]:hover,
         html.dark [class~="hover:bg-brand-100"]:hover,
         html.dark [class~="hover:bg-green-50"]:hover,
         html.dark [class~="hover:bg-green-100"]:hover { background-color:#052e1a !important; }
@@ -107,8 +111,10 @@ function installThemeStyles() {
         html.dark [class~="hover:bg-amber-50"]:hover { background-color:#422006 !important; }
         html.dark [class~="hover:bg-red-50"]:hover { background-color:#450a0a !important; }
         html.dark [class~="hover:border-brand-200"]:hover,
+        html.dark [class~="hover:border-brand-300"]:hover,
         html.dark [class~="hover:border-blue-300"]:hover,
         html.dark [class~="hover:border-purple-300"]:hover { border-color:#475569 !important; }
+        html.dark [class~="bg-white/70"] { background-color:rgba(17,24,39,0.8) !important; color:#e5e7eb !important; }
 
         /* ── Degradados decorativos (hero, conectores de ruta) ── */
         html.dark [class~="from-brand-200"] { --tw-gradient-from:#14532d !important; --tw-gradient-stops:var(--tw-gradient-from), var(--tw-gradient-to) !important; }
@@ -117,6 +123,9 @@ function installThemeStyles() {
         html.dark [class~="to-brand-100"] { --tw-gradient-to:#14532d !important; }
         html.dark [class~="from-gray-50"] { --tw-gradient-from:#111827 !important; --tw-gradient-stops:var(--tw-gradient-from), var(--tw-gradient-to) !important; }
         html.dark [class~="to-gray-100"] { --tw-gradient-to:#1e293b !important; }
+        html.dark [class~="from-brand-50"] { --tw-gradient-from:#052e1a !important; --tw-gradient-stops:var(--tw-gradient-from), var(--tw-gradient-to) !important; }
+        html.dark [class~="from-sun-50"] { --tw-gradient-from:#422006 !important; --tw-gradient-stops:var(--tw-gradient-from), var(--tw-gradient-to) !important; }
+        html.dark [class~="to-white"] { --tw-gradient-to:#111827 !important; }
 
         /* ── Textos oscuros sobre fondos que se oscurecen ── */
         html.dark [class~="text-brand-800"],
