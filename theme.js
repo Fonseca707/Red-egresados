@@ -191,8 +191,7 @@ function ensureFloatingThemeToggle() {
 function initThemeMode() {
     installThemeStyles();
     const saved = getSavedThemeMode();
-    const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-    setThemeMode(saved || (prefersDark ? 'dark' : 'light'));
+    setThemeMode(saved || 'light');
 }
 
 initThemeMode();
