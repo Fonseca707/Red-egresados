@@ -78,6 +78,9 @@ const delfLogic = {
         const list = this.getHistory();
         list.unshift({ ...entry, date: new Date().toISOString() });
         localStorage.setItem(DELF_HISTORY_KEY, JSON.stringify(list.slice(0, 20)));
+        // Persistencia en el perfil (best-effort, solo con sesión real): que el
+        // progreso sea observable para el estudiante y su colegio.
+        if (typeof saveExamResult === 'function') saveExamResult({ exam: 'DELF', ...entry });
     },
 
     root() { return document.getElementById('delf-root'); },
@@ -252,7 +255,7 @@ const delfLogic = {
         // 1 punto por ítem (25 ítems = 25 pts, como la prueba real)
         const points = Math.round((correct / total) * s.test.ce.totalPoints * 10) / 10;
         const passed = points >= 4.5;
-        this.saveAttempt({ section: 'ce', summary: `CE ${points}/25 (${correct}/${total})` });
+        this.saveAttempt({ section: 'ce', score: points, scale: '/25', summary: `CE ${points}/25 (${correct}/${total})` });
         this.root().innerHTML = this.shell({
             banner: 'Résultats · Compréhension écrite',
             timed: false,
@@ -421,7 +424,7 @@ const delfLogic = {
         const t = s.test.pe;
         const points = Math.round(t.criteria.reduce((a, c) => a + (s.peSelf[c.key] || 0), 0) * 10) / 10;
         const passed = points >= 4.5;
-        this.saveAttempt({ section: 'pe', summary: `PE ${points}/25 (autoeval.)` });
+        this.saveAttempt({ section: 'pe', score: points, scale: '/25', summary: `PE ${points}/25 (autoeval.)` });
         this.root().innerHTML = this.shell({
             banner: 'Résultats · Production écrite',
             timed: false,

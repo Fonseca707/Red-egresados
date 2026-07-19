@@ -88,6 +88,29 @@ service cloud.firestore {
                 && get(/databases/$(database)/documents/artifacts/$(appId)/public/data/alumni/$(userId)).data.get('school', '') == adminSchool())
           );
         }
+
+        // Resultados de práctica de idiomas (TOEFL/DELF). A diferencia de los
+        // hitos, NO son públicos: son datos personales del estudiante. Los lee
+        // el propio dueño y los admins de su colegio. Cada intento lo crea SOLO
+        // el dueño (la práctica corre en su sesión) y es inmutable; borrarlo
+        // puede el dueño o un admin de su colegio.
+        match /examResults/{resultId} {
+          function ownerSchool() {
+            return get(/databases/$(database)/documents/artifacts/$(appId)/public/data/alumni/$(userId)).data.get('school', '');
+          }
+          allow read: if request.auth != null && (
+            request.auth.uid == userId
+            || isSuperAdmin()
+            || (isSchoolAdmin() && ownerSchool() == adminSchool())
+          );
+          allow create: if request.auth != null && request.auth.uid == userId;
+          allow update: if false;
+          allow delete: if request.auth != null && (
+            request.auth.uid == userId
+            || isSuperAdmin()
+            || (isSchoolAdmin() && ownerSchool() == adminSchool())
+          );
+        }
       }
 
       // Colegios (multi-tenant): nombre, modulos pagados (toefl/delf), etc.

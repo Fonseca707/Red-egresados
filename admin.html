@@ -159,6 +159,12 @@
                             <button type="submit" class="px-6 py-3 bg-brand-600 text-white font-bold rounded-xl shadow-lg shadow-brand-500/30 hover:bg-brand-700 transition">Guardar cambios</button>
                         </div>
                     </form>
+                    <div class="mt-8 pt-6 border-t border-gray-100">
+                        <h4 class="text-sm font-bold text-gray-900 flex items-center gap-2 mb-3">
+                            <i class="ph-bold ph-books text-brand-600"></i> Preparación en idiomas
+                        </h4>
+                        <div id="admin-user-prep"><p class="text-sm text-gray-400 italic">Sin prácticas registradas todavía.</p></div>
+                    </div>
                 </div>
             </div>
 
@@ -344,7 +350,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-analytics-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore-compat.js"></script>
-    <script src="shared.js?v=9"></script>
+    <script src="shared.js?v=10"></script>
     <script src="admin-correos.js?v=3"></script>
     <script src="admin-rutas-ia.js?v=2"></script>
     <script src="admin-contactos.js?v=1"></script>
@@ -557,6 +563,13 @@
                 document.getElementById('admin-edit-school').value = user.school || '';
                 const schoolInput = document.getElementById('admin-edit-school');
                 if (schoolInput) schoolInput.readOnly = state.adminRole === 'subadmin';
+                const prep = document.getElementById('admin-user-prep');
+                if (prep) {
+                    prep.innerHTML = '<p class="text-sm text-gray-400 italic">Cargando preparación…</p>';
+                    loadExamResults(uid)
+                        .then(results => { prep.innerHTML = renderExamResultsHTML(results); })
+                        .catch(() => { prep.innerHTML = '<p class="text-sm text-gray-400 italic">No se pudo cargar la preparación.</p>'; });
+                }
                 document.getElementById('admin-user-editor').classList.remove('hidden');
                 document.getElementById('admin-user-editor').scrollIntoView({ behavior: 'smooth', block: 'start' });
             },

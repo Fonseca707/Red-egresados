@@ -88,6 +88,9 @@ const toeflLogic = {
         const list = this.getHistory();
         list.unshift({ ...entry, date: new Date().toISOString() });
         localStorage.setItem(TOEFL_HISTORY_KEY, JSON.stringify(list.slice(0, 20)));
+        // Persistencia en el perfil (best-effort, solo con sesión real): que el
+        // progreso sea observable para el estudiante y su colegio.
+        if (typeof saveExamResult === 'function') saveExamResult({ exam: 'TOEFL', ...entry });
     },
 
     // ── Render raíz ──────────────────────────────────────────────────────────
@@ -385,7 +388,7 @@ const toeflLogic = {
     renderReadingResults() {
         const s = this.session;
         const est = this.estimateReadingBand();
-        this.saveAttempt({ section: 'reading', summary: `Reading banda ~${est.band} (${est.totC}/${est.totT})` });
+        this.saveAttempt({ section: 'reading', score: est.band, scale: '/6', summary: `Reading banda ~${est.band} (${est.totC}/${est.totT})` });
         this.root().innerHTML = this.shell({
             banner: 'Resultados · Reading',
             timed: false,
@@ -730,7 +733,7 @@ const toeflLogic = {
         const buildCorrect = s.buildResults.filter(Boolean).length;
         const buildBand = Math.round((1 + (buildCorrect / bs.items.length) * 5) * 2) / 2;
         const overall = Math.round(((buildBand + s.selfBands.email + s.selfBands.discussion) / 3) * 2) / 2;
-        this.saveAttempt({ section: 'writing', summary: `Writing banda ~${overall} (BaS ${buildCorrect}/${bs.items.length}, email ${s.selfBands.email}, disc. ${s.selfBands.discussion})` });
+        this.saveAttempt({ section: 'writing', score: overall, scale: '/6', summary: `Writing banda ~${overall} (BaS ${buildCorrect}/${bs.items.length}, email ${s.selfBands.email}, disc. ${s.selfBands.discussion})` });
         this.root().innerHTML = this.shell({
             banner: 'Resultados · Writing',
             timed: false,

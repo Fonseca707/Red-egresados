@@ -27,6 +27,10 @@ const organizationsCollection = artifactsRoot.collection('public').doc('data').c
 const colegiosCollection = artifactsRoot.collection('public').doc('data').collection('colegios');
 const codigosCollection = artifactsRoot.collection('public').doc('data').collection('codigos');
 const hitosCollection = (uid) => alumniCollection.doc(uid).collection('hitos');
+// Resultados de práctica de idiomas (TOEFL/DELF). Subcolección del alumno, como
+// los hitos, PERO privada: son datos personales del estudiante (progreso), así
+// que las reglas solo dejan leerlos al dueño y a los admins de su colegio.
+const examResultsCollection = (uid) => alumniCollection.doc(uid).collection('examResults');
 const userChatsCollection = (uid) => artifactsRoot.collection('users').doc(uid).collection('chats');
 const userChatMessagesCollection = (uid, chatId) => userChatsCollection(uid).doc(chatId).collection('messages');
 
@@ -289,6 +293,65 @@ async function saveHito(uid, hito, hitoId = null) {
     return ref.id;
 }
 async function deleteHito(uid, hitoId) { await hitosCollection(uid).doc(hitoId).delete(); }
+
+// ── Resultados de práctica de idiomas ────────────────────────────────────────
+// Persiste un intento en el perfil del alumno. Best-effort: la práctica es
+// PÚBLICA (no exige sesión), así que solo se guarda en Firestore si hay un
+// usuario real logueado (nunca en modo invitado). Si falla, la práctica no se
+// rompe: el intento igual quedó en el localStorage del motor.
+async function saveExamResult(entry) {
+    try {
+        if (!state.user || state.guestMode || state.user.uid === 'guest-view') return;
+        await examResultsCollection(state.user.uid).add({
+            exam: String(entry.exam || ''),        // 'TOEFL' | 'DELF'
+            section: String(entry.section || ''),  // 'reading'|'writing'|'ce'|'pe'
+            score: Number(entry.score ?? 0),       // banda 1-6 (TOEFL) o puntos /25 (DELF)
+            scale: String(entry.scale || ''),      // '/6' | '/25'
+            summary: String(entry.summary || ''),
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+    } catch (e) { /* best-effort: nunca romper el flujo de práctica */ }
+}
+async function loadExamResults(uid) {
+    if (!uid) return [];
+    try {
+        const snap = await examResultsCollection(uid).orderBy('createdAt', 'desc').limit(50).get();
+        return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    } catch (e) { return []; }
+}
+// Render compartido (admin ve el de un alumno; el estudiante verá el suyo).
+const EXAM_SECTION_LABEL = {
+    reading: 'Reading', writing: 'Writing',
+    ce: 'Compréhension écrite', pe: 'Production écrite'
+};
+function renderExamResultsHTML(results) {
+    if (!results || !results.length) {
+        return `<p class="text-sm text-gray-400 italic">Sin prácticas registradas todavía.</p>`;
+    }
+    return `<div class="space-y-2">${results.map(r => {
+        const examTag = r.exam === 'DELF'
+            ? 'bg-purple-100 text-purple-700'
+            : 'bg-blue-100 text-blue-700';
+        const examName = r.exam === 'DELF' ? 'DELF B1' : 'TOEFL';
+        const sec = EXAM_SECTION_LABEL[r.section] || r.section || '';
+        let fecha = '';
+        try {
+            const d = r.createdAt?.toDate ? r.createdAt.toDate() : (r.createdAt ? new Date(r.createdAt) : null);
+            if (d) fecha = d.toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' });
+        } catch (e) {}
+        return `
+            <div class="flex items-center justify-between gap-3 rounded-xl border border-gray-100 bg-gray-50/70 px-3 py-2.5">
+                <div class="min-w-0">
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <span class="px-2 py-0.5 rounded-md text-[11px] font-extrabold ${examTag}">${sanitizeHTML(examName)}</span>
+                        <span class="text-sm font-bold text-gray-800">${sanitizeHTML(sec)}</span>
+                    </div>
+                    ${fecha ? `<p class="text-[11px] text-gray-400 mt-0.5">${sanitizeHTML(fecha)}</p>` : ''}
+                </div>
+                <span class="shrink-0 text-lg font-extrabold text-gray-900">${sanitizeHTML(String(r.score))}<span class="text-xs text-gray-400 font-bold">${sanitizeHTML(r.scale || '')}</span></span>
+            </div>`;
+    }).join('')}</div>`;
+}
 async function syncHitosCount(uid, count) {
     try {
         await alumniCollection.doc(uid).set({
