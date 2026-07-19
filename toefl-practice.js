@@ -247,12 +247,16 @@ const toeflLogic = {
         let html = sanitizeHTML(task.text);
         task.gaps.forEach((gap, i) => {
             const filled = sanitizeHTML(answers[i] || '');
-            const widthCh = Math.max(gap.missing.length + 2, 4);
-            const box = `<span class="inline-flex items-baseline whitespace-nowrap font-semibold text-blue-700"><span class="text-[10px] text-gray-400 font-bold mr-0.5 self-start">${i + 1}</span>${sanitizeHTML(gap.prefix)}<input id="toefl-gap-${i}" value="${filled}" maxlength="${gap.missing.length + 2}" style="width:calc(${widthCh}ch + 0.6rem)" oninput="toeflLogic.setGap('${key}', ${i}, this.value)" class="mx-0.5 px-1 border-b-2 border-blue-400 bg-blue-50 rounded-t-md text-blue-800 font-bold focus:outline-none focus:border-blue-600 text-center" autocomplete="off" autocapitalize="off" spellcheck="false"></span>`;
+            const n = gap.missing.length;
+            // Fiel al examen real: una raya por cada letra que falta (la pista es
+            // CUÁNTAS letras) y el input acepta exactamente esas letras, ni una más.
+            const guiones = '_'.repeat(n);
+            const widthCh = Math.max(n, 2);
+            const box = `<span class="inline-flex items-baseline whitespace-nowrap font-semibold text-blue-700"><span class="text-[10px] text-gray-400 font-bold mr-0.5 self-start">${i + 1}</span>${sanitizeHTML(gap.prefix)}<input id="toefl-gap-${i}" value="${filled}" maxlength="${n}" placeholder="${guiones}" style="width:calc(${widthCh}ch + 0.8rem); letter-spacing:0.28em" oninput="toeflLogic.setGap('${key}', ${i}, this.value)" class="mx-0.5 px-1 border-b-2 border-blue-400 bg-blue-50 rounded-t-md text-blue-800 font-bold placeholder:text-blue-300 placeholder:tracking-[0.28em] focus:outline-none focus:border-blue-600 text-center lowercase" autocomplete="off" autocapitalize="off" spellcheck="false"></span>`;
             html = html.replace(`[[${i + 1}]]`, box);
         });
         return `<div class="rounded-2xl border border-gray-100 bg-gray-50/70 p-5 md:p-6 leading-loose text-gray-800 text-[15px]">${html}</div>
-            <p class="text-xs text-gray-400 mt-3"><i class="ph-bold ph-info"></i> Escribe solo las letras que faltan después de la parte visible de cada palabra.</p>`;
+            <p class="text-xs text-gray-400 mt-3"><i class="ph-bold ph-info"></i> Cada raya es una letra que falta: completa la palabra escribiendo solo esas letras.</p>`;
     },
 
     setGap(key, i, value) {
