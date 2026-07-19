@@ -43,6 +43,8 @@
                 </span>
                 <h2 class="text-3xl md:text-4xl font-extrabold text-gray-900 mt-4 mb-3">Preparación en idiomas</h2>
                 <p class="text-gray-500 max-w-3xl">Practica con el formato oficial vigente del TOEFL iBT (2026) y del DELF, con cronómetro y calificación como en el examen real. Por ahora no incluimos las pruebas orales, que requieren evaluación especializada.</p>
+                <!-- Solo superadmin: sembrar el banco de tests en Firestore desde el código -->
+                <div id="prep-admin-actions" class="hidden mt-4"></div>
             </div>
 
             <div id="exam-modules-grid" class="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -67,15 +69,56 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-analytics-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore-compat.js"></script>
-    <script src="shared.js?v=10"></script>
+    <script src="shared.js?v=11"></script>
     <script src="toefl-data.js?v=2"></script>
-    <script src="toefl-practice.js?v=4"></script>
+    <script src="toefl-practice.js?v=5"></script>
     <script src="delf-data.js?v=2"></script>
-    <script src="delf-practice.js?v=4"></script>
+    <script src="delf-practice.js?v=5"></script>
     <script src="ia-calificadora.js?v=1"></script>
     <script src="orientadora.js?v=3"></script>
     <script>
         renderNav('exam-modules');
+
+        // Banco de tests: los motores leen de Firestore (state.examBank); si está
+        // vacío o falla, usan el respaldo JS (TOEFL_TESTS/DELF_TESTS).
+        async function cargarBancoExamenes() {
+            state.examBank = {
+                TOEFL: await loadExamTests('TOEFL'),
+                DELF: await loadExamTests('DELF')
+            };
+        }
+
+        // Acción de superadmin: sembrar el banco en Firestore desde el código.
+        const prepAdmin = {
+            render() {
+                const box = document.getElementById('prep-admin-actions');
+                if (!box) return;
+                if (!isAdminUser()) { box.classList.add('hidden'); box.innerHTML = ''; return; }
+                const nT = state.examBank?.TOEFL?.length || 0;
+                const nD = state.examBank?.DELF?.length || 0;
+                box.classList.remove('hidden');
+                box.innerHTML = `
+                    <div class="inline-flex flex-wrap items-center gap-3 rounded-xl border border-brand-200 bg-brand-50 px-4 py-2.5 text-sm">
+                        <i class="ph-bold ph-database text-brand-600"></i>
+                        <span class="text-brand-900">Banco en Firestore: <strong>${nT}</strong> TOEFL · <strong>${nD}</strong> DELF ${(nT || nD) ? '(activo)' : '(vacío → usando respaldo del código)'}</span>
+                        <button onclick="prepAdmin.seed(this)" class="px-3 py-1.5 rounded-lg bg-brand-600 text-white text-xs font-bold hover:bg-brand-700 transition">Sembrar desde el código</button>
+                    </div>`;
+            },
+            async seed(btn) {
+                if (btn) { btn.disabled = true; btn.textContent = 'Sembrando…'; }
+                try {
+                    const a = await seedExamTests(TOEFL_TESTS, 'TOEFL');
+                    const b = await seedExamTests(DELF_TESTS, 'DELF');
+                    await cargarBancoExamenes();
+                    this.render();
+                    alert(`Listo: ${a} test(s) TOEFL y ${b} DELF nuevos en Firestore. Los ya existentes no se tocaron.`);
+                } catch (e) {
+                    alert('No se pudo sembrar: ' + (e?.message || e));
+                    if (btn) { btn.disabled = false; btn.textContent = 'Sembrar desde el código'; }
+                }
+            }
+        };
+        window.prepAdmin = prepAdmin;
 
         // Catálogo de módulos de práctica (mismo contenido que la vista original del SPA).
         state.examModules = [
@@ -201,6 +244,8 @@
         // Init: la práctica es pública (no exige sesión). Si hay usuario, hidratamos el header.
         state.view = 'exam-modules';
         examModulesLogic.render();
+        // Precargar el banco cuanto antes para que start() ya lo tenga listo.
+        cargarBancoExamenes().then(() => prepAdmin.render());
 
         auth.onAuthStateChanged(async (user) => {
             if (user && !state.guestMode) {
@@ -213,6 +258,8 @@
             // re-renderiza solo si seguimos en el catálogo (no interrumpe una práctica).
             state.modulosDisponibles = await getModulosUsuario();
             if (state.view === 'exam-modules') examModulesLogic.render();
+            // El botón de sembrar solo aparece para el superadmin (frontera real = reglas).
+            prepAdmin.render();
         });
     </script>
 </body>

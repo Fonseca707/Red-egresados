@@ -11,7 +11,9 @@ const delfLogic = {
     session: null,
 
     start(section) {
-        const test = DELF_TESTS[0];
+        // Banco de Firestore (precargado en state.examBank); respaldo: el JS.
+        const bank = (window.state && state.examBank && state.examBank.DELF) || [];
+        const test = bank.length ? bank[0] : DELF_TESTS[0];
         this.stopTimer();
         this.session = {
             test,

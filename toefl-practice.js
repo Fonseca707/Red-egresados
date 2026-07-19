@@ -13,7 +13,9 @@ const toeflLogic = {
 
     // ── Entrada ──────────────────────────────────────────────────────────────
     start(section) {
-        const test = TOEFL_TESTS[0];
+        // Banco de Firestore (precargado en state.examBank); respaldo: el JS.
+        const bank = (window.state && state.examBank && state.examBank.TOEFL) || [];
+        const test = bank.length ? bank[0] : TOEFL_TESTS[0];
         this.stopTimer();
         this.session = {
             test,

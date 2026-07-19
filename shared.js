@@ -25,6 +25,11 @@ const usernamesCollection = artifactsRoot.collection('usernames');
 const newsCollection = artifactsRoot.collection('public').doc('data').collection('news');
 const organizationsCollection = artifactsRoot.collection('public').doc('data').collection('organizaciones');
 const colegiosCollection = artifactsRoot.collection('public').doc('data').collection('colegios');
+// Banco de tests de práctica (TOEFL/DELF). Lectura pública (practicar no exige
+// sesión, como hoy en JS); escritura solo superadmin (gestión). El contenido
+// completo del test va en el campo `content`. Los arrays JS de *-data.js pasan
+// a ser SEMILLA + RESPALDO: si esta colección está vacía, el motor usa el JS.
+const examTestsCollection = artifactsRoot.collection('public').doc('data').collection('examTests');
 const codigosCollection = artifactsRoot.collection('public').doc('data').collection('codigos');
 const hitosCollection = (uid) => alumniCollection.doc(uid).collection('hitos');
 // Resultados de práctica de idiomas (TOEFL/DELF). Subcolección del alumno, como
@@ -293,6 +298,41 @@ async function saveHito(uid, hito, hitoId = null) {
     return ref.id;
 }
 async function deleteHito(uid, hitoId) { await hitosCollection(uid).doc(hitoId).delete(); }
+
+// ── Banco de tests en Firestore ──────────────────────────────────────────────
+// Devuelve los tests activos de un examen, reconstruidos con la MISMA forma que
+// los objetos de *-data.js (test.reading/test.writing o test.ce/test.pe), para
+// que los motores no cambien su forma de acceso. Si falla o está vacío: [].
+async function loadExamTests(exam) {
+    try {
+        const snap = await examTestsCollection.where('exam', '==', exam).get();
+        return snap.docs
+            .map(d => ({ id: d.id, ...d.data() }))
+            .filter(x => x.active !== false)
+            .map(x => ({ id: x.id, name: x.name, level: x.level || null, ...(x.content || {}) }));
+    } catch (e) { return []; }
+}
+// Siembra Firestore desde los arrays JS (create-if-missing, idempotente). Solo
+// tiene efecto para el superadmin (las reglas rechazan el resto). Devuelve
+// cuántos tests nuevos escribió.
+async function seedExamTests(sourceTests, exam) {
+    let creados = 0;
+    for (const t of (sourceTests || [])) {
+        try {
+            const ref = examTestsCollection.doc(t.id);
+            if ((await ref.get()).exists) continue;
+            const { id, name, level, ...content } = t;
+            await ref.set({
+                exam, name: name || id, level: level || null, school: '', active: true,
+                content,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            creados++;
+        } catch (e) { /* seguir con los demás */ }
+    }
+    return creados;
+}
 
 // ── Resultados de práctica de idiomas ────────────────────────────────────────
 // Persiste un intento en el perfil del alumno. Best-effort: la práctica es

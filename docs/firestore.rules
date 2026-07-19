@@ -121,6 +121,15 @@ service cloud.firestore {
         allow write: if isSuperAdmin();
       }
 
+      // Banco de tests de práctica (TOEFL/DELF). Lectura publica: practicar no
+      // exige sesion (igual que hoy con los arrays JS). Escritura solo
+      // superadmin (gestiona el contenido). Multi-tenant futuro: campo school
+      // para tests por colegio; por ahora todos globales (school:'').
+      match /public/data/examTests/{testId} {
+        allow read: if true;
+        allow write: if isSuperAdmin();
+      }
+
       // Codigos de invitacion: GET publico (validar un codigo exige conocerlo,
       // el id ES el codigo), pero LIST solo superadmin para que nadie pueda
       // enumerar los codigos vigentes.
