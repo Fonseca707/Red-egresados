@@ -1,4 +1,4 @@
-// ─────────────────────────────────────────────────────────────────────────────
+﻿// ─────────────────────────────────────────────────────────────────────────────
 // Motor de práctica DELF B1 (nouveau format) — CE lineal + PE con autoevaluación
 // Depende de: delf-data.js (DELF_TESTS), shared.js (sanitizeHTML), router global.
 // La production écrite la califica la IA (ia-calificadora.js) con la grilla
@@ -14,6 +14,17 @@ const delfLogic = {
         // Banco de Firestore (precargado en state.examBank); respaldo: el JS.
         const bank = (window.state && state.examBank && state.examBank.DELF) || [];
         const test = bank.length ? bank[0] : DELF_TESTS[0];
+        // Los tests guardados en Firestore antes del 2026-07-19 traen la grille PE
+        // vieja (6 criterios 2/4/4/3/6/6). La grille oficial vigente vive en el
+        // código: si al test del banco le falta `scale`, se le injerta la del código.
+        if (test?.pe && !test.pe.scale && DELF_TESTS[0]?.pe?.scale) {
+            test.pe = {
+                ...test.pe,
+                scale: DELF_TESTS[0].pe.scale,
+                criteria: DELF_TESTS[0].pe.criteria,
+                anomalies: DELF_TESTS[0].pe.anomalies
+            };
+        }
         this.stopTimer();
         this.session = {
             test,
@@ -124,7 +135,7 @@ const delfLogic = {
         ] : [
             ['ph-note-pencil', 'Un solo texto', 'Ensayo, carta o artículo de opinión sobre un tema de actualidad.'],
             ['ph-text-align-left', '160 palabras mínimo', 'Presenta hechos, ventajas/inconvenientes y tu punto de vista con ejemplos.'],
-            ['ph-robot', 'Corrección con IA', 'La IA califica con la grilla oficial (consigne, faits, opinion, cohérence, lexique, grammaire) y señala qué mejorar.']
+            ['ph-robot', 'Corrección con IA', 'La IA califica con la grille oficial de France Éducation International (réalisation de la tâche, cohérence et cohésion, adéquation sociolinguistique, lexique, morphosyntaxe) en su escala real 0/1/3/5, y señala qué mejorar.']
         ];
         this.root().innerHTML = this.shell({
             banner: isCE ? 'Compréhension écrite · Práctica' : 'Production écrite · Práctica',
@@ -148,7 +159,7 @@ const delfLogic = {
                     </div>
                     <div class="rounded-2xl border border-purple-200 bg-purple-50 px-4 py-3 text-sm text-purple-900 flex gap-2 mb-6">
                         <i class="ph-bold ph-info mt-0.5 shrink-0"></i>
-                        <p>En el DELF real necesitas mínimo <strong>4,5/25 en cada prueba</strong> y <strong>50/100 en total</strong> para aprobar el diploma.</p>
+                        <p>En el DELF real necesitas mínimo <strong>5/25 en cada prueba</strong> y <strong>50/100 en total</strong> para aprobar el diploma.</p>
                     </div>
                     ${history.length ? `
                         <div class="mb-6">
@@ -256,7 +267,7 @@ const delfLogic = {
         });
         // 1 punto por ítem (25 ítems = 25 pts, como la prueba real)
         const points = Math.round((correct / total) * s.test.ce.totalPoints * 10) / 10;
-        const passed = points >= 4.5;
+        const passed = points >= 5;
         this.saveAttempt({ section: 'ce', score: points, scale: '/25', summary: `CE ${points}/25 (${correct}/${total})` });
         this.root().innerHTML = this.shell({
             banner: 'Résultats · Compréhension écrite',
@@ -267,7 +278,7 @@ const delfLogic = {
                         <p class="text-xs font-bold uppercase tracking-widest text-gray-400 mb-2">Puntaje (escala oficial /25)</p>
                         <p class="text-6xl font-extrabold text-purple-600">${points}<span class="text-2xl text-gray-400">/25</span></p>
                         <p class="text-gray-500 mt-2">${correct} de ${total} respuestas correctas${s.ceExpired ? ' · el tiempo se agotó' : ''}</p>
-                        <p class="mt-2 text-sm font-bold ${passed ? 'text-emerald-600' : 'text-red-500'}">${passed ? 'Superas el mínimo eliminatorio (4,5/25)' : 'Por debajo del mínimo eliminatorio (4,5/25)'}</p>
+                        <p class="mt-2 text-sm font-bold ${passed ? 'text-emerald-600' : 'text-red-500'}">${passed ? 'Superas el mínimo eliminatorio (5/25)' : 'Por debajo del mínimo eliminatorio (5/25)'}</p>
                     </div>
                     <div class="grid sm:grid-cols-3 gap-3 mb-8">
                         ${breakdown.map(b => `
@@ -391,9 +402,9 @@ const delfLogic = {
                                 <div class="flex flex-col gap-2 mb-1">
                                     <p class="font-bold text-gray-900 text-sm">${sanitizeHTML(c.label)} <span class="text-gray-400 font-semibold">(máx. ${c.max} pts)</span></p>
                                     <div class="flex flex-wrap gap-1.5">
-                                        ${Array.from({ length: c.max * 2 + 1 }, (_, i) => i / 2).map(v => `
-                                            <button onclick="delfLogic.setCriterion('${c.key}', ${v})"
-                                                class="w-9 h-9 rounded-lg border text-xs font-extrabold transition ${s.peSelf[c.key] === v ? 'bg-purple-600 text-white border-purple-600' : 'bg-white text-gray-500 border-gray-200 hover:border-purple-300'}">${v}</button>`).join('')}
+                                        ${(t.scale || []).map(n => `
+                                            <button onclick="delfLogic.setCriterion('${c.key}', ${n.pts})" title="${sanitizeHTML(n.label)}"
+                                                class="px-3 h-9 rounded-lg border text-xs font-extrabold transition ${s.peSelf[c.key] === n.pts ? 'bg-purple-600 text-white border-purple-600' : 'bg-white text-gray-500 border-gray-200 hover:border-purple-300'}">${n.pts}</button>`).join('')}
                                     </div>
                                 </div>
                                 <p class="text-xs text-gray-500">${sanitizeHTML(c.desc)}</p>
@@ -425,7 +436,7 @@ const delfLogic = {
         const s = this.session;
         const t = s.test.pe;
         const points = Math.round(t.criteria.reduce((a, c) => a + (s.peSelf[c.key] || 0), 0) * 10) / 10;
-        const passed = points >= 4.5;
+        const passed = points >= 5;
         this.saveAttempt({ section: 'pe', score: points, scale: '/25', summary: `PE ${points}/25 (autoeval.)` });
         this.root().innerHTML = this.shell({
             banner: 'Résultats · Production écrite',
@@ -435,7 +446,7 @@ const delfLogic = {
                     <div class="text-center mb-8">
                         <p class="text-xs font-bold uppercase tracking-widest text-gray-400 mb-2">Puntaje autoevaluado (escala oficial /25)</p>
                         <p class="text-6xl font-extrabold text-purple-600">${points}<span class="text-2xl text-gray-400">/25</span></p>
-                        <p class="mt-2 text-sm font-bold ${passed ? 'text-emerald-600' : 'text-red-500'}">${passed ? 'Superas el mínimo eliminatorio (4,5/25)' : 'Por debajo del mínimo eliminatorio (4,5/25)'}</p>
+                        <p class="mt-2 text-sm font-bold ${passed ? 'text-emerald-600' : 'text-red-500'}">${passed ? 'Superas el mínimo eliminatorio (5/25)' : 'Por debajo del mínimo eliminatorio (5/25)'}</p>
                     </div>
                     <div class="grid sm:grid-cols-2 md:grid-cols-3 gap-3 mb-8">
                         ${t.criteria.map(c => `

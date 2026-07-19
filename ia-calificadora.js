@@ -104,40 +104,71 @@ Devuelve JSON:
                 resumen: 'Escribiste en español. En el DELF, una producción que no está en francés recibe 0 puntos.'
             };
         }
-        const system = `Eres un corrector oficial del DELF B1 (nouveau format). Calificas la production écrite con la grilla oficial sobre 25 puntos. Se permiten medios puntos.
+        // Anomalía determinista de la grille oficial: menos del 50 % de las palabras
+        // pedidas = "manque de matière évaluable" → 0 en todos los criterios, sin llamar a la IA.
+        const palabras = (texto || '').trim().split(/\s+/).filter(Boolean).length;
+        const minEvaluable = task.anomalies?.minWordsEvaluable ?? Math.ceil(task.minWords / 2);
+        if (palabras < minEvaluable) {
+            return {
+                band: 0,
+                criterios: task.criteria.map(c => ({ clave: c.key, label: c.label, puntos: 0, max: c.max, comentario: '' })),
+                fortalezas: [],
+                mejoras: [],
+                resumen: `Escribiste ${palabras} palabras. La grille oficial del DELF marca "manque de matière évaluable" por debajo de ${minEvaluable} (la mitad de las ${task.minWords} pedidas): la producción recibe 0 en todos los criterios.`
+            };
+        }
 
-Grilla (respeta EXACTAMENTE estos máximos):
-${task.criteria.map(c => `- ${c.key} (${c.label}): máximo ${c.max} pts. ${c.desc}`).join('\n')}
+        const escala = (task.scale || []).map(n => `${n.pts} = ${n.label}`).join(' · ');
+        const system = `Eres un corrector oficial del DELF B1 (nouveau format). Calificas la production écrite con la GRILLE D'ÉVALUATION OFICIAL de France Éducation International, sobre 25 puntos.
+
+La grille tiene 5 criterios y cada uno se puntúa en una ESCALA DISCRETA de 4 niveles. Los únicos valores válidos son: ${escala}
+NUNCA uses valores intermedios (nada de 2, 4 ni medios puntos): solo 0, 1, 3 o 5.
+
+Criterios:
+${task.criteria.map(c => `- ${c.key} (${c.label} — ${c.competence}). ${c.desc}`).join('\n')}
 
 REGLAS:
-- Sé riguroso y honesto: no infles la nota. El mínimo eliminatorio del DELF es 4,5/25.
-- Si el texto tiene menos de ${task.minWords} palabras, penaliza "consigne".
-- Si está vacío, incomprensible o no está en francés, todos los criterios en 0.
+- Sé riguroso y honesto: no infles la nota. El mínimo eliminatorio del DELF es 5/25 por épreuve.
+- El nivel 3 es "au niveau ciblé B1" y el 5 es "B1+". Un texto correcto pero simple es 3, no 5.
+- Anomalías oficiales, aplícalas si corresponde:
+  · Hors-sujet thématique (habla de otro tema): ${task.anomalies?.horsSujetThematique || ''}
+  · Hors-sujet discursif (no respeta el tipo de texto pedido): ${task.anomalies?.horsSujetDiscursif || ''}
+  · Hors-sujet complet: ${task.anomalies?.horsSujetComplet || ''}
+- Si está vacío, es incomprensible o no está en francés, todos los criterios en 0.
 - Las citas en "mejoras" deben ser fragmentos LITERALES del texto del estudiante.
 - Comentarios en ESPAÑOL; citas y correcciones sugeridas, en francés.
 - Máximo 3 mejoras.
 
 Devuelve JSON:
-{"criterios":[{"clave":"consigne","puntos":1.5,"comentario":"..."}, ... uno por cada criterio de la grilla],
+{"criterios":[{"clave":"tache","puntos":3,"comentario":"..."}, ... uno por cada criterio de la grilla],
  "fortalezas":["..."],
  "mejoras":[{"cita":"fragment littéral","problema":"...","sugerencia":"..."}],
  "resumen":"una frase"}`;
 
         const data = await this._pedir(system, `CONSIGNE:\n${task.consigne}\n\nTEXTE DE L'ÉTUDIANT:\n${texto || '(no escribió nada)'}`);
         const porClave = new Map((data.criterios || []).map(c => [c.clave, c]));
+        // La grille solo admite 0/1/3/5: si la IA devuelve otra cosa, se ajusta al
+        // nivel válido más cercano (hacia abajo en los empates, para no inflar).
+        const niveles = (task.scale || []).map(n => n.pts);
+        const aNivel = v => {
+            const n = this._clamp(v, 0, 5);
+            if (!niveles.length) return n;
+            return niveles.reduce((mejor, p) =>
+                Math.abs(p - n) < Math.abs(mejor - n) ? p : mejor, niveles[0]);
+        };
         const criterios = task.criteria.map(c => {
             const dc = porClave.get(c.key) || {};
             return {
                 clave: c.key,
                 label: c.label,
-                puntos: this._clamp(dc.puntos, 0, c.max),
+                puntos: aNivel(dc.puntos),
                 max: c.max,
                 comentario: String(dc.comentario || '')
             };
         });
         const total = criterios.reduce((a, c) => a + c.puntos, 0);
         return {
-            band: Math.round(total * 2) / 2,   // aquí "band" son los puntos /25
+            band: total,   // aquí "band" son los puntos /25 (siempre entero con la grille oficial)
             criterios,
             fortalezas: (data.fortalezas || []).slice(0, 3).map(String),
             mejoras: (data.mejoras || []).slice(0, 3),

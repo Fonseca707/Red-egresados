@@ -76,16 +76,38 @@ const DELF_TEST_B1_1 = {
         title: 'Production écrite — Essai / prise de position',
         consigne: 'Votre ville souhaite interdire les voitures dans le centre-ville le week-end. Le journal municipal invite les habitants à donner leur avis. Vous écrivez un article pour exprimer votre opinion sur cette mesure : vous présentez ses avantages et ses inconvénients, et vous donnez votre point de vue avec des exemples précis. (160 mots minimum)',
         model: 'Un centre-ville sans voitures le week-end : bonne ou mauvaise idée ?\n\nNotre ville propose d’interdire les voitures dans le centre le samedi et le dimanche. Cette mesure fait beaucoup discuter, et je souhaite donner mon avis.\n\nD’abord, les avantages sont évidents. Sans voitures, le centre serait plus calme et l’air plus respirable. Les familles pourraient se promener tranquillement, et les enfants circuler à vélo en sécurité. Dans les villes qui ont déjà essayé, comme Pontevedra en Espagne, les habitants profitent beaucoup plus de l’espace public.\n\nCependant, il ne faut pas oublier les inconvénients. Les personnes âgées et les familles qui habitent loin auraient des difficultés pour venir. Certains commerçants craignent aussi de perdre des clients.\n\nÀ mon avis, cette mesure est une bonne idée, mais à une condition : la ville doit proposer des solutions de transport, comme des bus gratuits et des parkings à l’entrée du centre. Ainsi, tout le monde pourrait profiter d’un centre-ville plus agréable sans être pénalisé.',
-        // Grille officielle de production écrite B1 (25 pts) agrupada para autoevaluación.
-        // FUTURO IA: estos criterios alimentan el prompt del evaluador automático.
+        // Grille d'évaluation OFICIAL de la production écrite B1 (nouveau format).
+        // Fuente: B1_Grille_PE.pdf de France Éducation International (descargado 2026-07-19,
+        // ver la nota delf-b1-formato del vault). NO inventar criterios ni máximos:
+        // son 5 criterios, cada uno en la escala discreta 0 / 1 / 3 / 5 → total 25.
+        // (La grille anterior de 6 criterios 2/4/4/3/6/6 quedó obsoleta con la reforma.)
+        scale: [
+            { pts: 0, label: 'Non répondu ou production insuffisante' },
+            { pts: 1, label: 'En dessous du niveau ciblé' },
+            { pts: 3, label: 'Au niveau ciblé — B1' },
+            { pts: 5, label: 'Au niveau ciblé — B1+' }
+        ],
         criteria: [
-            { key: 'consigne', label: 'Respect de la consigne', max: 2, desc: '¿Escribiste un artículo de opinión sobre el tema pedido, con al menos 160 palabras?' },
-            { key: 'faits', label: 'Capacité à présenter des faits', max: 4, desc: '¿Presentas hechos, ventajas e inconvenientes concretos con ejemplos?' },
-            { key: 'opinion', label: 'Capacité à exprimer sa pensée', max: 4, desc: '¿Tu opinión es clara, matizada y justificada?' },
-            { key: 'coherence', label: 'Cohérence et cohésion', max: 3, desc: '¿El texto está organizado con conectores (d’abord, cependant, à mon avis…) y párrafos lógicos?' },
-            { key: 'lexique', label: 'Lexique (étendue et maîtrise)', max: 6, desc: '¿Vocabulario variado y apropiado al tema, con ortografía léxica correcta?' },
-            { key: 'grammaire', label: 'Grammaire (structures et orthographe)', max: 6, desc: '¿Frases complejas (relatives, condicional, subjuntivo simple) mayormente correctas?' }
-        ]
+            { key: 'tache', label: 'Réalisation de la tâche', competence: 'Compétence pragmatique', max: 5,
+              desc: '¿Respondes plenamente a la consigna? B1 = texto seguido que satisface globalmente la tarea y justifica la opinión con algunos ejemplos. B1+ = texto claro, plenamente adecuado, con ejemplos concretos o una argumentación simple.' },
+            { key: 'coherence', label: 'Cohérence et cohésion', competence: 'Compétence pragmatique', max: 5,
+              desc: 'B1 = conectores adecuados, puntuación y disposición usadas con criterio la mayor parte del tiempo. B1+ = texto claro y bien organizado con conectores variados que facilitan la lectura.' },
+            { key: 'sociolinguistique', label: 'Adéquation sociolinguistique', competence: 'Compétence sociolinguistique', max: 5,
+              desc: 'B1 = registro globalmente adaptado a la situación y al destinatario pese a confusiones puntuales. B1+ = adapta el registro al destinatario; las confusiones son raras y no incomodan al lector.' },
+            { key: 'lexique', label: 'Lexique', competence: 'Compétence linguistique', max: 5,
+              desc: 'B1 = vocabulario corriente sobre temas familiares, usa perífrasis para ideas complejas; hay errores de ortografía al expresar pensamientos complejos. B1+ = léxico amplio, temas de sociedad corrientes, ortografía suficientemente correcta para leerse con facilidad.' },
+            { key: 'morphosyntaxe', label: 'Morphosyntaxe', competence: 'Compétence linguistique', max: 5,
+              desc: 'B1 = domina las estructuras simples y muestra relativa corrección en las estructuras complejas corrientes. B1+ = buen control gramatical de las estructuras complejas más frecuentes, aunque poco variadas.' }
+        ],
+        // Reglas de anomalía de la grille oficial. Se aplican ANTES de llamar a la IA
+        // cuando son deterministas (copie blanche, matière insuffisante).
+        anomalies: {
+            // < 50 % de las palabras pedidas → 0 en todos los criterios.
+            minWordsEvaluable: 80, // 50 % de 160; el PDF oficial dice "79 mots ou moins" → 0
+            horsSujetThematique: 'No puede recibir B1+ (5) en "tache" ni en "lexique".',
+            horsSujetDiscursif: 'No puede recibir B1 (3) ni B1+ (5) en "tache" ni en "coherence".',
+            horsSujetComplet: '0 en "tache", "coherence" y "sociolinguistique"; ni B1 ni B1+ en "lexique" y "morphosyntaxe".'
+        }
     }
 };
 
