@@ -398,7 +398,8 @@ const toeflLogic = {
                 <div class="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 md:p-10">
                     <div class="text-center mb-8">
                         <p class="text-xs font-bold uppercase tracking-widest text-gray-400 mb-2">Banda estimada (no oficial, escala 1–6)</p>
-                        <p class="text-6xl font-extrabold text-blue-600">${est.band}</p>
+                        <p class="text-6xl font-extrabold text-blue-600">${est.band}<span class="text-2xl text-gray-300"> /6</span></p>
+                        <p class="mt-1 text-sm font-bold text-blue-700">Nivel aproximado ${bandToCEFR(est.band)} <span class="text-gray-400 font-semibold">(MCER)</span></p>
                         <p class="text-gray-500 mt-2">${est.totC} de ${est.totT} respuestas correctas (${Math.round(est.pct * 100)}%)</p>
                     </div>
                     <div class="space-y-4 mb-8">
@@ -743,7 +744,8 @@ const toeflLogic = {
                 <div class="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 md:p-10">
                     <div class="text-center mb-8">
                         <p class="text-xs font-bold uppercase tracking-widest text-gray-400 mb-2">Banda estimada (no oficial, escala 1–6)</p>
-                        <p class="text-6xl font-extrabold text-blue-600">${overall}</p>
+                        <p class="text-6xl font-extrabold text-blue-600">${overall}<span class="text-2xl text-gray-300"> /6</span></p>
+                        <p class="mt-1 text-sm font-bold text-blue-700">Nivel aproximado ${bandToCEFR(overall)} <span class="text-gray-400 font-semibold">(MCER)</span></p>
                         <p class="text-gray-500 mt-2">Promedio de las tres tareas · email y discusión autoevaluados</p>
                     </div>
                     <div class="grid md:grid-cols-3 gap-4 mb-8">

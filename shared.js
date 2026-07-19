@@ -364,33 +364,92 @@ const EXAM_SECTION_LABEL = {
     reading: 'Reading', writing: 'Writing',
     ce: 'Compréhension écrite', pe: 'Production écrite'
 };
+// Equivalencia oficial ETS: banda 1–6 del TOEFL 2026 → nivel MCER/CEFR.
+// (6→C2 · 5–5.5→C1 · 4–4.5→B2 · 3–3.5→B1 · 2–2.5→A2 · 1–1.5→A1)
+function bandToCEFR(band) {
+    const b = Number(band) || 0;
+    if (b >= 6) return 'C2';
+    if (b >= 5) return 'C1';
+    if (b >= 4) return 'B2';
+    if (b >= 3) return 'B1';
+    if (b >= 2) return 'A2';
+    return 'A1';
+}
+function _examFecha(r) {
+    try {
+        const d = r.createdAt?.toDate ? r.createdAt.toDate() : (r.createdAt ? new Date(r.createdAt) : null);
+        return d ? d.toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' }) : '';
+    } catch (e) { return ''; }
+}
+// Resumen COMBINADO por examen (opcional, no obliga a hacer todas las
+// secciones): toma el intento más reciente de cada sección y, para el TOEFL,
+// estima un nivel global + CEFR. Es fiel al score report real pero se arma con
+// lo que el estudiante haya practicado, aunque sea una sola sección.
+function _examSummaryHTML(exam, rows) {
+    const last = {}; // rows vienen ordenados desc por fecha → el primero de cada sección es el más reciente
+    rows.forEach(r => { if (last[r.section] === undefined) last[r.section] = Number(r.score) || 0; });
+    if (exam === 'DELF') {
+        const ce = last.ce, pe = last.pe;
+        const partes = [];
+        if (ce !== undefined) partes.push(`CE <strong>${ce}</strong>/25`);
+        if (pe !== undefined) partes.push(`PE <strong>${pe}</strong>/25`);
+        const hechas = [ce, pe].filter(v => v !== undefined);
+        const total = hechas.reduce((a, v) => a + v, 0);
+        const max = hechas.length * 25;
+        return `
+            <div class="rounded-xl bg-purple-50 border border-purple-100 px-3 py-2 mb-2">
+                <p class="text-[11px] font-bold uppercase tracking-widest text-purple-600 mb-0.5">DELF B1 · nivel objetivo B1 (MCER)</p>
+                <p class="text-sm text-purple-900">${partes.join(' · ') || 'Sin secciones'}${max ? ` · <strong>${Math.round(total * 10) / 10}/${max}</strong>` : ''}</p>
+            </div>`;
+    }
+    // TOEFL
+    const secs = ['reading', 'writing'].filter(s => last[s] !== undefined);
+    const partes = secs.map(s => `${EXAM_SECTION_LABEL[s]} <strong>${last[s]}</strong> (${bandToCEFR(last[s])})`);
+    const global = secs.length ? Math.round((secs.reduce((a, s) => a + last[s], 0) / secs.length) * 2) / 2 : null;
+    return `
+        <div class="rounded-xl bg-blue-50 border border-blue-100 px-3 py-2 mb-2">
+            <p class="text-[11px] font-bold uppercase tracking-widest text-blue-600 mb-0.5">TOEFL · escala 1–6 (MCER)</p>
+            <p class="text-sm text-blue-900">${partes.join(' · ') || 'Sin secciones'}${global !== null ? ` · nivel ~<strong>${global}</strong> ${bandToCEFR(global)}` : ''}</p>
+        </div>`;
+}
+function _examRowHTML(r) {
+    const isDelf = r.exam === 'DELF';
+    const examTag = isDelf ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700';
+    const examName = isDelf ? 'DELF B1' : 'TOEFL';
+    const sec = EXAM_SECTION_LABEL[r.section] || r.section || '';
+    const fecha = _examFecha(r);
+    // Etiqueta de nivel: CEFR para TOEFL; para DELF, aviso del mínimo eliminatorio.
+    const nivel = isDelf
+        ? ((Number(r.score) || 0) >= 4.5
+            ? `<span class="text-[10px] font-bold text-emerald-600">supera 4,5</span>`
+            : `<span class="text-[10px] font-bold text-red-500">bajo 4,5</span>`)
+        : `<span class="text-[10px] font-bold text-blue-600">${bandToCEFR(r.score)}</span>`;
+    return `
+        <div class="flex items-center justify-between gap-3 rounded-xl border border-gray-100 bg-gray-50/70 px-3 py-2.5">
+            <div class="min-w-0">
+                <div class="flex items-center gap-2 flex-wrap">
+                    <span class="px-2 py-0.5 rounded-md text-[11px] font-extrabold ${examTag}">${sanitizeHTML(examName)}</span>
+                    <span class="text-sm font-bold text-gray-800">${sanitizeHTML(sec)}</span>
+                </div>
+                ${fecha ? `<p class="text-[11px] text-gray-400 mt-0.5">${sanitizeHTML(fecha)}</p>` : ''}
+            </div>
+            <div class="shrink-0 text-right">
+                <span class="text-lg font-extrabold text-gray-900">${sanitizeHTML(String(r.score))}<span class="text-xs text-gray-400 font-bold">${sanitizeHTML(r.scale || '')}</span></span>
+                <div>${nivel}</div>
+            </div>
+        </div>`;
+}
 function renderExamResultsHTML(results) {
     if (!results || !results.length) {
         return `<p class="text-sm text-gray-400 italic">Sin prácticas registradas todavía.</p>`;
     }
-    return `<div class="space-y-2">${results.map(r => {
-        const examTag = r.exam === 'DELF'
-            ? 'bg-purple-100 text-purple-700'
-            : 'bg-blue-100 text-blue-700';
-        const examName = r.exam === 'DELF' ? 'DELF B1' : 'TOEFL';
-        const sec = EXAM_SECTION_LABEL[r.section] || r.section || '';
-        let fecha = '';
-        try {
-            const d = r.createdAt?.toDate ? r.createdAt.toDate() : (r.createdAt ? new Date(r.createdAt) : null);
-            if (d) fecha = d.toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' });
-        } catch (e) {}
-        return `
-            <div class="flex items-center justify-between gap-3 rounded-xl border border-gray-100 bg-gray-50/70 px-3 py-2.5">
-                <div class="min-w-0">
-                    <div class="flex items-center gap-2 flex-wrap">
-                        <span class="px-2 py-0.5 rounded-md text-[11px] font-extrabold ${examTag}">${sanitizeHTML(examName)}</span>
-                        <span class="text-sm font-bold text-gray-800">${sanitizeHTML(sec)}</span>
-                    </div>
-                    ${fecha ? `<p class="text-[11px] text-gray-400 mt-0.5">${sanitizeHTML(fecha)}</p>` : ''}
-                </div>
-                <span class="shrink-0 text-lg font-extrabold text-gray-900">${sanitizeHTML(String(r.score))}<span class="text-xs text-gray-400 font-bold">${sanitizeHTML(r.scale || '')}</span></span>
-            </div>`;
-    }).join('')}</div>`;
+    const byExam = {};
+    results.forEach(r => { (byExam[r.exam] = byExam[r.exam] || []).push(r); });
+    return Object.keys(byExam).map(exam => `
+        <div class="mb-4">
+            ${_examSummaryHTML(exam, byExam[exam])}
+            <div class="space-y-2">${byExam[exam].map(_examRowHTML).join('')}</div>
+        </div>`).join('');
 }
 async function syncHitosCount(uid, count) {
     try {
