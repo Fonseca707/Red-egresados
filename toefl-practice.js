@@ -264,9 +264,13 @@ const toeflLogic = {
             // Fiel al examen real: una raya por cada letra que falta (la pista es
             // CUÁNTAS letras) y el input acepta exactamente esas letras, ni una más.
             const guiones = '_'.repeat(n);
-            const widthCh = Math.max(n, 2);
-            // Hueco gris neutro (#D1D1D1) como el examen real; el acento teal solo al enfocar.
-            const box = `<span class="inline-flex items-baseline whitespace-nowrap font-semibold text-gray-900"><span class="text-[10px] text-gray-400 font-bold mr-0.5 self-start">${i + 1}</span>${sanitizeHTML(gap.prefix)}<input id="toefl-gap-${i}" value="${filled}" maxlength="${n}" placeholder="${guiones}" style="width:calc(${widthCh}ch + 0.8rem); letter-spacing:0.28em" oninput="toeflLogic.setGap('${key}', ${i}, this.value)" class="mx-0.5 px-1 border-b-2 border-gray-400 bg-[#D1D1D1]/40 rounded-t-md text-gray-900 font-bold placeholder:text-gray-400 placeholder:tracking-[0.28em] focus:outline-none focus:border-[#066A6E] focus:bg-[#e8f2f2] text-center lowercase" autocomplete="off" autocapitalize="off" spellcheck="false"></span>`;
+            // Ancho fiel: 1ch por letra + un respiro. Sin letter-spacing (era la
+            // causa de que el texto escrito se desbordara del hueco). box-border
+            // para que el padding no ensanche el input más allá del width.
+            const widthCh = Math.max(n, 2) + 1;
+            // La palabra debe verse CONTINUA: prefijo (peso normal, como el texto)
+            // pegado al hueco gris neutro (#D1D1D1). El acento teal solo al enfocar.
+            const box = `<span class="inline-flex items-baseline whitespace-nowrap text-gray-800"><span class="text-[10px] text-[#066A6E] font-bold mr-px self-start">${i + 1}</span>${sanitizeHTML(gap.prefix)}<input id="toefl-gap-${i}" value="${filled}" maxlength="${n}" placeholder="${guiones}" style="width:${widthCh}ch" oninput="toeflLogic.setGap('${key}', ${i}, this.value)" class="box-border border-b-2 border-gray-400 bg-[#D1D1D1]/40 rounded-t-sm text-gray-900 font-semibold placeholder:text-gray-400 placeholder:font-normal focus:outline-none focus:border-[#066A6E] focus:bg-[#e8f2f2] text-center lowercase align-baseline" autocomplete="off" autocapitalize="off" spellcheck="false"></span>`;
             html = html.replace(`[[${i + 1}]]`, box);
         });
         return `<div class="rounded-2xl border border-gray-100 bg-gray-50/70 p-5 md:p-6 leading-loose text-gray-800 text-[15px]">${html}</div>
