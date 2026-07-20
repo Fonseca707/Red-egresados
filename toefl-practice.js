@@ -106,17 +106,30 @@ const toeflLogic = {
         return this.renderWritingStage();
     },
 
-    shell({ banner, timed, body }) {
+    // Clon visual del TOEFL iBT real (spec toefl-formato-real-2026 §10):
+    // header teal #066A6E ancho completo + sub-barra blanca con la sección y el
+    // contador; controles tipo píldora a la derecha. No lleva logo de ETS.
+    shell({ banner, timed, body, section }) {
+        const sectionLabel = section || (this.session && this.session.section === 'writing' ? 'Writing' : 'Reading');
         return `
-            <div class="max-w-4xl mx-auto animate-fade-in pb-12">
-                <div class="sticky top-16 z-30 bg-white/95 backdrop-blur rounded-2xl border border-gray-200 shadow-sm px-4 py-3 mb-6 flex items-center justify-between gap-3">
-                    <div class="flex items-center gap-2 min-w-0">
-                        <span class="px-2.5 py-1 rounded-lg bg-blue-600 text-white text-xs font-extrabold shrink-0">TOEFL</span>
-                        <p class="text-sm font-bold text-gray-700 truncate">${banner}</p>
+            <div class="max-w-5xl mx-auto animate-fade-in pb-12">
+                <div class="sticky top-16 z-30 mb-6 rounded-2xl overflow-hidden border border-gray-200 shadow-sm">
+                    <!-- Header teal -->
+                    <div class="bg-[#066A6E] px-4 py-3 flex items-center justify-between gap-3">
+                        <div class="flex items-center gap-2 min-w-0">
+                            <span class="px-2.5 py-1 rounded-md bg-[#077F83] text-white text-xs font-extrabold shrink-0 border border-white/70">TOEFL</span>
+                            <p class="text-sm font-semibold text-white/95 truncate">${banner}</p>
+                        </div>
+                        <div class="flex items-center gap-2 shrink-0">
+                            ${timed ? `<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#077F83] border border-white/70 text-white font-mono font-bold text-sm"><i class="ph-bold ph-timer"></i><span id="toefl-timer">--:--</span></span>` : ''}
+                            <button onclick="toeflLogic.exit()" class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-white/10 text-white hover:bg-white/25 transition" title="Salir de la práctica"><i class="ph-bold ph-x"></i></button>
+                        </div>
                     </div>
-                    <div class="flex items-center gap-3 shrink-0">
-                        ${timed ? `<span class="flex items-center gap-1.5 font-mono font-extrabold text-lg text-gray-900"><i class="ph-bold ph-timer text-blue-600"></i><span id="toefl-timer">--:--</span></span>` : ''}
-                        <button onclick="toeflLogic.exit()" class="p-2 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition" title="Salir de la práctica"><i class="ph-bold ph-x text-lg"></i></button>
+                    <!-- Sub-barra blanca: sección | contador -->
+                    <div class="bg-white px-4 py-2 flex items-center gap-2 border-t border-[#055457]/20">
+                        <span class="text-sm font-bold text-gray-900">${sectionLabel}</span>
+                        <span class="text-gray-300">|</span>
+                        <span class="text-xs font-semibold text-gray-500 truncate">${banner}</span>
                     </div>
                 </div>
                 ${body}
@@ -138,7 +151,7 @@ const toeflLogic = {
             ['ph-chats-teardrop', 'Academic Discussion', 'Pregunta del profesor + 2 posts de estudiantes. Aporta un argumento nuevo en 10 minutos.']
         ];
         const adaptiveNote = isReading ? `
-            <div class="rounded-2xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900 flex gap-2 mb-6">
+            <div class="rounded-2xl border border-[#a3c9cb] bg-[#e8f2f2] px-4 py-3 text-sm text-[#043e40] flex gap-2 mb-6">
                 <i class="ph-bold ph-arrows-split mt-0.5 shrink-0"></i>
                 <p><strong>Examen adaptativo:</strong> como en el TOEFL real, según tu desempeño en el Módulo 1 pasarás a un Módulo 2 exigente (más académico) o sencillo (más vida diaria). El aviso de arriba siempre te dirá en qué módulo estás.</p>
             </div>` : `
@@ -152,7 +165,7 @@ const toeflLogic = {
             timed: false,
             body: `
                 <div class="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 md:p-10">
-                    <span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-50 text-blue-700 text-xs font-bold uppercase tracking-widest border border-blue-100 mb-4">
+                    <span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#e8f2f2] text-[#055457] text-xs font-bold uppercase tracking-widest border border-[#cce0e1] mb-4">
                         <i class="ph-duotone ph-globe-hemisphere-west"></i> Formato oficial desde enero 2026
                     </span>
                     <h2 class="text-3xl font-extrabold text-gray-900 mb-2">${isReading ? 'Sección Reading' : 'Sección Writing'}</h2>
@@ -162,7 +175,7 @@ const toeflLogic = {
                     <div class="grid md:grid-cols-3 gap-4 mb-6">
                         ${details.map(([icon, name, desc]) => `
                             <div class="rounded-2xl border border-gray-100 bg-gray-50/70 p-4">
-                                <i class="ph-duotone ${icon} text-2xl text-blue-600"></i>
+                                <i class="ph-duotone ${icon} text-2xl text-[#066A6E]"></i>
                                 <h4 class="font-bold text-gray-900 mt-2 mb-1">${name}</h4>
                                 <p class="text-xs text-gray-500 leading-relaxed">${desc}</p>
                             </div>`).join('')}
@@ -175,7 +188,7 @@ const toeflLogic = {
                                 ${history.map(h => `<span class="px-3 py-1.5 rounded-xl bg-gray-50 border border-gray-100 text-xs font-semibold text-gray-600">${new Date(h.date).toLocaleDateString()} · ${sanitizeHTML(h.summary)}</span>`).join('')}
                             </div>
                         </div>` : ''}
-                    <button onclick="toeflLogic.begin()" class="w-full md:w-auto px-8 py-3.5 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition shadow-lg shadow-blue-600/20 flex items-center justify-center gap-2">
+                    <button onclick="toeflLogic.begin()" class="w-full md:w-auto px-8 py-3.5 bg-[#066A6E] text-white font-bold rounded-xl hover:bg-[#055457] transition shadow-lg shadow-[#066A6E]/20 flex items-center justify-center gap-2">
                         <i class="ph-bold ph-play"></i> Comenzar con cronómetro
                     </button>
                 </div>`
@@ -227,13 +240,13 @@ const toeflLogic = {
             body: `
                 <div class="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 md:p-8">
                     <div class="flex items-center justify-between gap-3 mb-1">
-                        <p class="text-xs font-bold uppercase tracking-widest text-blue-600">Tarea ${s.taskIndex + 1} de ${mod.tasks.length} · ${sanitizeHTML(task.title)}</p>
+                        <p class="text-xs font-bold uppercase tracking-widest text-[#066A6E]">Tarea ${s.taskIndex + 1} de ${mod.tasks.length} · ${sanitizeHTML(task.title)}</p>
                     </div>
                     <p class="text-sm text-gray-500 mb-6">${sanitizeHTML(task.instructions)}</p>
                     ${body}
                     <div class="mt-8 flex justify-end gap-3">
                         ${s.taskIndex > 0 ? `<button onclick="toeflLogic.prevTask()" class="px-5 py-2.5 rounded-xl border border-gray-200 text-gray-600 font-bold hover:bg-gray-50 transition">Anterior</button>` : ''}
-                        <button onclick="toeflLogic.nextTask()" class="px-6 py-2.5 rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-700 transition flex items-center gap-2">
+                        <button onclick="toeflLogic.nextTask()" class="px-6 py-2.5 rounded-xl bg-[#066A6E] text-white font-bold hover:bg-[#055457] transition flex items-center gap-2">
                             ${isLast ? 'Terminar módulo' : 'Siguiente tarea'} <i class="ph-bold ph-arrow-right"></i>
                         </button>
                     </div>
@@ -252,7 +265,8 @@ const toeflLogic = {
             // CUÁNTAS letras) y el input acepta exactamente esas letras, ni una más.
             const guiones = '_'.repeat(n);
             const widthCh = Math.max(n, 2);
-            const box = `<span class="inline-flex items-baseline whitespace-nowrap font-semibold text-blue-700"><span class="text-[10px] text-gray-400 font-bold mr-0.5 self-start">${i + 1}</span>${sanitizeHTML(gap.prefix)}<input id="toefl-gap-${i}" value="${filled}" maxlength="${n}" placeholder="${guiones}" style="width:calc(${widthCh}ch + 0.8rem); letter-spacing:0.28em" oninput="toeflLogic.setGap('${key}', ${i}, this.value)" class="mx-0.5 px-1 border-b-2 border-blue-400 bg-blue-50 rounded-t-md text-blue-800 font-bold placeholder:text-blue-300 placeholder:tracking-[0.28em] focus:outline-none focus:border-blue-600 text-center lowercase" autocomplete="off" autocapitalize="off" spellcheck="false"></span>`;
+            // Hueco gris neutro (#D1D1D1) como el examen real; el acento teal solo al enfocar.
+            const box = `<span class="inline-flex items-baseline whitespace-nowrap font-semibold text-gray-900"><span class="text-[10px] text-gray-400 font-bold mr-0.5 self-start">${i + 1}</span>${sanitizeHTML(gap.prefix)}<input id="toefl-gap-${i}" value="${filled}" maxlength="${n}" placeholder="${guiones}" style="width:calc(${widthCh}ch + 0.8rem); letter-spacing:0.28em" oninput="toeflLogic.setGap('${key}', ${i}, this.value)" class="mx-0.5 px-1 border-b-2 border-gray-400 bg-[#D1D1D1]/40 rounded-t-md text-gray-900 font-bold placeholder:text-gray-400 placeholder:tracking-[0.28em] focus:outline-none focus:border-[#066A6E] focus:bg-[#e8f2f2] text-center lowercase" autocomplete="off" autocapitalize="off" spellcheck="false"></span>`;
             html = html.replace(`[[${i + 1}]]`, box);
         });
         return `<div class="rounded-2xl border border-gray-100 bg-gray-50/70 p-5 md:p-6 leading-loose text-gray-800 text-[15px]">${html}</div>
@@ -277,8 +291,8 @@ const toeflLogic = {
                             <p class="font-bold text-gray-900 mb-2 text-sm">${qi + 1}. ${sanitizeHTML(qu.q)}</p>
                             <div class="space-y-1.5">
                                 ${qu.options.map((opt, oi) => `
-                                    <label class="flex items-start gap-2.5 p-2.5 rounded-xl border ${answers[qi] === oi ? 'border-blue-400 bg-blue-50' : 'border-gray-100 bg-white hover:bg-gray-50'} cursor-pointer transition text-sm">
-                                        <input type="radio" name="toefl-q-${qi}" ${answers[qi] === oi ? 'checked' : ''} onchange="toeflLogic.setMC('${key}', ${qi}, ${oi})" class="mt-0.5 accent-blue-600">
+                                    <label class="flex items-start gap-2.5 p-2.5 rounded-xl border ${answers[qi] === oi ? 'border-[#077F83] bg-[#e8f2f2]' : 'border-gray-100 bg-white hover:bg-gray-50'} cursor-pointer transition text-sm">
+                                        <input type="radio" name="toefl-q-${qi}" ${answers[qi] === oi ? 'checked' : ''} onchange="toeflLogic.setMC('${key}', ${qi}, ${oi})" class="mt-0.5 accent-[#066A6E]">
                                         <span class="text-gray-700">${sanitizeHTML(opt)}</span>
                                     </label>`).join('')}
                             </div>
@@ -363,7 +377,7 @@ const toeflLogic = {
                     <p class="text-gray-500 max-w-lg mx-auto mb-8">Como en el TOEFL real, el examen se adapta: ${hard
                         ? 'tu desempeño te lleva a la <strong>ruta exigente</strong>, con énfasis en textos académicos. Aquí se alcanzan las bandas más altas.'
                         : 'continuarás por la <strong>ruta sencilla</strong>, con énfasis en textos de la vida diaria.'}</p>
-                    <button onclick="toeflLogic.startModule2()" class="px-8 py-3.5 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition shadow-lg shadow-blue-600/20">
+                    <button onclick="toeflLogic.startModule2()" class="px-8 py-3.5 bg-[#066A6E] text-white font-bold rounded-xl hover:bg-[#055457] transition shadow-lg shadow-[#066A6E]/20">
                         Continuar al Módulo 2 <i class="ph-bold ph-arrow-right"></i>
                     </button>
                 </div>`
@@ -402,8 +416,8 @@ const toeflLogic = {
                 <div class="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 md:p-10">
                     <div class="text-center mb-8">
                         <p class="text-xs font-bold uppercase tracking-widest text-gray-400 mb-2">Banda estimada (no oficial, escala 1–6)</p>
-                        <p class="text-6xl font-extrabold text-blue-600">${est.band}<span class="text-2xl text-gray-300"> /6</span></p>
-                        <p class="mt-1 text-sm font-bold text-blue-700">Nivel aproximado ${bandToCEFR(est.band)} <span class="text-gray-400 font-semibold">(MCER)</span></p>
+                        <p class="text-6xl font-extrabold text-[#066A6E]">${est.band}<span class="text-2xl text-gray-300"> /6</span></p>
+                        <p class="mt-1 text-sm font-bold text-[#055457]">Nivel aproximado ${bandToCEFR(est.band)} <span class="text-gray-400 font-semibold">(MCER)</span></p>
                         <p class="text-gray-500 mt-2">${est.totC} de ${est.totT} respuestas correctas (${Math.round(est.pct * 100)}%)</p>
                     </div>
                     <div class="space-y-4 mb-8">
@@ -425,7 +439,7 @@ const toeflLogic = {
                     </div>
                     <div class="flex flex-wrap gap-3 justify-center">
                         <button onclick="toeflLogic.start('reading')" class="px-6 py-3 rounded-xl border border-gray-200 text-gray-700 font-bold hover:bg-gray-50 transition"><i class="ph-bold ph-arrow-counter-clockwise"></i> Repetir práctica</button>
-                        <button onclick="toeflLogic.start('writing')" class="px-6 py-3 rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-700 transition"><i class="ph-bold ph-pencil-line"></i> Pasar a Writing</button>
+                        <button onclick="toeflLogic.start('writing')" class="px-6 py-3 rounded-xl bg-[#066A6E] text-white font-bold hover:bg-[#055457] transition"><i class="ph-bold ph-pencil-line"></i> Pasar a Writing</button>
                         <button onclick="toeflLogic.exit()" class="px-6 py-3 rounded-xl border border-gray-200 text-gray-500 font-bold hover:bg-gray-50 transition">Volver a módulos</button>
                     </div>
                 </div>`
@@ -474,20 +488,20 @@ const toeflLogic = {
                         <p class="text-[15px] text-gray-800 font-medium">${sanitizeHTML(item.context)}</p>
                     </div>
                     <p class="text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-2">Tu respuesta (B:)</p>
-                    <div class="min-h-[3.5rem] rounded-2xl border-2 border-dashed ${picks.length ? 'border-blue-300 bg-blue-50' : 'border-gray-200 bg-gray-50/70'} p-3 flex flex-wrap gap-2 mb-4">
+                    <div class="min-h-[3.5rem] rounded-2xl border-2 border-dashed ${picks.length ? 'border-[#7db3b6] bg-[#e8f2f2]' : 'border-gray-200 bg-gray-50/70'} p-3 flex flex-wrap gap-2 mb-4">
                         ${picks.length ? picks.map((chip, ci) => `
-                            <button onclick="toeflLogic.unpickChip(${ci})" class="px-3 py-1.5 rounded-xl bg-blue-600 text-white text-sm font-bold hover:bg-blue-700 transition shadow-sm">${sanitizeHTML(chip)}</button>`).join('')
+                            <button onclick="toeflLogic.unpickChip(${ci})" class="px-3 py-1.5 rounded-xl bg-[#066A6E] text-white text-sm font-bold hover:bg-[#055457] transition shadow-sm">${sanitizeHTML(chip)}</button>`).join('')
                             : '<span class="text-sm text-gray-400 italic self-center">Toca las fichas de abajo en orden…</span>'}
                     </div>
                     <div class="flex flex-wrap gap-2 mb-6">
                         ${pool.map((chip, pi) => this.chipIsPicked(picks, pool, pi)
                             ? `<button disabled class="px-3 py-1.5 rounded-xl bg-gray-100 text-gray-300 text-sm font-bold border border-gray-100">${sanitizeHTML(chip)}</button>`
-                            : `<button onclick="toeflLogic.pickChip(${pi})" class="px-3 py-1.5 rounded-xl bg-white text-gray-800 text-sm font-bold border border-gray-200 hover:border-blue-400 hover:bg-blue-50 transition shadow-sm">${sanitizeHTML(chip)}</button>`
+                            : `<button onclick="toeflLogic.pickChip(${pi})" class="px-3 py-1.5 rounded-xl bg-white text-gray-800 text-sm font-bold border border-gray-200 hover:border-[#077F83] hover:bg-[#e8f2f2] transition shadow-sm">${sanitizeHTML(chip)}</button>`
                         ).join('')}
                     </div>
                     <div class="flex justify-between items-center">
                         <button onclick="toeflLogic.clearPicks()" class="text-sm font-bold text-gray-400 hover:text-red-500 transition"><i class="ph-bold ph-eraser"></i> Limpiar</button>
-                        <button onclick="toeflLogic.nextBuild()" class="px-6 py-2.5 rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-700 transition flex items-center gap-2">
+                        <button onclick="toeflLogic.nextBuild()" class="px-6 py-2.5 rounded-xl bg-[#066A6E] text-white font-bold hover:bg-[#055457] transition flex items-center gap-2">
                             ${isLast ? 'Terminar tarea' : 'Siguiente'} <i class="ph-bold ph-arrow-right"></i>
                         </button>
                     </div>
@@ -565,13 +579,13 @@ const toeflLogic = {
                         <p class="text-[15px] text-gray-800 leading-relaxed mb-3">${sanitizeHTML(t.scenario)}</p>
                         <p class="text-[15px] text-gray-900 font-bold mb-2">${sanitizeHTML(t.recipient)} In your email:</p>
                         <ul class="space-y-1">
-                            ${t.bullets.map(b => `<li class="text-[15px] text-gray-700 flex gap-2"><i class="ph-bold ph-dot-outline text-blue-600 mt-1"></i>${sanitizeHTML(b)}</li>`).join('')}
+                            ${t.bullets.map(b => `<li class="text-[15px] text-gray-700 flex gap-2"><i class="ph-bold ph-dot-outline text-[#066A6E] mt-1"></i>${sanitizeHTML(b)}</li>`).join('')}
                         </ul>
                     </div>
-                    <textarea id="toefl-email-text" rows="10" oninput="toeflLogic.onWrittenInput('email')" placeholder="Dear Professor Reed, ..." class="w-full rounded-2xl border border-gray-200 p-4 text-[15px] text-gray-800 leading-relaxed focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition resize-y" spellcheck="false">${sanitizeHTML(s.emailText)}</textarea>
+                    <textarea id="toefl-email-text" rows="10" oninput="toeflLogic.onWrittenInput('email')" placeholder="Dear Professor Reed, ..." class="w-full rounded-2xl border border-gray-200 p-4 text-[15px] text-gray-800 leading-relaxed focus:outline-none focus:border-[#077F83] focus:ring-2 focus:ring-[#cce0e1] transition resize-y" spellcheck="false">${sanitizeHTML(s.emailText)}</textarea>
                     <div class="flex items-center justify-between mt-3">
                         <p class="text-sm font-bold text-gray-400"><span id="toefl-word-count">0</span> palabras · objetivo ${t.targetWords[0]}–${t.targetWords[1]}</p>
-                        <button onclick="toeflLogic.submitEmail(false)" class="px-6 py-2.5 rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-700 transition">Enviar y continuar <i class="ph-bold ph-arrow-right"></i></button>
+                        <button onclick="toeflLogic.submitEmail(false)" class="px-6 py-2.5 rounded-xl bg-[#066A6E] text-white font-bold hover:bg-[#055457] transition">Enviar y continuar <i class="ph-bold ph-arrow-right"></i></button>
                     </div>
                 </div>`
         });
@@ -608,8 +622,8 @@ const toeflLogic = {
             body: `
                 <div class="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 md:p-8">
                     <div class="space-y-3 mb-5">
-                        <div class="rounded-2xl border border-blue-100 bg-blue-50 p-4">
-                            <p class="text-xs font-extrabold text-blue-700 mb-1"><i class="ph-bold ph-chalkboard-teacher"></i> ${sanitizeHTML(t.professor.name)}</p>
+                        <div class="rounded-2xl border border-[#cce0e1] bg-[#e8f2f2] p-4">
+                            <p class="text-xs font-extrabold text-[#055457] mb-1"><i class="ph-bold ph-chalkboard-teacher"></i> ${sanitizeHTML(t.professor.name)}</p>
                             <p class="text-[15px] text-gray-800 leading-relaxed">${sanitizeHTML(t.professor.post)}</p>
                         </div>
                         <div class="grid md:grid-cols-2 gap-3">
@@ -621,10 +635,10 @@ const toeflLogic = {
                         </div>
                     </div>
                     <p class="text-sm text-gray-500 mb-3"><i class="ph-bold ph-lightbulb text-amber-500"></i> Menciona a los otros estudiantes brevemente y aporta un <strong>argumento nuevo</strong> que nadie haya dado.</p>
-                    <textarea id="toefl-discussion-text" rows="9" oninput="toeflLogic.onWrittenInput('discussion')" placeholder="I see valid points in both posts, but..." class="w-full rounded-2xl border border-gray-200 p-4 text-[15px] text-gray-800 leading-relaxed focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition resize-y" spellcheck="false">${sanitizeHTML(s.discussionText)}</textarea>
+                    <textarea id="toefl-discussion-text" rows="9" oninput="toeflLogic.onWrittenInput('discussion')" placeholder="I see valid points in both posts, but..." class="w-full rounded-2xl border border-gray-200 p-4 text-[15px] text-gray-800 leading-relaxed focus:outline-none focus:border-[#077F83] focus:ring-2 focus:ring-[#cce0e1] transition resize-y" spellcheck="false">${sanitizeHTML(s.discussionText)}</textarea>
                     <div class="flex items-center justify-between mt-3">
                         <p class="text-sm font-bold text-gray-400"><span id="toefl-word-count">0</span> palabras · objetivo ${t.targetWords[0]}–${t.targetWords[1]}</p>
-                        <button onclick="toeflLogic.submitDiscussion(false)" class="px-6 py-2.5 rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-700 transition">Enviar y autoevaluar <i class="ph-bold ph-arrow-right"></i></button>
+                        <button onclick="toeflLogic.submitDiscussion(false)" class="px-6 py-2.5 rounded-xl bg-[#066A6E] text-white font-bold hover:bg-[#055457] transition">Enviar y autoevaluar <i class="ph-bold ph-arrow-right"></i></button>
                     </div>
                 </div>`
         });
@@ -688,11 +702,11 @@ const toeflLogic = {
                 ${r ? iaCalificadora.tarjetaHTML(r, { escala: '/6', acento: 'blue' }) : ''}
 
                 <details class="mt-3" ${r ? '' : 'open'}>
-                    <summary class="text-xs font-bold text-gray-500 cursor-pointer hover:text-blue-600">${r ? '¿No estás de acuerdo? Ajusta la banda tú mismo' : 'Asigna tu banda con la rúbrica'}</summary>
+                    <summary class="text-xs font-bold text-gray-500 cursor-pointer hover:text-[#066A6E]">${r ? '¿No estás de acuerdo? Ajusta la banda tú mismo' : 'Asigna tu banda con la rúbrica'}</summary>
                     <div class="flex flex-wrap gap-2 mt-2">
                         ${w.rubric.map(rb => `
                             <button onclick="toeflLogic.setSelfBand('${kind}', ${rb.band})" title="${sanitizeHTML(rb.desc)}"
-                                class="px-3.5 py-1.5 rounded-xl border text-xs font-extrabold transition ${s.selfBands[kind] === rb.band ? 'bg-blue-600 text-white border-blue-600 shadow-md' : 'bg-white text-gray-600 border-gray-200 hover:border-blue-300'}">
+                                class="px-3.5 py-1.5 rounded-xl border text-xs font-extrabold transition ${s.selfBands[kind] === rb.band ? 'bg-[#066A6E] text-white border-[#066A6E] shadow-md' : 'bg-white text-gray-600 border-gray-200 hover:border-[#7db3b6]'}">
                                 ${rb.band} · ${sanitizeHTML(rb.label)}
                             </button>`).join('')}
                     </div>
@@ -715,7 +729,7 @@ const toeflLogic = {
                     ${evalBlock('discussion', w.discussion, s.discussionText)}
                     <div class="flex justify-end">
                         <button onclick="toeflLogic.finishWriting()" ${(s.selfBands.email && s.selfBands.discussion) ? '' : 'disabled'}
-                            class="px-8 py-3 rounded-xl font-bold transition ${(s.selfBands.email && s.selfBands.discussion) ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-600/20' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}">
+                            class="px-8 py-3 rounded-xl font-bold transition ${(s.selfBands.email && s.selfBands.discussion) ? 'bg-[#066A6E] text-white hover:bg-[#055457] shadow-lg shadow-[#066A6E]/20' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}">
                             Ver resultados <i class="ph-bold ph-flag-checkered"></i>
                         </button>
                     </div>
@@ -748,8 +762,8 @@ const toeflLogic = {
                 <div class="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 md:p-10">
                     <div class="text-center mb-8">
                         <p class="text-xs font-bold uppercase tracking-widest text-gray-400 mb-2">Banda estimada (no oficial, escala 1–6)</p>
-                        <p class="text-6xl font-extrabold text-blue-600">${overall}<span class="text-2xl text-gray-300"> /6</span></p>
-                        <p class="mt-1 text-sm font-bold text-blue-700">Nivel aproximado ${bandToCEFR(overall)} <span class="text-gray-400 font-semibold">(MCER)</span></p>
+                        <p class="text-6xl font-extrabold text-[#066A6E]">${overall}<span class="text-2xl text-gray-300"> /6</span></p>
+                        <p class="mt-1 text-sm font-bold text-[#055457]">Nivel aproximado ${bandToCEFR(overall)} <span class="text-gray-400 font-semibold">(MCER)</span></p>
                         <p class="text-gray-500 mt-2">Promedio de las tres tareas · email y discusión autoevaluados</p>
                     </div>
                     <div class="grid md:grid-cols-3 gap-4 mb-8">
@@ -787,7 +801,7 @@ const toeflLogic = {
                     </div>
                     <div class="flex flex-wrap gap-3 justify-center">
                         <button onclick="toeflLogic.start('writing')" class="px-6 py-3 rounded-xl border border-gray-200 text-gray-700 font-bold hover:bg-gray-50 transition"><i class="ph-bold ph-arrow-counter-clockwise"></i> Repetir práctica</button>
-                        <button onclick="toeflLogic.start('reading')" class="px-6 py-3 rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-700 transition"><i class="ph-bold ph-book-open"></i> Pasar a Reading</button>
+                        <button onclick="toeflLogic.start('reading')" class="px-6 py-3 rounded-xl bg-[#066A6E] text-white font-bold hover:bg-[#055457] transition"><i class="ph-bold ph-book-open"></i> Pasar a Reading</button>
                         <button onclick="toeflLogic.exit()" class="px-6 py-3 rounded-xl border border-gray-200 text-gray-500 font-bold hover:bg-gray-50 transition">Volver a módulos</button>
                     </div>
                 </div>`
