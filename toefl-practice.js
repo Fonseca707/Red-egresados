@@ -706,7 +706,7 @@ const toeflLogic = {
                 </div>
 
                 ${iaCargando ? iaCalificadora.cargandoHTML() : ''}
-                ${r ? iaCalificadora.tarjetaHTML(r, { escala: '/6', acento: 'blue' }) : ''}
+                ${r ? iaCalificadora.tarjetaHTML(r, { escala: '/6', acento: 'teal' }) : ''}
 
                 <details class="mt-3" ${r ? '' : 'open'}>
                     <summary class="text-xs font-bold text-gray-500 cursor-pointer hover:text-[#066A6E]">${r ? '¿No estás de acuerdo? Ajusta la banda tú mismo' : 'Asigna tu banda con la rúbrica'}</summary>

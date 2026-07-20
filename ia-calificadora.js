@@ -208,6 +208,8 @@ Devuelve JSON:
     tarjetaHTML(r, { escala = '/6', acento = 'blue' } = {}) {
         const c = acento === 'purple'
             ? { texto: 'text-purple-600', suave: 'bg-purple-50 border-purple-100', barra: 'bg-purple-600' }
+            : acento === 'teal'
+            ? { texto: 'text-[#066A6E]', suave: 'bg-[#e8f2f2] border-[#cce0e1]', barra: 'bg-[#066A6E]' }
             : { texto: 'text-blue-600', suave: 'bg-blue-50 border-blue-100', barra: 'bg-blue-600' };
         return `
             <div class="rounded-2xl border ${c.suave} border p-5">
