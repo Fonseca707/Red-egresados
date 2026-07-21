@@ -534,6 +534,8 @@ const TOEFL_TEST_1 = {
             targetWords: [100, 120],
             scenario: 'You are taking a biology course at your university. Last week you missed an important laboratory session because you were sick, and the professor’s syllabus says that missed labs can only be made up with prior approval. You have a doctor’s note and want to make up the session.',
             recipient: 'Write an email to Professor Reed.',
+            to: 'Professor Reed',
+            subject: 'Missed laboratory session',
             bullets: [
                 'Explain why you missed the laboratory session',
                 'Mention the doctor’s note you can provide',

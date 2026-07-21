@@ -485,28 +485,45 @@ const toeflLogic = {
         const pool = this.buildChipPool(item);
         const picks = s.buildPicks[s.buildIndex];
         const isLast = s.buildIndex === bs.items.length - 1;
+        const slotCount = item.chips.length; // huecos consecutivos = fichas correctas
+        // Texto de la pregunta del interlocutor A, sin el prefijo 'A: "..."'
+        const promptText = String(item.context).replace(/^A:\s*/, '').replace(/^["“](.*)["”]$/, '$1');
         this.root().innerHTML = this.shell({
-            banner: `Writing · Tarea 1: Build a Sentence (${s.buildIndex + 1}/${bs.items.length})`,
+            banner: `Make an appropriate sentence · ${s.buildIndex + 1} of ${bs.items.length}`,
             timed: true,
             body: `
                 <div class="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 md:p-8">
-                    <p class="text-sm text-gray-500 mb-6">${sanitizeHTML(bs.instructions)}</p>
-                    <div class="rounded-2xl border border-gray-100 bg-gray-50/70 p-4 mb-5">
-                        <p class="text-[15px] text-gray-800 font-medium">${sanitizeHTML(item.context)}</p>
+                    <p class="text-center text-lg md:text-xl font-bold text-gray-900 mb-1">Make an appropriate sentence.</p>
+                    <p class="text-center text-sm text-gray-500 mb-6">Move the words in the boxes to create a grammatical sentence.</p>
+
+                    <!-- Conversación: A pregunta (izq), B responde (der) -->
+                    <div class="max-w-3xl mx-auto space-y-4 mb-6">
+                        <div class="flex items-start gap-3">
+                            <span class="shrink-0 w-9 h-9 rounded-full bg-gray-100 border-2 border-[#7db3b6] flex items-center justify-center text-[#066A6E]"><i class="ph-bold ph-user"></i></span>
+                            <div class="rounded-2xl rounded-tl-sm bg-gray-50 border border-gray-100 px-4 py-2.5 text-[15px] text-gray-800">${sanitizeHTML(promptText)}</div>
+                        </div>
+                        <div class="flex items-start gap-3 flex-row-reverse">
+                            <span class="shrink-0 w-9 h-9 rounded-full bg-[#066A6E] border-2 border-[#066A6E] flex items-center justify-center text-white"><i class="ph-bold ph-user"></i></span>
+                            <div class="flex-1 rounded-2xl rounded-tr-sm bg-[#e8f2f2] border border-[#cce0e1] px-3 py-3">
+                                <div class="flex flex-wrap items-center gap-1.5">
+                                    ${Array.from({ length: slotCount }).map((_, si) => picks[si]
+                                        ? `<button onclick="toeflLogic.unpickChip(${si})" title="Quitar" class="px-3 py-1.5 rounded-lg bg-[#066A6E] text-white text-sm font-bold hover:bg-[#055457] transition shadow-sm">${sanitizeHTML(picks[si])}</button>`
+                                        : `<span class="inline-block min-w-[3rem] h-8 rounded-lg border-2 border-dashed border-[#7db3b6]/60 bg-white/50 align-middle"></span>`
+                                    ).join('')}
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <p class="text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-2">Tu respuesta (B:)</p>
-                    <div class="min-h-[3.5rem] rounded-2xl border-2 border-dashed ${picks.length ? 'border-[#7db3b6] bg-[#e8f2f2]' : 'border-gray-200 bg-gray-50/70'} p-3 flex flex-wrap gap-2 mb-4">
-                        ${picks.length ? picks.map((chip, ci) => `
-                            <button onclick="toeflLogic.unpickChip(${ci})" class="px-3 py-1.5 rounded-xl bg-[#066A6E] text-white text-sm font-bold hover:bg-[#055457] transition shadow-sm">${sanitizeHTML(chip)}</button>`).join('')
-                            : '<span class="text-sm text-gray-400 italic self-center">Toca las fichas de abajo en orden…</span>'}
-                    </div>
-                    <div class="flex flex-wrap gap-2 mb-6">
+
+                    <!-- Banco de fichas (incluye distractores) -->
+                    <p class="text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-2 text-center">Fichas</p>
+                    <div class="flex flex-wrap justify-center gap-2 mb-6">
                         ${pool.map((chip, pi) => this.chipIsPicked(picks, pool, pi)
                             ? `<button disabled class="px-3 py-1.5 rounded-xl bg-gray-100 text-gray-300 text-sm font-bold border border-gray-100">${sanitizeHTML(chip)}</button>`
                             : `<button onclick="toeflLogic.pickChip(${pi})" class="px-3 py-1.5 rounded-xl bg-white text-gray-800 text-sm font-bold border border-gray-200 hover:border-[#077F83] hover:bg-[#e8f2f2] transition shadow-sm">${sanitizeHTML(chip)}</button>`
                         ).join('')}
                     </div>
-                    <div class="flex justify-between items-center">
+                    <div class="flex justify-between items-center border-t border-gray-100 pt-4">
                         <button onclick="toeflLogic.clearPicks()" class="text-sm font-bold text-gray-400 hover:text-red-500 transition"><i class="ph-bold ph-eraser"></i> Limpiar</button>
                         <button onclick="toeflLogic.nextBuild()" class="px-6 py-2.5 rounded-xl bg-[#066A6E] text-white font-bold hover:bg-[#055457] transition flex items-center gap-2">
                             ${isLast ? 'Terminar tarea' : 'Siguiente'} <i class="ph-bold ph-arrow-right"></i>
@@ -529,6 +546,8 @@ const toeflLogic = {
     pickChip(poolIndex) {
         const s = this.session;
         const item = s.test.writing.buildSentence.items[s.buildIndex];
+        // No permitir más fichas que huecos disponibles
+        if (s.buildPicks[s.buildIndex].length >= item.chips.length) return;
         const chip = item._pool[poolIndex];
         s.buildPicks[s.buildIndex].push(chip);
         this.renderBuildSentence();
@@ -573,26 +592,78 @@ const toeflLogic = {
     // ── Write an Email ───────────────────────────────────────────────────────
     countWords(text) { return (String(text).trim().match(/\S+/g) || []).length; },
 
+    // Barra de herramientas del editor (Cut/Copy/Paste/Undo/Redo), fiel al examen.
+    // Funcional sobre el textarea con foco; nada decorativo muerto.
+    writingToolbar(textareaId) {
+        const btn = (cmd, icon, label) => `<button type="button" onmousedown="event.preventDefault()" onclick="toeflLogic.editorCmd('${textareaId}','${cmd}')" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold text-gray-600 hover:bg-gray-100 transition"><i class="ph-bold ${icon}"></i> ${label}</button>`;
+        return `<div class="flex items-center gap-1 border-b border-gray-200 bg-gray-50/80 rounded-t-2xl px-2 py-1.5">
+            ${btn('cut', 'ph-scissors', 'Cut')}${btn('copy', 'ph-copy', 'Copy')}${btn('paste', 'ph-clipboard-text', 'Paste')}
+            <span class="w-px h-4 bg-gray-200 mx-1"></span>
+            ${btn('undo', 'ph-arrow-counter-clockwise', 'Undo')}${btn('redo', 'ph-arrow-clockwise', 'Redo')}
+        </div>`;
+    },
+
+    // Panel derecho "Your Response:" reutilizado por Email y Discussion.
+    responsePanel({ kind, textareaId, to, subject, current, target, placeholder, submitFn, submitLabel }) {
+        return `
+            <div class="rounded-2xl border border-gray-200 overflow-hidden">
+                <div class="bg-white px-4 py-2.5 border-b border-gray-100">
+                    <p class="text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-2">Your Response</p>
+                    ${to !== undefined ? `<div class="flex items-center gap-2 text-sm mb-1"><span class="w-16 text-gray-400 font-semibold">To:</span><span class="text-gray-800 font-medium">${sanitizeHTML(to)}</span></div>
+                    <div class="flex items-center gap-2 text-sm"><span class="w-16 text-gray-400 font-semibold">Subject:</span><span class="text-gray-800 font-medium">${sanitizeHTML(subject)}</span></div>` : ''}
+                </div>
+                ${this.writingToolbar(textareaId)}
+                <textarea id="${textareaId}" rows="11" oninput="toeflLogic.onWrittenInput('${kind}')" placeholder="${placeholder}" class="w-full p-4 text-[15px] text-gray-800 leading-relaxed focus:outline-none resize-y border-0" spellcheck="false">${sanitizeHTML(current)}</textarea>
+                <div class="flex items-center justify-between px-4 py-2.5 bg-gray-50/80 border-t border-gray-100">
+                    <p class="text-sm font-bold text-gray-400"><span id="toefl-word-count">0</span> words · target ${target[0]}–${target[1]}</p>
+                    <button onclick="toeflLogic.${submitFn}(false)" class="px-5 py-2 rounded-xl bg-[#066A6E] text-white font-bold hover:bg-[#055457] transition text-sm">${submitLabel} <i class="ph-bold ph-arrow-right"></i></button>
+                </div>
+            </div>`;
+    },
+
+    editorCmd(textareaId, cmd) {
+        const el = document.getElementById(textareaId);
+        if (!el) return;
+        el.focus();
+        if (cmd === 'paste') {
+            navigator.clipboard?.readText?.().then(txt => {
+                const [a, b] = [el.selectionStart, el.selectionEnd];
+                el.setRangeText(txt, a, b, 'end');
+                el.dispatchEvent(new Event('input', { bubbles: true }));
+            }).catch(() => {});
+            return;
+        }
+        try { document.execCommand(cmd); } catch (_) {}
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+    },
+
     renderEmailTask() {
         const s = this.session;
         const t = s.test.writing.email;
         this.root().innerHTML = this.shell({
-            banner: 'Writing · Tarea 2: Write an Email',
+            banner: 'Write an Email · 1 of 2',
             timed: true,
             body: `
                 <div class="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 md:p-8">
-                    <div class="rounded-2xl border border-gray-100 bg-gray-50/70 p-5 mb-5">
-                        <p class="text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-2">Scenario</p>
-                        <p class="text-[15px] text-gray-800 leading-relaxed mb-3">${sanitizeHTML(t.scenario)}</p>
-                        <p class="text-[15px] text-gray-900 font-bold mb-2">${sanitizeHTML(t.recipient)} In your email:</p>
-                        <ul class="space-y-1">
-                            ${t.bullets.map(b => `<li class="text-[15px] text-gray-700 flex gap-2"><i class="ph-bold ph-dot-outline text-[#066A6E] mt-1"></i>${sanitizeHTML(b)}</li>`).join('')}
-                        </ul>
-                    </div>
-                    <textarea id="toefl-email-text" rows="10" oninput="toeflLogic.onWrittenInput('email')" placeholder="Dear Professor Reed, ..." class="w-full rounded-2xl border border-gray-200 p-4 text-[15px] text-gray-800 leading-relaxed focus:outline-none focus:border-[#077F83] focus:ring-2 focus:ring-[#cce0e1] transition resize-y" spellcheck="false">${sanitizeHTML(s.emailText)}</textarea>
-                    <div class="flex items-center justify-between mt-3">
-                        <p class="text-sm font-bold text-gray-400"><span id="toefl-word-count">0</span> palabras · objetivo ${t.targetWords[0]}–${t.targetWords[1]}</p>
-                        <button onclick="toeflLogic.submitEmail(false)" class="px-6 py-2.5 rounded-xl bg-[#066A6E] text-white font-bold hover:bg-[#055457] transition">Enviar y continuar <i class="ph-bold ph-arrow-right"></i></button>
+                    <p class="text-center text-lg md:text-xl font-bold text-gray-900 mb-5">Write an Email</p>
+                    <div class="grid lg:grid-cols-2 gap-5">
+                        <!-- Izquierda: escenario + viñetas -->
+                        <div class="rounded-2xl border border-gray-100 bg-gray-50/70 p-5">
+                            <p class="text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-2">Scenario</p>
+                            <p class="text-[15px] text-gray-800 leading-relaxed mb-3">${sanitizeHTML(t.scenario)}</p>
+                            <p class="text-[15px] text-gray-900 font-bold mb-2">${sanitizeHTML(t.recipient)} In your email, do the following:</p>
+                            <ul class="space-y-1 mb-3">
+                                ${t.bullets.map(b => `<li class="text-[15px] text-gray-700 flex gap-2"><i class="ph-bold ph-dot-outline text-[#066A6E] mt-1"></i>${sanitizeHTML(b)}</li>`).join('')}
+                            </ul>
+                            <p class="text-sm text-gray-400 italic">Write as much as you can and in complete sentences.</p>
+                        </div>
+                        <!-- Derecha: editor -->
+                        ${this.responsePanel({
+                            kind: 'email', textareaId: 'toefl-email-text',
+                            to: t.to, subject: t.subject, current: s.emailText,
+                            target: t.targetWords, placeholder: 'Dear Professor Reed, ...',
+                            submitFn: 'submitEmail', submitLabel: 'Enviar y continuar'
+                        })}
                     </div>
                 </div>`
         });
@@ -624,28 +695,32 @@ const toeflLogic = {
         const s = this.session;
         const t = s.test.writing.discussion;
         this.root().innerHTML = this.shell({
-            banner: 'Writing · Tarea 3: Academic Discussion',
+            banner: 'Write for an Academic Discussion · 2 of 2',
             timed: true,
             body: `
                 <div class="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 md:p-8">
-                    <div class="space-y-3 mb-5">
-                        <div class="rounded-2xl border border-[#cce0e1] bg-[#e8f2f2] p-4">
-                            <p class="text-xs font-extrabold text-[#055457] mb-1"><i class="ph-bold ph-chalkboard-teacher"></i> ${sanitizeHTML(t.professor.name)}</p>
-                            <p class="text-[15px] text-gray-800 leading-relaxed">${sanitizeHTML(t.professor.post)}</p>
-                        </div>
-                        <div class="grid md:grid-cols-2 gap-3">
+                    <p class="text-center text-lg md:text-xl font-bold text-gray-900 mb-1">Write for an Academic Discussion</p>
+                    <p class="text-center text-sm text-gray-500 mb-5">Make a contribution to the discussion. Refer to your classmates’ ideas and add your own.</p>
+                    <div class="grid lg:grid-cols-2 gap-5">
+                        <!-- Izquierda: hilo del foro -->
+                        <div class="space-y-3">
+                            <div class="rounded-2xl border border-[#cce0e1] bg-[#e8f2f2] p-4">
+                                <p class="text-xs font-extrabold text-[#055457] mb-1 flex items-center gap-1.5"><span class="w-6 h-6 rounded-full bg-[#066A6E] text-white flex items-center justify-center"><i class="ph-bold ph-chalkboard-teacher"></i></span> ${sanitizeHTML(t.professor.name)}</p>
+                                <p class="text-[15px] text-gray-800 leading-relaxed">${sanitizeHTML(t.professor.post)}</p>
+                            </div>
                             ${t.students.map(st => `
-                                <div class="rounded-2xl border border-gray-100 bg-gray-50/70 p-4">
-                                    <p class="text-xs font-extrabold text-gray-500 mb-1"><i class="ph-bold ph-student"></i> ${sanitizeHTML(st.name)}</p>
+                                <div class="rounded-2xl border border-gray-100 bg-gray-50/70 p-4 ml-4">
+                                    <p class="text-xs font-extrabold text-gray-500 mb-1 flex items-center gap-1.5"><span class="w-6 h-6 rounded-full bg-gray-200 text-gray-600 flex items-center justify-center"><i class="ph-bold ph-student"></i></span> ${sanitizeHTML(st.name)}</p>
                                     <p class="text-sm text-gray-700 leading-relaxed">${sanitizeHTML(st.post)}</p>
                                 </div>`).join('')}
                         </div>
-                    </div>
-                    <p class="text-sm text-gray-500 mb-3"><i class="ph-bold ph-lightbulb text-amber-500"></i> Menciona a los otros estudiantes brevemente y aporta un <strong>argumento nuevo</strong> que nadie haya dado.</p>
-                    <textarea id="toefl-discussion-text" rows="9" oninput="toeflLogic.onWrittenInput('discussion')" placeholder="I see valid points in both posts, but..." class="w-full rounded-2xl border border-gray-200 p-4 text-[15px] text-gray-800 leading-relaxed focus:outline-none focus:border-[#077F83] focus:ring-2 focus:ring-[#cce0e1] transition resize-y" spellcheck="false">${sanitizeHTML(s.discussionText)}</textarea>
-                    <div class="flex items-center justify-between mt-3">
-                        <p class="text-sm font-bold text-gray-400"><span id="toefl-word-count">0</span> palabras · objetivo ${t.targetWords[0]}–${t.targetWords[1]}</p>
-                        <button onclick="toeflLogic.submitDiscussion(false)" class="px-6 py-2.5 rounded-xl bg-[#066A6E] text-white font-bold hover:bg-[#055457] transition">Enviar y autoevaluar <i class="ph-bold ph-arrow-right"></i></button>
+                        <!-- Derecha: editor -->
+                        ${this.responsePanel({
+                            kind: 'discussion', textareaId: 'toefl-discussion-text',
+                            current: s.discussionText, target: t.targetWords,
+                            placeholder: 'I see valid points in both posts, but...',
+                            submitFn: 'submitDiscussion', submitLabel: 'Enviar y autoevaluar'
+                        })}
                     </div>
                 </div>`
         });
