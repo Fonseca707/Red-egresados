@@ -470,60 +470,73 @@ const TOEFL_TEST_1 = {
         buildSentence: {
             title: 'Build a Sentence',
             minutes: 7,
-            instructions: 'Lee cada mensaje y ordena las palabras para formar la respuesta correcta. Toca las fichas en orden; toca una ficha elegida para devolverla.',
+            instructions: 'Move the words in the boxes to create a grammatical sentence.',
+            // FIEL AL EXAMEN REAL (capturas 2026-07-19, doc "TOEFL ejemplo" pág. 16-17):
+            // la respuesta NO es una fila de huecos seguidos, sino una oración con
+            // PALABRAS FIJAS intercaladas y huecos ([[n]]) entre ellas.
+            //   template  = oración con [[n]] donde va cada hueco
+            //   solution  = ficha correcta de cada hueco, en orden
+            //   distractors = fichas que sobran (siempre hay al menos una)
             items: [
                 {
-                    context: 'A: "How was the concert last night?"',
-                    answer: 'It was the best show I have ever seen.',
-                    chips: ['It was', 'the best show', 'I have', 'ever seen.'],
-                    distractors: ['It were']
+                    context: 'How was the concert last night?',
+                    template: 'It was [[1]] [[2]] ever seen.',
+                    solution: ['the best show', 'I have'],
+                    distractors: ['the better show']
                 },
                 {
-                    context: 'A: "I heard the museum is free on Sundays."',
-                    answer: 'Do you know if we need to reserve tickets in advance?',
-                    chips: ['Do you know', 'if', 'we need to', 'reserve tickets', 'in advance?'],
-                    distractors: ['does']
+                    context: 'I heard the museum is free on Sundays.',
+                    template: 'Do you know [[1]] [[2]] [[3]] in advance?',
+                    solution: ['if', 'we need to', 'reserve tickets'],
+                    distractors: ['reserving tickets']
                 },
                 {
-                    context: 'A: "Why is the kitchen such a mess?"',
-                    answer: 'The cake was being decorated when I left.',
-                    chips: ['The cake', 'was being', 'decorated', 'when I left.']
+                    context: 'Why is the kitchen such a mess?',
+                    template: 'The cake [[1]] [[2]] when I left.',
+                    solution: ['was being', 'decorated'],
+                    distractors: ['was been']
                 },
                 {
-                    context: 'A: "Can anyone join the study group?"',
-                    answer: 'Students who registered this semester are welcome to join.',
-                    chips: ['Students', 'who registered', 'this semester', 'are welcome', 'to join.']
+                    context: 'Can anyone join the study group?',
+                    template: 'Students [[1]] [[2]] are welcome to join.',
+                    solution: ['who registered', 'this semester'],
+                    distractors: ['which registered']
                 },
                 {
-                    context: 'A: "What would you do with a free week?"',
-                    answer: 'If I had more time, I would visit my grandparents.',
-                    chips: ['If I had', 'more time,', 'I would', 'visit my grandparents.']
+                    context: 'What would you do with a free week?',
+                    template: '[[1]] more time, [[2]] visit my grandparents.',
+                    solution: ['If I had', 'I would'],
+                    distractors: ['If I have']
                 },
                 {
-                    context: 'A: "The printer stopped working again."',
-                    answer: 'It should have been repaired last month.',
-                    chips: ['It', 'should have', 'been repaired', 'last month.']
+                    context: 'The printer stopped working again.',
+                    template: 'It [[1]] [[2]] last month.',
+                    solution: ['should have', 'been repaired'],
+                    distractors: ['should had']
                 },
                 {
-                    context: 'A: "Did you enjoy the new restaurant?"',
-                    answer: 'The food was so good that we ordered dessert twice.',
-                    chips: ['The food', 'was so good', 'that we ordered', 'dessert twice.']
+                    context: 'Did you enjoy the new restaurant?',
+                    template: 'The food [[1]] [[2]] dessert twice.',
+                    solution: ['was so good', 'that we ordered'],
+                    distractors: ['so good was']
                 },
                 {
-                    context: 'A: "I can’t find my keys anywhere."',
-                    answer: 'They might have been left in the car.',
-                    chips: ['They', 'might have been', 'left', 'in the car.'],
+                    context: 'I can’t find my keys anywhere.',
+                    template: 'They [[1]] [[2]] in the car.',
+                    solution: ['might have been', 'left'],
                     distractors: ['must to be']
                 },
                 {
-                    context: 'A: "Is the report ready for the meeting?"',
-                    answer: 'It will be finished by the time you arrive.',
-                    chips: ['It will be', 'finished', 'by the time', 'you arrive.']
+                    context: 'Is the report ready for the meeting?',
+                    template: 'It [[1]] [[2]] you arrive.',
+                    solution: ['will be finished', 'by the time'],
+                    distractors: ['by the time that']
                 },
                 {
-                    context: 'A: "How do I get to the train station?"',
-                    answer: 'Take the second street on the left after the bank.',
-                    chips: ['Take', 'the second street', 'on the left', 'after the bank.']
+                    context: 'How do I get to the train station?',
+                    template: 'Take [[1]] [[2]] after the bank.',
+                    solution: ['the second street', 'on the left'],
+                    distractors: ['at the left']
                 }
             ]
         },
@@ -534,7 +547,7 @@ const TOEFL_TEST_1 = {
             targetWords: [100, 120],
             scenario: 'You are taking a biology course at your university. Last week you missed an important laboratory session because you were sick, and the professor’s syllabus says that missed labs can only be made up with prior approval. You have a doctor’s note and want to make up the session.',
             recipient: 'Write an email to Professor Reed.',
-            to: 'Professor Reed',
+            to: 'reed@biology.university.edu',
             subject: 'Missed laboratory session',
             bullets: [
                 'Explain why you missed the laboratory session',
