@@ -51,6 +51,7 @@
                 <button onclick="adminLogic.switchTab('correos')" id="tab-correos" class="pb-3 text-sm font-bold border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition">Correos</button>
                 <button onclick="adminLogic.switchTab('contactos')" id="tab-contactos" class="hidden pb-3 text-sm font-bold border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition">Mensajes<span id="tab-contactos-badge" class="hidden ml-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-brand-600 text-white text-[10px] font-bold align-middle inline-flex items-center justify-center">0</span></button>
                 <button onclick="adminLogic.switchTab('colegios')" id="tab-colegios" class="hidden pb-3 text-sm font-bold border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition">Colegios</button>
+                <button onclick="adminLogic.switchTab('audio')" id="tab-audio" class="hidden pb-3 text-sm font-bold border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition">Audio</button>
                 <button onclick="adminLogic.switchTab('subadmins')" id="tab-subadmins" class="hidden pb-3 text-sm font-bold border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition">Sub-Administradores</button>
             </div>
 
@@ -310,6 +311,67 @@
                 <div id="admin-colegios-list" class="space-y-4"></div>
             </div>
 
+            <div id="admin-audio-tab" class="hidden space-y-4">
+                <div class="bg-amber-50 border border-amber-100 rounded-2xl px-5 py-4 flex items-start gap-3">
+                    <i class="ph-duotone ph-waveform text-amber-600 text-2xl mt-0.5 shrink-0"></i>
+                    <div>
+                        <p class="font-bold text-amber-900 text-sm">Estudio de audio · listening</p>
+                        <p class="text-amber-700 text-xs mt-0.5">Aquí se fabrica el audio de las pruebas de escucha. Se genera <strong>una sola vez</strong> y queda guardado: el estudiante reproduce el archivo, nunca se vuelve a generar. Escucha siempre el resultado antes de guardarlo — el generador se equivoca de entonación más de lo que uno esperaría, y en un examen eso se nota.</p>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-gray-100">
+                    <h3 class="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2">
+                        <i class="ph-bold ph-microphone-stage text-amber-600"></i> Nuevo clip
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="input-label">Tipo de documento</label>
+                            <select id="audio-tipo" class="input-field" onchange="audioLogic.onTipoChange()"></select>
+                        </div>
+                        <div>
+                            <label class="input-label">Título (para reconocerlo)</label>
+                            <input id="audio-titulo" class="input-field" placeholder="Ej: CO1 — organizar un viaje" maxlength="80">
+                        </div>
+                        <div>
+                            <label class="input-label">Voz principal</label>
+                            <select id="audio-voz1" class="input-field"></select>
+                        </div>
+                        <div id="audio-voz2-wrap" class="hidden">
+                            <label class="input-label">Segunda voz (diálogo)</label>
+                            <select id="audio-voz2" class="input-field"></select>
+                        </div>
+                        <div id="audio-acento-wrap" class="hidden">
+                            <label class="input-label">Acento (TOEFL)</label>
+                            <select id="audio-acento" class="input-field"></select>
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="input-label">Transcript</label>
+                            <textarea id="audio-texto" class="input-field font-mono text-sm" rows="8" maxlength="6000" placeholder="El texto exacto que se va a narrar."></textarea>
+                            <p id="audio-ayuda-speakers" class="hidden text-xs text-gray-500 mt-1">
+                                En los diálogos, empieza cada línea con el nombre de quien habla y dos puntos —<code>Nadia: Bonjour…</code>— para que cada personaje reciba su propia voz.
+                            </p>
+                        </div>
+                        <div class="md:col-span-2 flex items-center justify-end gap-3">
+                            <button id="audio-btn-generar" onclick="audioLogic.generar()" class="px-6 py-3 bg-amber-600 text-white font-bold rounded-xl hover:bg-amber-700 transition">Generar audio</button>
+                            <button id="audio-btn-guardar" onclick="audioLogic.guardar()" disabled class="px-6 py-3 bg-brand-600 text-white font-bold rounded-xl hover:bg-brand-700 transition disabled:opacity-40 disabled:cursor-not-allowed">Guardar en el banco</button>
+                        </div>
+                    </div>
+                    <div id="audio-preview-wrap" class="hidden mt-4">
+                        <p class="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Antes de guardar, escúchalo</p>
+                        <audio id="audio-preview" controls class="w-full"></audio>
+                    </div>
+                    <div id="audio-aviso" class="hidden"></div>
+                </div>
+
+                <div class="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-gray-100">
+                    <h3 class="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2">
+                        <i class="ph-bold ph-playlist text-brand-600"></i> Banco de clips
+                    </h3>
+                    <div id="audio-lista" class="space-y-4"></div>
+                </div>
+            </div>
+
             <div id="admin-subadmins-tab" class="hidden space-y-4">
                 <div class="bg-purple-50 border border-purple-100 rounded-2xl px-5 py-4 flex items-start gap-3">
                     <i class="ph-duotone ph-shield-star text-purple-600 text-2xl mt-0.5 shrink-0"></i>
@@ -350,11 +412,13 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-analytics-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-storage-compat.js"></script>
     <script src="shared.js?v=12"></script>
     <script src="admin-correos.js?v=3"></script>
     <script src="admin-rutas-ia.js?v=2"></script>
     <script src="admin-contactos.js?v=1"></script>
     <script src="admin-colegios.js?v=1"></script>
+    <script src="admin-audio.js?v=1"></script>
     <script>
         renderNav('admin');
 
@@ -363,7 +427,7 @@
         // colegios ajenos. La frontera real son las reglas de Firestore
         // (docs/firestore.rules); esto evita además que la pestaña se abra
         // llamando switchTab() a mano desde la consola.
-        const SUPER_ONLY_TABS = ['contactos', 'colegios', 'subadmins'];
+        const SUPER_ONLY_TABS = ['contactos', 'colegios', 'subadmins', 'audio'];
         const tabPermitida = (tab) => !SUPER_ONLY_TABS.includes(tab) || state.adminRole === 'superadmin';
 
         const adminLogic = {
@@ -376,7 +440,8 @@
                     correos:   { btn:'tab-correos',    panel:'admin-correos-tab' },
                     contactos: { btn:'tab-contactos',  panel:'admin-contactos-tab' },
                     colegios:  { btn:'tab-colegios',   panel:'admin-colegios-tab' },
-                    subadmins: { btn:'tab-subadmins',  panel:'admin-subadmins-tab' }
+                    subadmins: { btn:'tab-subadmins',  panel:'admin-subadmins-tab' },
+                    audio:     { btn:'tab-audio',      panel:'admin-audio-tab' }
                 };
                 Object.entries(tabMap).forEach(([key, { btn, panel }]) => {
                     const b = document.getElementById(btn);
@@ -391,6 +456,7 @@
                 });
                 if (tab === 'subadmins') adminLogic.renderSubAdmins();
                 if (tab === 'colegios') colegiosAdminLogic.load();
+                if (tab === 'audio') audioLogic.montar();
                 // El interruptor de correos automáticos es de toda la red:
                 // el sub-admin no lo ve (sus campañas manuales sí, ya van
                 // solo a los egresados de su colegio vía getVisibleUsers()).

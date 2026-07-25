@@ -1,0 +1,30 @@
+rules_version = '2';
+
+// Almacenamiento de Sinapsis. Hoy solo guarda el audio de los listening
+// (TOEFL/DELF), generado una única vez desde el admin y reproducido muchas
+// veces por los estudiantes.
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // Mismo criterio que firestore.rules: correo exacto y verificado.
+    function isSuperAdmin() {
+      return request.auth != null
+        && request.auth.token.email_verified == true
+        && request.auth.token.email == 'juanda.fonsecag@gmail.com';
+    }
+
+    // Audio de los tests: lectura pública (practicar no exige sesión, igual que
+    // el resto del módulo de exámenes); escritura solo superadmin.
+    match /tests-audio/{examen}/{archivo} {
+      allow read: if true;
+      allow write: if isSuperAdmin()
+        && request.resource.size < 25 * 1024 * 1024
+        && request.resource.contentType.matches('audio/.*');
+    }
+
+    // Todo lo demás, cerrado.
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -21,13 +21,26 @@ const ALLOWED_ORIGINS = [
 const MAX_TOKENS_CAP = 1500;
 const RATE_LIMIT_PER_MIN = 20;
 
+// ── TTS (audio de los listening) ─────────────────────────────────────────────
+// Genera el audio UNA vez, desde el admin; el estudiante reproduce el archivo ya
+// subido a Storage. Por eso esta ruta es cara y va cerrada al superadmin.
+const TTS_MODELO = 'gemini-3.1-flash-tts-preview';
+const TTS_MAX_CHARS = 6000;          // ~4-5 min de audio; un documento de examen cabe de sobra
+const TTS_LIMITE_POR_HORA = 40;      // freno de saldo, aunque la clave del admin se filtre
+const SUPERADMIN_EMAIL = 'juanda.fonsecag@gmail.com';
+const FIREBASE_API_KEY = 'AIzaSyBoVTqroZ7zR-3a5QGy5CzK19a4422t0Rg'; // pública (va en el cliente)
+const VOCES_VALIDAS = ['Kore', 'Puck', 'Charon', 'Fenrir', 'Leda', 'Enceladus', 'Orus',
+    'Aoede', 'Algieba', 'Despina', 'Achernar', 'Alnilam', 'Sulafat'];
+
+const ttsHits = new Map(); // email -> {count, windowStart}
+
 const hits = new Map(); // ip -> {count, windowStart} (por instancia; mejor esfuerzo)
 
 function corsHeaders(origin) {
     return {
         'Access-Control-Allow-Origin': origin,
         'Access-Control-Allow-Methods': 'POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
         'Access-Control-Max-Age': '86400'
     };
 }
@@ -44,6 +57,140 @@ function rateLimited(ip) {
     return entry.count > RATE_LIMIT_PER_MIN;
 }
 
+// ── Utilidades TTS ───────────────────────────────────────────────────────────
+
+// Gemini devuelve PCM crudo (24 kHz, 16 bits, mono). El navegador no reproduce
+// PCM suelto: hay que anteponerle la cabecera WAV de 44 bytes.
+function pcmAWav(pcm, sampleRate = 24000, canales = 1, bitsPorMuestra = 16) {
+    const bytesPorMuestra = bitsPorMuestra / 8;
+    const alineacion = canales * bytesPorMuestra;
+    const wav = new Uint8Array(44 + pcm.length);
+    const vista = new DataView(wav.buffer);
+    const texto = (pos, s) => { for (let i = 0; i < s.length; i++) wav[pos + i] = s.charCodeAt(i); };
+
+    texto(0, 'RIFF');
+    vista.setUint32(4, 36 + pcm.length, true);
+    texto(8, 'WAVEfmt ');
+    vista.setUint32(16, 16, true);              // tamaño del bloque fmt
+    vista.setUint16(20, 1, true);               // PCM sin comprimir
+    vista.setUint16(22, canales, true);
+    vista.setUint32(24, sampleRate, true);
+    vista.setUint32(28, sampleRate * alineacion, true);
+    vista.setUint16(32, alineacion, true);
+    vista.setUint16(34, bitsPorMuestra, true);
+    texto(36, 'data');
+    vista.setUint32(40, pcm.length, true);
+    wav.set(pcm, 44);
+    return wav;
+}
+
+function base64ABytes(b64) {
+    const bin = atob(b64);
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return bytes;
+}
+
+// Valida el ID token contra Google (sin criptografía a mano) y exige que sea
+// el superadmin con el correo verificado: el mismo criterio de firestore.rules.
+async function superadminAutenticado(request) {
+    const cabecera = request.headers.get('Authorization') || '';
+    if (!cabecera.startsWith('Bearer ')) return null;
+    const respuesta = await fetch(
+        `https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${FIREBASE_API_KEY}`,
+        {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ idToken: cabecera.slice(7) })
+        }
+    );
+    if (!respuesta.ok) return null;
+    const datos = await respuesta.json();
+    const usuario = (datos.users || [])[0];
+    if (!usuario || usuario.email !== SUPERADMIN_EMAIL || usuario.emailVerified !== true) return null;
+    return usuario.email;
+}
+
+function ttsPasadoDeVueltas(email) {
+    const ahora = Date.now();
+    const registro = ttsHits.get(email);
+    if (!registro || ahora - registro.windowStart > 3_600_000) {
+        ttsHits.set(email, { count: 1, windowStart: ahora });
+        return false;
+    }
+    registro.count++;
+    return registro.count > TTS_LIMITE_POR_HORA;
+}
+
+// POST /tts  {texto, voces:[{speaker,voice}] | voz, instruccion?}  →  audio/wav
+async function generarAudio(request, env, origin) {
+    const json = (obj, status) => new Response(JSON.stringify(obj),
+        { status, headers: { ...corsHeaders(origin), 'Content-Type': 'application/json' } });
+
+    // Autenticar ANTES que nada: a quien no es el superadmin no se le cuenta
+    // siquiera cómo está configurado el Worker.
+    const email = await superadminAutenticado(request);
+    if (!email) return json({ error: 'Solo el superadmin puede generar audio.' }, 403);
+    if (!env.GEMINI_API_KEY) {
+        return json({ error: 'Falta el secreto GEMINI_API_KEY en el Worker (npx wrangler secret put GEMINI_API_KEY).' }, 503);
+    }
+    if (ttsPasadoDeVueltas(email)) {
+        return json({ error: `Tope de ${TTS_LIMITE_POR_HORA} generaciones por hora alcanzado.` }, 429);
+    }
+
+    let cuerpo;
+    try { cuerpo = await request.json(); } catch { return json({ error: 'JSON inválido' }, 400); }
+
+    const texto = String(cuerpo.texto || '').trim();
+    if (!texto) return json({ error: 'Falta el texto a narrar.' }, 400);
+    if (texto.length > TTS_MAX_CHARS) {
+        return json({ error: `El texto excede ${TTS_MAX_CHARS} caracteres (son ${texto.length}).` }, 400);
+    }
+
+    // Una voz (monólogo: radio, anuncio, charla) o varias (diálogo del DELF / TOEFL)
+    const pedidas = Array.isArray(cuerpo.voces) && cuerpo.voces.length
+        ? cuerpo.voces.map(v => ({ speaker: String(v.speaker || '').trim(), voice: String(v.voice || '') }))
+        : [{ voice: String(cuerpo.voz || 'Kore') }];
+    for (const v of pedidas) {
+        if (!VOCES_VALIDAS.includes(v.voice)) return json({ error: `Voz no válida: ${v.voice}` }, 400);
+    }
+    const speechConfig = pedidas.map(v => (v.speaker ? { speaker: v.speaker, voice: v.voice } : { voice: v.voice }));
+
+    // La instrucción de estilo (acento, ritmo) viaja como preámbulo del texto:
+    // así se pide "acento británico" o "tono de locutor de radio" sin campos extra.
+    const entrada = cuerpo.instruccion ? `${String(cuerpo.instruccion).trim()}\n\n${texto}` : texto;
+
+    const upstream = await fetch('https://generativelanguage.googleapis.com/v1beta/interactions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': env.GEMINI_API_KEY },
+        body: JSON.stringify({
+            model: TTS_MODELO,
+            input: entrada,
+            response_format: { type: 'audio' },
+            generation_config: { speech_config: speechConfig }
+        })
+    });
+
+    if (!upstream.ok) {
+        const detalle = await upstream.text();
+        return json({ error: 'El generador de audio falló', status: upstream.status, detalle: detalle.slice(0, 500) }, 502);
+    }
+
+    const datos = await upstream.json();
+    const b64 = datos?.interaction?.output_audio?.data;
+    if (!b64) return json({ error: 'La respuesta no traía audio', detalle: JSON.stringify(datos).slice(0, 500) }, 502);
+
+    const wav = pcmAWav(base64ABytes(b64));
+    return new Response(wav, {
+        headers: {
+            ...corsHeaders(origin),
+            'Content-Type': 'audio/wav',
+            'Content-Length': String(wav.length),
+            'X-Duracion-Aprox-Seg': String(Math.round((wav.length - 44) / (24000 * 2)))
+        }
+    });
+}
+
 export default {
     async fetch(request, env) {
         const origin = request.headers.get('Origin') || '';
@@ -54,6 +201,9 @@ export default {
         }
         if (!allowed) return new Response('Origen no permitido', { status: 403 });
         if (request.method !== 'POST') return new Response('Solo POST', { status: 405, headers: corsHeaders(origin) });
+
+        // Ruta de audio para los listening (cerrada al superadmin, ver generarAudio)
+        if (new URL(request.url).pathname === '/tts') return generarAudio(request, env, origin);
 
         const ip = request.headers.get('CF-Connecting-IP') || 'desconocida';
         if (rateLimited(ip)) {

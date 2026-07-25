@@ -130,6 +130,15 @@ service cloud.firestore {
         allow write: if isSuperAdmin();
       }
 
+      // Banco de audio de los listening (DELF CO / TOEFL Listening). El audio
+      // se genera UNA vez desde el admin y vive en Storage; aqui queda su ficha
+      // (transcript, voces, url, duracion) para reusarlo en los tests. Lectura
+      // publica como examTests: practicar no exige sesion.
+      match /public/data/audioClips/{clipId} {
+        allow read: if true;
+        allow write: if isSuperAdmin();
+      }
+
       // Codigos de invitacion: GET publico (validar un codigo exige conocerlo,
       // el id ES el codigo), pero LIST solo superadmin para que nadie pueda
       // enumerar los codigos vigentes.
