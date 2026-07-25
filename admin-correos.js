@@ -143,7 +143,7 @@ Del Liceo a la universidad. A tu primer trabajo. A lo que haces hoy.
 Para un estudiante de once que está eligiendo carrera, tu camino es el mapa que no tiene. No necesita consejos abstractos: necesita ver que alguien que se sentó en su mismo salón hoy es ingeniero, médica, chef o profesora, y por dónde pasó para llegar ahí.
 
 Completar tu ruta toma unos minutos:
-https://fonseca707.github.io/Red-egresados/profile.html
+https://red-egresados-65a1a.web.app/profile.html
 
 Con dos o tres hitos basta para que aparezca en el directorio y pueda orientar a quien viene detrás.
 
@@ -160,7 +160,7 @@ Sinapsis · Red de Egresados LCP`
         cuerpo: `Hola,
 
 Sinapsis es la red de egresados del Liceo Campestre de Pereira, y ya está en línea:
-https://fonseca707.github.io/Red-egresados
+https://red-egresados-65a1a.web.app
 
 Qué puedes hacer allí:
 

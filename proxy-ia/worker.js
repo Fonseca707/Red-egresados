@@ -10,6 +10,10 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 const ALLOWED_ORIGINS = [
+    // Firebase Hosting (sitio oficial desde 2026-07-25)
+    'https://red-egresados-65a1a.web.app',
+    'https://red-egresados-65a1a.firebaseapp.com',
+    // GitHub Pages: se mantiene durante la transición, quitar cuando Pages se apague
     'https://fonseca707.github.io',
     'http://localhost:8642',
     'http://127.0.0.1:8642'

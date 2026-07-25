@@ -1,5 +1,34 @@
 {
   "firestore": {
     "rules": "docs/firestore.rules"
+  },
+  "hosting": {
+    "public": ".",
+    "ignore": [
+      "firebase.json",
+      ".firebaserc",
+      "**/.*",
+      "**/.*/**",
+      ".git/**",
+      ".github/**",
+      ".firebase/**",
+      ".wrangler/**",
+      "**/node_modules/**",
+      "backups/**",
+      "scripts/**",
+      "proxy-ia/**",
+      "correos-worker/**",
+      "docs/**",
+      "README.md",
+      "firebase-config.example.js"
+    ],
+    "headers": [
+      {
+        "source": "**/*.@(html|js|css)",
+        "headers": [
+          { "key": "Cache-Control", "value": "max-age=0, must-revalidate" }
+        ]
+      }
+    ]
   }
 }

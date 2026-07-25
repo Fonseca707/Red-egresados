@@ -6,3 +6,6 @@ ia-config.local.js
 proxy-ia/.wrangler/
 backups/
 .wrangler/
+
+# Cache local de Firebase Hosting
+.firebase/

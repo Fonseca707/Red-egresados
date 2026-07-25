@@ -626,7 +626,7 @@ const rutaImagen = {
         ctx.fillText('Mi ruta también empezó en el Liceo 🌱', 70, H - FOOTER + 46);
         ctx.fillStyle = '#4b5563';
         ctx.font = '500 22px "Plus Jakarta Sans", "Segoe UI", sans-serif';
-        ctx.fillText('Únete a la red: fonseca707.github.io/Red-egresados', 70, H - FOOTER + 82);
+        ctx.fillText('Únete a la red: red-egresados-65a1a.web.app', 70, H - FOOTER + 82);
 
         const a = document.createElement('a');
         a.download = `ruta-${String(user.firstName || 'egresado').toLowerCase()}-sinapsis.png`;

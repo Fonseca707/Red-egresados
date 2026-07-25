@@ -34,7 +34,12 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 const DIA = 86400000;
-const ORIGENES = ['https://fonseca707.github.io', 'http://localhost:8642'];
+const ORIGENES = [
+    'https://red-egresados-65a1a.web.app',
+    'https://red-egresados-65a1a.firebaseapp.com',
+    'https://fonseca707.github.io', // transición, quitar al apagar Pages
+    'http://localhost:8642'
+];
 
 // ── Firestore por REST (lectura pública) ─────────────────────────────────────
 function valor(v) {
