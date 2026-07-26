@@ -451,6 +451,18 @@ async function generarAudio(request, env, origin) {
 // cada llamada cuesta plata, va cerrada al superadmin igual que /tts. La raíz
 // sigue con su tope bajo para que nadie la use de API gratis.
 const ITEMS_MAX_TOKENS = 6000;
+// Contador propio: generar el banco del ICFES son decenas de lotes seguidos y
+// compartir el cupo con el TTS dejaba sin audio al estudio (o al revés).
+const ITEMS_LIMITE_POR_HORA = 150;
+const itemsHits = new Map();
+
+function itemsPasadoDeVueltas(email) {
+    const ahora = Date.now();
+    const r = itemsHits.get(email);
+    if (!r || ahora - r.windowStart > 3_600_000) { itemsHits.set(email, { count: 1, windowStart: ahora }); return false; }
+    r.count++;
+    return r.count > ITEMS_LIMITE_POR_HORA;
+}
 
 async function generarItems(request, env, origin) {
     const json = (obj, status) => new Response(JSON.stringify(obj),
@@ -458,7 +470,7 @@ async function generarItems(request, env, origin) {
 
     const email = await superadminAutenticado(request);
     if (!email) return json({ error: 'Solo el superadministrador puede generar ítems.' }, 403);
-    if (ttsPasadoDeVueltas(email)) return json({ error: 'Demasiadas generaciones seguidas, espera un momento.' }, 429);
+    if (itemsPasadoDeVueltas(email)) return json({ error: 'Demasiadas generaciones seguidas, espera un momento.' }, 429);
 
     let cuerpo;
     try { cuerpo = await request.json(); } catch { return json({ error: 'JSON inválido' }, 400); }
