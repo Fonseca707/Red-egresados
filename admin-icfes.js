@@ -42,10 +42,15 @@ REGLAS INNEGOCIABLES:
 - NUNCA atribuyas el texto a una fuente real (ni entidad, ni autor, ni publicación, ni año). Nada de "Alcaldía de…", "Ministerio de…", "según El Tiempo". El texto es original para práctica y así debe quedar.
 - NO escribas la letra de la opción dentro del texto de la opción: escribe "Cada ejemplo pertenece…", no "A. Cada ejemplo pertenece…".
 - Español de Colombia, natural, sin tecnicismos innecesarios.
+- Cada pregunta debe demostrar EXACTAMENTE la evidencia pedida arriba, no una parecida. Si la evidencia es sobre relaciones entre partes del texto, no sirve preguntar por un dato literal; si es sobre un dato local, no sirve preguntar por la idea global. En el campo "comoDemuestraLaEvidencia" explica en una frase por qué tu pregunta la demuestra.
 - Para CADA opción escribe una justificación breve que explique por qué es correcta o por qué es un error tentador. Esa justificación es lo que el estudiante lee después de responder.`;
 
         const especifico = prueba === 'lectura_critica' ? `
 TEXTO BASE: escribe UN texto original de tipo "${ICFES_TIPOS_TEXTO[tipoTexto]?.nombre}" (${ICFES_TIPOS_TEXTO[tipoTexto]?.ayuda}) de 180 a 300 palabras, y que las ${cuantos} preguntas se respondan LEYENDO ESE TEXTO.
+- El texto debe tener **párrafos separados por una línea en blanco** (
+
+). Si una pregunta habla de "el primer párrafo" o "el último párrafo", esos párrafos tienen que existir de verdad y ser distinguibles.
+- Escribe el texto UNA sola vez, completo y seguido: no repitas el título a mitad ni reinicies el texto.
 ${tipoTexto === 'info_filosofico' ? 'IMPORTANTE: un texto filosófico evalúa estructura, ideas y argumentos. NO preguntes por historia de la filosofía ni por qué sostenía tal autor.' : ''}
 ${tipoTexto.includes('discontinuo') ? 'Al ser discontinuo, descríbelo en palabras de forma que se entienda sin imagen (por ejemplo, una tabla escrita con sus filas, o la descripción de las viñetas de una caricatura).' : ''}` : `
 CONTEXTO: la situación debe ser real y concreta (${ICFES_CONTEXTOS[contexto]}), con datos presentados en una tabla escrita o en el enunciado. Nunca un ejercicio pelado tipo "resuelva la ecuación".
@@ -68,6 +73,7 @@ Responde SOLO con este JSON, sin markdown ni explicaciones:
       "clave": 0,
       "justificaciones": ["por qué A", "por qué B", "por qué C", "por qué D"],
       "forma": "${prueba === 'matematicas' ? 'veredicto_justificacion' : 'interpretacion_dato'}",
+      "comoDemuestraLaEvidencia": "una frase: qué tiene que hacer el estudiante para responder, y por qué eso ES la evidencia pedida",
       "dificultad": ${dificultad}
     }
   ]
@@ -131,6 +137,16 @@ Responde SOLO con este JSON, sin markdown ni explicaciones:
         const otras = largos.filter((_, i) => i !== item.clave);
         if (otras.length && correcta > Math.max(...otras) * 1.6) {
             fallos.push('La opción correcta es mucho más larga que las demás (se vuelve adivinable).');
+        }
+
+        // La clave tampoco puede ser la unica "prudente": si tres opciones son
+        // absolutas y solo la correcta lleva matices, se acierta por forma.
+        const MATIZ = /(generalmente|puede|podr[íi]a|algunos|en parte|suele|no siempre|depende|tiende)/i;
+        const ABSOLUTO = /(siempre|nunca|todos|ninguno|jam[áa]s|exclusivamente|[úu]nicamente)/i;
+        if (ops.length === 4 && MATIZ.test(String(ops[item.clave] || ''))
+            && ops.every((o, i) => i === item.clave || !MATIZ.test(String(o)))
+            && ops.filter((o, i) => i !== item.clave && ABSOLUTO.test(String(o))).length >= 2) {
+            fallos.push('La correcta es la única con matices frente a opciones absolutas: se adivina por forma.');
         }
 
         if ((item.justificaciones || []).filter(j => String(j || '').trim()).length !== 4) {
@@ -218,7 +234,11 @@ Responde SOLO con este JSON, sin markdown ni explicaciones:
         if (estimulo) {
             const ref = await examStimuliCollection.add({
                 prueba, tipoTexto: tipoTexto || '',
-                titulo: estimulo.titulo || '', texto: estimulo.texto || '',
+                titulo: estimulo.titulo || '',
+                // El modelo a veces reinicia el texto repitiendo su propio título
+                // a mitad: se corta ahí, porque un texto duplicado vuelve
+                // incontestables las preguntas que hablan de "el último párrafo".
+                texto: this.limpiarTexto(estimulo.texto || '', estimulo.titulo || ''),
                 // La fuente NO se toma del modelo: firmó un texto inventado como
                 // "Manual de la Alcaldía de Bogotá, 2023". Un texto de práctica no
                 // puede presentarse como documento de una entidad real.
@@ -252,6 +272,15 @@ Responde SOLO con este JSON, sin markdown ni explicaciones:
             guardados.push({ id: ref.id, ...doc, _fallos: fallos });
         }
         return guardados;
+    },
+
+    limpiarTexto(texto, titulo) {
+        let t = String(texto || '').trim();
+        if (titulo) {
+            const repetido = t.indexOf(titulo, 30);
+            if (repetido > 0) t = t.slice(0, repetido).trim();
+        }
+        return t;
     },
 
     async cargarPendientes() {
