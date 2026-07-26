@@ -39,6 +39,8 @@ REGLAS INNEGOCIABLES:
 - Las 4 opciones deben ser de largo parecido. Si la correcta es siempre la más larga, el examen se vuelve adivinable sin leer.
 - Los distractores deben ser errores PLAUSIBLES de un estudiante de grado 11, no opciones absurdas.
 - Contenido 100% original. No copies ni parafrasees textos de cuadernillos publicados.
+- NUNCA atribuyas el texto a una fuente real (ni entidad, ni autor, ni publicación, ni año). Nada de "Alcaldía de…", "Ministerio de…", "según El Tiempo". El texto es original para práctica y así debe quedar.
+- NO escribas la letra de la opción dentro del texto de la opción: escribe "Cada ejemplo pertenece…", no "A. Cada ejemplo pertenece…".
 - Español de Colombia, natural, sin tecnicismos innecesarios.
 - Para CADA opción escribe una justificación breve que explique por qué es correcta o por qué es un error tentador. Esa justificación es lo que el estudiante lee después de responder.`;
 
@@ -217,13 +219,19 @@ Responde SOLO con este JSON, sin markdown ni explicaciones:
             const ref = await examStimuliCollection.add({
                 prueba, tipoTexto: tipoTexto || '',
                 titulo: estimulo.titulo || '', texto: estimulo.texto || '',
-                fuente: estimulo.fuente || 'Texto original para práctica',
+                // La fuente NO se toma del modelo: firmó un texto inventado como
+                // "Manual de la Alcaldía de Bogotá, 2023". Un texto de práctica no
+                // puede presentarse como documento de una entidad real.
+                fuente: 'Texto original para práctica · Sinapsis',
                 createdAt: firebase.firestore.FieldValue.serverTimestamp()
             });
             estimuloId = ref.id;
         }
         const guardados = [];
         for (const it of items) {
+            // El modelo mete la letra dentro de la opción ("A. Cada ejemplo…") y
+            // la UI le antepone otra, quedando "A. A. Cada ejemplo…".
+            it.opciones = (it.opciones || []).map(o => String(o).replace(/^\s*[A-D][.)]\s+/, '').trim());
             const fallos = this.validar(it, { prueba, hayEstimulo: !!estimuloId });
             const doc = {
                 exam: 'ICFES',
