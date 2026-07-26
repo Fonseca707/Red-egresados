@@ -31,11 +31,24 @@ const colegiosCollection = artifactsRoot.collection('public').doc('data').collec
 // a ser SEMILLA + RESPALDO: si esta colección está vacía, el motor usa el JS.
 const examTestsCollection = artifactsRoot.collection('public').doc('data').collection('examTests');
 const codigosCollection = artifactsRoot.collection('public').doc('data').collection('codigos');
+// Banco de ÍTEMS sueltos (ICFES). A diferencia de examTests, que guarda tests
+// monolíticos, aquí la unidad es la pregunta: el entrenamiento por competencia
+// pide "15 ítems de lc_global que este alumno no haya visto", y eso exige ítems
+// consultables uno a uno. Lectura pública como examTests; escritura, superadmin.
+const examItemsCollection = artifactsRoot.collection('public').doc('data').collection('examItems');
+// Los textos de Lectura Crítica van aparte porque un mismo texto alimenta 3-5
+// preguntas: embebido se duplicaría, y una sesión podría mostrar el mismo texto
+// tres veces como si fueran cosas distintas.
+const examStimuliCollection = artifactsRoot.collection('public').doc('data').collection('examStimuli');
 const hitosCollection = (uid) => alumniCollection.doc(uid).collection('hitos');
 // Resultados de práctica de idiomas (TOEFL/DELF). Subcolección del alumno, como
 // los hitos, PERO privada: son datos personales del estudiante (progreso), así
 // que las reglas solo dejan leerlos al dueño y a los admins de su colegio.
 const examResultsCollection = (uid) => alumniCollection.doc(uid).collection('examResults');
+// Intentos ítem por ítem (ICFES). Privada como examResults: es progreso personal
+// del estudiante. Alimenta tres cosas a la vez — no repetirle ítems ya vistos,
+// diagnosticar su competencia más floja, y el reporte agregado para el colegio.
+const itemAttemptsCollection = (uid) => alumniCollection.doc(uid).collection('itemAttempts');
 const userChatsCollection = (uid) => artifactsRoot.collection('users').doc(uid).collection('chats');
 const userChatMessagesCollection = (uid, chatId) => userChatsCollection(uid).doc(chatId).collection('messages');
 

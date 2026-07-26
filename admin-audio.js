@@ -17,9 +17,13 @@ const PROXY_TTS_VOCES = PROXY_TTS + '/voces';
 // consonantes son más blandas — justo lo que un examen de escucha evalúa.
 // ElevenLabs: más nítido y sus acentos son voces reales (británica, australiana),
 // no una instrucción que el modelo puede ignorar. Devuelve MP3 ya comprimido.
+// ElevenLabs va PRIMERO (= es el que sale por defecto) porque es el que está
+// pagado y probado en vivo: la cuenta de Gemini no tiene el secreto puesto en el
+// Worker, así que dejarlo de primero hacía que la primera generación fallara
+// pidiendo una clave que no hace falta para el listening.
 const PROVEEDORES = {
-    gemini:     { etiqueta: 'Gemini — más barato', comprimirEnCliente: true },
-    elevenlabs: { etiqueta: 'ElevenLabs — más natural, acentos reales', comprimirEnCliente: false }
+    elevenlabs: { etiqueta: 'ElevenLabs — el del proyecto (voces con acento real)', comprimirEnCliente: false },
+    gemini:     { etiqueta: 'Gemini — alternativa (requiere clave sin configurar)', comprimirEnCliente: true }
 };
 
 // Voces del generador. La descripción es la que guía al elegir: en el DELF los
