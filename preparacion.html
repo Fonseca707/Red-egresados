@@ -64,6 +64,11 @@
             <div id="delf-root"><!-- Renderizado por delf-practice.js --></div>
         </div>
 
+        <!-- VISTA: ENTRENAMIENTO ICFES (Saber 11) -->
+        <div id="view-icfes-practice" class="hidden pb-10">
+            <div id="icfes-root"><!-- Renderizado por icfes-engine.js --></div>
+        </div>
+
     </main>
 
     <script src="theme.js?v=5"></script>
@@ -75,6 +80,8 @@
     <script src="toefl-data.js?v=2"></script>
     <script src="toefl-practice.js?v=11"></script>
     <script src="delf-data.js?v=2"></script>
+    <script src="icfes-data.js?v=1"></script>
+    <script src="icfes-engine.js?v=1"></script>
     <script src="delf-practice.js?v=5"></script>
     <script src="ia-calificadora.js?v=2"></script>
     <script src="orientadora.js?v=3"></script>
@@ -154,6 +161,22 @@
                 ],
                 excluded: 'Production orale y compréhension orale quedan por fuera temporalmente; la oral requiere interacción y evaluación especializada.'
             }
+            ,
+            {
+                code: 'ICFES',
+                title: 'Módulo Saber 11',
+                language: 'ICFES',
+                level: 'Entrenamiento por competencia',
+                icon: 'ph-duotone ph-exam',
+                accent: 'amber',
+                description: 'Entrenamiento con la estructura oficial del Saber 11 (Guía de orientación 2026): sesiones cortas por competencia, con retroalimentación inmediata que explica por qué cada opción está bien o mal.',
+                practices: [
+                    { name: 'Lectura Crítica', focus: 'Contenidos locales, sentido global y evaluación del texto', format: 'Sesión de 10 preguntas · cuota oficial 25/42/33', status: 'Disponible', action: "icfesLogic.start('lectura_critica')" },
+                    { name: 'Matemáticas', focus: 'Interpretación, formulación y argumentación en contextos reales', format: 'Sesión de 10 preguntas · cuota oficial 34/43/23', status: 'Disponible', action: "icfesLogic.start('matematicas')" },
+                    { name: 'Sociales, Ciencias e Inglés', focus: 'Las otras tres pruebas del examen', format: 'El motor ya las soporta; falta el contenido', status: 'Próximamente' }
+                ],
+                excluded: 'Se arranca por Lectura Crítica y Matemáticas: son las que más pesan en el puntaje global. Cada pregunta la genera la IA contra el blueprint oficial y la aprueba una persona antes de publicarse.'
+            }
         ];
 
         const examModulesLogic = {
@@ -177,9 +200,12 @@
                             </div>
                         </article>`;
                     }
-                    const accent = module.accent === 'purple'
-                        ? { soft: 'bg-purple-50 text-purple-700 border-purple-100', solid: 'bg-purple-600', ring: 'group-hover:border-purple-200' }
-                        : { soft: 'bg-blue-50 text-blue-700 border-blue-100', solid: 'bg-blue-600', ring: 'group-hover:border-blue-200' };
+                    const ACENTOS_MODULO = {
+                        purple: { soft: 'bg-purple-50 text-purple-700 border-purple-100', solid: 'bg-purple-600', ring: 'group-hover:border-purple-200' },
+                        amber:  { soft: 'bg-amber-50 text-amber-700 border-amber-100',   solid: 'bg-amber-600',  ring: 'group-hover:border-amber-200' },
+                        blue:   { soft: 'bg-blue-50 text-blue-700 border-blue-100',      solid: 'bg-blue-600',   ring: 'group-hover:border-blue-200' }
+                    };
+                    const accent = ACENTOS_MODULO[module.accent] || ACENTOS_MODULO.blue;
                     return `
                         <article class="bg-white rounded-[2rem] border border-gray-100 shadow-sm hover:shadow-xl transition overflow-hidden group ${accent.ring}">
                             <div class="p-6 md:p-8 border-b border-gray-100">
@@ -224,7 +250,7 @@
 
         // Router local: alterna entre las 3 vistas de examen y delega el resto a las páginas reales.
         // toefl-practice.js y delf-practice.js llaman router.navigate('toefl-practice' | 'delf-practice' | 'exam-modules').
-        const EXAM_VIEWS = ['view-exam-modules', 'view-toefl-practice', 'view-delf-practice'];
+        const EXAM_VIEWS = ['view-exam-modules', 'view-toefl-practice', 'view-delf-practice', 'view-icfes-practice'];
         const CROSS_PAGES = { home: 'index.html', directory: 'directory.html', news: 'news.html', messages: 'messages.html', profile: 'profile.html', admin: 'admin.html', auth: 'login.html', login: 'login.html', register: 'register.html', terms: 'terms.html', onboarding: 'onboarding.html' };
         const router = {
             navigate: (viewId) => {

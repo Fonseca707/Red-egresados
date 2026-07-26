@@ -43,6 +43,10 @@ function corsHeaders(origin) {
         'Access-Control-Allow-Origin': origin,
         'Access-Control-Allow-Methods': 'POST, OPTIONS',
         'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        // Sin esto el navegador OCULTA la cabecera al JS aunque el Worker la
+        // mande: la duración del clip llegaba siempre vacía y el estudio tenía
+        // que decodificar el audio entero para medirla.
+        'Access-Control-Expose-Headers': 'X-Duracion-Aprox-Seg',
         'Access-Control-Max-Age': '86400'
     };
 }
@@ -84,6 +88,47 @@ function pcmAWav(pcm, sampleRate = 24000, canales = 1, bitsPorMuestra = 16) {
     vista.setUint32(40, pcm.length, true);
     wav.set(pcm, 44);
     return wav;
+}
+
+// Busca el audio en la respuesta de Gemini SIN casarse con una ruta concreta.
+// Por qué: la API devolvió `interaction.output_audio.data` cuando se escribió
+// esto y hoy devuelve `steps[].content[]` con `mime_type` + `data`; clavar una
+// ruta hace que un cambio del proveedor se vea como "no vino audio" cuando el
+// audio sí vino y hasta se pagó. Se recorre el objeto y se toma el primer par
+// {mime_type de audio, data} que aparezca, sea cual sea su profundidad.
+// El `rate` sale del propio mime_type (audio/L16;codec=pcm;rate=24000), porque
+// la cabecera WAV que se antepone tiene que declarar la tasa real o el audio
+// suena grave o agudo.
+function extraerAudioGemini(datos) {
+    let hallazgo = null;
+    const RUIDO = /^(text|application\/json)/i;
+
+    const visitar = (nodo) => {
+        if (hallazgo || !nodo || typeof nodo !== 'object') return;
+        if (Array.isArray(nodo)) { nodo.forEach(visitar); return; }
+
+        const mime = nodo.mime_type || nodo.mimeType || '';
+        const data = nodo.data || nodo.audio_data || nodo.bytes_base64_encoded;
+        if (typeof data === 'string' && data.length > 100 && (String(mime).startsWith('audio') || (!mime && !RUIDO.test(mime)))) {
+            if (String(mime).startsWith('audio') || !mime) {
+                const m = /rate=(\d+)/.exec(String(mime));
+                hallazgo = { data, rate: m ? Number(m[1]) : 24000 };
+                return;
+            }
+        }
+        Object.values(nodo).forEach(visitar);
+    };
+
+    // Rutas conocidas primero (más barato y sin ambigüedad), luego el barrido.
+    const directas = [
+        datos?.interaction?.output_audio?.data,
+        datos?.candidates?.[0]?.content?.parts?.[0]?.inline_data?.data,
+        datos?.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data
+    ];
+    for (const d of directas) if (typeof d === 'string' && d.length > 100) return { data: d, rate: 24000 };
+
+    visitar(datos);
+    return hallazgo;
 }
 
 function base64ABytes(b64) {
@@ -299,10 +344,15 @@ async function generarAudio(request, env, origin) {
     }
 
     const datos = await upstream.json();
-    const b64 = datos?.interaction?.output_audio?.data;
-    if (!b64) return json({ error: 'La respuesta no traía audio', detalle: JSON.stringify(datos).slice(0, 500) }, 502);
+    const encontrado = extraerAudioGemini(datos);
+    if (!encontrado) {
+        // Se recortan las cadenas largas: si el audio SÍ vino pero en otra
+        // ruta, el volcado sin recortar es un base64 gigante que tapa la pista.
+        const mapa = JSON.stringify(datos, (k, v) => (typeof v === 'string' && v.length > 60 ? `«${v.length} chars»` : v));
+        return json({ error: 'La respuesta no traía audio', detalle: mapa.slice(0, 800) }, 502);
+    }
 
-    const wav = pcmAWav(base64ABytes(b64));
+    const wav = pcmAWav(base64ABytes(encontrado.data), encontrado.rate);
     return new Response(wav, {
         headers: {
             ...corsHeaders(origin),

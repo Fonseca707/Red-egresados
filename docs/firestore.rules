@@ -111,6 +111,28 @@ service cloud.firestore {
             || (isSchoolAdmin() && ownerSchool() == adminSchool())
           );
         }
+
+        // Intentos item por item del ICFES. Mismo criterio que examResults (son
+        // progreso personal), y por la misma razon: el reporte por competencia
+        // que ve el colegio se arma con esto. Inmutables: un intento es un hecho
+        // ocurrido, corregirlo a posteriori falsearia el diagnostico.
+        match /itemAttempts/{attemptId} {
+          function ownerSchool() {
+            return get(/databases/$(database)/documents/artifacts/$(appId)/public/data/alumni/$(userId)).data.get('school', '');
+          }
+          allow read: if request.auth != null && (
+            request.auth.uid == userId
+            || isSuperAdmin()
+            || (isSchoolAdmin() && ownerSchool() == adminSchool())
+          );
+          allow create: if request.auth != null && request.auth.uid == userId;
+          allow update: if false;
+          allow delete: if request.auth != null && (
+            request.auth.uid == userId
+            || isSuperAdmin()
+            || (isSchoolAdmin() && ownerSchool() == adminSchool())
+          );
+        }
       }
 
       // Colegios (multi-tenant): nombre, modulos pagados (toefl/delf), etc.
@@ -135,6 +157,21 @@ service cloud.firestore {
       // (transcript, voces, url, duracion) para reusarlo en los tests. Lectura
       // publica como examTests: practicar no exige sesion.
       match /public/data/audioClips/{clipId} {
+        allow read: if true;
+        allow write: if isSuperAdmin();
+      }
+
+      // Banco de ITEMS del ICFES y los textos que alimentan varias preguntas.
+      // Lectura publica como examTests (entrenar no exige sesion); escritura
+      // solo superadmin. OJO: que un item no revisado no se le sirva a un
+      // estudiante es regla de PRODUCTO, no de seguridad — el motor filtra
+      // revisado==true. Aqui no se puede exigir, porque leer el banco completo
+      // es justo lo que hace el motor para armar la sesion.
+      match /public/data/examItems/{itemId} {
+        allow read: if true;
+        allow write: if isSuperAdmin();
+      }
+      match /public/data/examStimuli/{stimulusId} {
         allow read: if true;
         allow write: if isSuperAdmin();
       }
