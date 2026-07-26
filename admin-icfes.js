@@ -72,6 +72,40 @@ Responde SOLO con este JSON, sin markdown ni explicaciones:
 }`;
     },
 
+    // Saca el JSON aunque el modelo lo envuelva. Un `JSON.parse` a secas tira
+    // el lote entero por un ``` de más o una frase de cortesía delante, y ese
+    // lote ya se pagó: en la primera tanda se perdieron 2 de 9 así.
+    extraerJSON(texto) {
+        const limpio = texto.replace(/```(json)?/gi, '').trim();
+        const intentos = [limpio];
+
+        // Bloque balanceado: sirve cuando el modelo escribe algo antes o después.
+        const inicio = limpio.indexOf('{');
+        if (inicio >= 0) {
+            let nivel = 0, enCadena = false, escapado = false;
+            for (let i = inicio; i < limpio.length; i++) {
+                const c = limpio[i];
+                if (escapado) { escapado = false; continue; }
+                if (c === '\\') { escapado = true; continue; }
+                if (c === '"') enCadena = !enCadena;
+                if (enCadena) continue;
+                if (c === '{') nivel++;
+                else if (c === '}' && --nivel === 0) { intentos.push(limpio.slice(inicio, i + 1)); break; }
+            }
+        }
+        // Comillas tipográficas: el modelo las mete al escribir en español y
+        // rompen el JSON aunque el contenido esté perfecto.
+        intentos.push(...intentos.map(s => s.replace(/[\u201C\u201D]/g, '\\"').replace(/[\u2018\u2019]/g, "'")));
+
+        for (const candidato of intentos) {
+            try {
+                const obj = JSON.parse(candidato);
+                if (obj && Array.isArray(obj.items) && obj.items.length) return obj;
+            } catch (e) { /* siguiente intento */ }
+        }
+        throw new Error('El generador no devolvió JSON utilizable (puede haberse cortado por longitud). Prueba con menos preguntas por lote.');
+    },
+
     // ── Validaciones automáticas ────────────────────────────────────────────
     // Baratas, deterministas y ejecutadas ANTES de la cola humana: atrapan lo
     // peor de la IA sin gastar la atención de quien revisa.
@@ -146,10 +180,7 @@ Responde SOLO con este JSON, sin markdown ni explicaciones:
             const datos = await respuesta.json();
             if (!respuesta.ok) throw new Error(datos.error || `respondió ${respuesta.status}`);
 
-            const crudo = String(datos.texto || '').replace(/^```(json)?|```$/gm, '').trim();
-            let parseado;
-            try { parseado = JSON.parse(crudo); }
-            catch { throw new Error('El generador no devolvió JSON válido. Vuelve a intentar.'); }
+            const parseado = this.extraerJSON(String(datos.texto || ''));
 
             const lote = (parseado.items || []).map(it => ({
                 ...it,
