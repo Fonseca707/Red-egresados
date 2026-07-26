@@ -122,7 +122,113 @@ function ttsPasadoDeVueltas(email) {
     return registro.count > TTS_LIMITE_POR_HORA;
 }
 
-// POST /tts  {texto, voces:[{speaker,voice}] | voz, instruccion?}  →  audio/wav
+// ── ElevenLabs ───────────────────────────────────────────────────────────────
+// Segundo proveedor. Frente a Gemini gana en lo que un examen de listening
+// evalúa de verdad: consonantes nítidas y prosodia en frases largas. Y sus
+// acentos son VOCES reales (británica, australiana…), no una instrucción de
+// texto que el modelo puede ignorar. Devuelve MP3 ya comprimido.
+const EL_API = 'https://api.elevenlabs.io/v1';
+const EL_MODELO_DIALOGO = 'eleven_v3';
+const EL_MODELO_VOZ = 'eleven_multilingual_v2';
+const EL_MAX_CHARS_DIALOGO = 2000;   // límite del endpoint de diálogo
+const EL_FORMATO = 'mp3_44100_128';
+
+// POST /tts/voces → las voces de la cuenta, con su acento e idioma, para que el
+// admin elija por acento en vez de adivinar ids. (Va por POST porque el Worker
+// solo acepta POST; no lleva cuerpo.)
+async function listarVoces(request, env, origin) {
+    const json = (obj, status) => new Response(JSON.stringify(obj),
+        { status, headers: { ...corsHeaders(origin), 'Content-Type': 'application/json' } });
+
+    if (!await superadminAutenticado(request)) return json({ error: 'Solo el superadmin.' }, 403);
+    if (!env.ELEVENLABS_API_KEY) return json({ error: 'Falta el secreto ELEVENLABS_API_KEY en el Worker.' }, 503);
+
+    const respuesta = await fetch(`${EL_API}/voices?page_size=100`, {
+        headers: { 'xi-api-key': env.ELEVENLABS_API_KEY }
+    });
+    if (!respuesta.ok) {
+        return json({ error: 'No se pudieron leer las voces', status: respuesta.status }, 502);
+    }
+    const datos = await respuesta.json();
+    return json({
+        voces: (datos.voices || []).map(v => ({
+            id: v.voice_id,
+            nombre: v.name,
+            acento: v.labels?.accent || '',
+            genero: v.labels?.gender || '',
+            descripcion: v.labels?.description || ''
+        }))
+    }, 200);
+}
+
+// Reparte el transcript en turnos para el endpoint de diálogo: cada línea
+// "Nombre: texto" se convierte en un turno con la voz de ese personaje.
+function turnosDeDialogo(texto, voces) {
+    const porHablante = new Map(voces.filter(v => v.speaker).map(v => [v.speaker.toLowerCase(), v.voice]));
+    const predeterminada = voces[0].voice;
+    const turnos = [];
+    for (const linea of texto.split('\n')) {
+        const limpia = linea.trim();
+        if (!limpia) continue;
+        const marca = limpia.match(/^([A-Za-zÀ-ÿ0-9 _-]{1,20}):\s*(.+)$/);
+        if (marca) {
+            turnos.push({
+                text: marca[2].trim(),
+                voice_id: porHablante.get(marca[1].trim().toLowerCase()) || predeterminada
+            });
+        } else if (turnos.length) {
+            turnos[turnos.length - 1].text += ' ' + limpia; // continuación del turno anterior
+        } else {
+            turnos.push({ text: limpia, voice_id: predeterminada });
+        }
+    }
+    return turnos;
+}
+
+async function generarConElevenLabs({ texto, voces, esDialogo, env, origin }) {
+    const json = (obj, status) => new Response(JSON.stringify(obj),
+        { status, headers: { ...corsHeaders(origin), 'Content-Type': 'application/json' } });
+
+    if (!env.ELEVENLABS_API_KEY) {
+        return json({ error: 'Falta el secreto ELEVENLABS_API_KEY en el Worker (npx wrangler secret put ELEVENLABS_API_KEY).' }, 503);
+    }
+
+    let respuesta;
+    if (esDialogo) {
+        if (texto.length > EL_MAX_CHARS_DIALOGO) {
+            return json({ error: `El diálogo excede ${EL_MAX_CHARS_DIALOGO} caracteres (son ${texto.length}); pártelo en dos clips o acórtalo.` }, 400);
+        }
+        respuesta = await fetch(`${EL_API}/text-to-dialogue`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'xi-api-key': env.ELEVENLABS_API_KEY },
+            body: JSON.stringify({
+                inputs: turnosDeDialogo(texto, voces),
+                model_id: EL_MODELO_DIALOGO,
+                output_format: EL_FORMATO
+            })
+        });
+    } else {
+        respuesta = await fetch(`${EL_API}/text-to-speech/${encodeURIComponent(voces[0].voice)}?output_format=${EL_FORMATO}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'xi-api-key': env.ELEVENLABS_API_KEY },
+            body: JSON.stringify({ text: texto, model_id: EL_MODELO_VOZ })
+        });
+    }
+
+    if (!respuesta.ok) {
+        const detalle = await respuesta.text();
+        return json({ error: 'ElevenLabs falló', status: respuesta.status, detalle: detalle.slice(0, 500) }, 502);
+    }
+
+    // Ya viene comprimido: aquí no hay que envolver nada ni comprimir después.
+    return new Response(respuesta.body, {
+        headers: { ...corsHeaders(origin), 'Content-Type': 'audio/mpeg' }
+    });
+}
+
+// POST /tts  {proveedor, texto, voces:[{speaker,voice}] | voz, instruccion?}
+//   gemini      → audio/wav (PCM envuelto; el cliente lo comprime)
+//   elevenlabs  → audio/mpeg (ya comprimido)
 async function generarAudio(request, env, origin) {
     const json = (obj, status) => new Response(JSON.stringify(obj),
         { status, headers: { ...corsHeaders(origin), 'Content-Type': 'application/json' } });
@@ -131,9 +237,6 @@ async function generarAudio(request, env, origin) {
     // siquiera cómo está configurado el Worker.
     const email = await superadminAutenticado(request);
     if (!email) return json({ error: 'Solo el superadmin puede generar audio.' }, 403);
-    if (!env.GEMINI_API_KEY) {
-        return json({ error: 'Falta el secreto GEMINI_API_KEY en el Worker (npx wrangler secret put GEMINI_API_KEY).' }, 503);
-    }
     if (ttsPasadoDeVueltas(email)) {
         return json({ error: `Tope de ${TTS_LIMITE_POR_HORA} generaciones por hora alcanzado.` }, 429);
     }
@@ -151,6 +254,23 @@ async function generarAudio(request, env, origin) {
     const pedidas = Array.isArray(cuerpo.voces) && cuerpo.voces.length
         ? cuerpo.voces.map(v => ({ speaker: String(v.speaker || '').trim(), voice: String(v.voice || '') }))
         : [{ voice: String(cuerpo.voz || 'Kore') }];
+    if (pedidas.some(v => !v.voice)) return json({ error: 'Falta elegir la voz.' }, 400);
+
+    // ElevenLabs: ids de voz de la cuenta, acento incluido en la voz misma.
+    if (String(cuerpo.proveedor || 'gemini') === 'elevenlabs') {
+        return generarConElevenLabs({
+            texto,
+            voces: pedidas,
+            esDialogo: pedidas.length > 1 && pedidas.every(v => v.speaker),
+            env,
+            origin
+        });
+    }
+
+    // Gemini: nombres de voz de un catálogo cerrado.
+    if (!env.GEMINI_API_KEY) {
+        return json({ error: 'Falta el secreto GEMINI_API_KEY en el Worker (npx wrangler secret put GEMINI_API_KEY).' }, 503);
+    }
     for (const v of pedidas) {
         if (!VOCES_VALIDAS.includes(v.voice)) return json({ error: `Voz no válida: ${v.voice}` }, 400);
     }
@@ -203,7 +323,9 @@ export default {
         if (request.method !== 'POST') return new Response('Solo POST', { status: 405, headers: corsHeaders(origin) });
 
         // Ruta de audio para los listening (cerrada al superadmin, ver generarAudio)
-        if (new URL(request.url).pathname === '/tts') return generarAudio(request, env, origin);
+        const ruta = new URL(request.url).pathname;
+        if (ruta === '/tts') return generarAudio(request, env, origin);
+        if (ruta === '/tts/voces') return listarVoces(request, env, origin);
 
         const ip = request.headers.get('CF-Connecting-IP') || 'desconocida';
         if (rateLimited(ip)) {

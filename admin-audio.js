@@ -10,6 +10,17 @@
 
 const audioClipsCollection = artifactsRoot.collection('public').doc('data').collection('audioClips');
 const PROXY_TTS = 'https://sinapsis-ia.sinapsis-lcp.workers.dev/tts';
+const PROXY_TTS_VOCES = PROXY_TTS + '/voces';
+
+// Dos generadores, para poder comparar con los oídos antes de casarse con uno.
+// Gemini: barato, ya configurado, pero el acento se pide por escrito y sus
+// consonantes son más blandas — justo lo que un examen de escucha evalúa.
+// ElevenLabs: más nítido y sus acentos son voces reales (británica, australiana),
+// no una instrucción que el modelo puede ignorar. Devuelve MP3 ya comprimido.
+const PROVEEDORES = {
+    gemini:     { etiqueta: 'Gemini — más barato', comprimirEnCliente: true },
+    elevenlabs: { etiqueta: 'ElevenLabs — más natural, acentos reales', comprimirEnCliente: false }
+};
 
 // Voces del generador. La descripción es la que guía al elegir: en el DELF los
 // diálogos necesitan dos timbres claramente distintos, y el TOEFL pide variedad
@@ -137,8 +148,59 @@ const audioLogic = {
         const tipo = document.getElementById('audio-tipo').value;
         const cfg = ESTILOS[tipo];
         document.getElementById('audio-voz2-wrap').classList.toggle('hidden', cfg.hablantes < 2);
-        document.getElementById('audio-acento-wrap').classList.toggle('hidden', cfg.examen !== 'toefl');
         document.getElementById('audio-ayuda-speakers').classList.toggle('hidden', cfg.hablantes < 2);
+        // El acento por instrucción es cosa de Gemini: en ElevenLabs el acento
+        // ya viene en la voz que se elige.
+        const esGemini = this.proveedor() === 'gemini';
+        document.getElementById('audio-acento-wrap').classList.toggle('hidden', cfg.examen !== 'toefl' || !esGemini);
+    },
+
+    proveedor() {
+        return document.getElementById('audio-proveedor')?.value || 'gemini';
+    },
+
+    // Al cambiar de generador cambian las voces disponibles: Gemini tiene un
+    // catálogo fijo; las de ElevenLabs se leen de la cuenta, con su acento.
+    async onProveedorChange() {
+        const cual = this.proveedor();
+        const voz1 = document.getElementById('audio-voz1');
+        const voz2 = document.getElementById('audio-voz2');
+        this.onTipoChange();
+
+        if (cual === 'gemini') {
+            const opciones = VOCES.map(v => `<option value="${v.id}">${v.id} — ${v.nota}</option>`).join('');
+            voz1.innerHTML = opciones; voz1.value = 'Kore';
+            voz2.innerHTML = opciones; voz2.value = 'Puck';
+            return;
+        }
+
+        voz1.innerHTML = '<option>Cargando voces…</option>';
+        voz2.innerHTML = '<option>Cargando voces…</option>';
+        try {
+            const token = await auth.currentUser.getIdToken();
+            const respuesta = await fetch(PROXY_TTS_VOCES, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }
+            });
+            const datos = await respuesta.json();
+            if (!respuesta.ok) throw new Error(datos.error || `respondió ${respuesta.status}`);
+
+            // Con el acento por delante: es el criterio de selección en el TOEFL.
+            const opciones = (datos.voces || [])
+                .sort((a, b) => (a.acento || 'zz').localeCompare(b.acento || 'zz'))
+                .map(v => {
+                    const detalle = [v.acento, v.genero].filter(Boolean).join(', ');
+                    return `<option value="${v.id}">${this.escapar(v.nombre)}${detalle ? ' — ' + this.escapar(detalle) : ''}</option>`;
+                }).join('');
+            if (!opciones) throw new Error('la cuenta no tiene voces');
+            voz1.innerHTML = opciones;
+            voz2.innerHTML = opciones;
+            if (voz2.options.length > 1) voz2.selectedIndex = 1; // que las dos voces no sean la misma
+        } catch (e) {
+            voz1.innerHTML = '<option value="">—</option>';
+            voz2.innerHTML = '<option value="">—</option>';
+            this.aviso(`No se pudieron cargar las voces de ElevenLabs: ${e.message}`, 'error');
+        }
     },
 
     // ── 1. Generar (llama al proxy, que agrega la clave del TTS) ────────────
@@ -177,27 +239,36 @@ const audioLogic = {
             const respuesta = await fetch(PROXY_TTS, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify({ texto, voces, instruccion })
+                body: JSON.stringify({ proveedor: this.proveedor(), texto, voces, instruccion })
             });
             if (!respuesta.ok) {
                 const detalle = await respuesta.json().catch(() => ({}));
                 throw new Error(detalle.error || `El generador respondió ${respuesta.status}`);
             }
             this.ultimaDuracion = Number(respuesta.headers.get('X-Duracion-Aprox-Seg') || 0);
-            const wav = await respuesta.blob();
+            const crudo = await respuesta.blob();
 
-            // Se comprime ANTES de la vista previa a propósito: así lo que
-            // escuchas aquí es exactamente lo que va a oír el estudiante.
-            boton.textContent = 'Comprimiendo…';
             let aviso;
-            try {
-                this.ultimoAudio = await this.comprimir(wav);
-                const ahorro = Math.round((1 - this.ultimoAudio.size / wav.size) * 100);
-                aviso = `Audio listo: ${this.formatoDuracion(this.ultimaDuracion)} · ${this.formatoPeso(this.ultimoAudio.size)} (${ahorro}% menos que sin comprimir).`;
-            } catch (e) {
-                // Si el compresor no cargó, mejor un clip pesado que ninguno.
-                this.ultimoAudio = wav;
-                aviso = `Audio listo: ${this.formatoDuracion(this.ultimaDuracion)} · ${this.formatoPeso(wav.size)} — sin comprimir (${e.message}), pesará más de lo normal.`;
+            if (PROVEEDORES[this.proveedor()].comprimirEnCliente) {
+                // Se comprime ANTES de la vista previa a propósito: así lo que
+                // escuchas aquí es exactamente lo que va a oír el estudiante.
+                boton.textContent = 'Comprimiendo…';
+                try {
+                    this.ultimoAudio = await this.comprimir(crudo);
+                    const ahorro = Math.round((1 - this.ultimoAudio.size / crudo.size) * 100);
+                    aviso = `Audio listo: ${this.formatoDuracion(this.ultimaDuracion)} · ${this.formatoPeso(this.ultimoAudio.size)} (${ahorro}% menos que sin comprimir).`;
+                } catch (e) {
+                    // Si el compresor no cargó, mejor un clip pesado que ninguno.
+                    this.ultimoAudio = crudo;
+                    aviso = `Audio listo: ${this.formatoDuracion(this.ultimaDuracion)} · ${this.formatoPeso(crudo.size)} — sin comprimir (${e.message}), pesará más de lo normal.`;
+                }
+            } else {
+                // ElevenLabs ya devuelve MP3: recomprimir solo degradaría.
+                this.ultimoAudio = crudo;
+                aviso = `Audio listo: ${this.formatoPeso(crudo.size)}.`;
+            }
+            if (!this.ultimaDuracion) {
+                this.ultimaDuracion = await this.medirDuracion(this.ultimoAudio);
             }
 
             const reproductor = document.getElementById('audio-preview');
@@ -245,6 +316,7 @@ const audioLogic = {
                 // El DELF se escucha 2 veces y el TOEFL 1: el límite viaja con el
                 // clip para que el reproductor del test no tenga que deducirlo.
                 maxPlays: cfg.examen === 'delf' ? 2 : 1,
+                proveedor: this.proveedor(),
                 duracionSeg: this.ultimaDuracion,
                 bytes: this.ultimoAudio.size,
                 formato: extension,
@@ -290,6 +362,7 @@ const audioLogic = {
                             ${this.escapar(c.etiqueta || '')} ·
                             ${this.formatoDuracion(c.duracionSeg || 0)} ·
                             ${this.formatoPeso(c.bytes || 0)} ·
+                            ${c.proveedor === 'elevenlabs' ? 'ElevenLabs' : 'Gemini'} ·
                             ${(c.voces || []).join(' + ')}
                             ${c.acento ? ' · ' + (ACENTOS[c.acento]?.etiqueta || c.acento) : ''} ·
                             se escucha ${c.maxPlays === 1 ? '1 vez' : c.maxPlays + ' veces'}
@@ -330,6 +403,19 @@ const audioLogic = {
     },
 
     // ── Utilidades ──────────────────────────────────────────────────────────
+    // ElevenLabs no informa la duración: se mide decodificando el audio. El test
+    // usará este valor guardado y no el `duration` del elemento <audio>, que en
+    // MP3 sin cabecera Xing puede ser impreciso mientras descarga.
+    async medirDuracion(blob) {
+        try {
+            const Contexto = window.AudioContext || window.webkitAudioContext;
+            const ctx = new Contexto();
+            const buffer = await ctx.decodeAudioData(await blob.arrayBuffer());
+            ctx.close();
+            return Math.round(buffer.duration);
+        } catch { return 0; }
+    },
+
     formatoPeso(bytes) {
         return bytes >= 1048576
             ? `${(bytes / 1048576).toFixed(1)} MB`
@@ -349,11 +435,13 @@ const audioLogic = {
 
     // Rellena los <select> una sola vez, al abrir la pestaña.
     montar() {
-        const opciones = VOCES.map(v => `<option value="${v.id}">${v.id} — ${v.nota}</option>`).join('');
+        const proveedor = document.getElementById('audio-proveedor');
+        if (proveedor && !proveedor.options.length) {
+            proveedor.innerHTML = Object.entries(PROVEEDORES)
+                .map(([id, p]) => `<option value="${id}">${p.etiqueta}</option>`).join('');
+        }
         const voz1 = document.getElementById('audio-voz1');
-        const voz2 = document.getElementById('audio-voz2');
-        if (voz1 && !voz1.options.length) { voz1.innerHTML = opciones; voz1.value = 'Kore'; }
-        if (voz2 && !voz2.options.length) { voz2.innerHTML = opciones; voz2.value = 'Puck'; }
+        if (voz1 && !voz1.options.length) this.onProveedorChange();
 
         const tipo = document.getElementById('audio-tipo');
         if (tipo && !tipo.options.length) {

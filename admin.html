@@ -326,6 +326,10 @@
                     </h3>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
+                            <label class="input-label">Generador</label>
+                            <select id="audio-proveedor" class="input-field" onchange="audioLogic.onProveedorChange()"></select>
+                        </div>
+                        <div>
                             <label class="input-label">Tipo de documento</label>
                             <select id="audio-tipo" class="input-field" onchange="audioLogic.onTipoChange()"></select>
                         </div>
@@ -418,7 +422,7 @@
     <script src="admin-rutas-ia.js?v=2"></script>
     <script src="admin-contactos.js?v=1"></script>
     <script src="admin-colegios.js?v=1"></script>
-    <script src="admin-audio.js?v=1"></script>
+    <script src="admin-audio.js?v=2"></script>
     <script>
         renderNav('admin');
 
