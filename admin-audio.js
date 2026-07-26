@@ -59,10 +59,63 @@ const ACENTOS = {
     'en-AU': { etiqueta: 'Australiano',    frase: 'Use an Australian accent.' }
 };
 
+// El generador entrega WAV (PCM 24 kHz): ~2,9 MB por minuto. Un DELF completo
+// serían ~15 MB que el estudiante paga en datos. Comprimido a MP3 mono 64 kbps
+// baja a ~0,5 MB/min — 6 veces menos, sin diferencia audible en voz — y el MP3
+// lo reproduce cualquier teléfono, iPhone incluido.
+const ENCODER_CDN = 'https://cdn.jsdelivr.net/npm/lamejs@1.2.1/lame.min.js';
+const MP3_KBPS = 64;
+
 const audioLogic = {
-    ultimoWav: null,      // Blob generado y aún no guardado
+    ultimoAudio: null,    // Blob ya comprimido, aún sin guardar
     ultimaDuracion: 0,
     clips: [],
+
+    // ── Compresión (en el navegador del admin, antes de subir) ──────────────
+    cargarEncoder() {
+        if (window.lamejs) return Promise.resolve();
+        if (this._encoderPromesa) return this._encoderPromesa;
+        this._encoderPromesa = new Promise((resolver, rechazar) => {
+            const script = document.createElement('script');
+            script.src = ENCODER_CDN;
+            script.onload = resolver;
+            script.onerror = () => rechazar(new Error('no se pudo cargar el compresor'));
+            document.head.appendChild(script);
+        });
+        return this._encoderPromesa;
+    },
+
+    async comprimir(wavBlob) {
+        await this.cargarEncoder();
+        // A la tasa nativa del generador (24 kHz): si se deja la del sistema, el
+        // navegador remuestrea a 44,1/48 kHz y se comprime el doble de muestras
+        // para nada. Si el navegador no acepta fijarla, se sigue igual.
+        const Contexto = window.AudioContext || window.webkitAudioContext;
+        let ctx;
+        try { ctx = new Contexto({ sampleRate: 24000 }); } catch { ctx = new Contexto(); }
+        const buffer = await ctx.decodeAudioData(await wavBlob.arrayBuffer());
+        ctx.close();
+
+        // Mono: la voz no gana nada con estéreo y pesaría el doble.
+        const muestras = buffer.getChannelData(0);
+        const pcm = new Int16Array(muestras.length);
+        for (let i = 0; i < muestras.length; i++) {
+            const s = Math.max(-1, Math.min(1, muestras[i]));
+            pcm[i] = s < 0 ? s * 0x8000 : s * 0x7fff;
+        }
+
+        const encoder = new lamejs.Mp3Encoder(1, buffer.sampleRate, MP3_KBPS);
+        const trozos = [];
+        const BLOQUE = 1152; // tamaño de frame que espera el encoder
+        for (let i = 0; i < pcm.length; i += BLOQUE) {
+            const datos = encoder.encodeBuffer(pcm.subarray(i, i + BLOQUE));
+            if (datos.length) trozos.push(datos);
+        }
+        const cola = encoder.flush();
+        if (cola.length) trozos.push(cola);
+
+        return new Blob(trozos, { type: 'audio/mpeg' });
+    },
 
     // ── Estado de la tarjeta ────────────────────────────────────────────────
     aviso(mensaje, tipo = 'info') {
@@ -131,14 +184,27 @@ const audioLogic = {
                 throw new Error(detalle.error || `El generador respondió ${respuesta.status}`);
             }
             this.ultimaDuracion = Number(respuesta.headers.get('X-Duracion-Aprox-Seg') || 0);
-            this.ultimoWav = await respuesta.blob();
+            const wav = await respuesta.blob();
+
+            // Se comprime ANTES de la vista previa a propósito: así lo que
+            // escuchas aquí es exactamente lo que va a oír el estudiante.
+            boton.textContent = 'Comprimiendo…';
+            let aviso;
+            try {
+                this.ultimoAudio = await this.comprimir(wav);
+                const ahorro = Math.round((1 - this.ultimoAudio.size / wav.size) * 100);
+                aviso = `Audio listo: ${this.formatoDuracion(this.ultimaDuracion)} · ${this.formatoPeso(this.ultimoAudio.size)} (${ahorro}% menos que sin comprimir).`;
+            } catch (e) {
+                // Si el compresor no cargó, mejor un clip pesado que ninguno.
+                this.ultimoAudio = wav;
+                aviso = `Audio listo: ${this.formatoDuracion(this.ultimaDuracion)} · ${this.formatoPeso(wav.size)} — sin comprimir (${e.message}), pesará más de lo normal.`;
+            }
 
             const reproductor = document.getElementById('audio-preview');
-            reproductor.src = URL.createObjectURL(this.ultimoWav);
+            reproductor.src = URL.createObjectURL(this.ultimoAudio);
             document.getElementById('audio-preview-wrap').classList.remove('hidden');
             document.getElementById('audio-btn-guardar').disabled = false;
-            const mb = (this.ultimoWav.size / 1048576).toFixed(1);
-            this.aviso(`Audio listo: ${this.formatoDuracion(this.ultimaDuracion)} · ${mb} MB. Escúchalo antes de guardarlo — si no convence, ajusta el texto o las voces y vuelve a generar.`, 'ok');
+            this.aviso(`${aviso} Escúchalo antes de guardarlo — si no convence, ajusta el texto o las voces y vuelve a generar.`, 'ok');
         } catch (e) {
             this.aviso(`No se pudo generar: ${e.message}`, 'error');
         } finally {
@@ -149,7 +215,7 @@ const audioLogic = {
 
     // ── 2. Guardar (sube a Storage y cataloga la ficha en Firestore) ────────
     async guardar() {
-        if (!this.ultimoWav) return;
+        if (!this.ultimoAudio) return;
         const titulo = document.getElementById('audio-titulo').value.trim();
         if (!titulo) return this.aviso('Ponle un título al clip para reconocerlo después.', 'error');
 
@@ -160,8 +226,10 @@ const audioLogic = {
         boton.textContent = 'Guardando…';
         try {
             const id = `${tipo}-${Date.now()}`;
-            const ref = firebase.storage().ref(`tests-audio/${cfg.examen}/${id}.wav`);
-            await ref.put(this.ultimoWav, { contentType: 'audio/wav' });
+            const mime = this.ultimoAudio.type || 'audio/mpeg';
+            const extension = mime === 'audio/mpeg' ? 'mp3' : 'wav';
+            const ref = firebase.storage().ref(`tests-audio/${cfg.examen}/${id}.${extension}`);
+            await ref.put(this.ultimoAudio, { contentType: mime });
             const audioUrl = await ref.getDownloadURL();
 
             await audioClipsCollection.doc(id).set({
@@ -178,13 +246,14 @@ const audioLogic = {
                 // clip para que el reproductor del test no tenga que deducirlo.
                 maxPlays: cfg.examen === 'delf' ? 2 : 1,
                 duracionSeg: this.ultimaDuracion,
-                bytes: this.ultimoWav.size,
+                bytes: this.ultimoAudio.size,
+                formato: extension,
                 audioUrl,
                 audioStatus: 'generado',
                 createdAt: firebase.firestore.FieldValue.serverTimestamp()
             });
 
-            this.ultimoWav = null;
+            this.ultimoAudio = null;
             document.getElementById('audio-btn-guardar').disabled = true;
             document.getElementById('audio-preview-wrap').classList.add('hidden');
             document.getElementById('audio-titulo').value = '';
@@ -220,6 +289,7 @@ const audioLogic = {
                         <p class="text-xs text-gray-500 mt-0.5">
                             ${this.escapar(c.etiqueta || '')} ·
                             ${this.formatoDuracion(c.duracionSeg || 0)} ·
+                            ${this.formatoPeso(c.bytes || 0)} ·
                             ${(c.voces || []).join(' + ')}
                             ${c.acento ? ' · ' + (ACENTOS[c.acento]?.etiqueta || c.acento) : ''} ·
                             se escucha ${c.maxPlays === 1 ? '1 vez' : c.maxPlays + ' veces'}
@@ -246,7 +316,7 @@ const audioLogic = {
         try {
             await audioClipsCollection.doc(id).delete();
             // El archivo se borra después: si falla, la ficha ya no lo referencia.
-            await firebase.storage().ref(`tests-audio/${clip.examen}/${id}.wav`).delete().catch(() => {});
+            await firebase.storage().ref(`tests-audio/${clip.examen}/${id}.${clip.formato || 'wav'}`).delete().catch(() => {});
             this.aviso('Clip eliminado.', 'ok');
             await this.cargar();
         } catch (e) {
@@ -260,6 +330,12 @@ const audioLogic = {
     },
 
     // ── Utilidades ──────────────────────────────────────────────────────────
+    formatoPeso(bytes) {
+        return bytes >= 1048576
+            ? `${(bytes / 1048576).toFixed(1)} MB`
+            : `${Math.round(bytes / 1024)} KB`;
+    },
+
     formatoDuracion(seg) {
         const m = Math.floor(seg / 60), s = seg % 60;
         return m ? `${m} min ${String(s).padStart(2, '0')} s` : `${s} s`;
