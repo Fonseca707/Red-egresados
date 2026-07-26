@@ -39,7 +39,7 @@ REGLAS INNEGOCIABLES:
 - Las 4 opciones deben ser de largo parecido. Si la correcta es siempre la más larga, el examen se vuelve adivinable sin leer.
 - Los distractores deben ser errores PLAUSIBLES de un estudiante de grado 11, no opciones absurdas.
 - Contenido 100% original. No copies ni parafrasees textos de cuadernillos publicados.
-- NUNCA atribuyas el texto a una fuente real (ni entidad, ni autor, ni publicación, ni año). Nada de "Alcaldía de…", "Ministerio de…", "según El Tiempo". El texto es original para práctica y así debe quedar.
+- NUNCA atribuyas el texto ni sus datos a algo real. Esto vale TAMBIÉN dentro del texto, no solo al pie: nada de "un estudio de la Universidad de Pittsburgh", "según el Ministerio de Salud", "como sostiene Byung-Chul Han", "publicado en Nature". Respaldar una cifra inventada con una institución o un autor que existen es fabricar evidencia falsa. Si necesitas un dato, preséntalo sin fuente ("una encuesta reciente en el colegio…", "los registros del conjunto residencial…") o usa entidades claramente ficticias.
 - NO escribas la letra de la opción dentro del texto de la opción: escribe "Cada ejemplo pertenece…", no "A. Cada ejemplo pertenece…".
 - Español de Colombia, natural, sin tecnicismos innecesarios.
 - Cada pregunta debe demostrar EXACTAMENTE la evidencia pedida arriba, no una parecida. Si la evidencia es sobre relaciones entre partes del texto, no sirve preguntar por un dato literal; si es sobre un dato local, no sirve preguntar por la idea global. En el campo "comoDemuestraLaEvidencia" explica en una frase por qué tu pregunta la demuestra.
@@ -158,6 +158,22 @@ Responde SOLO con este JSON, sin markdown ni explicaciones:
         return fallos;
     },
 
+    // El modelo respalda cifras inventadas citando instituciones y autores que
+    // existen ("un estudio de la Universidad de Pittsburgh"). Prohibirlo en el
+    // prompt no basta: reincide. Esto lo detecta para que no pase de la cola.
+    revisarAtribuciones(texto) {
+        const patrones = [
+            /(universidad|instituto|ministerio|secretar[íi]a|alcald[íi]a|gobernaci[óo]n|fundaci[óo]n|OMS|ONU|UNESCO|DANE|ICFES)/i,
+            /seg[úu]n (un |una |el |la )?(estudio|investigaci[óo]n|informe|encuesta|reporte) (de|del|de la|realizado)/i,
+            /(investigadores|cient[íi]ficos|expertos) de (la|el)/i,
+            /publicad[oa] en/i,
+            /\((19|20)\d{2}\)/
+        ];
+        return patrones.some(re => re.test(String(texto || '')))
+            ? ['El texto respalda datos en una institución, autor o publicación que parece real. Un texto de práctica no puede atribuir cifras inventadas a entidades que existen: reescríbelo sin esa fuente.']
+            : [];
+    },
+
     // Validación del LOTE, no del ítem: la cuota de forma solo tiene sentido
     // mirando el conjunto.
     validarLote(items, prueba) {
@@ -228,6 +244,7 @@ Responde SOLO con este JSON, sin markdown ni explicaciones:
     // para NO servírselas a un estudiante. La cola es la lista de pendientes.
     async guardarPendientes(items, estimulo, prueba, tipoTexto) {
         let estimuloId = null;
+        let avisoTexto = [];
         // El texto se guarda UNA vez por lote: en Lectura Crítica un mismo texto
         // alimenta varias preguntas y duplicarlo haría que el motor lo mostrara
         // como si fueran textos distintos.
@@ -246,13 +263,14 @@ Responde SOLO con este JSON, sin markdown ni explicaciones:
                 createdAt: firebase.firestore.FieldValue.serverTimestamp()
             });
             estimuloId = ref.id;
+            avisoTexto = this.revisarAtribuciones(estimulo.texto || '');
         }
         const guardados = [];
         for (const it of items) {
             // El modelo mete la letra dentro de la opción ("A. Cada ejemplo…") y
             // la UI le antepone otra, quedando "A. A. Cada ejemplo…".
             it.opciones = (it.opciones || []).map(o => String(o).replace(/^\s*[A-D][.)]\s+/, '').trim());
-            const fallos = this.validar(it, { prueba, hayEstimulo: !!estimuloId });
+            const fallos = [...this.validar(it, { prueba, hayEstimulo: !!estimuloId }), ...avisoTexto];
             const doc = {
                 exam: 'ICFES',
                 prueba: it.prueba, afirmacion: it.afirmacion, evidencia: it.evidencia,
