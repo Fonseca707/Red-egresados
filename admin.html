@@ -54,6 +54,7 @@
                 <button onclick="adminLogic.switchTab('contactos')" id="tab-contactos" class="hidden pb-3 text-sm font-bold border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition">Mensajes<span id="tab-contactos-badge" class="hidden ml-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-brand-600 text-white text-[10px] font-bold align-middle inline-flex items-center justify-center">0</span></button>
                 <button onclick="adminLogic.switchTab('colegios')" id="tab-colegios" class="hidden pb-3 text-sm font-bold border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition">Colegios</button>
                 <button onclick="adminLogic.switchTab('audio')" id="tab-audio" class="hidden pb-3 text-sm font-bold border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition">Audio</button>
+                <button onclick="adminLogic.switchTab('icfes')" id="tab-icfes" class="hidden pb-3 text-sm font-bold border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition">Saber 11</button>
                 <button onclick="adminLogic.switchTab('subadmins')" id="tab-subadmins" class="hidden pb-3 text-sm font-bold border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition">Sub-Administradores</button>
             </div>
 
@@ -417,6 +418,89 @@
                     <div id="admin-subadmins-list" class="divide-y divide-gray-50"></div>
                 </div>
             </div>
+
+            <!-- PESTAÑA: SABER 11 (ICFES) — fábrica de ítems -->
+            <div id="admin-icfes-tab" class="hidden space-y-4">
+                <div class="bg-amber-50 border border-amber-100 rounded-2xl px-5 py-4 flex items-start gap-3">
+                    <i class="ph-duotone ph-exam text-amber-600 text-2xl mt-0.5 shrink-0"></i>
+                    <div>
+                        <p class="font-bold text-amber-900 text-sm">Preguntas del Saber 11</p>
+                        <p class="text-amber-700 text-xs mt-0.5">La IA genera contra el <strong>blueprint oficial</strong> del ICFES (competencia → afirmación → evidencia) y tú apruebas. <strong>Una pregunta sin aprobar nunca le llega a un estudiante.</strong> Las preguntas son originales: de los cuadernillos oficiales se toma la forma de preguntar, nunca el contenido.</p>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-gray-100">
+                    <h3 class="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2">
+                        <i class="ph-bold ph-sparkle text-amber-600"></i> Generar preguntas
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="input-label">Prueba</label>
+                            <select id="icfes-prueba" class="input-field" onchange="icfesAdmin.onPruebaChange()"></select>
+                        </div>
+                        <div>
+                            <label class="input-label">Afirmación / competencia</label>
+                            <select id="icfes-afirmacion" class="input-field" onchange="icfesAdmin.onAfirmacionChange()"></select>
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="input-label">Evidencia (el nivel al que el ICFES redacta)</label>
+                            <select id="icfes-evidencia" class="input-field"></select>
+                            <p class="text-xs text-gray-500 mt-1">Pedirle a la IA «una pregunta de lectura crítica» da basura; pedirle una que demuestre una evidencia concreta da algo parecido al examen real.</p>
+                        </div>
+
+                        <div id="icfes-lc-campos" class="md:col-span-2 hidden">
+                            <label class="input-label">Tipo de texto (cuota oficial)</label>
+                            <select id="icfes-tipo-texto" class="input-field"></select>
+                        </div>
+
+                        <div id="icfes-mat-campos" class="md:col-span-2 hidden grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <label class="input-label">Contenido</label>
+                                <select id="icfes-categoria" class="input-field"></select>
+                            </div>
+                            <div>
+                                <label class="input-label">Contexto</label>
+                                <select id="icfes-contexto" class="input-field"></select>
+                            </div>
+                            <div>
+                                <label class="input-label">¿Solo conocimientos genéricos?</label>
+                                <select id="icfes-generico" class="input-field">
+                                    <option value="si">Sí — más accesible</option>
+                                    <option value="no">No — permite álgebra y afines</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="input-label">Cuántas preguntas</label>
+                            <select id="icfes-cuantos" class="input-field">
+                                <option value="3">3</option><option value="4">4</option><option value="5">5</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="input-label">Dificultad</label>
+                            <select id="icfes-dificultad" class="input-field">
+                                <option value="1">1 — básica</option>
+                                <option value="2" selected>2 — media</option>
+                                <option value="3">3 — exigente</option>
+                                <option value="4">4 — avanzada</option>
+                            </select>
+                        </div>
+                        <div class="md:col-span-2 flex justify-end">
+                            <button id="icfes-btn-generar" onclick="icfesAdmin.generar()" class="px-6 py-3 bg-amber-600 text-white font-bold rounded-xl hover:bg-amber-700 transition">Generar preguntas</button>
+                        </div>
+                    </div>
+                    <div id="icfes-aviso" class="hidden mt-4"></div>
+                    <div id="icfes-propuestas" class="mt-6"></div>
+                </div>
+
+                <div class="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-gray-100">
+                    <h3 class="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                        <i class="ph-bold ph-books text-amber-600"></i> Banco publicado
+                    </h3>
+                    <div id="icfes-banco"></div>
+                </div>
+            </div>
         </div>
     </main>
 
@@ -432,6 +516,8 @@
     <script src="admin-contactos.js?v=1"></script>
     <script src="admin-colegios.js?v=1"></script>
     <script src="admin-audio.js?v=5"></script>
+    <script src="icfes-data.js?v=1"></script>
+    <script src="admin-icfes.js?v=1"></script>
     <script>
         renderNav('admin');
 
@@ -440,7 +526,7 @@
         // colegios ajenos. La frontera real son las reglas de Firestore
         // (docs/firestore.rules); esto evita además que la pestaña se abra
         // llamando switchTab() a mano desde la consola.
-        const SUPER_ONLY_TABS = ['contactos', 'colegios', 'subadmins', 'audio'];
+        const SUPER_ONLY_TABS = ['contactos', 'colegios', 'subadmins', 'audio', 'icfes'];
         const tabPermitida = (tab) => !SUPER_ONLY_TABS.includes(tab) || state.adminRole === 'superadmin';
 
         const adminLogic = {
@@ -454,7 +540,8 @@
                     contactos: { btn:'tab-contactos',  panel:'admin-contactos-tab' },
                     colegios:  { btn:'tab-colegios',   panel:'admin-colegios-tab' },
                     subadmins: { btn:'tab-subadmins',  panel:'admin-subadmins-tab' },
-                    audio:     { btn:'tab-audio',      panel:'admin-audio-tab' }
+                    audio:     { btn:'tab-audio',      panel:'admin-audio-tab' },
+                    icfes:     { btn:'tab-icfes',      panel:'admin-icfes-tab' }
                 };
                 Object.entries(tabMap).forEach(([key, { btn, panel }]) => {
                     const b = document.getElementById(btn);
@@ -470,6 +557,7 @@
                 if (tab === 'subadmins') adminLogic.renderSubAdmins();
                 if (tab === 'colegios') colegiosAdminLogic.load();
                 if (tab === 'audio') audioLogic.montar();
+                if (tab === 'icfes') icfesAdmin.montar();
                 // El interruptor de correos automáticos es de toda la red:
                 // el sub-admin no lo ve (sus campañas manuales sí, ya van
                 // solo a los egresados de su colegio vía getVisibleUsers()).

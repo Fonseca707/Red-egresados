@@ -363,6 +363,50 @@ async function generarAudio(request, env, origin) {
     });
 }
 
+// ── Generador de ítems del ICFES ────────────────────────────────────────────
+// Ruta aparte de la raíz por dos razones: necesita MUCHOS más tokens que un chat
+// de Karla (un ítem con estímulo y 4 justificaciones no cabe en 1500) y, como
+// cada llamada cuesta plata, va cerrada al superadmin igual que /tts. La raíz
+// sigue con su tope bajo para que nadie la use de API gratis.
+const ITEMS_MAX_TOKENS = 6000;
+
+async function generarItems(request, env, origin) {
+    const json = (obj, status) => new Response(JSON.stringify(obj),
+        { status, headers: { ...corsHeaders(origin), 'Content-Type': 'application/json' } });
+
+    const email = await superadminAutenticado(request);
+    if (!email) return json({ error: 'Solo el superadministrador puede generar ítems.' }, 403);
+    if (ttsPasadoDeVueltas(email)) return json({ error: 'Demasiadas generaciones seguidas, espera un momento.' }, 429);
+
+    let cuerpo;
+    try { cuerpo = await request.json(); } catch { return json({ error: 'JSON inválido' }, 400); }
+
+    const instruccion = String(cuerpo.instruccion || '').trim();
+    if (!instruccion) return json({ error: 'Falta la instrucción de generación.' }, 400);
+    if (instruccion.length > 12000) return json({ error: 'La instrucción es demasiado larga.' }, 400);
+
+    const upstream = await fetch('https://api.deepseek.com/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${env.DEEPSEEK_API_KEY}` },
+        body: JSON.stringify({
+            model: 'deepseek-v4-flash',
+            messages: [
+                { role: 'system', content: 'Eres un constructor de ítems del examen Saber 11 del ICFES colombiano. Respondes SIEMPRE con JSON válido y nada más: sin explicaciones, sin markdown, sin ```. Escribes en español de Colombia.' },
+                { role: 'user', content: instruccion }
+            ],
+            max_tokens: ITEMS_MAX_TOKENS,
+            temperature: 1.0,
+            stream: false
+        })
+    });
+
+    if (!upstream.ok) {
+        return json({ error: 'El generador falló', status: upstream.status, detalle: (await upstream.text()).slice(0, 400) }, 502);
+    }
+    const datos = await upstream.json();
+    return json({ texto: datos?.choices?.[0]?.message?.content || '' }, 200);
+}
+
 export default {
     async fetch(request, env) {
         const origin = request.headers.get('Origin') || '';
@@ -378,6 +422,7 @@ export default {
         const ruta = new URL(request.url).pathname;
         if (ruta === '/tts') return generarAudio(request, env, origin);
         if (ruta === '/tts/voces') return listarVoces(request, env, origin);
+        if (ruta === '/items') return generarItems(request, env, origin);
 
         const ip = request.headers.get('CF-Connecting-IP') || 'desconocida';
         if (rateLimited(ip)) {
