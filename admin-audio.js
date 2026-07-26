@@ -453,7 +453,19 @@ const audioLogic = {
             const mime = this.ultimoAudio.type || 'audio/mpeg';
             const extension = mime === 'audio/mpeg' ? 'mp3' : 'wav';
             const ref = firebase.storage().ref(`tests-audio/${cfg.examen}/${id}.${extension}`);
-            await ref.put(this.ultimoAudio, { contentType: mime });
+
+            // Si el bucket no está aprovisionado, el SDK de Storage NO falla:
+            // reintenta en silencio para siempre y el botón se queda en
+            // "Guardando…" sin explicar nada. Se le pone un tope y un mensaje que
+            // diga exactamente qué hacer.
+            const subida = ref.put(this.ultimoAudio, { contentType: mime });
+            await Promise.race([
+                subida,
+                new Promise((_, rechazar) => setTimeout(() => {
+                    subida.cancel();
+                    rechazar(new Error('Firebase Storage no respondió. Casi siempre es que el bucket todavía no está creado: entra a la consola de Firebase → Storage → "Comenzar", y luego se despliegan las reglas con "firebase deploy --only storage". El clip generado NO se pierde: sigue en la vista previa, puedes guardarlo apenas quede listo.'));
+                }, 45000))
+            ]);
             const audioUrl = await ref.getDownloadURL();
 
             await audioClipsCollection.doc(id).set({
@@ -486,6 +498,9 @@ const audioLogic = {
             await this.cargar();
         } catch (e) {
             this.aviso(`No se pudo guardar: ${e.message}`, 'error');
+            // El botón se reactiva: el clip sigue en memoria y en la vista previa,
+            // así que reintentar no obliga a generarlo (ni a pagarlo) de nuevo.
+            boton.disabled = !this.ultimoAudio;
         } finally {
             boton.textContent = 'Guardar en el banco';
         }
