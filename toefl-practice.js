@@ -845,7 +845,7 @@ const toeflLogic = {
                     <div>
                         <h3 class="text-2xl font-extrabold text-gray-900 mb-1">Tu escritura, corregida</h3>
                         <p class="text-gray-500 text-sm">${iaError
-                            ? 'No pudimos conectar con la IA correctora. Puedes autoevaluarte con la rúbrica y la respuesta modelo.'
+                            ? sanitizeHTML(iaCalificadora.ultimoError || 'No pudimos conectar con la IA correctora.') + ' Puedes autoevaluarte con la rúbrica y la respuesta modelo.'
                             : 'La IA califica con la escala oficial de bandas 1–6, como el sistema automático del TOEFL real, y te señala qué corregir.'}</p>
                     </div>
                     ${evalBlock('email', w.email, s.emailText)}

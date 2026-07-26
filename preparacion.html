@@ -78,12 +78,12 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore-compat.js"></script>
     <script src="shared.js?v=13"></script>
     <script src="toefl-data.js?v=2"></script>
-    <script src="toefl-practice.js?v=11"></script>
+    <script src="toefl-practice.js?v=12"></script>
     <script src="delf-data.js?v=2"></script>
     <script src="icfes-data.js?v=1"></script>
     <script src="icfes-engine.js?v=1"></script>
-    <script src="delf-practice.js?v=5"></script>
-    <script src="ia-calificadora.js?v=2"></script>
+    <script src="delf-practice.js?v=6"></script>
+    <script src="ia-calificadora.js?v=3"></script>
     <script src="orientadora.js?v=3"></script>
     <script>
         renderNav('exam-modules');
@@ -186,7 +186,9 @@
                 // Gate por colegio: los módulos son valor agregado que cada colegio
                 // activa (doc colegios/{tag}.modulos). Sin dato aún → se muestran
                 // (MODULOS_DEFAULT); si el colegio del usuario lo desactivó → tarjeta
-                // bloqueada. Es gate de UI: el gate duro va en el proxy (pendiente).
+                // bloqueada. Esto es solo UI (se salta desde la consola); el gate
+                // DURO vive en el Worker: POST /calificar exige sesión y verifica
+                // server-side el módulo del colegio antes de gastar en la IA.
                 const disponibles = state.modulosDisponibles || null;
                 const habilitado = (code) => !disponibles || disponibles[code.toLowerCase()] !== false;
                 grid.innerHTML = state.examModules.map((module) => {

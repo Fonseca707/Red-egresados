@@ -138,9 +138,9 @@ function base64ABytes(b64) {
     return bytes;
 }
 
-// Valida el ID token contra Google (sin criptografía a mano) y exige que sea
-// el superadmin con el correo verificado: el mismo criterio de firestore.rules.
-async function superadminAutenticado(request) {
+// Valida el ID token contra Google (sin criptografía a mano) y devuelve
+// {uid, email, emailVerified} o null. Base de todo gate del Worker.
+async function lookupUsuario(request) {
     const cabecera = request.headers.get('Authorization') || '';
     if (!cabecera.startsWith('Bearer ')) return null;
     const respuesta = await fetch(
@@ -154,8 +154,90 @@ async function superadminAutenticado(request) {
     if (!respuesta.ok) return null;
     const datos = await respuesta.json();
     const usuario = (datos.users || [])[0];
-    if (!usuario || usuario.email !== SUPERADMIN_EMAIL || usuario.emailVerified !== true) return null;
-    return usuario.email;
+    if (!usuario || !usuario.localId) return null;
+    return {
+        uid: usuario.localId,
+        email: usuario.email || '',
+        emailVerified: usuario.emailVerified === true
+    };
+}
+
+// Superadmin = correo EXACTO y verificado, el mismo criterio de firestore.rules
+// (por prefijo era regalable: Auth acepta cualquier dominio sin verificar).
+function esSuperadmin(usuario) {
+    return !!usuario && usuario.email === SUPERADMIN_EMAIL && usuario.emailVerified;
+}
+
+async function superadminAutenticado(request) {
+    const usuario = await lookupUsuario(request);
+    return esSuperadmin(usuario) ? usuario.email : null;
+}
+
+// ── Gate duro de módulos pagados (TOEFL / DELF) ──────────────────────────────
+// El gate de UI de preparacion.html se salta desde la consola, y `toefl-data.js`
+// es estático y descargable: lo defendible NO es el banco de preguntas sino la
+// EXPERIENCIA CALIFICADA, que es la que cuesta plata. Por eso la calificación de
+// writing vive en su propia ruta, exige sesión y comprueba aquí —server-side—
+// que el colegio del alumno tenga el módulo activo.
+//
+// La paridad con el cliente (shared.js getModulosUsuario) es deliberada: sin
+// perfil o sin colegio se cae a DEFAULT_SCHOOL, y un colegio sin doc o sin mapa
+// `modulos` hereda MODULOS_DEFAULT — así los 68 usuarios de la era LCP siguen
+// calificando igual y el gate no rompe nada que hoy funcione.
+const MODULOS_DEFAULT = { toefl: true, delf: true };
+const MODULOS_VALIDOS = ['toefl', 'delf'];
+const DEFAULT_SCHOOL = 'LCP';
+const PROJECT_ID = 'red-egresados-65a1a';
+const APP_ID = '1:874010522484:web:28881821d110defd3b7221';
+const CALIFICACIONES_POR_HORA = 30;      // freno de saldo por alumno
+
+const calificaHits = new Map(); // uid -> {count, windowStart}
+
+// `alumni` y `colegios` son de lectura pública en firestore.rules (el modo
+// invitado explora el directorio sin login), así que basta la API key: no hace
+// falta propagar el token del usuario ni una cuenta de servicio.
+async function leerDocPublico(ruta) {
+    const base = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents`;
+    // El appId lleva ':' y hay que escaparlo: sin encodear, Firestore lee el
+    // segmento como un método custom (:commit, :runQuery) y responde 400.
+    const url = `${base}/artifacts/${encodeURIComponent(APP_ID)}/public/data/${ruta}`;
+    const respuesta = await fetch(url, { headers: { 'x-goog-api-key': FIREBASE_API_KEY } });
+    if (!respuesta.ok) return null;                       // 404 = no existe
+    return (await respuesta.json())?.fields || null;
+}
+
+// Decide si el alumno puede usar la calificadora de ESE módulo.
+// Devuelve {ok, school, motivo}. Ante un fallo de red de Firestore NO se abre la
+// puerta: se responde que no, porque un gate que se cae abierto no es un gate.
+async function moduloHabilitado(uid, modulo) {
+    let school = DEFAULT_SCHOOL;
+    try {
+        const perfil = await leerDocPublico(`alumni/${encodeURIComponent(uid)}`);
+        const declarado = perfil?.school?.stringValue || '';
+        if (declarado) school = declarado;
+
+        const colegio = await leerDocPublico(`colegios/${encodeURIComponent(school)}`);
+        const mapa = colegio?.modulos?.mapValue?.fields;
+        if (!mapa) return { ok: MODULOS_DEFAULT[modulo] === true, school };
+        // Un módulo ausente del mapa hereda el default (era LCP), igual que el cliente.
+        const valor = mapa[modulo];
+        const activo = valor ? valor.booleanValue === true : MODULOS_DEFAULT[modulo] === true;
+        return { ok: activo, school };
+    } catch (e) {
+        return { ok: false, school, motivo: 'firestore' };
+    }
+}
+
+function calificacionesPasadasDeVueltas(uid) {
+    const ahora = Date.now();
+    const registro = calificaHits.get(uid);
+    if (!registro || ahora - registro.windowStart > 3_600_000) {
+        calificaHits.set(uid, { count: 1, windowStart: ahora });
+        if (calificaHits.size > 5000) calificaHits.clear();
+        return false;
+    }
+    registro.count++;
+    return registro.count > CALIFICACIONES_POR_HORA;
 }
 
 function ttsPasadoDeVueltas(email) {
@@ -407,6 +489,79 @@ async function generarItems(request, env, origin) {
     return json({ texto: datos?.choices?.[0]?.message?.content || '' }, 200);
 }
 
+// Reenvía a DeepSeek con los topes del proxy. Común a la raíz (Karla) y a
+// /calificar: nadie reutiliza el proxy como API gratis ni sube el tope de tokens.
+async function reenviarADeepSeek(body, env, origin) {
+    if (!String(body.model || '').startsWith('deepseek')) body.model = 'deepseek-v4-flash';
+    body.max_tokens = Math.min(Number(body.max_tokens) || 600, MAX_TOKENS_CAP);
+    body.stream = false;
+
+    const upstream = await fetch('https://api.deepseek.com/chat/completions', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${env.DEEPSEEK_API_KEY}`
+        },
+        body: JSON.stringify(body)
+    });
+
+    return new Response(upstream.body, {
+        status: upstream.status,
+        headers: { ...corsHeaders(origin), 'Content-Type': 'application/json' }
+    });
+}
+
+// POST /calificar  {modulo:'toefl'|'delf', model, messages, ...}  + Bearer idToken
+// El gate duro: sesión válida + módulo activo en el colegio del alumno.
+async function calificarEscritura(request, env, origin) {
+    const json = (obj, status) => new Response(JSON.stringify(obj),
+        { status, headers: { ...corsHeaders(origin), 'Content-Type': 'application/json' } });
+
+    const usuario = await lookupUsuario(request);
+    if (!usuario) {
+        return json({
+            error: 'Para recibir la calificación de la IA necesitas iniciar sesión.',
+            motivo: 'sesion'
+        }, 401);
+    }
+
+    let cuerpo;
+    try { cuerpo = await request.json(); } catch { return json({ error: 'JSON inválido' }, 400); }
+
+    const modulo = String(cuerpo.modulo || '');
+    if (!MODULOS_VALIDOS.includes(modulo)) {
+        return json({ error: 'Módulo no válido.', motivo: 'modulo-invalido' }, 400);
+    }
+    delete cuerpo.modulo;   // no viaja a DeepSeek
+
+    if (calificacionesPasadasDeVueltas(usuario.uid)) {
+        return json({
+            error: `Alcanzaste el tope de ${CALIFICACIONES_POR_HORA} calificaciones por hora. Espera un rato.`,
+            motivo: 'tope'
+        }, 429);
+    }
+
+    // El superadmin pasa siempre: necesita poder probar cualquier módulo aunque
+    // su propio colegio lo tenga apagado.
+    if (!esSuperadmin(usuario)) {
+        const veredicto = await moduloHabilitado(usuario.uid, modulo);
+        if (!veredicto.ok) {
+            if (veredicto.motivo === 'firestore') {
+                return json({
+                    error: 'No pudimos verificar tu acceso a este módulo. Intenta de nuevo en un momento.',
+                    motivo: 'verificacion'
+                }, 503);
+            }
+            return json({
+                error: `Tu colegio no tiene activo el módulo de ${modulo.toUpperCase()}. La práctica y la autoevaluación siguen disponibles; la corrección con IA es parte del módulo.`,
+                motivo: 'modulo'
+            }, 403);
+        }
+    }
+
+    return reenviarADeepSeek(cuerpo, env, origin);
+}
+
 export default {
     async fetch(request, env) {
         const origin = request.headers.get('Origin') || '';
@@ -423,6 +578,8 @@ export default {
         if (ruta === '/tts') return generarAudio(request, env, origin);
         if (ruta === '/tts/voces') return listarVoces(request, env, origin);
         if (ruta === '/items') return generarItems(request, env, origin);
+        // Calificación de writing: exige sesión + módulo del colegio (gate duro)
+        if (ruta === '/calificar') return calificarEscritura(request, env, origin);
 
         const ip = request.headers.get('CF-Connecting-IP') || 'desconocida';
         if (rateLimited(ip)) {
@@ -436,22 +593,6 @@ export default {
         }
 
         // Solo modelos DeepSeek y tope de tokens: nadie reutiliza el proxy para otra cosa
-        if (!String(body.model || '').startsWith('deepseek')) body.model = 'deepseek-v4-flash';
-        body.max_tokens = Math.min(Number(body.max_tokens) || 600, MAX_TOKENS_CAP);
-        body.stream = false;
-
-        const upstream = await fetch('https://api.deepseek.com/chat/completions', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${env.DEEPSEEK_API_KEY}`
-            },
-            body: JSON.stringify(body)
-        });
-
-        return new Response(upstream.body, {
-            status: upstream.status,
-            headers: { ...corsHeaders(origin), 'Content-Type': 'application/json' }
-        });
+        return reenviarADeepSeek(body, env, origin);
     }
 };

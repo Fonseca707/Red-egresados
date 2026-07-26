@@ -76,7 +76,7 @@ Devuelve JSON:
  "mejoras":[{"cita":"fragmento literal","problema":"qué está mal","sugerencia":"cómo se escribiría mejor"}],
  "resumen":"una frase con lo esencial"}`;
 
-        const data = await this._pedir(system, `CONSIGNA:\n${consigna}\n\nTEXTO DEL ESTUDIANTE:\n${texto || '(no escribió nada)'}`);
+        const data = await this._pedir(system, `CONSIGNA:\n${consigna}\n\nTEXTO DEL ESTUDIANTE:\n${texto || '(no escribió nada)'}`, 'toefl');
         const etiquetas = { task: 'Cumplimiento de la tarea', development: 'Desarrollo y organización', language: 'Gramática y vocabulario' };
         return {
             band: this._clamp(data.band, 1, 6),
@@ -145,7 +145,7 @@ Devuelve JSON:
  "mejoras":[{"cita":"fragment littéral","problema":"...","sugerencia":"..."}],
  "resumen":"una frase"}`;
 
-        const data = await this._pedir(system, `CONSIGNE:\n${task.consigne}\n\nTEXTE DE L'ÉTUDIANT:\n${texto || '(no escribió nada)'}`);
+        const data = await this._pedir(system, `CONSIGNE:\n${task.consigne}\n\nTEXTE DE L'ÉTUDIANT:\n${texto || '(no escribió nada)'}`, 'delf');
         const porClave = new Map((data.criterios || []).map(c => [c.clave, c]));
         // La grille solo admite 0/1/3/5: si la IA devuelve otra cosa, se ajusta al
         // nivel válido más cercano (hacia abajo en los empates, para no inflar).
@@ -177,11 +177,31 @@ Devuelve JSON:
     },
 
     // ── Llamada al proxy ────────────────────────────────────────────────────
-    async _pedir(system, user) {
-        const res = await fetch(SINAPSIS_IA_PROXY, {
+    // Va por /calificar (no por la raíz): esa ruta exige sesión y comprueba
+    // server-side que el colegio del alumno tenga el módulo. El gate visual de
+    // preparacion.html se salta desde la consola; este no.
+    // El último rechazo queda en `ultimoError` para que la UI diga POR QUÉ no
+    // hubo corrección en vez del genérico "no pudimos conectar".
+    ultimoError: '',
+
+    async _pedir(system, user, modulo) {
+        this.ultimoError = '';
+        const token = await this._token();
+        if (!token) {
+            const err = new Error('Para recibir la calificación de la IA necesitas iniciar sesión.');
+            err.motivo = 'sesion';
+            this.ultimoError = err.message;
+            throw err;
+        }
+
+        const res = await fetch(`${SINAPSIS_IA_PROXY}/calificar`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
             body: JSON.stringify({
+                modulo,
                 model: 'deepseek-v4-flash',
                 messages: [
                     { role: 'system', content: system },
@@ -193,9 +213,26 @@ Devuelve JSON:
                 thinking: { type: 'disabled' }
             })
         });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        if (!res.ok) {
+            let mensaje = '', motivo = '';
+            try { const e = await res.json(); mensaje = e.error || ''; motivo = e.motivo || ''; } catch (_) {}
+            const err = new Error(mensaje || `HTTP ${res.status}`);
+            err.motivo = motivo;
+            err.status = res.status;
+            this.ultimoError = mensaje;   // '' → la UI usa su texto genérico
+            throw err;
+        }
         const data = await res.json();
         return JSON.parse(data?.choices?.[0]?.message?.content || '{}');
+    },
+
+    // Token de Firebase del alumno. Sin sesión no hay corrección con IA: es lo
+    // único que cuesta plata y lo único que el gate puede defender de verdad.
+    async _token() {
+        try {
+            const u = (typeof auth !== 'undefined' && auth.currentUser) || null;
+            return u ? await u.getIdToken() : null;
+        } catch (e) { return null; }
     },
 
     _clamp(v, min, max) {

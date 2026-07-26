@@ -377,7 +377,7 @@ const delfLogic = {
                     <div>
                         <h3 class="text-2xl font-extrabold text-gray-900 mb-1">Tu texto, corregido</h3>
                         <p class="text-gray-500 text-sm">${s.iaEstado === 'error'
-                            ? 'No pudimos conectar con la IA correctora. Autoevalúate con la grilla y la respuesta modelo.'
+                            ? sanitizeHTML(iaCalificadora.ultimoError || 'No pudimos conectar con la IA correctora.') + ' Autoevalúate con la grilla y la respuesta modelo.'
                             : 'La IA corrige con la grilla oficial del DELF B1 sobre 25 puntos y te señala qué mejorar.'}</p>
                     </div>
                     <div class="grid md:grid-cols-2 gap-4">
