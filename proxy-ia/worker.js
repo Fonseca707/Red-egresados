@@ -10,7 +10,9 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 const ALLOWED_ORIGINS = [
-    // Firebase Hosting (sitio oficial desde 2026-07-25)
+    // Firebase Hosting — URL oficial desde 2026-07-26 (site nuevo del mismo proyecto)
+    'https://sinapsisred.web.app',
+    // Site original: sigue vivo para quien tenga el link viejo
     'https://red-egresados-65a1a.web.app',
     'https://red-egresados-65a1a.firebaseapp.com',
     // GitHub Pages: se mantiene durante la transición, quitar cuando Pages se apague

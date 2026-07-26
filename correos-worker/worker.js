@@ -35,6 +35,7 @@
 
 const DIA = 86400000;
 const ORIGENES = [
+    'https://sinapsisred.web.app', // URL oficial desde 2026-07-26
     'https://red-egresados-65a1a.web.app',
     'https://red-egresados-65a1a.firebaseapp.com',
     'https://fonseca707.github.io', // transición, quitar al apagar Pages
