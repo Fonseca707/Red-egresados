@@ -293,7 +293,7 @@ const icfesLogic = {
         const s = this.session;
         const aciertos = s.respuestas.filter(r => r.correcta).length;
         const puntaje = Math.round((aciertos / s.respuestas.length) * 100);
-        const nivel = icfesNivelDesempeno(puntaje);
+        const nivel = icfesNivelDesempeno(puntaje, s.prueba);
         if (typeof saveExamResult === 'function') {
             saveExamResult({
                 exam: 'ICFES',
@@ -310,7 +310,7 @@ const icfesLogic = {
         const aciertos = s.respuestas.filter(r => r.correcta).length;
         const total = s.respuestas.length;
         const puntaje = Math.round((aciertos / total) * 100);
-        const nivel = icfesNivelDesempeno(puntaje);
+        const nivel = icfesNivelDesempeno(puntaje, s.prueba);
 
         // Desglose por afirmación: es lo que convierte un puntaje en un plan.
         const por = {};

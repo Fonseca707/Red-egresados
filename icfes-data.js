@@ -142,16 +142,31 @@ const ICFES_FORMAS = {
 const ICFES_MIN_VEREDICTO_MAT = 0.5;
 
 // Niveles de desempeño oficiales (escala 0-100 por prueba).
-const ICFES_NIVELES = [
-    { nivel: 1, min: 0,  max: 35, nombre: 'Nivel 1', descripcion: 'Desempeño insuficiente: aún no muestra las habilidades mínimas de la prueba.' },
-    { nivel: 2, min: 36, max: 50, nombre: 'Nivel 2', descripcion: 'Desempeño mínimo: resuelve situaciones sencillas y directas.' },
-    { nivel: 3, min: 51, max: 65, nombre: 'Nivel 3', descripcion: 'Desempeño satisfactorio: resuelve situaciones que exigen relacionar información.' },
-    { nivel: 4, min: 66, max: 100, nombre: 'Nivel 4', descripcion: 'Desempeño avanzado: interpreta, argumenta y resuelve situaciones complejas.' }
-];
+// ⚠️ LOS CORTES NO SON IGUALES EN LAS DOS PRUEBAS. Verificado 2026-07-26 contra
+// los PDF oficiales del ICFES ("Niveles de desempeño prueba Lectura Crítica /
+// Matemáticas Saber 11"): en Lectura Crítica el nivel 3 va de 51 a 65 y el 4
+// empieza en 66; en Matemáticas el 3 llega hasta 70 y el 4 empieza en 71.
+// Se había implementado un corte único para ambas, así que un 68 en Matemáticas
+// mostraba "Nivel 4" cuando en el examen real es Nivel 3.
+const ICFES_NIVELES = {
+    lectura_critica: [
+        { nivel: 1, min: 0,  max: 35,  nombre: 'Nivel 1', descripcion: 'Identifica elementos literales del texto, sin establecer relaciones de significado entre ellos.' },
+        { nivel: 2, min: 36, max: 50,  nombre: 'Nivel 2', descripcion: 'Comprende textos de forma literal y reconoce información explícita relacionada con su contexto.' },
+        { nivel: 3, min: 51, max: 65,  nombre: 'Nivel 3', descripcion: 'Jerarquiza la información del texto y reconoce relaciones entre sus partes.' },
+        { nivel: 4, min: 66, max: 100, nombre: 'Nivel 4', descripcion: 'Valora y contrasta los elementos del texto, y resuelve problemas de interpretación.' }
+    ],
+    matematicas: [
+        { nivel: 1, min: 0,  max: 35,  nombre: 'Nivel 1', descripcion: 'Reconoce datos sueltos en una representación, sin usarlos para resolver una situación.' },
+        { nivel: 2, min: 36, max: 50,  nombre: 'Nivel 2', descripcion: 'Identifica valores representativos y compara probabilidades de eventos simples.' },
+        { nivel: 3, min: 51, max: 70,  nombre: 'Nivel 3', descripcion: 'Selecciona y aplica procedimientos para resolver situaciones en contexto.' },
+        { nivel: 4, min: 71, max: 100, nombre: 'Nivel 4', descripcion: 'Modela situaciones complejas y argumenta la validez de procedimientos y conclusiones.' }
+    ]
+};
 
-function icfesNivelDesempeno(puntaje0a100) {
+function icfesNivelDesempeno(puntaje0a100, prueba = 'lectura_critica') {
     const p = Math.max(0, Math.min(100, Number(puntaje0a100) || 0));
-    return ICFES_NIVELES.find(n => p >= n.min && p <= n.max) || ICFES_NIVELES[0];
+    const escala = ICFES_NIVELES[prueba] || ICFES_NIVELES.lectura_critica;
+    return escala.find(n => p >= n.min && p <= n.max) || escala[0];
 }
 
 // Afirmaciones de una prueba, con su cuota. Lo usan el selector de ítems (para
