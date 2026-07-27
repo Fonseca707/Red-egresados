@@ -25,12 +25,22 @@ const icfesAdmin = {
     // apariencia correcta y el fondo equivocado.
     construirPrompt({ prueba, afirmacion, evidencia, cuantos, tipoTexto, categoria, contexto, generico, dificultad }) {
         const a = ICFES_AFIRMACIONES[afirmacion];
+        // Las evidencias que más se confunden son las de la MISMA afirmación: se
+        // le enseñan al modelo como lo que NO debe hacer, porque el fallo más
+        // frecuente de la primera tanda fue etiquetar 3.5 lo que era 3.1 o 3.3.
+        const hermanas = Object.entries(a.evidencias || {})
+            .filter(([cod]) => cod !== evidencia)
+            .map(([cod, texto]) => `  · ${cod} (NO es esta): ${texto}`)
+            .join(String.fromCharCode(10));
+
         const comun = `
 Genera ${cuantos} preguntas ORIGINALES para la prueba de ${ICFES_PRUEBAS[prueba].nombre} del examen Saber 11 del ICFES (Colombia).
 
 MARCO OFICIAL (respétalo al pie de la letra):
 - Competencia/afirmación: ${a.nombre}
-- Evidencia que debe quedar demostrada: ${a.evidencias[evidencia] || evidencia}
+- Evidencia que debe quedar demostrada: **${evidencia}** — ${a.evidencias[evidencia] || evidencia}
+- CUIDADO, estas son las evidencias vecinas con las que se confunde. Tu pregunta NO debe caer en ninguna de ellas:
+${hermanas || '  (no hay vecinas)'}
 - Dificultad objetivo: ${dificultad} de 4.
 
 REGLAS INNEGOCIABLES:
@@ -392,7 +402,14 @@ Responde SOLO con este JSON, sin markdown ni explicaciones:
             <div class="border ${fallos.length ? 'border-red-200 bg-red-50/30' : 'border-gray-200'} rounded-2xl p-5 mb-3">
                 <div class="flex items-start justify-between gap-3 mb-3 flex-wrap">
                     <div class="flex-1 min-w-[240px]">
-                        <p class="text-[11px] text-gray-400 mb-1">${this.escapar(a ? a.corto : '')} · evidencia ${this.escapar(p.evidencia || '')} · dificultad ${p.dificultad || 2}</p>
+                        <p class="text-[11px] text-gray-400 mb-1">${this.escapar(a ? a.corto : '')} · dificultad ${p.dificultad || 2}</p>
+                        <div class="flex items-center gap-2 mb-2">
+                            <span class="text-[11px] text-gray-400 shrink-0">Evalúa:</span>
+                            <select onchange="icfesAdmin.reetiquetar('${p.id}', this.value)" class="text-[11px] border border-gray-200 rounded-lg px-2 py-1 bg-white dark:bg-gray-800 max-w-full">
+                                ${Object.entries(a ? a.evidencias : {}).map(([cod, txt]) =>
+                                    `<option value="${cod}" ${cod === p.evidencia ? 'selected' : ''}>${cod} — ${this.escapar(String(txt).slice(0, 70))}…</option>`).join('')}
+                            </select>
+                        </div>
                         <p class="text-sm font-bold text-gray-900">${this.escapar(p.enunciado || '')}</p>
                     </div>
                     <div class="flex gap-2 shrink-0">
@@ -409,6 +426,20 @@ Responde SOLO con este JSON, sin markdown ni explicaciones:
                     <p class="text-[11px] text-red-500 mt-1">Puedes aprobarla igual si a tu juicio está bien, pero míralo dos veces.</p>
                 </div>` : ''}
             </div>`;
+    },
+
+    // El fallo más frecuente de la revisión fue la evidencia mal etiquetada, y
+    // casi siempre con una VECINA de la misma afirmación. La pregunta suele estar
+    // bien: lo que está mal es la etiqueta, y de ella dependen la cuota oficial y
+    // el diagnóstico por competencia. Cambiarla en un clic evita tirar una
+    // pregunta buena — o, peor, publicarla mintiendo sobre lo que mide.
+    async reetiquetar(id, evidencia) {
+        try {
+            await examItemsCollection.doc(id).update({ evidencia, reetiquetadoPor: state.user?.email || '' });
+            const p = this.propuestas.find(x => x.id === id);
+            if (p) p.evidencia = evidencia;
+            this.aviso('Evidencia actualizada a ' + evidencia + '.', 'ok');
+        } catch (e) { this.aviso('No se pudo reetiquetar: ' + e.message, 'error'); }
     },
 
     editar(id) { this.editandoId = id; this.pintarPropuestas(); },
