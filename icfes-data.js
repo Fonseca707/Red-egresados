@@ -105,7 +105,12 @@ const ICFES_TIPOS_TEXTO = {
 const ICFES_CATEGORIAS_MAT = {
     estadistica:     { nombre: 'Estadística', genericos: 'tablas y gráficas, unión e intersección de conjuntos, promedio y rango, conteos simples, población y muestra', noGenericos: 'error, varianza, percentiles, mediana, correlación, combinaciones y permutaciones' },
     geometria:       { nombre: 'Geometría', genericos: 'formas, perímetros, áreas y volúmenes de figuras corrientes, planos y mapas', noGenericos: 'geometría analítica, semejanza y congruencia formal, trigonometría' },
-    algebra_calculo: { nombre: 'Álgebra y cálculo', genericos: 'patrones y secuencias descritos en palabras, proporcionalidad directa', noGenericos: 'toda expresión algebraica, funciones, ecuaciones, tasas de cambio, límites' }
+    // ⚠️ "Cálculo" aquí NO es cálculo diferencial. El Saber 11 no evalúa
+    // derivadas, integrales ni límites: un ítem que pida "el costo marginal
+    // derivando C(x)" está fuera del examen aunque suene sofisticado. Se llegó a
+    // generar uno así porque este campo decía "límites". Es variación en el
+    // sentido de la guía: cómo cambia una cantidad respecto de otra.
+    algebra_calculo: { nombre: 'Álgebra y variación', genericos: 'patrones y secuencias descritos en palabras, proporcionalidad directa', noGenericos: 'expresiones algebraicas, ecuaciones e inecuaciones, funciones lineales y cuadráticas, razones de cambio leídas de una tabla o una gráfica — NUNCA derivadas, integrales ni límites: no se evalúan en el Saber 11' }
 };
 
 // Los cuatro contextos oficiales. El ítem declara el suyo.
