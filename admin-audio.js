@@ -126,7 +126,7 @@ François: Alors, Baluchon, c'est une petite entreprise qui existe depuis deux a
         examen: 'toefl', etiqueta: 'TOEFL · Listen and Choose a Response', hablantes: 1,
         instruccion: 'One single spoken line, addressed directly to the listener, as in a real everyday exchange. Natural conversational speed (about 150 words per minute) — not slow, not exaggerated, and never rushed to fit a target length. The intonation must carry the meaning unmistakably: rising for a yes/no question, falling for a wh- question or a statement, since the listener has no text on screen and hears it only once. Clean studio voice, no background sound, no introduction, no narrator:',
         ficha: {
-            duracion: '2–4 s por ítem (una sola frase de 6 a 14 palabras)',
+            duracion: '≈ 3–6 s por ítem — lo que dura una frase de 6 a 14 palabras a 150 wpm',
             voces: '1 · alterna hombre/mujer entre ítems',
             ritmo: 'Conversacional (≈150 wpm); la entonación es la que da la pista',
             fondo: 'Voz limpia, sin ambiente',
@@ -139,7 +139,7 @@ François: Alors, Baluchon, c'est une petite entreprise qui existe depuis deux a
         examen: 'toefl', etiqueta: 'TOEFL · Listen to a Conversation', hablantes: 2,
         instruccion: 'A short, real conversation between two people who know each other (roommates, coworkers, a student and a staff member). Relaxed everyday speed of about 150 words per minute — take exactly as long as the script needs, never speed up to fit a target length. Overlapping-free but quick turn-taking, with the small sounds real speech has: a surprised "Huh?", a thoughtful "Oh", a trailing-off pause where the line ends in an ellipsis. Contractions and reductions must sound natural, never over-enunciated. It must sound recorded in a room, not read from a page — but with a clean studio voice, no background noise:',
         ficha: {
-            duracion: '20–30 s (60–110 palabras en los guiones de ETS)',
+            duracion: '≈ 25–45 s — lo que dura el guion a 150 wpm. Lo oficial de ETS son las 60–110 palabras, NO la duración: su PDF solo publica los guiones. El guion de referencia (82 palabras) da ≈ 33 s',
             voces: '2 · hombre + mujer, acentos de EE. UU./Canadá/RU/Australia',
             ritmo: 'Rápido y coloquial, con turnos cortos',
             fondo: 'Sin ruido ambiente, pero con habla imperfecta (“Huh?”, “Oh. Wow”)',
@@ -160,7 +160,7 @@ Woman: No, that's good. Thanks!`
         examen: 'toefl', etiqueta: 'TOEFL · Listen to an Announcement', hablantes: 1,
         instruccion: 'A spoken announcement made to a room full of students by a teacher or staff member — a person speaking to a group, NOT a loudspeaker or an automated system. Clear, unhurried, about 140 words per minute — take exactly as long as the script needs, never speed up to fit a target length. Slightly formal, with a brief pause before each key detail (day, time, place) so it can be caught on a single listening. Warm and helpful, never robotic. Clean studio voice, no echo, no PA distortion, no background sound:',
         ficha: {
-            duracion: '20–26 s (70–85 palabras en los guiones de ETS)',
+            duracion: '≈ 30–36 s — lo que duran 70–85 palabras a 140 wpm. Lo oficial de ETS es el nº de palabras, no la duración',
             voces: '1 · profesor o personal del campus dirigiéndose a un grupo',
             ritmo: 'Claro y algo más pausado, con pausa antes de los datos clave',
             fondo: 'Voz limpia — NO megafonía con eco (era un error del preset anterior)',
@@ -173,7 +173,7 @@ Woman: No, that's good. Thanks!`
         examen: 'toefl', etiqueta: 'TOEFL · Listen to an Academic Talk', hablantes: 1,
         instruccion: 'An academic talk — a professor teaching a class, or a podcast host explaining an idea to an audience. Teaching pace: about 145 words per minute — take exactly as long as the script needs, never speed up to fit a target length. Engaged and expressive, not a flat reading. Mark the structure with the voice: a small pause before each technical term the first time it appears, slight emphasis on the term itself, and a clear drop before moving to the next idea. Rhetorical questions rise naturally. Dashes are short thinking pauses. Clean studio voice, no music, no background sound:',
         ficha: {
-            duracion: '60–90 s (150–250 palabras en los guiones de ETS)',
+            duracion: '≈ 1 min – 1 min 45 s — lo que duran 150–250 palabras a 145 wpm. Lo oficial de ETS es el nº de palabras, no la duración',
             voces: '1 · profesor en clase o presentador de pódcast',
             ritmo: '≈145 palabras/min, didáctico y expresivo',
             fondo: 'Sin música ni ambiente de aula',
