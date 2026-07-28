@@ -368,6 +368,7 @@
                         </div>
                         <div class="md:col-span-2 flex items-center justify-end gap-3">
                             <button id="audio-btn-generar" onclick="audioLogic.generar()" class="px-6 py-3 bg-amber-600 text-white font-bold rounded-xl hover:bg-amber-700 transition">Generar audio</button>
+                            <button id="audio-btn-forzar" onclick="audioLogic.forzarGuardado()" class="hidden px-4 py-3 text-sm font-bold text-red-700 border border-red-300 rounded-xl hover:bg-red-50 transition">Lo escuché, guardar igual</button>
                             <button id="audio-btn-guardar" onclick="audioLogic.guardar()" disabled class="px-6 py-3 bg-brand-600 text-white font-bold rounded-xl hover:bg-brand-700 transition disabled:opacity-40 disabled:cursor-not-allowed">Guardar en el banco</button>
                         </div>
                     </div>
@@ -375,6 +376,7 @@
                         <p class="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Antes de guardar, escúchalo</p>
                         <audio id="audio-preview" controls class="w-full"></audio>
                     </div>
+                    <div id="audio-ritmo" class="hidden"></div>
                     <div id="audio-aviso" class="hidden"></div>
                 </div>
 
@@ -528,7 +530,7 @@
     <script src="admin-rutas-ia.js?v=2"></script>
     <script src="admin-contactos.js?v=1"></script>
     <script src="admin-colegios.js?v=1"></script>
-    <script src="admin-audio.js?v=6"></script>
+    <script src="admin-audio.js?v=7"></script>
     <script src="icfes-data.js?v=3"></script>
     <script src="admin-icfes.js?v=8"></script>
     <script>

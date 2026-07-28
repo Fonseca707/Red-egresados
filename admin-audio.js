@@ -60,6 +60,7 @@ const VOCES = [
 // es la única forma honesta de medir cuánto se parece nuestro TTS.
 const ESTILOS = {
     'delf-dialogo': {
+        wpm: 150,
         examen: 'delf', etiqueta: 'DELF · Ej.1 diálogo cotidiano', hablantes: 2,
         instruccion: "Dialogue authentique en français de France entre deux amis proches qui se tutoient. Débit naturel d'environ 150 mots par minute, ton spontané, chaleureux et non théâtral — surtout pas une lecture à voix haute. Articulation nette (chaque mot doit rester identifiable pour un apprenant B1), enchaînements et intonations montantes des questions bien marquées, courtes respirations entre les répliques. Aucune musique, aucun bruit de fond, prise de son de studio :",
         ficha: {
@@ -89,6 +90,7 @@ Célia: Hmm, j'ai réfléchi mais je ne veux pas de cadeau. En fait, ce qui est 
 Lilian: D'accord. Alors compte sur moi !`
     },
     'delf-radio-pro': {
+        wpm: 150,
         examen: 'delf', etiqueta: 'DELF · Ej.2 radio (entrevista, tema profesional)', hablantes: 2,
         instruccion: "Extrait d'émission de radio française : un journaliste interviewe un invité. Le journaliste a une voix de studio posée et bien articulée, il pose ses questions avec une intonation claire ; l'invité répond sur un ton naturel et spontané, un peu plus rapide et moins net que le journaliste, comme une vraie personne interviewée. Débit d'environ 150 mots par minute. Pas de jingle, pas de musique, pas d'ambiance : voix seules, prise de son de studio :",
         ficha: {
@@ -106,6 +108,7 @@ Journaliste: Et si je veux aider l'association, comment est-ce que je fais ?
 Hayette: Aujourd'hui, on a une cinquantaine de bénévoles, mais on est toujours à la recherche de nouvelles personnes, donc vous êtes le bienvenu. D'abord, vous aurez une réunion d'information pour rencontrer les autres bénévoles et préparer votre premier rendez-vous. Puis, c'est vous qui décidez à quel rythme vous faites des sorties shopping, et quand.`
     },
     'delf-radio-soc': {
+        wpm: 150,
         examen: 'delf', etiqueta: 'DELF · Ej.3 radio (tema de société)', hablantes: 2,
         instruccion: "Extrait d'émission de radio française sur un sujet de société : le journaliste présente brièvement son invité, puis l'invité développe une longue réponse suivie. Ton de reportage, débit d'environ 150 mots par minute, phrases longues avec des respirations aux virgules, sans emphase publicitaire. L'invité parle comme un professionnel passionné, pas comme un lecteur. Aucune musique ni bruit de fond, prise de son de studio :",
         ficha: {
@@ -119,8 +122,9 @@ Hayette: Aujourd'hui, on a une cinquantaine de bénévoles, mais on est toujours
 François: Alors, Baluchon, c'est une petite entreprise qui existe depuis deux ans. On prépare des repas qu'on livre dans les entreprises, pour les salariés qui n'ont pas le temps de cuisiner eux-mêmes et qui en ont assez de manger des sandwichs en cinq minutes devant leur ordinateur... Je me suis rendu compte que les employés prenaient de moins en moins de temps pour déjeuner. Mais on sait que s'arrêter un bon moment et prendre un vrai repas permet d'être plus productif l'après-midi ! Je voulais donc créer un projet qui redonnait de l'importance au moment du déjeuner. Je voulais aussi que cette entreprise mette en valeur des produits locaux, cultivés naturellement et sans produits chimiques. Et puis, ce qui m'intéresse surtout, c'est l'humain. J'avais envie d'aider des gens qui ont du mal à trouver du travail, des personnes qui sont au chômage depuis longtemps ou des jeunes qui ont arrêté l'école. À Baluchon, ces personnes sont formées pendant deux ans pour apprendre un métier dans la restauration. Pour accéder à nos cours, on leur demande seulement de savoir parler français, écrire, et compter jusqu'à cent. Quand j'ai présenté le projet à ma ville, ils ont décidé de m'aider, et le maire nous a prêté une cuisine qui n'était pas utilisée depuis plusieurs années. On prépare tous les repas là-bas, et c'est vraiment pratique pour nous, parce que c'est très central ! Tous les jours, on a 30 cuisiniers qui préparent entre 400 et 1 000 repas. Par exemple, aujourd'hui, notre équipe prépare une crème de courgette à la menthe. Vous pouvez regarder les menus sur notre site internet. Pour commander, téléphonez au moins 48 heures à l'avance, surtout pour un grand groupe.`
     },
     'toefl-respuesta': {
+        wpm: 150,
         examen: 'toefl', etiqueta: 'TOEFL · Listen and Choose a Response', hablantes: 1,
-        instruccion: 'One single spoken line, addressed directly to the listener, as in a real everyday exchange. Around 2 to 4 seconds long. Natural conversational speed (about 150 words per minute) — not slow, not exaggerated. The intonation must carry the meaning unmistakably: rising for a yes/no question, falling for a wh- question or a statement, since the listener has no text on screen and hears it only once. Clean studio voice, no background sound, no introduction, no narrator:',
+        instruccion: 'One single spoken line, addressed directly to the listener, as in a real everyday exchange. Natural conversational speed (about 150 words per minute) — not slow, not exaggerated, and never rushed to fit a target length. The intonation must carry the meaning unmistakably: rising for a yes/no question, falling for a wh- question or a statement, since the listener has no text on screen and hears it only once. Clean studio voice, no background sound, no introduction, no narrator:',
         ficha: {
             duracion: '2–4 s por ítem (una sola frase de 6 a 14 palabras)',
             voces: '1 · alterna hombre/mujer entre ítems',
@@ -131,8 +135,9 @@ François: Alors, Baluchon, c'est une petite entreprise qui existe depuis deux a
         referencia: `Didn't I just see you in the library an hour ago?`
     },
     'toefl-conversacion': {
+        wpm: 150,
         examen: 'toefl', etiqueta: 'TOEFL · Listen to a Conversation', hablantes: 2,
-        instruccion: 'A short, real conversation between two people who know each other (roommates, coworkers, a student and a staff member). Around 20 to 30 seconds. Relaxed everyday speed, overlapping-free but quick turn-taking, with the small sounds real speech has: a surprised "Huh?", a thoughtful "Oh", a trailing-off pause where the line ends in an ellipsis. Contractions and reductions must sound natural, never over-enunciated. It must sound recorded in a room, not read from a page — but with a clean studio voice, no background noise:',
+        instruccion: 'A short, real conversation between two people who know each other (roommates, coworkers, a student and a staff member). Relaxed everyday speed of about 150 words per minute — take exactly as long as the script needs, never speed up to fit a target length. Overlapping-free but quick turn-taking, with the small sounds real speech has: a surprised "Huh?", a thoughtful "Oh", a trailing-off pause where the line ends in an ellipsis. Contractions and reductions must sound natural, never over-enunciated. It must sound recorded in a room, not read from a page — but with a clean studio voice, no background noise:',
         ficha: {
             duracion: '20–30 s (60–110 palabras en los guiones de ETS)',
             voces: '2 · hombre + mujer, acentos de EE. UU./Canadá/RU/Australia',
@@ -151,8 +156,9 @@ Man: Yeah, sure. How about salmon and salad? Want anything else?
 Woman: No, that's good. Thanks!`
     },
     'toefl-anuncio': {
+        wpm: 140,
         examen: 'toefl', etiqueta: 'TOEFL · Listen to an Announcement', hablantes: 1,
-        instruccion: 'A spoken announcement made to a room full of students by a teacher or staff member — a person speaking to a group, NOT a loudspeaker or an automated system. Around 20 to 26 seconds. Clear, unhurried, slightly formal, with a brief pause before each key detail (day, time, place) so it can be caught on a single listening. Warm and helpful, never robotic. Clean studio voice, no echo, no PA distortion, no background sound:',
+        instruccion: 'A spoken announcement made to a room full of students by a teacher or staff member — a person speaking to a group, NOT a loudspeaker or an automated system. Clear, unhurried, about 140 words per minute — take exactly as long as the script needs, never speed up to fit a target length. Slightly formal, with a brief pause before each key detail (day, time, place) so it can be caught on a single listening. Warm and helpful, never robotic. Clean studio voice, no echo, no PA distortion, no background sound:',
         ficha: {
             duracion: '20–26 s (70–85 palabras en los guiones de ETS)',
             voces: '1 · profesor o personal del campus dirigiéndose a un grupo',
@@ -163,8 +169,9 @@ Woman: No, that's good. Thanks!`
         referencia: `Good afternoon, everyone. I am excited to inform you that Dr. Cynthia Palmer, a renowned expert in environmental science, will be giving a guest lecture next Monday at 2 PM in Waldman Auditorium. Dr. Palmer will discuss the latest advancements in sustainable energy solutions and their impact on global climate change. Due to her popularity and the high interest in her work, I highly recommend arriving early to secure a seat.`
     },
     'toefl-charla': {
+        wpm: 145,
         examen: 'toefl', etiqueta: 'TOEFL · Listen to an Academic Talk', hablantes: 1,
-        instruccion: 'An academic talk — a professor teaching a class, or a podcast host explaining an idea to an audience. Around 60 to 90 seconds. Teaching pace: about 145 words per minute, engaged and expressive, not a flat reading. Mark the structure with the voice: a small pause before each technical term the first time it appears, slight emphasis on the term itself, and a clear drop before moving to the next idea. Rhetorical questions rise naturally. Dashes are short thinking pauses. Clean studio voice, no music, no background sound:',
+        instruccion: 'An academic talk — a professor teaching a class, or a podcast host explaining an idea to an audience. Teaching pace: about 145 words per minute — take exactly as long as the script needs, never speed up to fit a target length. Engaged and expressive, not a flat reading. Mark the structure with the voice: a small pause before each technical term the first time it appears, slight emphasis on the term itself, and a clear drop before moving to the next idea. Rhetorical questions rise naturally. Dashes are short thinking pauses. Clean studio voice, no music, no background sound:',
         ficha: {
             duracion: '60–90 s (150–250 palabras en los guiones de ETS)',
             voces: '1 · profesor en clase o presentador de pódcast',
@@ -244,6 +251,76 @@ const audioLogic = {
         if (cola.length) trozos.push(cola);
 
         return new Blob(trozos, { type: 'audio/mpeg' });
+    },
+
+    // ── Control de ritmo del clip ───────────────────────────────────────────
+    // Por qué existe (2026-07-28): salieron clips atropellados —el mismo guion
+    // en 35,2 s una vez y en 28,7 s otra— y en un examen de comprensión
+    // auditiva eso no es cosmético: cambia cuál es la respuesta correcta.
+    //
+    // La causa era una pinza en el propio preset, que pedía a la vez un ritmo
+    // (150 wpm) y una duración («Around 20 to 30 seconds») imposibles de
+    // cumplir juntas para un guion de 82 palabras, que a 150 wpm dura 33 s. A
+    // veces el modelo obedecía el ritmo y a veces la duración — de ahí que el
+    // defecto pareciera aleatorio. Las cláusulas de segundos ya se quitaron de
+    // los cuatro presets, pero el generador sigue teniendo una varianza propia
+    // del ~10 % con texto idéntico, así que hace falta la comprobación.
+    //
+    // ⭐ Se mide con una división, no analizando el audio: palabras del
+    // transcript ÷ duración del clip. Antes se intentaron dos detectores
+    // acústicos (contar sílabas por picos de energía, y la frecuencia de
+    // modulación de la envolvente) y AMBOS fallaron la validación — el primero
+    // satura cuando el habla se acelera, el segundo mide pausas y no sílabas.
+    // Validado contra clips reales: el bueno da 140 wpm, el atropellado 174, y
+    // seis generaciones de control caen entre 139 y 154.
+    RITMO_ALERTA: 1.10,   // por encima de esto se bloquea el guardado
+    RITMO_SOSPECHA: 1.05, // por encima de esto se avisa sin bloquear
+    RITMO_MIN_PALABRAS: 20, // con menos no hay muestra fiable (Choose a Response son 6-14)
+
+    // Cuenta las palabras que se van a NARRAR: las marcas de hablante
+    // ("Woman:", "Nadia:") no se pronuncian y falsearían el ritmo al alza.
+    palabrasNarradas(texto) {
+        return texto.replace(/^[ \t]*[A-Za-zÀ-ÿ0-9 _-]{1,20}:[ \t]*/gm, ' ')
+            .split(/\s+/).filter(Boolean).length;
+    },
+
+    evaluarRitmo(texto, duracionSeg, cfg) {
+        const palabras = this.palabrasNarradas(texto);
+        const objetivo = cfg?.wpm;
+        if (!objetivo || !duracionSeg || palabras < this.RITMO_MIN_PALABRAS) return null;
+        const wpm = palabras / (duracionSeg / 60);
+        return { wpm: Math.round(wpm), objetivo, factor: wpm / objetivo, palabras };
+    },
+
+    pintarRitmo(r) {
+        const caja = document.getElementById('audio-ritmo');
+        const forzar = document.getElementById('audio-btn-forzar');
+        forzar.classList.add('hidden');
+        if (!r) { caja.classList.add('hidden'); return; }
+
+        const base = 'mt-3 text-sm rounded-xl border px-4 py-3 ';
+        const dato = `<b>${r.wpm} palabras/min</b> (el objetivo de este tipo son ${r.objetivo}). ${r.palabras} palabras habladas.`;
+        if (r.factor >= this.RITMO_ALERTA) {
+            caja.className = base + 'bg-red-50 text-red-800 border-red-200';
+            caja.innerHTML = `<b>Va demasiado rápido: ${dato}</b><br>Es el clip atropellado que ya conocemos — el generador varía entre una toma y otra. <b>Vuelve a generar</b>, con el mismo texto suele salir bien. Si lo escuchas y te convence, puedes guardarlo igual.`;
+            document.getElementById('audio-btn-guardar').disabled = true;
+            forzar.classList.remove('hidden');
+        } else if (r.factor >= this.RITMO_SOSPECHA) {
+            caja.className = base + 'bg-amber-50 text-amber-800 border-amber-200';
+            caja.innerHTML = `Algo rápido: ${dato}<br>Está en el límite — <b>escúchalo entero</b> antes de guardarlo.`;
+        } else {
+            caja.className = base + 'bg-green-50 text-green-800 border-green-200';
+            caja.innerHTML = `Ritmo fiel al examen: ${dato}`;
+        }
+        caja.classList.remove('hidden');
+    },
+
+    // Escape explícito: el umbral es una regla, no un oído. Si Juan escucha el
+    // clip y está bien, manda él.
+    forzarGuardado() {
+        document.getElementById('audio-btn-guardar').disabled = false;
+        document.getElementById('audio-btn-forzar').classList.add('hidden');
+        this.aviso('Guardado desbloqueado: queda bajo tu criterio de oído.', 'info');
     },
 
     // ── Estado de la tarjeta ────────────────────────────────────────────────
@@ -429,6 +506,10 @@ const audioLogic = {
             document.getElementById('audio-preview-wrap').classList.remove('hidden');
             document.getElementById('audio-btn-guardar').disabled = false;
             this.aviso(`${aviso} Escúchalo antes de guardarlo — si no convence, ajusta el texto o las voces y vuelve a generar.`, 'ok');
+
+            // Control de ritmo: puede bloquear el guardado, así que va después
+            // de habilitarlo.
+            this.pintarRitmo(this.evaluarRitmo(texto, this.ultimaDuracion, cfg));
         } catch (e) {
             this.aviso(`No se pudo generar: ${e.message}`, 'error');
         } finally {
