@@ -354,14 +354,14 @@
                         </div>
                         <div class="md:col-span-2">
                             <p class="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Así suena el audio real de ese examen</p>
-                            <div id="audio-ficha" class="border border-gray-200 dark:border-gray-700 rounded-xl p-3 mb-3"></div>
+                            <div id="audio-ficha" class="border border-gray-200 rounded-xl p-3 mb-3"></div>
                         </div>
 
                         <!-- Lo que se le manda de verdad al generador. Estaba oculto en el
                              código, y el clip atropellado del 2026-07-28 vino justamente de
                              una cláusula de este texto que nadie podía ver. -->
                         <div class="md:col-span-2">
-                            <details id="audio-instruccion-wrap" class="border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3">
+                            <details id="audio-instruccion-wrap" class="border border-gray-200 rounded-xl px-4 py-3">
                                 <summary class="text-xs font-bold text-gray-500 uppercase tracking-wide cursor-pointer">Instrucción de estilo que recibe el generador</summary>
                                 <textarea id="audio-instruccion" class="input-field font-mono text-xs mt-3" rows="4" oninput="audioLogic.onInstruccionInput()"></textarea>
                                 <div class="flex items-center justify-between gap-3 flex-wrap mt-2">
@@ -879,8 +879,22 @@
             },
             removeUser: async (uid) => {
                 if (state.adminRole !== 'superadmin') return;
-                if (!confirm('¿Eliminar este usuario del directorio?')) return;
+                const target = (state.data.alumni || []).find(a => String(a.id) === String(uid));
+                const nombre = target?.name || uid;
+                // Cascada completa (patrón de admin-rutas-ia.js → limpiezaLogic.clean):
+                // hitos, examResults, itemAttempts y el doc de usernames. La cuenta de
+                // Firebase Auth NO se puede borrar desde el cliente (requiere Admin SDK
+                // en un backend/Cloud Function) — se advierte en la confirmación y queda
+                // pendiente para Juan.
+                if (!confirm(`¿Eliminar a "${nombre}" del directorio?\n\nSe borrarán: el perfil, sus hitos, sus resultados de exámenes (examResults) y sus intentos de ítems (itemAttempts)${target?.username ? `, y liberará el usuario "${target.username}"` : ''}.\n\nNO se borra su cuenta de inicio de sesión (Firebase Auth): quedará huérfana y hay que darla de baja aparte (pendiente manual).`)) return;
                 try {
+                    const hitosSnap = await hitosCollection(uid).get();
+                    for (const h of hitosSnap.docs) await h.ref.delete();
+                    const examResultsSnap = await examResultsCollection(uid).get();
+                    for (const r of examResultsSnap.docs) await r.ref.delete();
+                    const itemAttemptsSnap = await itemAttemptsCollection(uid).get();
+                    for (const a of itemAttemptsSnap.docs) await a.ref.delete();
+                    if (target?.username) await usernamesCollection.doc(target.username).delete().catch(() => {});
                     await alumniCollection.doc(uid).delete();
                     await loadAlumni();
                     adminLogic.renderUsers();

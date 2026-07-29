@@ -73,7 +73,12 @@ const colegiosAdminLogic = {
     },
 
     generarCodigo: async (colegioId) => {
-        const sufijo = Math.random().toString(36).slice(2, 8).toUpperCase();
+        // 6 caracteres alfanuméricos en mayúscula, aleatoriedad criptográfica
+        // (antes Math.random(), no apto para un identificador de acceso).
+        const ALFABETO = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        const bytes = new Uint8Array(6);
+        crypto.getRandomValues(bytes);
+        const sufijo = Array.from(bytes, b => ALFABETO[b % ALFABETO.length]).join('');
         const codigo = `${colegioId}-${sufijo}`;
         try {
             await codigosCollection.doc(codigo).set({
