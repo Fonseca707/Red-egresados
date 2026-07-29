@@ -51,6 +51,28 @@ const iaCalificadora = {
                 resumen: 'Escribiste en español. En el TOEFL, una respuesta que no está en inglés recibe la banda mínima, sin importar su contenido.'
             };
         }
+        // Guardia determinista de texto corto (mismo patrón que calificarDelf, pero
+        // SIN reutilizar su umbral de 79 a ciegas: el DELF pide 160 palabras y el
+        // umbral es la mitad, 80; las dos tareas TOEFL 2026 piden ~100 palabras
+        // (toefl-data.js: targetWords [100,120] y [100,130]), así que la misma
+        // proporción de "manque de matière évaluable" (50% del mínimo pedido) cae
+        // en ~50, no en 79. Por debajo de eso no hay nada real que evaluar y no
+        // vale la pena gastar una llamada real al proxy.
+        const TOEFL_MIN_WORDS_EVALUABLE = Math.ceil((task?.targetWords?.[0] || 100) / 2);
+        const palabras = String(texto || '').trim().split(/\s+/).filter(Boolean).length;
+        if (palabras < TOEFL_MIN_WORDS_EVALUABLE) {
+            return {
+                band: 1,
+                criterios: [
+                    { clave: 'task', label: 'Cumplimiento de la tarea', puntos: 1, max: 6, comentario: '' },
+                    { clave: 'development', label: 'Desarrollo y organización', puntos: 1, max: 6, comentario: '' },
+                    { clave: 'language', label: 'Gramática y vocabulario', puntos: 1, max: 6, comentario: '' }
+                ],
+                fortalezas: [],
+                mejoras: [],
+                resumen: `Escribiste ${palabras} palabras. La tarea pide ${task?.targetWords?.[0] ?? 100}-${task?.targetWords?.[1] ?? ''} palabras; por debajo de ${TOEFL_MIN_WORDS_EVALUABLE} no hay suficiente texto para evaluar, así que recibe la banda mínima.`
+            };
+        }
         const consigna = kind === 'email'
             ? `Scenario: ${task.scenario}\n${task.recipient}\nPuntos a cubrir:\n- ${task.bullets.join('\n- ')}\nObjetivo: ${task.targetWords[0]}-${task.targetWords[1]} palabras.`
             : `Professor (${task.professor.name}): ${task.professor.post}\n\nRespuestas de estudiantes:\n${task.students.map(s => `${s.name}: ${s.post}`).join('\n')}\n\nEl estudiante debe referirse a ambos y aportar un argumento NUEVO. Objetivo: ${task.targetWords[0]}-${task.targetWords[1]} palabras.`;
