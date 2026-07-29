@@ -41,32 +41,8 @@
 </head>
 <body class="text-stone-800 font-sans min-h-screen flex flex-col">
 
-    <!-- NAVBAR -->
-    <nav class="glass-nav fixed w-full z-40 top-0 h-16 flex items-center justify-between px-4 lg:px-8 shadow-sm">
-        <a href="index.html" class="flex items-center gap-3">
-            <svg viewBox="0 0 32 32" role="img" aria-label="Sinapsis" class="w-9 h-9 shrink-0"><defs><linearGradient id="neuro-nav" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#22c55e"/><stop offset="1" stop-color="#15803d"/></linearGradient></defs><g fill="none" stroke="#16a34a" stroke-width="1.5" stroke-linecap="round" opacity=".85"><path d="M13.6 12.6 L9.4 5.6 M11 15 L3.6 12.2 M12.4 19.6 L6.6 25.4 M17.6 19.8 L21.4 26.4 M19.4 14.6 L27.4 11.4 M18.2 12.2 L22.6 6.2"/></g><g fill="none" stroke="#86efac" stroke-width="1.1" stroke-linecap="round" opacity=".7"><path d="M9.4 5.6 L3.6 12.2 M21.4 26.4 L27.4 11.4 M3.6 12.2 L6.6 25.4"/></g><circle cx="15.6" cy="16.2" r="5" fill="url(#neuro-nav)"/><circle cx="15.6" cy="16.2" r="2" fill="#dcfce7"/><g fill="#16a34a"><circle cx="9" cy="4.6" r="2"/><circle cx="2.8" cy="11.8" r="2"/><circle cx="6" cy="26.2" r="2"/><circle cx="21.9" cy="27.4" r="2"/><circle cx="28.4" cy="11" r="2"/><circle cx="23.2" cy="5.4" r="2"/></g></svg>
-            <span class="font-bold text-xl tracking-tight text-gray-900">Sinap<span class="text-brand-600">sis</span></span>
-        </a>
-        <div class="hidden md:flex items-center gap-6" id="nav-links">
-            <button onclick="router.navigate('home')" class="text-gray-500 hover:text-brand-600 font-medium transition" id="nav-home">Ecosistema</button>
-            <button onclick="router.navigate('directory')" class="text-gray-500 hover:text-brand-600 font-medium transition" id="nav-dir">Comunidad</button>
-            <button onclick="router.navigate('news')" class="text-gray-500 hover:text-brand-600 font-medium transition" id="nav-news">Novedades</button>
-            <button onclick="router.navigate('exam-modules')" class="text-gray-500 hover:text-brand-600 font-medium transition" id="nav-exams">Preparación</button>
-            <button onclick="router.navigate('messages')" class="text-gray-500 hover:text-brand-600 font-medium transition" id="nav-msg">Mensajes</button>
-            <button onclick="router.navigate('admin')" class="hidden text-gray-500 hover:text-brand-600 font-medium transition" id="nav-admin">Admin</button>
-        </div>
-
-        <div class="flex items-center gap-2">
-            <button type="button" class="theme-toggle" data-theme-toggle onclick="toggleThemeMode()" aria-label="Cambiar tema"></button>
-            <!-- Avatar Usuario -->
-            <button id="profile-menu-trigger" onclick="router.navigate('profile')" class="h-10 w-10 rounded-full bg-brand-50 overflow-hidden ring-2 ring-transparent hover:ring-brand-300 transition-all focus:outline-none shadow-sm" title="Ver perfil">
-                <img src="https://ui-avatars.com/api/?name=Usuario&background=22c55e&color=fff" alt="Perfil" class="object-cover w-full h-full" id="header-avatar">
-            </button>
-            <button onclick="router.navigate('profile')" class="hidden md:flex items-center gap-1 text-xs text-gray-500 font-semibold hover:text-brand-600 transition px-2 py-1 rounded-lg hover:bg-brand-50" title="Abrir perfil">
-                <span>Mi perfil</span><i class="ph-bold ph-caret-down"></i>
-            </button>
-        </div>
-    </nav>
+    <!-- La navegación (desktop + móvil) la inyecta renderNav('home') de shared.js,
+         igual que en el resto del sitio (ver el bloque de script al final del body). -->
 
     <!-- MAIN CONTENT -->
     <main class="flex-1 pt-20 px-4 overflow-y-auto scroll-smooth bg-stone-50/60">
@@ -388,53 +364,6 @@
 
     </main>
 
-    <!-- 3.5 NAVEGACIÓN MÓVIL -->
-    <nav id="mobile-nav" class="hidden md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur border-t border-gray-200 grid grid-cols-6">
-        <button id="mnav-home" onclick="router.navigate('home')" class="py-3 text-xs font-semibold text-gray-500 flex flex-col items-center justify-center gap-1 min-w-0">
-            <i class="ph ph-house text-lg"></i><span>Inicio</span>
-        </button>
-        <button id="mnav-dir" onclick="router.navigate('directory')" class="py-3 text-xs font-semibold text-gray-500 flex flex-col items-center justify-center gap-1 min-w-0">
-            <i class="ph ph-users text-lg"></i><span>Directorio</span>
-        </button>
-        <button id="mnav-news" onclick="router.navigate('news')" class="py-3 text-xs font-semibold text-gray-500 flex flex-col items-center justify-center gap-1 min-w-0">
-            <i class="ph ph-newspaper text-lg"></i><span>Novedades</span>
-        </button>
-        <button id="mnav-exams" onclick="router.navigate('exam-modules')" class="py-3 text-xs font-semibold text-gray-500 flex flex-col items-center justify-center gap-1 min-w-0">
-            <i class="ph ph-books text-lg"></i><span>Práctica</span>
-        </button>
-        <button id="mnav-msg" onclick="router.navigate('messages')" class="py-3 text-xs font-semibold text-gray-500 flex flex-col items-center justify-center gap-1 min-w-0">
-            <i class="ph ph-chats-circle text-lg"></i><span>Mensajes</span>
-        </button>
-        <button id="mnav-profile" onclick="router.navigate('profile')" class="py-3 text-xs font-semibold text-gray-500 flex flex-col items-center justify-center gap-1 min-w-0">
-            <i class="ph ph-user-circle text-lg"></i><span>Perfil</span>
-        </button>
-    </nav>
-
-    <!-- 3. MODAL DE NOTICIAS -->
-    <div id="modal-news" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm bg-black/40">
-        <div class="bg-white rounded-3xl w-full max-w-2xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden animate-fade-in relative">
-            <button onclick="uiLogic.closeNewsModal()" class="absolute top-4 right-4 bg-white/50 hover:bg-white p-2 rounded-full backdrop-blur-md transition z-10" aria-label="Cerrar noticia"><i class="ph-bold ph-x text-xl"></i></button>
-            <div class="h-64 relative shrink-0">
-                <img id="news-modal-img" src="" class="w-full h-full object-cover">
-                <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
-                <div class="absolute bottom-6 left-6 right-6 text-white">
-                    <span id="news-modal-cat" class="px-3 py-1 bg-brand-600 rounded-lg text-xs font-bold uppercase tracking-wide mb-2 inline-block">Categoría</span>
-                    <h2 id="news-modal-title" class="text-2xl md:text-3xl font-bold leading-tight">Título</h2>
-                </div>
-            </div>
-            <div class="p-8 overflow-y-auto">
-                <div class="flex items-center gap-4 text-sm text-gray-500 mb-6 border-b border-gray-100 pb-4">
-                    <span class="flex items-center gap-1"><i class="ph-bold ph-calendar"></i> <span id="news-modal-date">Fecha</span></span>
-                    <span class="flex items-center gap-1"><i class="ph-bold ph-user"></i> Admin</span>
-                </div>
-                <p id="news-modal-body" class="text-gray-600 leading-relaxed text-lg whitespace-pre-wrap break-words">Contenido...</p>
-                <div class="mt-8 pt-6 border-t border-gray-100 flex justify-end">
-                    <button onclick="uiLogic.closeNewsModal()" class="px-6 py-2.5 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition">Cerrar</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <!-- 3.6 MODAL DE CONTACTO DE TERCEROS -->
     <div id="modal-contacto" class="fixed inset-0 z-[70] hidden flex items-center justify-center p-4 backdrop-blur-sm bg-black/40">
         <div class="bg-white rounded-3xl w-full max-w-lg max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-fade-in relative">
@@ -488,11 +417,11 @@
 
     <!-- 4. SLIDE PANEL DE PERFIL PÚBLICO -->
         <div id="slide-panel-overlay" class="fixed inset-0 z-[60] hidden">
-            <div class="absolute inset-0 bg-black/20 backdrop-blur-sm transition-opacity" onclick="directoryLogic.closeProfile()"></div>
+            <div class="absolute inset-0 bg-black/20 backdrop-blur-sm transition-opacity" onclick="directoryLogic.closeProfile()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();directoryLogic.closeProfile();}" role="button" tabindex="0" aria-label="Cerrar perfil"></div>
             <div id="slide-panel-content" class="absolute right-0 top-0 h-full w-full max-w-md bg-white shadow-2xl overflow-y-auto animate-slide-in-right flex flex-col">
                 <div class="relative h-40 bg-gradient-to-r from-brand-600 to-brand-900 shrink-0">
                     <button onclick="directoryLogic.closeProfile()" class="absolute top-4 left-4 text-white hover:bg-white/20 p-2 rounded-full transition z-10" aria-label="Cerrar perfil"><i class="ph-bold ph-arrow-right text-xl"></i></button>
-                    <img id="sp-img" src="" class="absolute left-6 -bottom-14 w-28 h-28 rounded-2xl border-[4px] border-white shadow-lg bg-white object-cover z-10">
+                    <img id="sp-img" src="" alt="" class="absolute left-6 -bottom-14 w-28 h-28 rounded-2xl border-[4px] border-white shadow-lg bg-white object-cover z-10">
                 </div>
                 <div class="px-6 pt-16 pb-10 flex-1">
                     <div class="flex justify-between items-end mb-4">
@@ -547,342 +476,19 @@
     <script src="orientadora.js?v=3"></script>
     <script src="historias.js?v=5"></script>
     <script>
-        function renderTextWithLinks(element, text) {
-            const content = String(text ?? '');
-            const urlPattern = /(?:https?:\/\/|www\.)[^\s<]+/gi;
-            const fragment = document.createDocumentFragment();
-            let lastIndex = 0;
-
-            for (const match of content.matchAll(urlPattern)) {
-                const matchedUrl = match[0];
-                const cleanUrl = matchedUrl.replace(/[.,!?;:)'"\]]+$/g, '');
-                const trailingText = matchedUrl.slice(cleanUrl.length);
-
-                fragment.append(document.createTextNode(content.slice(lastIndex, match.index)));
-
-                const link = document.createElement('a');
-                link.href = /^www\./i.test(cleanUrl) ? `https://${cleanUrl}` : cleanUrl;
-                link.textContent = cleanUrl;
-                link.target = '_blank';
-                link.rel = 'noopener noreferrer';
-                link.className = 'text-brand-600 font-semibold underline decoration-brand-300 underline-offset-2 hover:text-brand-800 transition';
-                fragment.append(link);
-
-                if (trailingText) fragment.append(document.createTextNode(trailingText));
-                lastIndex = match.index + matchedUrl.length;
-            }
-
-            fragment.append(document.createTextNode(content.slice(lastIndex)));
-            element.replaceChildren(fragment);
-        }
-
-        // ── Estado global: base en shared.js; solo se agregan campos de la SPA ─────
-        state.view = 'home';
-
-        const authLogic = {
-            login: async (e) => {
-                e.preventDefault();
-                const identity = document.getElementById('login-email').value.trim();
-                const password = document.getElementById('login-password').value;
-                const feedback = document.getElementById('auth-feedback');
-
-                try {
-                    state.guestMode = false;
-                    const authEmail = await resolveAuthEmail(identity);
-                    await auth.signInWithEmailAndPassword(authEmail, password);
-                    feedback.textContent = '';
-                    feedback.classList.remove('text-red-600');
-                } catch (error) {
-                    feedback.classList.add('text-red-600');
-                    feedback.textContent = getFriendlyAuthError(error, 'No pudimos iniciar sesión.');
-                }
-            },
-            registerWithEmail: async () => {
-                const newsletterInput = document.getElementById('register-newsletter');
-                if (newsletterInput) newsletterInput.checked = true;
-                if (state.user) {
-                    router.navigate('profile');
-                    return;
-                }
-                router.navigate('register');
-            },
-            submitRegister: async (e) => {
-                e.preventDefault();
-                const identity = document.getElementById('register-email').value.trim();
-                const password = document.getElementById('register-password').value;
-                const confirm = document.getElementById('register-password-confirm').value;
-                const acceptedPrivacy = document.getElementById('register-privacy').checked;
-                const wantsNewsletter = document.getElementById('register-newsletter').checked;
-                const feedback = document.getElementById('register-feedback');
-
-                if (!identity || !password) {
-                    feedback.textContent = 'Completa usuario/correo y contraseña.';
-                    return;
-                }
-                const usesUsername = !isEmailIdentity(identity);
-                const username = usesUsername ? normalizeUsername(identity) : '';
-                if (usesUsername && !isValidUsername(username)) {
-                    feedback.textContent = 'El usuario debe tener entre 3 y 30 caracteres.';
-                    return;
-                }
-                if (password.length < 6) {
-                    feedback.textContent = 'La contraseña debe tener al menos 6 caracteres.';
-                    return;
-                }
-                if (password !== confirm) {
-                    feedback.textContent = 'Las contraseñas no coinciden.';
-                    return;
-                }
-                if (!acceptedPrivacy) {
-                    feedback.textContent = 'Debes aceptar la política de tratamiento de datos.';
-                    return;
-                }
-
-                try {
-                    state.guestMode = false;
-                    const email = authEmailForIdentity(identity);
-                    const contactEmail = isEmailIdentity(identity) ? identity.toLowerCase() : '';
-                    if (username) {
-                        const existingUsername = await usernamesCollection.doc(username).get();
-                        if (existingUsername.exists) {
-                            feedback.textContent = 'Ese usuario ya esta en uso.';
-                            return;
-                        }
-                    }
-                    const cred = await auth.createUserWithEmailAndPassword(email, password);
-                    const payload = {
-                        email,
-                        contactEmail,
-                        username,
-                        school: DEFAULT_SCHOOL,
-                        privacyAccepted: true,
-                        newsletterOptIn: wantsNewsletter,
-                        newsletterOptInUpdatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-                        onboardingCompleted: false,
-                        referredBy: sessionStorage.getItem('sinapsis_invita') || '',
-                        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                    };
-                    await alumniCollection.doc(cred.user.uid).set(payload, { merge: true });
-                    if (username) await reserveUsername(username, cred.user.uid, email, { contactEmail });
-                    emailLogic.prepareWelcomeStructure(email);
-                    feedback.textContent = 'Cuenta creada correctamente.';
-                } catch (error) {
-                    feedback.textContent = getFriendlyAuthError(error, 'No pudimos crear la cuenta.');
-                }
-            },
-            registerWithGoogle: async () => {
-                const feedback = document.getElementById('register-feedback');
-                const provider = new firebase.auth.GoogleAuthProvider();
-                const acceptedPrivacy = document.getElementById('register-privacy').checked;
-                if (!acceptedPrivacy) {
-                    feedback.textContent = 'Debes aceptar la política de tratamiento de datos.';
-                    return;
-                }
-                try {
-                    state.guestMode = false;
-                    const result = await auth.signInWithPopup(provider);
-                    await alumniCollection.doc(result.user.uid).set({
-                        email: result.user.email || '',
-                        contactEmail: result.user.email || '',
-                        school: DEFAULT_SCHOOL,
-                        privacyAccepted: true,
-                        newsletterOptIn: true,
-                        newsletterOptInUpdatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-                        onboardingCompleted: false,
-                        referredBy: sessionStorage.getItem('sinapsis_invita') || '',
-                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                    }, { merge: true });
-                    feedback.textContent = 'Preferencias guardadas correctamente.';
-                } catch (error) {
-                    feedback.textContent = getFriendlyAuthError(error, 'No pudimos registrarte con Google.');
-                }
-            },
-            loginWithGoogle: async () => {
-                const feedback = document.getElementById('auth-feedback');
-                const provider = new firebase.auth.GoogleAuthProvider();
-                try {
-                    state.guestMode = false;
-                    await auth.signInWithPopup(provider);
-                    feedback.textContent = '';
-                    feedback.classList.remove('text-red-600');
-                } catch (error) {
-                    feedback.classList.add('text-red-600');
-                    feedback.textContent = getFriendlyAuthError(error, 'No pudimos iniciar sesión con Google.');
-                }
-            },
-            browseAsGuest: async () => {
-                state.guestMode = true;
-                try { sessionStorage.setItem('guestMode', 'true'); } catch {}
-                state.user = { uid: 'guest-view', displayName: 'Invitado' };
-                refreshHeaderIdentity();
-                const adminBtn = document.getElementById('nav-admin');
-                if (adminBtn) adminBtn.classList.add('hidden');
-                router.navigate('directory');
-                await loadAlumni();
-            },
-            logout: async () => {
-                if (!state.guestMode) {
-                    await auth.signOut();
-                }
-                state.guestMode = false;
-                try { sessionStorage.removeItem('guestMode'); } catch {}
-                state.user = null;
-                refreshHeaderIdentity();
-                const adminBtn = document.getElementById('nav-admin');
-                if (adminBtn) adminBtn.classList.add('hidden');
-                router.navigate('auth');
-            }
-        };
-
-        const emailLogic = {
-            prepareWelcomeStructure: (toEmail) => {
-                const structure = {
-                    to: toEmail,
-                    subject: '¡Gracias por unirte a CONNECTING!',
-                    text: 'Gracias por registrarte en CONNECTING. Ya puedes iniciar sesión y completar tu perfil.',
-                    html: `<h2>¡Bienvenido(a) a CONNECTING!</h2><p>Gracias por registrarte en la red de egresados.</p><p>Te invitamos a completar tu perfil para conectar mejor con la comunidad.</p>`
-                };
-                console.info('Estructura de correo de bienvenida lista:', structure);
-                return structure;
-            }
-        };
-
-        // Router: esta página es multipágina. Casi todo redirige a su .html propio (PAGINAS);
-        // sólo 'home' se renderiza aquí como vista SPA (landing con perfiles destacados).
-        const PAGINAS = {
-            admin: 'admin.html',
-            profile: 'profile.html',
-            directory: 'directory.html',
-            news: 'news.html',
-            messages: 'messages.html',
-            'exam-modules': 'preparacion.html',
-            auth: 'login.html',
-            register: 'register.html',
-            terms: 'terms.html',
-            onboarding: 'onboarding.html',
-            'onboarding-profile': 'onboarding.html'
-        };
-
-        const router = {
-            navigate: (viewId) => {
-                if (PAGINAS[viewId]) {
-                    if (viewId === 'register' && state.user) { window.location.href = PAGINAS.profile; return; }
-                    window.location.href = PAGINAS[viewId];
-                    return;
-                }
-                // Sólo 'home' se renderiza en esta página; el resto son páginas propias.
-                if (viewId !== 'home' && !state.user) { authLogic.logout(); return; }
-
-                document.getElementById('theme-floating-toggle')?.remove();
-                const nav = document.querySelector('nav');
-                const mobileNav = document.getElementById('mobile-nav');
-                if (nav) nav.classList.remove('hidden');
-                if (mobileNav) mobileNav.classList.remove('hidden');
-
-                const navButtons = { 'home': 'nav-home', 'directory': 'nav-dir', 'news': 'nav-news', 'exam-modules': 'nav-exams', 'messages': 'nav-msg', 'admin': 'nav-admin' };
-                Object.values(navButtons).forEach(btnId => {
-                    const btn = document.getElementById(btnId);
-                    if(btn) btn.classList.remove('text-brand-600', 'bg-brand-50');
-                });
-                if (navButtons[viewId]) {
-                    const activeBtn = document.getElementById(navButtons[viewId]);
-                    if(activeBtn) activeBtn.classList.add('text-brand-600', 'bg-brand-50');
-                }
-
-                state.view = viewId;
-                const targetView = document.getElementById(`view-${viewId}`);
-                if (targetView) {
-                    targetView.classList.remove('hidden');
-                    window.scrollTo(0, 0);
-                } else {
-                    return;
-                }
-
-                if (viewId === 'home' && typeof historiasLogic !== 'undefined') historiasLogic.init(true);
-            }
-        };
+        // ── Estado global: base en shared.js. La nav (desktop + móvil) la
+        // inyecta renderNav('home'), igual que en el resto de páginas del sitio.
+        renderNav('home');
 
         const directoryLogic = {
-            _currentItems: [],
-            render: (items = state.data.alumni) => {
-                directoryLogic._currentItems = rankAlumniForDirectory(items);
-                directoryLogic._renderPage(1);
-            },
-            _renderPage: (page) => {
-                state.directoryPage = page;
-                const items = directoryLogic._currentItems;
-                const grid = document.getElementById('directory-grid');
-                const loadMoreBtn = document.getElementById('directory-load-more');
-
-                if (state.directoryLoading) {
-                    grid.innerHTML = Array.from({ length: 8 }).map(() => `
-                        <div class="bg-white p-6 rounded-2xl border border-gray-100 animate-pulse">
-                            <div class="flex gap-4 mb-4">
-                                <div class="w-14 h-14 rounded-xl bg-gray-100"></div>
-                                <div class="flex-1 space-y-2">
-                                    <div class="h-4 bg-gray-100 rounded w-3/4"></div>
-                                    <div class="h-3 bg-gray-100 rounded w-1/2"></div>
-                                    <div class="h-3 bg-gray-100 rounded w-2/3"></div>
-                                </div>
-                            </div>
-                            <div class="h-3 bg-gray-100 rounded w-full mb-2"></div>
-                            <div class="h-3 bg-gray-100 rounded w-5/6"></div>
-                        </div>
-                    `).join('');
-                    if (loadMoreBtn) loadMoreBtn.classList.add('hidden');
-                    return;
-                }
-
-                const shown = items.slice(0, page * DIRECTORY_PAGE_SIZE);
-                const hasMore = items.length > shown.length;
-
-                if (items.length === 0) {
-                    grid.innerHTML = `
-                        <div class="col-span-full flex flex-col items-center justify-center py-16 text-center">
-                            <i class="ph ph-users-three text-5xl text-gray-300 mb-4"></i>
-                            <p class="text-gray-500 font-semibold">No se encontraron egresados</p>
-                            <p class="text-gray-400 text-sm mt-1">Intenta con otro nombre, año o categoría.</p>
-                        </div>`;
-                    if (loadMoreBtn) loadMoreBtn.classList.add('hidden');
-                    return;
-                }
-
-                grid.innerHTML = shown.map(alum => `
-                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition group cursor-pointer h-full flex flex-col" onclick="directoryLogic.openProfile('${sanitizeHTML(alum.id)}')">
-                        <div class="flex items-start justify-between">
-                            <div class="flex gap-4">
-                                <img src="${sanitizeHTML(alum.img)}" alt="Foto de ${sanitizeHTML(alum.name)}" class="w-14 h-14 rounded-xl object-cover shadow-sm group-hover:scale-105 transition shrink-0">
-                                <div class="min-w-0 pt-0.5">
-                                    <h3 class="font-bold text-gray-900 group-hover:text-brand-600 transition leading-tight break-words">${sanitizeHTML(alum.name)}</h3>
-                                    <p class="text-xs text-brand-600 font-semibold uppercase tracking-wide mt-1 leading-tight break-words">${sanitizeHTML(alum.company)}</p>
-                                    <p class="text-[11px] font-bold text-brand-600 mt-1 leading-tight">Promoción ${sanitizeHTML(alum.year || '---')}</p>
-                                    <p class="text-sm text-gray-500 mt-1 line-clamp-1">${sanitizeHTML(alum.role)}</p>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="mt-4 flex gap-2 flex-wrap mb-4 flex-1 content-start">
-                            ${(alum.tags || []).slice(0,3).map(t => `<span class="px-2 py-1 bg-gray-50 text-gray-600 text-xs rounded-md font-medium border border-gray-100">${sanitizeHTML(t)}</span>`).join('')}
-                        </div>
-                        <div class="pt-4 border-t border-gray-50">
-                            <span class="w-full px-4 py-2 bg-gray-50 text-gray-600 text-xs font-bold rounded-lg hover:bg-brand-50 hover:text-brand-600 transition flex justify-center items-center gap-2"><i class="ph-bold ph-user-list"></i> Ver Perfil Completo</span>
-                        </div>
-                    </div>
-                `).join('');
-
-                if (loadMoreBtn) {
-                    loadMoreBtn.classList.toggle('hidden', !hasMore);
-                    loadMoreBtn.classList.toggle('flex', hasMore);
-                }
-            },
-            loadMore: () => {
-                directoryLogic._renderPage(state.directoryPage + 1);
-            },
+            _spHitos: [],
             openProfile: (id) => {
                 const user = state.data.alumni.find(u => String(u.id) === String(id));
                 state.selectedDirectoryUserId = String(id);
                 if(!user) return;
-                document.getElementById('sp-img').src = user.img;
+                const spImg = document.getElementById('sp-img');
+                spImg.src = user.img;
+                spImg.alt = `Foto de ${user.name}`;
                 document.getElementById('sp-name').innerText = user.name;
                 document.getElementById('sp-role').innerText = user.role;
                 document.getElementById('sp-location').innerText = user.location;
@@ -939,70 +545,14 @@
             },
             closeProfile: () => {
                 document.getElementById('slide-panel-overlay').classList.add('hidden');
-            },
-            filter: () => {
-                const term = document.getElementById('directory-search').value.toLowerCase().trim();
-                const yearTerm = (document.getElementById('directory-year')?.value || '').trim();
-                const selected = document.getElementById('directory-filter')?.value || 'all';
-                const filtered = state.data.alumni.filter(u => {
-                    const matchesTerm = u.name.toLowerCase().includes(term) ||
-                        (u.role || '').toLowerCase().includes(term) ||
-                        (u.company || '').toLowerCase().includes(term);
-                    if (!matchesTerm) return false;
-
-                    const yearValue = String(u.year || '').trim();
-                    if (yearTerm && !yearValue.includes(yearTerm)) return false;
-
-                    if (selected === 'all') return true;
-                    const tags = (u.tags || []).map(t => String(t).toLowerCase());
-                    return tags.includes(selected);
-                });
-                directoryLogic.render(filtered);
             }
         };
 
-
+        // Trimmed a lo que usa esta página: abrir un chat desde el perfil público
+        // del directorio (botón "Mensaje" del panel). El resto de la lógica de chat
+        // (lista, hilo abierto, envío) vive en messages.html; aquí solo se crea el
+        // chat en Firestore y se redirige.
         const chatLogic = {
-            renderList: () => {
-                const list = document.getElementById('chat-list');
-                const listPanel = document.getElementById('chat-list-panel');
-                const activeArea = document.getElementById('active-chat-area');
-                const isMobile = window.innerWidth < 768;
-                if (isMobile && listPanel && activeArea) {
-                    listPanel.classList.remove('hidden');
-                    activeArea.classList.add('hidden');
-                    activeArea.classList.remove('flex');
-                }
-                if (!state.data.chats.length) {
-                    list.innerHTML = `
-                        <div class="flex flex-col items-center justify-center h-full py-12 px-6 text-center">
-                            <i class="ph ph-chats-circle text-4xl text-gray-300 mb-3"></i>
-                            <p class="text-sm font-semibold text-gray-500">Sin conversaciones aún</p>
-                            <p class="text-xs text-gray-400 mt-1">Busca un egresado en el <button onclick="router.navigate('directory')" class="text-brand-600 font-bold hover:underline">Directorio</button> y pulsa "Mensaje".</p>
-                        </div>`;
-                    state.activeChatId = null;
-                    return;
-                }
-                if (!state.activeChatId) {
-                    const first = state.data.chats[0];
-                    if (first?.id) chatLogic.openChat(first.id);
-                }
-                list.innerHTML = state.data.chats.map(chat => `
-                    <div onclick="chatLogic.openChat('${sanitizeHTML(chat.id)}')" class="p-4 hover:bg-white cursor-pointer border-b border-gray-100 flex gap-3 transition ${String(state.activeChatId) === String(chat.id) ? 'bg-white' : ''}">
-                        <div class="relative">
-                            <img src="${sanitizeHTML(chat.img)}" alt="Foto de ${sanitizeHTML(chat.name)}" class="w-12 h-12 rounded-full object-cover">
-                            <span class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></span>
-                        </div>
-                        <div class="flex-1 min-w-0">
-                            <div class="flex justify-between items-baseline mb-1">
-                                <h4 class="font-bold text-sm text-gray-900 truncate">${sanitizeHTML(chat.name)}</h4>
-                                <span class="text-xs text-gray-400">${sanitizeHTML(chat.time || '')}</span>
-                            </div>
-                            <p class="text-xs text-gray-500 truncate">${sanitizeHTML(chat.lastMsg || 'Sin mensajes')}</p>
-                        </div>
-                    </div>
-                `).join('');
-            },
             startChatFromDirectory: async () => {
                 const user = state.data.alumni.find(u => String(u.id) === String(state.selectedDirectoryUserId));
                 if (!user || !state.user || state.guestMode) return;
@@ -1033,135 +583,12 @@
                             updatedAt: firebase.firestore.FieldValue.serverTimestamp()
                         }, { merge: true })
                     ]);
-                    state.selectedDirectoryUserId = String(targetUser.id);
-                    await loadChatsForUser(myUid);
-                    router.navigate('messages');
-                    await chatLogic.openChat(chatId);
-                    directoryLogic.closeProfile();
+                    goto('messages');
                 } catch (error) {
                     alert(`No se pudo iniciar el chat: ${error.code || error.message || 'error desconocido'}`);
                 }
-            },
-            openChat: async (id, options = {}) => {
-                const { preserveListener = false } = options;
-                const chatId = String(id);
-                const chat = state.data.chats.find(c => String(c.id) === chatId);
-                if (!chat) return;
-                const listPanel = document.getElementById('chat-list-panel');
-                const activeArea = document.getElementById('active-chat-area');
-                if (window.innerWidth < 768 && listPanel && activeArea) {
-                    listPanel.classList.add('hidden');
-                    activeArea.classList.remove('hidden');
-                    activeArea.classList.add('flex');
-                }
-                state.activeChatId = chatId;
-                document.getElementById('chat-header-img').src = chat.img;
-                document.getElementById('chat-header-name').innerText = chat.name;
-                if (!state.messagesByChat[chatId] && state.user && !state.guestMode) {
-                    await loadMessagesForChat(state.user.uid, chatId);
-                }
-                if (state.user && !state.guestMode && !preserveListener) {
-                    watchMessagesInRealtime(state.user.uid, chatId);
-                }
-                const body = document.getElementById('chat-body');
-                const messages = state.messagesByChat[chatId] || [];
-                if (messages.length === 0) {
-                    body.innerHTML = `
-                        <div class="flex flex-col items-center justify-center py-6">
-                            <span class="text-xs bg-gray-100 px-3 py-1 rounded-full text-gray-500">Sin mensajes</span>
-                        </div>
-                    `;
-                    return;
-                }
-
-                body.innerHTML = messages.map((m) => `
-                    <div class="flex flex-col ${m.sender === 'me' ? 'items-end' : 'items-start'}">
-                        <div class="chat-bubble ${m.sender === 'me' ? 'chat-me' : 'chat-them'}">${sanitizeHTML(m.text)}</div>
-                        <span class="text-[10px] text-gray-400 mt-1 ${m.sender === 'me' ? 'mr-1' : 'ml-1'}">${m.createdAt ? 'Guardado' : 'Ahora'}</span>
-                    </div>
-                `).join('');
-                body.scrollTop = body.scrollHeight;
-            },
-            send: async (e) => {
-                e.preventDefault();
-                if (!state.user || state.guestMode || !state.activeChatId) return;
-                const input = document.getElementById('chat-input');
-                const text = input.value.trim();
-                if(!text) return;
-
-                const chat = state.data.chats.find(c => String(c.id) === String(state.activeChatId));
-                if (!chat?.peerId) return;
-
-                if (!state.messagesByChat[state.activeChatId]) state.messagesByChat[state.activeChatId] = [];
-                state.messagesByChat[state.activeChatId].push({ text, sender: 'me', createdAt: new Date() });
-                chat.lastMsg = text;
-                chat.time = 'Ahora';
-                chatLogic.renderList();
-
-                const msgId = userChatMessagesCollection(state.user.uid, state.activeChatId).doc().id;
-                const payload = {
-                    text,
-                    senderId: state.user.uid,
-                    recipientId: chat.peerId,
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                };
-                const chatMetaForMe = {
-                    peerId: chat.peerId,
-                    peerName: chat.name,
-                    peerPhotoURL: chat.img,
-                    lastMsg: text,
-                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                };
-                const myName = getDisplayNameFromProfileOrAuth();
-                const myPhoto = getUserAvatarUrl();
-                const chatMetaForOther = {
-                    peerId: state.user.uid,
-                    peerName: myName,
-                    peerPhotoURL: myPhoto,
-                    lastMsg: text,
-                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                };
-
-                try {
-                    const batch = db.batch();
-                    batch.set(userChatMessagesCollection(state.user.uid, state.activeChatId).doc(msgId), payload);
-                    batch.set(userChatMessagesCollection(chat.peerId, state.activeChatId).doc(msgId), payload);
-                    batch.set(userChatsCollection(state.user.uid).doc(state.activeChatId), chatMetaForMe, { merge: true });
-                    batch.set(userChatsCollection(chat.peerId).doc(state.activeChatId), chatMetaForOther, { merge: true });
-                    await batch.commit();
-                    // Aviso por correo al destinatario (el Worker respeta su consentimiento).
-                    avisarMensajePorCorreo(chat.peerId, myName);
-                } catch (error) {
-                    alert(`No se pudo enviar el mensaje: ${error.code || error.message || 'error desconocido'}`);
-                }
-
-                input.value = '';
-                await chatLogic.openChat(state.activeChatId);
-            },
-            backToList: () => {
-                const listPanel = document.getElementById('chat-list-panel');
-                const activeArea = document.getElementById('active-chat-area');
-                if (window.innerWidth >= 768 || !listPanel || !activeArea) return;
-                listPanel.classList.remove('hidden');
-                activeArea.classList.add('hidden');
-                activeArea.classList.remove('flex');
             }
         };
-
-        const uiLogic = {
-            openNewsModal: (idx) => {
-                const item = state.data.news[idx];
-                document.getElementById('news-modal-img').src = item.img;
-                document.getElementById('news-modal-cat').innerText = item.category;
-                document.getElementById('news-modal-title').innerText = item.title;
-                document.getElementById('news-modal-date').innerText = item.date;
-                renderTextWithLinks(document.getElementById('news-modal-body'), item.summary || 'Sin contenido adicional.');
-                document.getElementById('modal-news').classList.remove('hidden');
-            },
-            closeNewsModal: () => document.getElementById('modal-news').classList.add('hidden'),
-            toggleAuthModal: () => router.navigate(state.user ? 'profile' : 'register')
-        };
-
         // Contacto de terceros (empresas/aliados/general) → colección pública
         // `contactos` (create sin login, validado por reglas). Lo lee el admin.
         const contactosCollection = artifactsRoot.collection('public').doc('data').collection('contactos');
@@ -1239,23 +666,13 @@
             }
         };
         window.contactoLogic = contactoLogic;
-
-        directoryLogic.debouncedFilter = debounce(() => directoryLogic.filter(), 280);
-
-        function getInitialView() {
-            const allowed = ['home', 'directory', 'news', 'exam-modules', 'messages', 'profile', 'admin', 'terms', 'register', 'auth'];
-            const params = new URLSearchParams(window.location.search);
-            const requested = params.get('view') || window.location.hash.replace(/^#/, '');
-            return allowed.includes(requested) ? requested : 'home';
-        }
-
-        window.router = router;
-        window.authLogic = authLogic;
-        window.emailLogic = emailLogic;
         window.directoryLogic = directoryLogic;
         window.chatLogic = chatLogic;
-        window.uiLogic = uiLogic;
 
+        // Listener de auth reducido: esta página es la landing pública (vive sola,
+        // sin router). Si hay sesión, hidrata perfil/admin y refresca las historias
+        // destacadas; si no, solo limpia el estado. Nunca redirige fuera de aquí
+        // salvo que falte el onboarding.
         auth.onAuthStateChanged(async (user) => {
             if (user && state.guestMode) {
                 state.guestMode = false;
@@ -1263,37 +680,21 @@
             }
             if (state.guestMode) return;
             state.user = user;
-            const adminBtn = document.getElementById('nav-admin');
-            const registerBtn = document.getElementById('login-register-btn');
             if (user) {
-                if (registerBtn) registerBtn.classList.add('hidden');
                 await loadProfile(user.uid);
                 await ensureDefaultSchool(user.uid);
                 await loadAdminRole(user.uid);
-                watchChatsInRealtime(user.uid);
-                if (adminBtn) {
-                    if (canAccessAdmin()) adminBtn.classList.remove('hidden');
-                    else adminBtn.classList.add('hidden');
-                }
+                updateAdminNavVisibility();
 
                 if (!state.profile.onboardingCompleted) {
-                    if (user.displayName && !state.profile.firstName) {
-                        const nameParts = user.displayName.split(' ');
-                        const obName = document.getElementById('ob-name');
-                        const obLast = document.getElementById('ob-lastname');
-                        if (obName) obName.value = nameParts[0] || '';
-                        if (obLast) obLast.value = nameParts.slice(1).join(' ') || '';
-                    }
-                    router.navigate('onboarding');
-                } else {
-                    await loadAlumni();
-                    await loadNews();
-                    router.navigate(getInitialView() || 'directory');
-                    checkPulsoRuta();
+                    goto('onboarding');
+                    return;
                 }
+                await loadAlumni();
+                await loadNews();
+                checkPulsoRuta();
             } else {
-                if (registerBtn) registerBtn.classList.remove('hidden');
-                if (adminBtn) adminBtn.classList.add('hidden');
+                updateAdminNavVisibility();
                 state.data.alumni = [];
                 state.data.chats = [];
                 state.activeChatId = null;
@@ -1305,12 +706,11 @@
                 if (state.listeners.messages) { state.listeners.messages(); state.listeners.messages = null; }
                 state.profile = { firstName: '', lastName: '', graduationYear: '', location: '', status: 'trabajando', role: '', area: '', studies: '', bio: '', skills: '', topics: '', expectations: '', phone: '', linkedin: '', school: DEFAULT_SCHOOL, username: '', onboardingCompleted: false };
                 refreshHeaderIdentity();
-                router.navigate(getInitialView());
             }
+            if (typeof historiasLogic !== 'undefined') historiasLogic.init(true);
         });
 
         document.addEventListener('DOMContentLoaded', () => {
-            router.navigate(getInitialView());
             loadNews();
         });
     </script>

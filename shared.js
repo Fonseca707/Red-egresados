@@ -812,8 +812,13 @@ function watchChatsInRealtime(uid) {
     if(state.listeners.chats) state.listeners.chats();
     state.listeners.chats=userChatsCollection(uid).orderBy('updatedAt','desc').onSnapshot(snap=>{
         state.data.chats=snap.docs.map(doc=>{const d=doc.data();return{id:doc.id,peerId:d.peerId||'',name:d.peerName||'Usuario',img:d.peerPhotoURL||buildAvatarUrl(d.peerName||'Usuario'),lastMsg:d.lastMsg||'Sin mensajes',time:formatChatTime(d.updatedAt)};});
-        if(typeof chatLogic!=='undefined') chatLogic.renderList();
-    },()=>{ state.data.chats=[]; if(typeof chatLogic!=='undefined') chatLogic.renderList(); });
+        // No basta con que chatLogic exista: index.html define una version
+        // PARCIAL (solo para abrir un chat desde el directorio) que no tiene
+        // renderList ni el DOM de la bandeja. Comprobar la funcion concreta,
+        // no el objeto: asi este listener nunca vuelve a reventar en una
+        // pagina que no muestra chats.
+        if(typeof chatLogic!=='undefined'&&typeof chatLogic.renderList==='function') chatLogic.renderList();
+    },()=>{ state.data.chats=[]; if(typeof chatLogic!=='undefined'&&typeof chatLogic.renderList==='function') chatLogic.renderList(); });
 }
 function watchMessagesInRealtime(uid,chatId) {
     if(state.listeners.messages) state.listeners.messages();
