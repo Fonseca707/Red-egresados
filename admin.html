@@ -132,6 +132,27 @@
                 </div>
             </div>
 
+            <!-- Migración de contactos a documento privado (solo superadmin, una sola vez) -->
+            <div id="migracion-contactos-card" class="hidden section-card border border-amber-100">
+                <div class="flex flex-col md:flex-row md:items-start gap-4">
+                    <i class="ph-duotone ph-shield-check text-amber-600 text-2xl mt-0.5 shrink-0"></i>
+                    <div class="flex-1">
+                        <h3 class="font-extrabold text-gray-900">Migrar teléfono y correo de contacto al documento privado</h3>
+                        <p class="text-sm text-gray-500 mt-1">Los perfiles antiguos tienen el teléfono y/o correo de contacto en el documento público de <code>alumni</code>, legible por cualquiera sin sesión. Esta herramienta los copia a <code>alumni/{uid}/privado/contacto</code> (solo lectura para miembros con cuenta) y, únicamente si la copia sale bien, los borra del documento público. Es idempotente: se puede correr varias veces sin duplicar ni perder nada. Empieza siempre con "Simular".</p>
+                        <p id="migracion-contactos-status" class="text-xs font-bold text-amber-600 mt-2"></p>
+                        <div id="migracion-contactos-report"></div>
+                    </div>
+                    <div class="flex flex-col gap-2 shrink-0">
+                        <button onclick="migracionContactosLogic.simulate()" class="px-5 py-2.5 bg-white border border-amber-300 text-amber-700 hover:bg-amber-50 font-bold text-sm rounded-xl transition flex items-center gap-2">
+                            <i class="ph-bold ph-eye"></i> Simular (no escribe nada)
+                        </button>
+                        <button onclick="migracionContactosLogic.execute()" class="px-5 py-2.5 bg-amber-600 hover:bg-amber-700 text-white font-bold text-sm rounded-xl transition flex items-center gap-2 shadow-sm">
+                            <i class="ph-bold ph-database"></i> Ejecutar migración real
+                        </button>
+                    </div>
+                </div>
+            </div>
+
             <div id="admin-users-tab" class="space-y-4">
                 <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                     <div id="admin-users-table-container" class="admin-table-scroll"></div>
@@ -583,10 +604,11 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-storage-compat.js"></script>
-    <script src="shared.js?v=14"></script>
+    <script src="shared.js?v=15"></script>
     <script src="admin-correos.js?v=4"></script>
     <script src="admin-rutas-ia.js?v=2"></script>
     <script src="admin-contactos.js?v=1"></script>
+    <script src="admin-migracion.js?v=1"></script>
     <script src="admin-colegios.js?v=2"></script>
     <script src="admin-audio.js?v=10"></script>
     <script src="icfes-data.js?v=3"></script>
@@ -798,7 +820,19 @@
                 document.getElementById('admin-edit-bio').value = user.bio === 'Sin biografía disponible.' ? '' : (user.bio || '');
                 document.getElementById('admin-edit-skills').value = Array.isArray(user.skills) ? user.skills.join(', ') : '';
                 document.getElementById('admin-edit-linkedin').value = user.linkedin || '';
-                document.getElementById('admin-edit-phone').value = user.phone || '';
+                // El telefono ya no viaja en el listado (vive en el doc privado
+                // alumni/{uid}/privado/contacto). Se pide bajo demanda: el
+                // superadmin si tiene permiso de lectura.
+                const phoneInput = document.getElementById('admin-edit-phone');
+                phoneInput.value = '';
+                phoneInput.placeholder = 'Cargando…';
+                loadContactoPrivado(uid).then(({ phone }) => {
+                    // Si mientras llegaba la lectura el admin abrio OTRO
+                    // usuario, no pintar el telefono del anterior.
+                    if (String(document.getElementById('admin-edit-user-id').value) !== String(uid)) return;
+                    phoneInput.value = phone || '';
+                    phoneInput.placeholder = '+57 300 123 4567';
+                });
                 document.getElementById('admin-edit-expectations').value = user.expectations || '';
                 document.getElementById('admin-edit-school').value = user.school || '';
                 const schoolInput = document.getElementById('admin-edit-school');
@@ -842,7 +876,7 @@
                     bio: document.getElementById('admin-edit-bio').value.trim(),
                     skills: document.getElementById('admin-edit-skills').value.split(',').map((s) => s.trim()).filter(Boolean),
                     linkedin: document.getElementById('admin-edit-linkedin').value.trim(),
-                    phone: document.getElementById('admin-edit-phone').value.trim(),
+                    // phone fuera del doc publico: se guarda aparte, mas abajo.
                     expectations: document.getElementById('admin-edit-expectations').value.trim(),
                     school: state.adminRole === 'subadmin' ? (targetUser?.school || state.adminSchool || DEFAULT_SCHOOL) : (document.getElementById('admin-edit-school').value.trim() || DEFAULT_SCHOOL),
                     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
@@ -853,6 +887,7 @@
                 }
                 try {
                     await alumniCollection.doc(uid).set(payload, { merge: true });
+                    await saveContactoPrivado(uid, { phone: document.getElementById('admin-edit-phone').value.trim() });
                     await loadAlumni();
                     adminLogic.renderUsers();
                     adminLogic.cancelUserEdit();
@@ -894,7 +929,17 @@
                     for (const r of examResultsSnap.docs) await r.ref.delete();
                     const itemAttemptsSnap = await itemAttemptsCollection(uid).get();
                     for (const a of itemAttemptsSnap.docs) await a.ref.delete();
+                    await contactoPrivadoDoc(uid).delete().catch(() => {});
                     if (target?.username) await usernamesCollection.doc(target.username).delete().catch(() => {});
+                    // Veto de reingreso ANTES de borrar el perfil: su cuenta de
+                    // Auth sigue viva y sin esto volveria a entrar y el
+                    // onboarding le recrearia el perfil. Las reglas consultan
+                    // esta coleccion en el create de alumni.
+                    await bloqueadosCollection.doc(uid).set({
+                        motivo: 'eliminado desde el panel',
+                        nombre: nombre,
+                        bloqueadoEn: firebase.firestore.FieldValue.serverTimestamp()
+                    });
                     await alumniCollection.doc(uid).delete();
                     await loadAlumni();
                     adminLogic.renderUsers();
@@ -1199,6 +1244,10 @@
         window.adminLogic = adminLogic;
 
         auth.onAuthStateChanged(async (user) => {
+            // La sesion de invitado es anonima: NO es un miembro. Se normaliza
+            // a "sin sesion + modo invitado", que es el camino que esta pagina
+            // ya sabe manejar. Sin esto, "hay user" pasaria por miembro.
+            if (user && user.isAnonymous) { state.guestMode = true; user = null; }
             if (!user) { goto('login'); return; }
             const ready = await hydrateAuthenticatedUser(user);
             if (!ready) return;

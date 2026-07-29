@@ -166,7 +166,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-analytics-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore-compat.js"></script>
-    <script src="shared.js?v=14"></script>
+    <script src="shared.js?v=15"></script>
     <script src="orientadora.js?v=3"></script>
     <script>
         renderNav('directory');
@@ -266,11 +266,23 @@
                 } else {
                     skillsContainer.innerHTML = '<span class="text-gray-400 text-xs italic">No especificadas</span>';
                 }
+                // El telefono ya no viaja en el listado publico: vive en
+                // alumni/{uid}/privado/contacto y solo lo leen los MIEMBROS.
+                // Se pide aqui, al abrir la ficha, y el boton aparece cuando
+                // llega. Para el invitado anonimo loadContactoPrivado devuelve
+                // vacio sin intentar la lectura, asi que el boton no se muestra
+                // y no hay permission-denied en consola.
                 const waBtn = document.getElementById('sp-whatsapp-btn');
-                if (user.phone && isValidPhone(user.phone)) {
-                    waBtn.classList.remove('hidden');
-                    waBtn.href = `https://wa.me/${String(user.phone).replace(/[^0-9]/g, '')}`;
-                } else { waBtn.classList.add('hidden'); }
+                waBtn.classList.add('hidden');
+                loadContactoPrivado(id).then(({ phone }) => {
+                    // Si mientras se resolvia la lectura se abrio OTRO perfil,
+                    // no pintar el telefono del anterior.
+                    if (String(state.selectedDirectoryUserId) !== String(id)) return;
+                    if (phone && isValidPhone(phone)) {
+                        waBtn.classList.remove('hidden');
+                        waBtn.href = `https://wa.me/${String(phone).replace(/[^0-9]/g, '')}`;
+                    }
+                });
                 const liBtn = document.getElementById('sp-linkedin-btn');
                 if (isValidLinkedInUrl(user.linkedin)) {
                     liBtn.classList.remove('hidden');
@@ -393,6 +405,8 @@
         window.uiLogic = uiLogic;
 
         auth.onAuthStateChanged(async (user) => {
+            // El invitado anonimo se normaliza a "sin sesion + modo invitado".
+            if (user && user.isAnonymous) { state.guestMode = true; user = null; }
             const isGuest = state.guestMode;
             if (!user && !isGuest) { goto('login'); return; }
             if (user) {

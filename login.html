@@ -77,7 +77,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-analytics-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore-compat.js"></script>
-    <script src="shared.js?v=14"></script>
+    <script src="shared.js?v=15"></script>
     <script>
         const authLogic = {
             login: async (e) => {
@@ -116,7 +116,11 @@
         window.authLogic = authLogic;
 
         auth.onAuthStateChanged((user) => {
-            if (user) goto('directory');
+            // OJO: con la sesion de invitado, "hay user" ya no significa "hay
+            // miembro". Sin el chequeo de isAnonymous, el visitante que abre
+            // /login saldria expulsado al directorio en cuanto arranca la
+            // sesion anonima, y NUNCA podria iniciar sesion ni registrarse.
+            if (user && !user.isAnonymous) goto('directory');
         });
     </script>
 </body>

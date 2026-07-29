@@ -14,6 +14,19 @@ service cloud.firestore {
         && request.auth.token.email == 'juanda.fonsecag@gmail.com';
     }
 
+    // MIEMBRO REAL = sesion con CUENTA, no la sesion anonima del invitado.
+    // El modo invitado se conserva con Anonymous Auth (shared.js:
+    // iniciarSesionInvitado), asi que "request.auth != null" ya NO significa
+    // "tiene cuenta": un anonimo tambien lo cumple. Para los datos de contacto
+    // hay que exigir ademas que el proveedor no sea 'anonymous'.
+    // El claim viene en el token de Firebase Auth como
+    // request.auth.token.firebase.sign_in_provider (valores: 'anonymous',
+    // 'password', 'google.com', 'custom'...).
+    function esMiembroReal() {
+      return request.auth != null
+        && request.auth.token.firebase.sign_in_provider != 'anonymous';
+    }
+
     match /artifacts/{appId} {
 
       // Sub-admin de colegio: tiene documento en admins/{uid}.
@@ -37,6 +50,12 @@ service cloud.firestore {
           && exists(/databases/$(database)/documents/artifacts/$(appId)/public/data/codigos/$(codigo))
           && get(/databases/$(database)/documents/artifacts/$(appId)/public/data/codigos/$(codigo)).data.get('colegioId', '') == school
           && get(/databases/$(database)/documents/artifacts/$(appId)/public/data/codigos/$(codigo)).data.get('activo', false) == true;
+      }
+      // Veto de reingreso. Sustituye al borrado de la cuenta de Firebase Auth,
+      // que no se puede hacer desde el cliente (exige Admin SDK). Ver el match
+      // de /bloqueados mas abajo: lo escribe el superadmin al eliminar.
+      function estaBloqueado(uid) {
+        return exists(/databases/$(database)/documents/artifacts/$(appId)/public/data/bloqueados/$(uid));
       }
       // En CREACION propia: sin school, red general (LCP mientras sea el
       // unico colegio), o school respaldado por codigo valido.
@@ -67,16 +86,34 @@ service cloud.firestore {
           || codigoValido(nueva, request.resource.data.get('codigoInvitacion', ''));
       }
 
-      // Directorio de egresados: lectura PUBLICA porque el modo invitado
-      // explora el directorio sin login (browseAsGuest no autentica).
-      // Trade-off: los datos de perfil quedan legibles sin login; la
-      // alternativa mas protectora es Anonymous Auth + lectura autenticada.
+      // Directorio de egresados: lectura PUBLICA, TODAVIA.
+      //
+      // PASO 3 PENDIENTE (deliberado, no lo "arregles"): el cierre real de
+      // este directorio es cambiar la linea de abajo por
+      //     allow read: if request.auth != null;
+      // Eso ya NO rompe el modo invitado, porque el visitante sin cuenta
+      // recibe una sesion anonima (shared.js: iniciarSesionInvitado). Pero
+      // escribirlo ANTES de tiempo tumba el directorio publico entero.
+      // Solo se activa cuando se cumplan LAS DOS condiciones:
+      //   (a) el proveedor "Anonimo" este HABILITADO en la consola de
+      //       Firebase (Authentication > Sign-in method > Anonymous), y
+      //   (b) se haya verificado EN PRODUCCION que un visitante sin cuenta
+      //       entra al directorio y ve la lista (o sea, que la sesion
+      //       anonima arranca de verdad en el dominio de produccion).
+      // Mientras tanto el dato sensible ya esta a salvo: telefono y correo
+      // de contacto salieron de este documento y viven en la subcoleccion
+      // privada de mas abajo, que SI exige cuenta real.
       match /public/data/alumni/{userId} {
         allow read: if true;
         allow create: if request.auth != null && (
           isSuperAdmin()
           || (isSchoolAdmin() && request.resource.data.get('school', '') == adminSchool())
-          || (request.auth.uid == userId && schoolValidaAlCrear())
+          // Un usuario eliminado por la administracion no puede recrearse el
+          // perfil volviendo a entrar. Su cuenta de Firebase Auth sigue viva
+          // (borrarla exige Admin SDK, imposible desde el cliente), asi que el
+          // veto se aplica AQUI: sin esto, "eliminar usuario" solo borraba el
+          // documento y la persona lo regeneraba en el siguiente login.
+          || (request.auth.uid == userId && schoolValidaAlCrear() && !estaBloqueado(userId))
         );
         allow update: if request.auth != null && (
           isSuperAdmin()
@@ -87,6 +124,30 @@ service cloud.firestore {
         );
         allow delete: if isSuperAdmin()
           || (isSchoolAdmin() && resource.data.get('school', '') == adminSchool());
+
+        // Contacto PRIVADO del egresado: telefono y correo de contacto.
+        // Estaban en el documento publico alumni/{uid}, y como `read` incluye
+        // `list`, cualquiera podia volcar por REST el nombre, el correo y el
+        // telefono de toda la red sin login. Ahora viven aqui:
+        //   - lee el DUENO y el SUPERADMIN siempre;
+        //   - lee cualquier MIEMBRO CON CUENTA REAL (para el boton de
+        //     WhatsApp del directorio), pero NO el invitado anonimo;
+        //   - escribe solo el dueno o el superadmin (el superadmin, para la
+        //     herramienta de migracion que mueve el dato de los perfiles
+        //     antiguos).
+        // El id fijo es 'contacto' (shared.js: contactoPrivadoDoc), pero la
+        // regla se deja por documento para no atarse a ese nombre.
+        match /privado/{docId} {
+          allow read: if request.auth != null && (
+            request.auth.uid == userId
+            || isSuperAdmin()
+            || esMiembroReal()
+          );
+          allow create, update: if request.auth != null
+            && (request.auth.uid == userId || isSuperAdmin());
+          allow delete: if request.auth != null
+            && (request.auth.uid == userId || isSuperAdmin());
+        }
 
         // Hitos de la trayectoria: visibles tambien en modo invitado
         // (el slide panel del directorio carga la ruta del egresado).
@@ -283,6 +344,25 @@ service cloud.firestore {
           && resource.data.uid == request.auth.uid
           && request.resource.data.uid == request.auth.uid);
         allow delete: if isSuperAdmin();
+      }
+
+      // Cuentas BLOQUEADAS: lista de control de la administracion (una entrada
+      // por uid vetado). Vive fuera del perfil a proposito: si fuera un campo
+      // del documento del egresado, un `update` propio podria intentar
+      // pisarlo, y ademas quedaria expuesto en el listado publico del
+      // directorio (bloqueado a la vista de todos).
+      // Escritura: SOLO el superadmin (bloquear/desbloquear no es una accion
+      // de colegio). Lectura: cada quien la SUYA (para que el cliente sepa que
+      // esta vetado y no siga golpeando reglas que lo van a rechazar) y el
+      // superadmin la lista completa. Nadie mas puede enumerar quien esta
+      // bloqueado.
+      // ⚠️ Esto es la frontera de DATOS, no el gate de la app: el bloqueo
+      // efectivo se aplica en las reglas de cada coleccion o en el proxy.
+      match /bloqueados/{userId} {
+        allow get: if request.auth != null
+          && (request.auth.uid == userId || isSuperAdmin());
+        allow list: if isSuperAdmin();
+        allow write: if isSuperAdmin();
       }
 
       // Administradores de colegio: solo el superadmin asigna/revoca.

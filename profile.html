@@ -279,7 +279,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-analytics-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore-compat.js"></script>
-    <script src="shared.js?v=14"></script>
+    <script src="shared.js?v=15"></script>
     <script src="orientadora.js?v=3"></script>
     <script>
         renderNav('profile');
@@ -350,7 +350,10 @@
                     skills: document.getElementById('p-skills').value.split(',').map(s => s.trim()).filter(Boolean),
                     topics: document.getElementById('p-topics').value.trim(),
                     expectations: document.getElementById('p-expectations').value.trim(),
-                    phone: phoneValue,
+                    // OJO: `phone` YA NO va en este payload. El documento
+                    // alumni/{uid} es el que lista el directorio publico, asi
+                    // que el telefono se guarda aparte, en
+                    // alumni/{uid}/privado/contacto (saveContactoPrivado).
                     linkedin: linkedinValue ? normalizeLinkedInUrl(linkedinValue) : '',
                     email: state.user.email || '',
                     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
@@ -361,10 +364,13 @@
                     const exists = (await docRef.get()).exists;
                     if (!exists) payload.createdAt = firebase.firestore.FieldValue.serverTimestamp();
                     await docRef.set(payload, { merge: true });
+                    // El telefono va al documento privado, no al publico.
+                    await saveContactoPrivado(state.user.uid, { phone: phoneValue });
 
                     state.profile = {
                         ...state.profile,
                         ...payload,
+                        phone: phoneValue,
                         skills: (payload.skills || []).join(', ')
                     };
 
@@ -562,7 +568,10 @@
         window.authLogic = authLogic;
 
         auth.onAuthStateChanged(async (user) => {
-            if (!user) { goto('login'); return; }
+            // Pagina SOLO de miembros: el invitado anonimo tiene sesion de
+            // Firebase pero no tiene perfil que editar, asi que va al login
+            // igual que quien no tiene sesion.
+            if (!user || user.isAnonymous) { goto('login'); return; }
             const ready = await hydrateAuthenticatedUser(user);
             if (!ready) return;
             profileLogic.populate();

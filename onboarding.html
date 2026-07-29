@@ -181,7 +181,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-analytics-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore-compat.js"></script>
-    <script src="shared.js?v=14"></script>
+    <script src="shared.js?v=15"></script>
     <script>
         const onboardingLogic = {
             step: 1,
@@ -307,7 +307,8 @@
                     lastName: document.getElementById('ob-lastname').value.trim(),
                     graduationYear: document.getElementById('ob-year').value.trim(),
                     location: document.getElementById('ob-location').value.trim(),
-                    phone: document.getElementById('ob-phone').value.trim(),
+                    // phone ya NO va aqui: el doc de alumni se lista en el
+                    // directorio. Se guarda aparte con saveContactoPrivado.
                     linkedin: linkedinValue ? normalizeLinkedInUrl(linkedinValue) : '',
                     status: document.getElementById('ob-status').value,
                     area: document.getElementById('ob-area').value.trim(),
@@ -330,6 +331,10 @@
                     const exists = (await docRef.get()).exists;
                     if (!exists) payload.createdAt = firebase.firestore.FieldValue.serverTimestamp();
                     await docRef.set(payload, { merge: true });
+                    // El telefono va al doc privado, fuera del directorio.
+                    await saveContactoPrivado(state.user.uid, {
+                        phone: document.getElementById('ob-phone').value.trim()
+                    });
 
                     for (const h of hitos) {
                         if (h.organizacion) {
@@ -367,7 +372,8 @@
         window.onboardingLogic = onboardingLogic;
 
         auth.onAuthStateChanged(async (user) => {
-            if (!user) { goto('login'); return; }
+            // Un invitado anonimo no tiene perfil que completar: al login.
+            if (!user || user.isAnonymous) { goto('login'); return; }
             const ready = await hydrateAuthenticatedUser(user);
             if (!ready) return;
             if (user.displayName && !state.profile.firstName) {

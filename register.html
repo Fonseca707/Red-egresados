@@ -102,7 +102,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-analytics-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore-compat.js"></script>
-    <script src="shared.js?v=14"></script>
+    <script src="shared.js?v=15"></script>
     <script>
         const authLogic = {
             submitRegister: async (e) => {
@@ -152,7 +152,8 @@
                     const cred = await auth.createUserWithEmailAndPassword(email, password);
                     const payload = {
                         email,
-                        contactEmail,
+                        // contactEmail ya NO va en el doc publico (se lista en
+                        // el directorio): se guarda con saveContactoPrivado.
                         username,
                         school: invitacionColegio ? invitacionColegio.colegioId : DEFAULT_SCHOOL,
                         codigoInvitacion: invitacionColegio ? invitacionColegio.codigo : '',
@@ -165,7 +166,11 @@
                         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
                     };
                     await alumniCollection.doc(cred.user.uid).set(payload, { merge: true });
-                    if (username) await reserveUsername(username, cred.user.uid, email, { contactEmail });
+                    await saveContactoPrivado(cred.user.uid, { contactEmail });
+                    // Sin contactEmail: usernames/{username} es de lectura
+                    // PUBLICA (resolveAuthEmail lo consulta sin sesion), asi
+                    // que pasarlo aqui publicaba el correo personal.
+                    if (username) await reserveUsername(username, cred.user.uid, email);
                     feedback.textContent = 'Cuenta creada correctamente.';
                     // onAuthStateChanged will redirect to directory/onboarding
                 } catch (error) {
@@ -186,7 +191,7 @@
                     const result = await auth.signInWithPopup(provider);
                     await alumniCollection.doc(result.user.uid).set({
                         email: result.user.email || '',
-                        contactEmail: result.user.email || '',
+                        // contactEmail va al doc privado, ver abajo.
                         school: invitacionColegio ? invitacionColegio.colegioId : DEFAULT_SCHOOL,
                         codigoInvitacion: invitacionColegio ? invitacionColegio.codigo : '',
                         privacyAccepted: true,
@@ -196,6 +201,7 @@
                         referredBy: sessionStorage.getItem('sinapsis_invita') || '',
                         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
                     }, { merge: true });
+                    await saveContactoPrivado(result.user.uid, { contactEmail: result.user.email || '' });
                     feedback.textContent = 'Preferencias guardadas correctamente.';
                     // onAuthStateChanged will redirect
                 } catch (error) {
@@ -241,7 +247,10 @@
         })();
 
         auth.onAuthStateChanged(async (user) => {
-            if (!user) return;
+            // El invitado anonimo NO es un miembro: sin este chequeo, la sesion
+            // de invitado lo sacaria de la pagina de registro hacia onboarding
+            // antes de que pudiera crear su cuenta.
+            if (!user || user.isAnonymous) return;
             const ready = await hydrateAuthenticatedUser(user);
             if (!ready) return;
             goto(state.profile.onboardingCompleted ? 'directory' : 'onboarding');

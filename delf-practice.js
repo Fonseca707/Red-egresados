@@ -267,7 +267,7 @@ const delfLogic = {
         });
         // 1 punto por ítem (25 ítems = 25 pts, como la prueba real)
         const points = Math.round((correct / total) * s.test.ce.totalPoints * 10) / 10;
-        const passed = points >= 5;
+        const passed = points >= DELF_MINIMO_ELIMINATORIO; // constante unica en shared.js
         this.saveAttempt({ section: 'ce', score: points, scale: '/25', summary: `CE ${points}/25 (${correct}/${total})` });
         this.root().innerHTML = this.shell({
             banner: 'Résultats · Compréhension écrite',
@@ -436,7 +436,7 @@ const delfLogic = {
         const s = this.session;
         const t = s.test.pe;
         const points = Math.round(t.criteria.reduce((a, c) => a + (s.peSelf[c.key] || 0), 0) * 10) / 10;
-        const passed = points >= 5;
+        const passed = points >= DELF_MINIMO_ELIMINATORIO; // constante unica en shared.js
         this.saveAttempt({ section: 'pe', score: points, scale: '/25', summary: `PE ${points}/25 (autoeval.)` });
         this.root().innerHTML = this.shell({
             banner: 'Résultats · Production écrite',

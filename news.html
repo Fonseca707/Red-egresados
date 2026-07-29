@@ -78,7 +78,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-analytics-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore-compat.js"></script>
-    <script src="shared.js?v=14"></script>
+    <script src="shared.js?v=15"></script>
     <script src="orientadora.js?v=3"></script>
     <script>
         renderNav('news');
@@ -124,6 +124,8 @@
         window.uiLogic = uiLogic;
 
         auth.onAuthStateChanged(async (user) => {
+            // El invitado anonimo se normaliza a "sin sesion + modo invitado".
+            if (user && user.isAnonymous) { state.guestMode = true; user = null; }
             if (!user && !state.guestMode) { goto('login'); return; }
             if (user) {
                 const ready = await hydrateAuthenticatedUser(user, { redirectOnboarding: true });

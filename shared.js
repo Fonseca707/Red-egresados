@@ -31,6 +31,12 @@ const colegiosCollection = artifactsRoot.collection('public').doc('data').collec
 // a ser SEMILLA + RESPALDO: si esta colección está vacía, el motor usa el JS.
 const examTestsCollection = artifactsRoot.collection('public').doc('data').collection('examTests');
 const codigosCollection = artifactsRoot.collection('public').doc('data').collection('codigos');
+// Veto de reingreso: uid de usuarios eliminados por la administracion. Existe
+// porque el cliente NO puede borrar una cuenta de Firebase Auth (hace falta el
+// Admin SDK), asi que sin esto un usuario eliminado volvia a entrar y el
+// onboarding le recreaba el perfil. Las reglas la consultan en el create de
+// alumni; solo el superadmin escribe aqui.
+const bloqueadosCollection = artifactsRoot.collection('public').doc('data').collection('bloqueados');
 // Banco de ÍTEMS sueltos (ICFES). A diferencia de examTests, que guarda tests
 // monolíticos, aquí la unidad es la pregunta: el entrenamiento por competencia
 // pide "15 ítems de lc_global que este alumno no haya visto", y eso exige ítems
@@ -41,6 +47,12 @@ const examItemsCollection = artifactsRoot.collection('public').doc('data').colle
 // tres veces como si fueran cosas distintas.
 const examStimuliCollection = artifactsRoot.collection('public').doc('data').collection('examStimuli');
 const hitosCollection = (uid) => alumniCollection.doc(uid).collection('hitos');
+// Contacto PRIVADO del egresado (teléfono y correo de contacto). Vive fuera del
+// documento público alumni/{uid} porque ese documento se lee (y se LISTA) desde
+// el directorio: dejar ahí el teléfono equivalía a publicar la agenda entera de
+// la red. Aquí solo entran MIEMBROS con cuenta real (las reglas rechazan al
+// invitado anónimo), el dueño y el superadmin.
+const contactoPrivadoDoc = (uid) => alumniCollection.doc(uid).collection('privado').doc('contacto');
 // Resultados de práctica de idiomas (TOEFL/DELF). Subcolección del alumno, como
 // los hitos, PERO privada: son datos personales del estudiante (progreso), así
 // que las reglas solo dejan leerlos al dueño y a los admins de su colegio.
@@ -159,6 +171,15 @@ function hasProfileValue(value, placeholders = []) {
     return !placeholders.map(p => String(p).toLowerCase()).includes(clean.toLowerCase());
 }
 function getProfileCompletenessScore(user = {}) {
+    // El teléfono ya NO viaja en el listado del directorio (vive en el doc
+    // privado alumni/{uid}/privado/contacto). Si el objeto que llega no trae
+    // la clave `phone`, el dato simplemente NO SE CONOCE: se saca del cálculo
+    // (ni suma ni resta) en vez de contarlo como faltante. Sin esto, la
+    // completitud de los 68 egresados bajaba de golpe un ~5% el día del cambio
+    // y el ranking del directorio se movía por un dato que ya no se transmite.
+    // En el perfil propio sí llega (loadProfile lo trae del doc privado), así
+    // que ahí sigue contando igual que antes.
+    const conocePhone = Object.prototype.hasOwnProperty.call(user, 'phone');
     const checks = [
         [user.firstName, 6],
         [user.lastName, 6],
@@ -173,12 +194,12 @@ function getProfileCompletenessScore(user = {}) {
         [user.bio, 10, ['Sin biografia disponible.', 'Sin biografía disponible.', 'Sin biografÃ­a disponible.']],
         [user.expectations, 7, ['No especificadas.', 'No especificadas']],
         [user.skills, 8],
-        [isValidPhone(user.phone) ? user.phone : '', 5],
         [isValidLinkedInUrl(user.linkedin) ? user.linkedin : '', 5],
         [user.photoURL, 5],
         [Number(user.hitosCount) > 0 ? 'ruta' : '', 8],
         [Number(user.hitosCount) >= 3 ? 'ruta-completa' : '', 6]
     ];
+    if (conocePhone) checks.push([isValidPhone(user.phone) ? user.phone : '', 5]);
     const total = checks.reduce((sum, item) => sum + item[1], 0);
     const earned = checks.reduce((sum, [value, weight, placeholders]) => (
         sum + (hasProfileValue(value, placeholders || []) ? weight : 0)
@@ -232,14 +253,14 @@ async function validarCodigoInvitacion(codigo) {
 // Módulos disponibles para el usuario actual según su colegio (invitados y
 // usuarios sin tag ven los módulos por defecto).
 async function getModulosUsuario() {
-    const school = (!state.guestMode && state.profile?.school) ? state.profile.school : DEFAULT_SCHOOL;
+    const school = (esMiembro() && state.profile?.school) ? state.profile.school : DEFAULT_SCHOOL;
     const colegio = await getColegio(school);
     return (colegio && colegio.modulos) ? { ...MODULOS_DEFAULT, ...colegio.modulos } : { ...MODULOS_DEFAULT };
 }
 // Filtra novedades según la audiencia: 'todos' para cualquiera; las dirigidas
 // a un colegio solo las ve quien tiene ese tag (los invitados ven solo 'todos').
 function newsVisiblesParaUsuario(items = []) {
-    const school = (!state.guestMode && state.profile?.school) ? state.profile.school : '';
+    const school = (esMiembro() && state.profile?.school) ? state.profile.school : '';
     return items.filter(n => (n.audiencia || 'todos') === 'todos' || n.audiencia === school);
 }
 
@@ -359,7 +380,7 @@ async function seedExamTests(sourceTests, exam) {
 // rompe: el intento igual quedó en el localStorage del motor.
 async function saveExamResult(entry) {
     try {
-        if (!state.user || state.guestMode || state.user.uid === 'guest-view') return;
+        if (!esMiembro()) return; // invitado anónimo: el intento solo queda en su localStorage
         await examResultsCollection(state.user.uid).add({
             exam: String(entry.exam || ''),        // 'TOEFL' | 'DELF'
             section: String(entry.section || ''),  // 'reading'|'writing'|'ce'|'pe'
@@ -659,7 +680,7 @@ const rutaImagen = {
 // "¿Sigues en X?" con respuesta de un clic. Mantiene fresca la red sin backend.
 const PULSO_SNOOZE_KEY = 'sinapsis_pulso_snooze';
 async function checkPulsoRuta() {
-    if (!state.user || state.guestMode) return;
+    if (!esMiembro()) return; // el invitado anónimo no tiene ruta que refrescar
     if (document.getElementById('pulso-banner')) return;
     try {
         if (Date.now() < Number(localStorage.getItem(PULSO_SNOOZE_KEY) || 0)) return;
@@ -720,6 +741,102 @@ if (sessionStorage.getItem('guestMode')==='true') {
     state.user={ uid:'guest-view', displayName:'Invitado' };
 }
 
+// ===== INVITADO ANÓNIMO vs MIEMBRO REAL =====
+// El modo invitado se conserva, pero ahora con Anonymous Auth: el visitante sin
+// cuenta obtiene una sesión de Firebase (request.auth != null) y sigue
+// explorando el directorio. Eso permite cerrar la lectura pública sin matar la
+// exploración. PERO un anónimo NO es un miembro: no tiene perfil, no ve
+// Mensajes ni "Mi perfil", y no accede al contacto de nadie.
+// Regla única en todo el código: usar esMiembro(), nunca "¿hay state.user?".
+function esMiembro() {
+    const u = state.user;
+    return Boolean(u) && u.isAnonymous !== true && u.uid !== 'guest-view' && !state.guestMode;
+}
+function esInvitado() { return !esMiembro(); }
+
+// Arranque de la sesión anónima. Si el proveedor Anónimo todavía no está
+// habilitado en la consola de Firebase, esto FALLA — y en ese caso la web debe
+// seguir funcionando en modo lectura (hoy alumni sigue con read público), no
+// quedarse en blanco. Por eso el fallo se registra y se marca en _anonAuthFallo.
+let _anonAuthIntentada = false;
+let _anonAuthFallo = false;
+function anonAuthDisponible() { return !_anonAuthFallo; }
+async function iniciarSesionInvitado() {
+    if (_anonAuthIntentada) return null;
+    _anonAuthIntentada = true;
+    if (typeof auth.signInAnonymously !== 'function') {
+        _anonAuthFallo = true;
+        console.warn('[Sinapsis] Este SDK no expone signInAnonymously: se sigue en modo lectura sin sesión.');
+        return null;
+    }
+    try {
+        const cred = await auth.signInAnonymously();
+        return cred?.user || null;
+    } catch (e) {
+        _anonAuthFallo = true;
+        console.warn('[Sinapsis] No se pudo abrir la sesión de invitado (' +
+            (e?.code || e?.message || 'error desconocido') +
+            '). ¿Está habilitado el proveedor Anónimo en la consola de Firebase? La web sigue en modo lectura.');
+        return null;
+    }
+}
+// Marca el estado de invitado a partir de una sesión anónima. Reusa la bandera
+// state.guestMode que YA consultan messages/news/preparacion/icfes-engine, así
+// que esas páginas siguen tratando al anónimo como invitado sin tocarlas.
+function marcarInvitadoAnonimo(user) {
+    state.guestMode = true;
+    state.user = user || { uid: 'guest-view', displayName: 'Invitado' };
+    try { sessionStorage.setItem('guestMode', 'true'); } catch (e) {}
+}
+// Envoltorio del listener de auth para TODA página que admita invitados.
+// - Sin usuario: intenta la sesión anónima. Si arranca, el listener se vuelve a
+//   disparar con el usuario anónimo y esta pasada termina aquí.
+// - Con usuario anónimo: lo marca como invitado y llama al handler con null
+//   como "miembro" (el handler recibe (user, miembro)).
+// - Si la sesión anónima falla: llama al handler igual, con user = null.
+function watchAuth(handler) {
+    return auth.onAuthStateChanged(async (user) => {
+        if (!user) {
+            const anon = await iniciarSesionInvitado();
+            if (anon) return; // vuelve por el listener con el usuario anónimo
+            state.user = state.guestMode ? state.user : null;
+            updateMemberNavVisibility();
+            await handler(null, false);
+            return;
+        }
+        if (user.isAnonymous) {
+            marcarInvitadoAnonimo(user);
+            updateMemberNavVisibility();
+            await handler(user, false);
+            return;
+        }
+        await handler(user, true);
+    });
+}
+
+// ── Contacto privado (teléfono / correo de contacto) ─────────────────────────
+// Se lee BAJO DEMANDA (al abrir un perfil), nunca en el listado masivo.
+async function loadContactoPrivado(uid) {
+    const vacio = { phone: '', contactEmail: '' };
+    if (!uid) return vacio;
+    // Un invitado anónimo no tiene permiso: ni se intenta (así no ensucia la
+    // consola con permission-denied ni deja huecos en la UI).
+    if (!esMiembro()) return vacio;
+    try {
+        const doc = await contactoPrivadoDoc(uid).get();
+        if (!doc.exists) return vacio;
+        const d = doc.data() || {};
+        return { phone: d.phone || '', contactEmail: d.contactEmail || '' };
+    } catch (e) { return vacio; }
+}
+async function saveContactoPrivado(uid, { phone, contactEmail } = {}) {
+    if (!uid) return;
+    const payload = { updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
+    if (phone !== undefined) payload.phone = String(phone || '').trim();
+    if (contactEmail !== undefined) payload.contactEmail = String(contactEmail || '').trim().toLowerCase();
+    await contactoPrivadoDoc(uid).set(payload, { merge: true });
+}
+
 function getDisplayNameFromProfileOrAuth() {
     return `${state.profile.firstName||''} ${state.profile.lastName||''}`.trim()||state.user?.displayName||'Usuario';
 }
@@ -752,6 +869,22 @@ async function loadAdminRole(uid) {
 }
 function canAccessAdmin() { return isAdminUser()||state.adminRole==='subadmin'; }
 
+// Muestra/oculta lo que es SOLO DE MIEMBROS (Mensajes, avatar, "Mi perfil") y
+// lo que es SOLO DE INVITADOS (Entrar / Crear cuenta). Se llama al pintar la
+// nav y cada vez que cambia el estado de auth: al pintar todavia no se sabe si
+// hay sesion, asi que la nav arranca en modo invitado y se completa despues.
+function updateMemberNavVisibility() {
+    const miembro = esMiembro();
+    document.querySelectorAll('.solo-miembro').forEach(el => el.classList.toggle('hidden', !miembro));
+    document.querySelectorAll('.solo-invitado').forEach(el => el.classList.toggle('hidden', miembro));
+    // La barra movil es una grilla de N columnas fijas: si se ocultan items sin
+    // recalcularla, quedan huecos. Se ajusta al numero de items visibles.
+    const mob = document.getElementById('mobile-nav');
+    if (mob) {
+        const visibles = Array.from(mob.children).filter(el => !el.classList.contains('hidden')).length;
+        mob.style.gridTemplateColumns = `repeat(${visibles || 1}, minmax(0, 1fr))`;
+    }
+}
 function updateAdminNavVisibility() {
     const adminBtn = document.getElementById('nav-admin');
     if (!adminBtn) return;
@@ -760,6 +893,15 @@ function updateAdminNavVisibility() {
 }
 async function hydrateAuthenticatedUser(user, { redirectOnboarding = false } = {}) {
     if (!user) return false;
+    // Un usuario ANÓNIMO no tiene perfil, ni colegio, ni rol de admin: pedirle
+    // loadProfile/ensureDefaultSchool/loadAdminRole crearía documentos vacíos y
+    // lo mandaría al onboarding de una cuenta que no existe.
+    if (user.isAnonymous) {
+        marcarInvitadoAnonimo(user);
+        updateAdminNavVisibility();
+        updateMemberNavVisibility();
+        return false;
+    }
     state.guestMode = false;
     sessionStorage.removeItem('guestMode');
     state.user = user;
@@ -767,6 +909,7 @@ async function hydrateAuthenticatedUser(user, { redirectOnboarding = false } = {
     await ensureDefaultSchool(user.uid);
     await loadAdminRole(user.uid);
     updateAdminNavVisibility();
+    updateMemberNavVisibility();
     refreshHeaderIdentity();
     if (redirectOnboarding && !state.profile.onboardingCompleted && !window.location.pathname.endsWith('/onboarding.html')) {
         goto('onboarding');
@@ -783,19 +926,31 @@ async function loadProfile(uid) {
     const doc=await alumniCollection.doc(uid).get();
     if(!doc.exists){ state.profile={firstName:state.user?.displayName?.split(' ')[0]||'',lastName:state.user?.displayName?.split(' ').slice(1).join(' ')||'',graduationYear:'',location:'',status:'trabajando',role:'',area:'',studies:'',bio:'',skills:'',topics:'',expectations:'',phone:'',linkedin:'',photoURL:state.user?.photoURL||'',school:DEFAULT_SCHOOL,username:'',onboardingCompleted:false}; refreshHeaderIdentity(); return; }
     const d=doc.data();
+    // OJO: d.phone / d.contactEmail son RESIDUO de antes del cierre del
+    // directorio (perfiles que aún no pasó la migración). La fuente de verdad
+    // es alumni/{uid}/privado/contacto, que se lee justo abajo y pisa esto.
     state.profile={firstName:d.firstName||'',lastName:d.lastName||'',graduationYear:d.graduationYear||'',location:d.location||'',status:d.status||'trabajando',role:d.role||'',area:d.area||'',studies:d.studies||'',bio:d.bio||'',skills:Array.isArray(d.skills)?d.skills.join(', '):(d.skills||''),topics:d.topics||'',expectations:d.expectations||'',phone:d.phone||'',linkedin:d.linkedin||'',photoURL:d.photoURL||'',school:d.school||DEFAULT_SCHOOL,username:d.username||'',onboardingCompleted:d.onboardingCompleted||false};
+    const contacto = await loadContactoPrivado(uid);
+    if (contacto.phone) state.profile.phone = contacto.phone;
+    state.profile.contactEmail = contacto.contactEmail || d.contactEmail || '';
     refreshHeaderIdentity();
 }
 async function ensureDefaultSchool(uid) {
-    if (!uid || state.guestMode || state.profile.school) return;
+    if (!uid || !esMiembro() || state.profile.school) return;
     state.profile.school = DEFAULT_SCHOOL;
     await alumniCollection.doc(uid).set({ school: DEFAULT_SCHOOL, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
 }
+// Listado del directorio. NO trae `phone` ni `contactEmail`: ese par vive ahora
+// en alumni/{uid}/privado/contacto y se pide BAJO DEMANDA al abrir un perfil
+// (loadContactoPrivado), solo si esMiembro(). Antes viajaban aquí, y como este
+// listado es un `list` de una colección de lectura pública, cualquiera podía
+// volcar por REST el teléfono y el correo de los 68 egresados sin login.
+// Consecuencia buscada: `user.phone` no existe en los objetos del directorio.
 async function loadAlumni() {
     state.directoryLoading=true;
     try {
         const snap=await alumniCollection.get();
-        state.data.alumni=snap.docs.map(doc=>{const d=doc.data();const user={id:doc.id,name:`${d.firstName||''} ${d.lastName||''}`.trim()||'Sin nombre',firstName:(d.firstName||'').trim(),lastName:(d.lastName||'').trim(),email:d.email||d.contactEmail||'',contactEmail:d.contactEmail||'',username:d.username||'',newsletterOptIn:Boolean(d.newsletterOptIn),role:d.role||'Sin rol',status:d.status||'sin-definir',statusLabel:formatStatusLabel(d.status),accountStatus:d.accountStatus||'activo',company:d.studies||formatStatusLabel(d.status),photoURL:d.photoURL||'',img:d.photoURL||buildAvatarUrl(`${d.firstName||'Usuario'} ${d.lastName||''}`.trim()),tags:[d.school||DEFAULT_SCHOOL,d.area||'General',formatStatusLabel(d.status)].filter(Boolean),fullStudies:d.studies||'No especificado',location:d.location||'Ubicación no disponible',bio:d.bio||'Sin biografía disponible.',year:d.graduationYear||'---',area:d.area||'General',skills:Array.isArray(d.skills)?d.skills:(d.skills?String(d.skills).split(','):[]),phone:d.phone||'',linkedin:d.linkedin||'',expectations:d.expectations||'',school:d.school||DEFAULT_SCHOOL,hitosCount:Number(d.hitosCount)||0,rutaDestacada:Boolean(d.rutaDestacada),graduationYear:d.graduationYear||'',studies:d.studies||''};return{...user,profileCompleteness:getProfileCompletenessScore(user)};}).filter(a=>hasValidFirstName(a.firstName));
+        state.data.alumni=snap.docs.map(doc=>{const d=doc.data();const user={id:doc.id,name:`${d.firstName||''} ${d.lastName||''}`.trim()||'Sin nombre',firstName:(d.firstName||'').trim(),lastName:(d.lastName||'').trim(),email:d.email||'',username:d.username||'',newsletterOptIn:Boolean(d.newsletterOptIn),role:d.role||'Sin rol',status:d.status||'sin-definir',statusLabel:formatStatusLabel(d.status),accountStatus:d.accountStatus||'activo',company:d.studies||formatStatusLabel(d.status),photoURL:d.photoURL||'',img:d.photoURL||buildAvatarUrl(`${d.firstName||'Usuario'} ${d.lastName||''}`.trim()),tags:[d.school||DEFAULT_SCHOOL,d.area||'General',formatStatusLabel(d.status)].filter(Boolean),fullStudies:d.studies||'No especificado',location:d.location||'Ubicación no disponible',bio:d.bio||'Sin biografía disponible.',year:d.graduationYear||'---',area:d.area||'General',skills:Array.isArray(d.skills)?d.skills:(d.skills?String(d.skills).split(','):[]),linkedin:d.linkedin||'',expectations:d.expectations||'',school:d.school||DEFAULT_SCHOOL,hitosCount:Number(d.hitosCount)||0,rutaDestacada:Boolean(d.rutaDestacada),graduationYear:d.graduationYear||'',studies:d.studies||''};return{...user,profileCompleteness:getProfileCompletenessScore(user)};}).filter(a=>hasValidFirstName(a.firstName));
     } catch(e){ state.data.alumni=state.data.alumni.length?state.data.alumni:[];}
     finally{ state.directoryLoading=false; }
 }
@@ -848,15 +1003,17 @@ function renderNav(activePage='') {
                 <a href="directory.html" class="font-medium transition ${active('directory')}" id="nav-dir">Comunidad</a>
                 <a href="news.html" class="font-medium transition ${active('news')}" id="nav-news">Novedades</a>
                 <a href="preparacion.html" class="font-medium transition ${active('exam-modules')}" id="nav-exams">Preparación</a>
-                <a href="messages.html" class="font-medium transition ${active('messages')}" id="nav-msg">Mensajes</a>
+                <a href="messages.html" class="solo-miembro hidden font-medium transition ${active('messages')}" id="nav-msg">Mensajes</a>
                 <a href="admin.html" class="hidden font-medium transition ${active('admin')}" id="nav-admin">Admin</a>
             </div>
             <div class="flex items-center gap-2">
                 <button type="button" class="theme-toggle" data-theme-toggle onclick="toggleThemeMode()" aria-label="Cambiar tema"></button>
-                <a href="profile.html" id="profile-menu-trigger" class="h-10 w-10 rounded-full bg-brand-50 overflow-hidden ring-2 ring-transparent hover:ring-brand-300 transition-all shadow-sm" title="Ver perfil">
+                <a href="profile.html" id="profile-menu-trigger" class="solo-miembro hidden h-10 w-10 rounded-full bg-brand-50 overflow-hidden ring-2 ring-transparent hover:ring-brand-300 transition-all shadow-sm" title="Ver perfil">
                     <img src="https://ui-avatars.com/api/?name=Usuario&background=22c55e&color=fff" alt="Perfil" class="object-cover w-full h-full" id="header-avatar">
                 </a>
-                <a href="profile.html" class="hidden md:flex items-center gap-1 text-xs text-gray-500 font-semibold hover:text-brand-600 transition px-2 py-1 rounded-lg hover:bg-brand-50"><span>Mi perfil</span><i class="ph-bold ph-caret-down"></i></a>
+                <a href="profile.html" class="solo-miembro hidden md:flex items-center gap-1 text-xs text-gray-500 font-semibold hover:text-brand-600 transition px-2 py-1 rounded-lg hover:bg-brand-50"><span>Mi perfil</span><i class="ph-bold ph-caret-down"></i></a>
+                <a href="login.html" id="nav-login" class="solo-invitado hidden inline-flex items-center gap-1 text-xs font-bold text-gray-600 hover:text-brand-700 transition px-3 py-2 rounded-lg border border-gray-200 bg-white hover:bg-brand-50"><i class="ph-bold ph-sign-in"></i><span>Entrar</span></a>
+                <a href="register.html" id="nav-register" class="solo-invitado hidden md:flex items-center gap-1 text-xs font-bold text-white bg-brand-600 hover:bg-brand-700 transition px-3 py-2 rounded-lg shadow-sm"><span>Crear cuenta</span></a>
             </div>
         </nav>
         <nav id="mobile-nav" class="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur border-t border-gray-200 grid grid-cols-6">
@@ -864,9 +1021,14 @@ function renderNav(activePage='') {
             <a href="directory.html" class="py-3 text-xs font-semibold flex flex-col items-center gap-1 ${mactive('directory')}"><i class="ph ph-users text-lg"></i><span>Directorio</span></a>
             <a href="news.html" class="py-3 text-xs font-semibold flex flex-col items-center gap-1 ${mactive('news')}"><i class="ph ph-newspaper text-lg"></i><span>Novedades</span></a>
             <a href="preparacion.html" class="py-3 text-xs font-semibold flex flex-col items-center gap-1 ${mactive('exam-modules')}"><i class="ph ph-graduation-cap text-lg"></i><span>Prep.</span></a>
-            <a href="messages.html" class="py-3 text-xs font-semibold flex flex-col items-center gap-1 ${mactive('messages')}"><i class="ph ph-chats-circle text-lg"></i><span>Mensajes</span></a>
-            <a href="profile.html" class="py-3 text-xs font-semibold flex flex-col items-center gap-1 ${mactive('profile')}"><i class="ph ph-user-circle text-lg"></i><span>Perfil</span></a>
+            <a href="messages.html" class="solo-miembro hidden py-3 text-xs font-semibold flex flex-col items-center gap-1 ${mactive('messages')}"><i class="ph ph-chats-circle text-lg"></i><span>Mensajes</span></a>
+            <a href="profile.html" class="solo-miembro hidden py-3 text-xs font-semibold flex flex-col items-center gap-1 ${mactive('profile')}"><i class="ph ph-user-circle text-lg"></i><span>Perfil</span></a>
+            <a href="login.html" class="solo-invitado hidden py-3 text-xs font-semibold flex flex-col items-center gap-1 text-gray-500"><i class="ph ph-sign-in text-lg"></i><span>Entrar</span></a>
         </nav>
     `);
+    // La nav se pinta antes de que resuelva onAuthStateChanged: arranca en modo
+    // invitado (todo .solo-miembro oculto) y el listener la completa. Asi un
+    // invitado nunca alcanza a ver "Mi perfil" ni Mensajes parpadeando.
+    updateMemberNavVisibility();
     setThemeMode(document.documentElement.classList.contains('dark') ? 'dark' : 'light');
 }

@@ -472,7 +472,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-analytics-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore-compat.js"></script>
-    <script src="shared.js?v=14"></script>
+    <script src="shared.js?v=15"></script>
     <script src="orientadora.js?v=3"></script>
     <script src="historias.js?v=5"></script>
     <script>
@@ -503,11 +503,17 @@
                 } else {
                     skillsContainer.innerHTML = '<span class="text-gray-400 text-xs italic">No especificadas</span>';
                 }
+                // Igual que en directory.html: el telefono vive en el doc
+                // privado y se pide al abrir la ficha, solo para miembros.
                 const waBtn = document.getElementById('sp-whatsapp-btn');
-                if (user.phone && isValidPhone(user.phone)) {
-                    waBtn.classList.remove('hidden');
-                    waBtn.href = `https://wa.me/${String(user.phone).replace(/[^0-9]/g, '')}`;
-                } else { waBtn.classList.add('hidden'); }
+                waBtn.classList.add('hidden');
+                loadContactoPrivado(id).then(({ phone }) => {
+                    if (String(state.selectedDirectoryUserId) !== String(id)) return;
+                    if (phone && isValidPhone(phone)) {
+                        waBtn.classList.remove('hidden');
+                        waBtn.href = `https://wa.me/${String(phone).replace(/[^0-9]/g, '')}`;
+                    }
+                });
                 const liBtn = document.getElementById('sp-linkedin-btn');
                 if (isValidLinkedInUrl(user.linkedin)) {
                     liBtn.classList.remove('hidden');
@@ -674,6 +680,10 @@
         // destacadas; si no, solo limpia el estado. Nunca redirige fuera de aquí
         // salvo que falte el onboarding.
         auth.onAuthStateChanged(async (user) => {
+            // Primero: el invitado anonimo NO apaga el modo invitado. Sin esta
+            // linea, la rama de abajo lo tomaria por un login real y le
+            // limpiaria guestMode, tratandolo como miembro.
+            if (user && user.isAnonymous) { state.guestMode = true; user = null; }
             if (user && state.guestMode) {
                 state.guestMode = false;
                 try { sessionStorage.removeItem('guestMode'); } catch {}
