@@ -168,7 +168,7 @@
                                 </div>
                                 <div>
                                     <label class="input-label">Colegio</label>
-                                    <input type="text" id="p-school" class="input-field" placeholder="Ej: LCP">
+                                    <p id="p-school-display" class="input-field !bg-stone-100 !text-stone-500 cursor-not-allowed select-text" title="El colegio se asigna con tu código de invitación y no se puede editar desde aquí. Escríbenos si necesitas corregirlo.">—</p>
                                 </div>
                                 <div class="md:col-span-2">
                                     <label class="input-label">¿Qué expectativas/proyecciones tiene sobre usted?</label>
@@ -303,7 +303,7 @@
                 document.getElementById('p-expectations').value = p.expectations || '';
                 document.getElementById('p-phone').value = p.phone || '';
                 document.getElementById('p-linkedin').value = p.linkedin || '';
-                document.getElementById('p-school').value = p.school || DEFAULT_SCHOOL;
+                document.getElementById('p-school-display').textContent = p.school || DEFAULT_SCHOOL;
                 const fullName = `${p.firstName || ''} ${p.lastName || ''}`.trim() || state.user?.displayName || 'Usuario';
                 const avatar = p.photoURL || buildAvatarUrl(fullName);
                 document.getElementById('profile-avatar').src = avatar;
@@ -352,7 +352,6 @@
                     expectations: document.getElementById('p-expectations').value.trim(),
                     phone: phoneValue,
                     linkedin: linkedinValue ? normalizeLinkedInUrl(linkedinValue) : '',
-                    school: document.getElementById('p-school').value.trim() || DEFAULT_SCHOOL,
                     email: state.user.email || '',
                     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
                 };
@@ -378,6 +377,10 @@
                     setBtns(`<i class="ph-bold ph-check"></i> ¡Guardado!`, 'bg-brand-600', 'bg-green-600');
                 } catch (error) {
                     setBtns(`<i class="ph-bold ph-warning-circle"></i> Error`, 'bg-brand-600', 'bg-red-600');
+                    const mensaje = error?.code === 'permission-denied'
+                        ? 'No se pudo guardar: no tienes permiso para ese cambio. Si el problema persiste, contacta al administrador de tu colegio.'
+                        : `No se pudo guardar: ${error?.message || 'error desconocido'}.`;
+                    alert(mensaje);
                 }
 
                 setTimeout(() => {
