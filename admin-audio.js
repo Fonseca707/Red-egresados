@@ -202,10 +202,41 @@ const ACENTOS = {
 const ENCODER_CDN = 'https://cdn.jsdelivr.net/npm/lamejs@1.2.1/lame.min.js';
 const MP3_KBPS = 64;
 
+// ── Troceo de los documentos largos ─────────────────────────────────────────
+// Por qué (2026-07-28, reporte de Juan): los clips largos salen atropellados
+// "casi siempre", mientras que los cortos salen bien. Es el mismo modo de fallo
+// que ya medimos —el modelo corre para caber— pero agravado por la longitud:
+// cuanto más texto de un tirón, más margen tiene para acelerar.
+//
+// Trocear ataca la causa y además cambia la economía del error: hoy un
+// documento de 2 min que sale rápido se tira ENTERO; por partes se rehace solo
+// la parte mala (20 s de generación) y las buenas se conservan.
+//
+// El miedo legítimo era el salto de tono entre partes. Con Gemini no existe el
+// encadenado nativo de ElevenLabs (previous_text / previous_request_ids), así
+// que la continuidad se fabrica con cuatro reglas, en orden de peso:
+//   1. La voz es un id fijo → el TIMBRE no puede cambiar. Nunca se cambia de
+//      voz ni de mapeo hablante→voz entre partes de un mismo clip.
+//   2. El preámbulo de estilo viaja IDÉNTICO, carácter por carácter, en todas.
+//      La deriva de estilo viene casi toda de que el prompt cambie.
+//   3. Se corta solo en frontera de turno o de párrafo, nunca a mitad de frase,
+//      y las partes salen parejas: un trozo de 40 palabras junto a uno de 300
+//      suena a dos grabaciones distintas, porque el ritmo depende del largo.
+//   4. Al pegar se iguala el volumen de cada parte (mismo RMS) y se separa con
+//      un silencio corto. Un trozo más fuerte que el anterior se oye como
+//      "otro corte" aunque la voz sea la misma.
+const TROCEO_DESDE_PALABRAS = 120; // por debajo de esto, una sola generación
+const TROCEO_OBJETIVO = 85;        // palabras por parte (≈ 34 s a 150 wpm)
+const CORTE_MANUAL = /^\s*-{3,}\s*$/;  // una línea "---" fuerza un corte ahí
+const PAUSA_ENTRE_PARTES_MS = 350; // lo que dura una respiración entre turnos
+const CONCURRENCIA = 2;            // generaciones a la vez (el proxy limita 40/h)
+
 const audioLogic = {
     ultimoAudio: null,    // Blob ya comprimido, aún sin guardar
     ultimaDuracion: 0,
     clips: [],
+    partes: [],           // trozos del clip en curso, cada uno con su medida
+    sesion: null,         // configuración congelada al empezar a generar
 
     // ── Compresión (en el navegador del admin, antes de subir) ──────────────
     cargarEncoder() {
@@ -352,6 +383,9 @@ const audioLogic = {
         const esGemini = this.proveedor() === 'gemini';
         document.getElementById('audio-acento-wrap').classList.toggle('hidden', cfg.examen !== 'toefl' || !esGemini);
         this.pintarFicha(cfg);
+        // Cada tipo trae su propia instrucción y su ritmo: cambiar de tipo los
+        // repone, para no arrastrar los del anterior sin darse cuenta.
+        this.restaurarInstruccion();
     },
 
     // ── Ficha "así suena el audio real" ─────────────────────────────────────
@@ -433,15 +467,93 @@ const audioLogic = {
         }
     },
 
+    // ── Troceo ──────────────────────────────────────────────────────────────
+    // Parte el transcript en unidades que NO se pueden romper: en un diálogo,
+    // cada turno de hablante; en un monólogo, cada párrafo, y si un párrafo se
+    // pasa de largo, cada frase. Cortar a mitad de frase es lo único que sí se
+    // oye como un empalme, porque parte la curva de entonación.
+    unidades(texto) {
+        const bloques = [];
+        let actual = [];
+        for (const linea of texto.split('\n')) {
+            if (CORTE_MANUAL.test(linea)) {           // "---" = corte pedido a mano
+                if (actual.length) bloques.push({ lineas: actual, corteDespues: true });
+                actual = [];
+                continue;
+            }
+            if (!linea.trim()) { if (actual.length) { bloques.push({ lineas: actual }); actual = []; } continue; }
+            // Línea con marca de hablante = turno nuevo; si no, continúa el anterior.
+            if (/^\s*[A-Za-zÀ-ÿ0-9 _-]{1,20}:/.test(linea) && actual.length) {
+                bloques.push({ lineas: actual });
+                actual = [linea];
+            } else {
+                actual.push(linea);
+            }
+        }
+        if (actual.length) bloques.push({ lineas: actual });
+
+        // Un bloque larguísimo sin turnos (monólogo de radio) se abre por frases.
+        const salida = [];
+        for (const b of bloques) {
+            const bloque = b.lineas.join('\n');
+            if (this.palabrasNarradas(bloque) <= TROCEO_OBJETIVO * 1.6 || /^\s*[A-Za-zÀ-ÿ0-9 _-]{1,20}:/.test(bloque)) {
+                salida.push({ texto: bloque, corteDespues: !!b.corteDespues });
+                continue;
+            }
+            const frases = bloque.match(/[^.!?…]+(?:[.!?…]+["»']?)?\s*/g) || [bloque];
+            frases.forEach((f, i) => salida.push({ texto: f.trim(), corteDespues: i === frases.length - 1 && !!b.corteDespues }));
+        }
+        return salida.filter(u => u.texto);
+    },
+
+    // Agrupa las unidades en partes parejas. El número de partes sale de una
+    // división —no de un tope— para que todas queden del mismo tamaño: con 350
+    // palabras salen 4 de ~88, no 3 de 120 y una de 30.
+    trocear(texto) {
+        const total = this.palabrasNarradas(texto);
+        const us = this.unidades(texto);
+        const cortesManuales = us.some(u => u.corteDespues);
+        if (total < TROCEO_DESDE_PALABRAS && !cortesManuales) return [texto.trim()];
+
+        const n = Math.max(1, Math.round(total / TROCEO_OBJETIVO));
+        const objetivo = total / n;
+        const partes = [];
+        let buffer = [], palabras = 0;
+        const cerrar = () => { if (buffer.length) { partes.push(buffer.join('\n')); buffer = []; palabras = 0; } };
+
+        for (const u of us) {
+            const p = this.palabrasNarradas(u.texto);
+            // Se cierra ANTES de añadir si al añadir nos pasaríamos más de lo que
+            // nos falta: reparte el sobrante en vez de acumularlo en la última.
+            if (buffer.length && palabras + p - objetivo > objetivo - palabras) cerrar();
+            buffer.push(u.texto);
+            palabras += p;
+            if (u.corteDespues) cerrar();
+        }
+        cerrar();
+        return partes.length ? partes : [texto.trim()];
+    },
+
+    // El preámbulo es lo que fija el estilo. Va idéntico en todas las partes; lo
+    // único que cambia es la nota de continuidad, que le dice al modelo que esto
+    // es la continuación de algo y no una grabación nueva.
+    preambulo(instruccion, i, n) {
+        if (n < 2) return instruccion;
+        const continuidad = ` (This is part ${i + 1} of ${n} of one single continuous recording: keep exactly the same voice, pace, tone and recording conditions as the other parts — same speaker, same energy, no new introduction, no fade in or out.)`;
+        return instruccion + continuidad;
+    },
+
     // ── 1. Generar (llama al proxy, que agrega la clave del TTS) ────────────
+    // Una llamada por parte. La configuración (voces, instrucción, tipo) se
+    // congela al empezar: si Juan cambia un select a mitad de camino, las partes
+    // ya generadas y las que faltan seguirían perteneciendo al mismo clip y
+    // sonarían distintas.
     async generar() {
         const texto = document.getElementById('audio-texto').value.trim();
         if (!texto) return this.aviso('Escribe el transcript que se va a narrar.', 'error');
 
         const tipo = document.getElementById('audio-tipo').value;
         const cfg = ESTILOS[tipo];
-        const acento = document.getElementById('audio-acento').value;
-        const boton = document.getElementById('audio-btn-generar');
 
         // En diálogo, el texto debe venir marcado con los nombres de los
         // hablantes; si no, el generador no sabe a quién dar cada voz.
@@ -459,62 +571,325 @@ const audioLogic = {
             voces = [{ voice: document.getElementById('audio-voz1').value }];
         }
 
-        const instruccion = [cfg.instruccion, ACENTOS[acento]?.frase].filter(Boolean).join(' ');
+        const acento = document.getElementById('audio-acento').value;
+        this.sesion = {
+            tipo, cfg, voces, acento,
+            proveedor: this.proveedor(),
+            wpm: this.wpmObjetivo(),
+            instruccion: [this.instruccionActual(), ACENTOS[acento]?.frase].filter(Boolean).join(' '),
+            transcript: texto
+        };
+        this.partes = this.trocear(texto).map((t, i) => ({ i, texto: t, estado: 'pendiente' }));
+        this.ultimoAudio = null;
+        this.ultimaDuracion = 0;
+        document.getElementById('audio-btn-guardar').disabled = true;
+        document.getElementById('audio-preview-wrap').classList.add('hidden');
+        this.pintarRitmo(null);
+        this.pintarPartes();
 
+        const n = this.partes.length;
+        this.aviso(n > 1
+            ? `Generando ${n} partes de una misma grabación. Cada una se mide por separado, así que si alguna sale atropellada se rehace sola.`
+            : 'Generando el audio.', 'info');
+        await this.correrPendientes();
+    },
+
+    // Lanza las partes pendientes de a CONCURRENCIA y pega el resultado.
+    async correrPendientes() {
+        const boton = document.getElementById('audio-btn-generar');
         boton.disabled = true;
         boton.textContent = 'Generando…';
-        this.aviso('Generando el audio. Un documento largo puede tardar cerca de un minuto.', 'info');
         try {
-            const token = await auth.currentUser.getIdToken();
-            const respuesta = await fetch(PROXY_TTS, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify({ proveedor: this.proveedor(), texto, voces, instruccion })
-            });
-            if (!respuesta.ok) {
-                const detalle = await respuesta.json().catch(() => ({}));
-                throw new Error(detalle.error || `El generador respondió ${respuesta.status}`);
-            }
-            this.ultimaDuracion = Number(respuesta.headers.get('X-Duracion-Aprox-Seg') || 0);
-            const crudo = await respuesta.blob();
-
-            let aviso;
-            if (PROVEEDORES[this.proveedor()].comprimirEnCliente) {
-                // Se comprime ANTES de la vista previa a propósito: así lo que
-                // escuchas aquí es exactamente lo que va a oír el estudiante.
-                boton.textContent = 'Comprimiendo…';
-                try {
-                    this.ultimoAudio = await this.comprimir(crudo);
-                    const ahorro = Math.round((1 - this.ultimoAudio.size / crudo.size) * 100);
-                    aviso = `Audio listo: ${this.formatoDuracion(this.ultimaDuracion)} · ${this.formatoPeso(this.ultimoAudio.size)} (${ahorro}% menos que sin comprimir).`;
-                } catch (e) {
-                    // Si el compresor no cargó, mejor un clip pesado que ninguno.
-                    this.ultimoAudio = crudo;
-                    aviso = `Audio listo: ${this.formatoDuracion(this.ultimaDuracion)} · ${this.formatoPeso(crudo.size)} — sin comprimir (${e.message}), pesará más de lo normal.`;
+            const cola = this.partes.filter(p => p.estado === 'pendiente');
+            const obreros = Array.from({ length: Math.min(CONCURRENCIA, cola.length) }, async () => {
+                for (;;) {
+                    const parte = cola.shift();
+                    if (!parte) return;
+                    await this.generarParte(parte);
                 }
-            } else {
-                // ElevenLabs ya devuelve MP3: recomprimir solo degradaría.
-                this.ultimoAudio = crudo;
-                aviso = `Audio listo: ${this.formatoPeso(crudo.size)}.`;
-            }
-            if (!this.ultimaDuracion) {
-                this.ultimaDuracion = await this.medirDuracion(this.ultimoAudio);
-            }
-
-            const reproductor = document.getElementById('audio-preview');
-            reproductor.src = URL.createObjectURL(this.ultimoAudio);
-            document.getElementById('audio-preview-wrap').classList.remove('hidden');
-            document.getElementById('audio-btn-guardar').disabled = false;
-            this.aviso(`${aviso} Escúchalo antes de guardarlo — si no convence, ajusta el texto o las voces y vuelve a generar.`, 'ok');
-
-            // Control de ritmo: puede bloquear el guardado, así que va después
-            // de habilitarlo.
-            this.pintarRitmo(this.evaluarRitmo(texto, this.ultimaDuracion, cfg));
+            });
+            await Promise.all(obreros);
+            await this.ensamblar();
         } catch (e) {
             this.aviso(`No se pudo generar: ${e.message}`, 'error');
         } finally {
             boton.disabled = false;
             boton.textContent = 'Generar audio';
+        }
+    },
+
+    async generarParte(parte) {
+        const s = this.sesion;
+        parte.estado = 'generando';
+        parte.error = '';
+        this.pintarPartes();
+        try {
+            const token = await auth.currentUser.getIdToken();
+            const respuesta = await fetch(PROXY_TTS, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({
+                    proveedor: s.proveedor,
+                    texto: parte.texto,
+                    voces: s.voces,
+                    instruccion: this.preambulo(s.instruccion, parte.i, this.partes.length)
+                })
+            });
+            if (!respuesta.ok) {
+                const detalle = await respuesta.json().catch(() => ({}));
+                throw new Error(detalle.error || `el generador respondió ${respuesta.status}`);
+            }
+            parte.blob = await respuesta.blob();
+            // Una URL por parte, no una por repintado: el tablero se redibuja
+            // varias veces por generación y cada createObjectURL retiene el blob.
+            if (parte.url) URL.revokeObjectURL(parte.url);
+            parte.url = URL.createObjectURL(parte.blob);
+            parte.duracionSeg = Number(respuesta.headers.get('X-Duracion-Aprox-Seg') || 0)
+                || await this.medirDuracion(parte.blob);
+            parte.ritmo = this.evaluarRitmo(parte.texto, parte.duracionSeg, { wpm: s.wpm });
+            parte.estado = 'listo';
+        } catch (e) {
+            parte.estado = 'error';
+            parte.error = e.message;
+        }
+        this.pintarPartes();
+    },
+
+    // Rehacer una sola parte: es toda la ventaja del troceo. Las demás no se
+    // tocan (y no se vuelven a pagar).
+    async regenerarParte(i) {
+        const parte = this.partes?.[i];
+        if (!parte || !this.sesion) return;
+        parte.estado = 'pendiente';
+        await this.correrPendientes();
+    },
+
+    // ── 2. Ensamblar: pegar las partes en un solo clip ──────────────────────
+    // Se pega en PCM decodificado, no concatenando archivos: pegar MP3 por
+    // bytes deja huecos audibles en las junturas. Y se iguala el volumen de
+    // cada parte, porque una parte más fuerte se oye como otra grabación.
+    async ensamblar() {
+        const listas = this.partes.filter(p => p.estado === 'listo' && p.blob);
+        if (!listas.length) { this.aviso('Ninguna parte se generó.', 'error'); return; }
+        if (listas.length < this.partes.length) {
+            this.aviso(`Faltan ${this.partes.length - listas.length} parte(s) por generar; el clip todavía no está completo.`, 'error');
+            return;
+        }
+
+        const boton = document.getElementById('audio-btn-generar');
+        boton.textContent = 'Montando…';
+        const s = this.sesion;
+        let aviso;
+
+        // Una sola parte con ElevenLabs: ya viene en MP3, recomprimir solo
+        // degradaría. Se deja tal cual, como antes del troceo.
+        if (listas.length === 1 && !PROVEEDORES[s.proveedor].comprimirEnCliente) {
+            this.ultimoAudio = listas[0].blob;
+            this.ultimaDuracion = listas[0].duracionSeg;
+            aviso = `Audio listo: ${this.formatoPeso(this.ultimoAudio.size)}.`;
+        } else {
+            try {
+                const { blob, duracion, crudo } = await this.pegar(listas.map(p => p.blob));
+                this.ultimoAudio = blob;
+                this.ultimaDuracion = duracion;
+                const ahorro = crudo ? Math.round((1 - blob.size / crudo) * 100) : 0;
+                aviso = `Audio listo: ${this.formatoDuracion(duracion)} · ${this.formatoPeso(blob.size)}`
+                    + (listas.length > 1 ? ` · ${listas.length} partes unidas` : '')
+                    + (ahorro > 0 ? ` (${ahorro}% menos que sin comprimir).` : '.');
+            } catch (e) {
+                // Sin compresor no se puede pegar: mejor decirlo que guardar a medias.
+                this.aviso(`Las partes se generaron pero no se pudieron unir: ${e.message}. Vuelve a intentarlo; no hay que regenerarlas.`, 'error');
+                return;
+            }
+        }
+
+        const reproductor = document.getElementById('audio-preview');
+        reproductor.src = URL.createObjectURL(this.ultimoAudio);
+        document.getElementById('audio-preview-wrap').classList.remove('hidden');
+        document.getElementById('audio-btn-guardar').disabled = false;
+        this.aviso(`${aviso} Escúchalo entero antes de guardarlo — sobre todo las junturas entre partes.`, 'ok');
+
+        // El ritmo global se mide igual que antes (palabras ÷ minutos) y puede
+        // bloquear el guardado, así que va después de habilitarlo.
+        this.pintarRitmo(this.evaluarRitmo(s.transcript, this.ultimaDuracion, { wpm: s.wpm }));
+    },
+
+    async pegar(blobs) {
+        await this.cargarEncoder();
+        const Contexto = window.AudioContext || window.webkitAudioContext;
+        let ctx;
+        try { ctx = new Contexto({ sampleRate: 24000 }); } catch { ctx = new Contexto(); }
+
+        let bytesCrudos = 0;
+        const canales = [];
+        for (const b of blobs) {
+            bytesCrudos += b.size;
+            const buffer = await ctx.decodeAudioData(await b.arrayBuffer());
+            canales.push(buffer.getChannelData(0));
+        }
+        const tasa = ctx.sampleRate;
+        ctx.close();
+
+        // Volumen parejo: se lleva cada parte al RMS mediano del conjunto. La
+        // mediana y no la media, para que una parte anómala no arrastre a todas.
+        const rms = canales.map(c => {
+            let suma = 0;
+            for (let i = 0; i < c.length; i++) suma += c[i] * c[i];
+            return Math.sqrt(suma / (c.length || 1)) || 1e-6;
+        });
+        const referencia = [...rms].sort((a, b) => a - b)[Math.floor(rms.length / 2)];
+
+        const silencio = canales.length > 1 ? Math.round(tasa * PAUSA_ENTRE_PARTES_MS / 1000) : 0;
+        const total = canales.reduce((n, c) => n + c.length, 0) + silencio * (canales.length - 1);
+        const pcm = new Int16Array(total);
+        let cursor = 0;
+        canales.forEach((c, k) => {
+            // Ganancia acotada: corregir el volumen no debe reinventar la toma.
+            const ganancia = Math.min(2, Math.max(0.5, referencia / rms[k]));
+            for (let i = 0; i < c.length; i++) {
+                const s = Math.max(-1, Math.min(1, c[i] * ganancia));
+                pcm[cursor++] = s < 0 ? s * 0x8000 : s * 0x7fff;
+            }
+            if (k < canales.length - 1) cursor += silencio; // el silencio ya es 0
+        });
+
+        const encoder = new lamejs.Mp3Encoder(1, tasa, MP3_KBPS);
+        const trozos = [];
+        const BLOQUE = 1152;
+        for (let i = 0; i < pcm.length; i += BLOQUE) {
+            const datos = encoder.encodeBuffer(pcm.subarray(i, i + BLOQUE));
+            if (datos.length) trozos.push(datos);
+        }
+        const cola = encoder.flush();
+        if (cola.length) trozos.push(cola);
+
+        return {
+            blob: new Blob(trozos, { type: 'audio/mpeg' }),
+            duracion: Math.round(total / tasa),
+            crudo: bytesCrudos
+        };
+    },
+
+    // ── Tablero de partes ───────────────────────────────────────────────────
+    pintarPartes() {
+        const wrap = document.getElementById('audio-partes-wrap');
+        const caja = document.getElementById('audio-partes');
+        if (!wrap || !caja) return;
+        const partes = this.partes || [];
+        if (partes.length < 2) { wrap.classList.add('hidden'); return; }
+        wrap.classList.remove('hidden');
+
+        const listas = partes.filter(p => p.estado === 'listo').length;
+        const malas = partes.filter(p => p.ritmo && p.ritmo.factor >= this.RITMO_ALERTA).length;
+        document.getElementById('audio-partes-resumen').innerHTML =
+            `${listas} de ${partes.length} generadas` + (malas ? ` · <b class="text-red-600">${malas} atropellada(s)</b>` : '');
+
+        const marca = {
+            pendiente: '<span class="text-gray-400">en cola</span>',
+            generando: '<span class="text-amber-600">generando…</span>',
+            error:     '<span class="text-red-600">falló</span>'
+        };
+        caja.innerHTML = partes.map(p => {
+            const r = p.ritmo;
+            const color = !r ? 'border-gray-200 dark:border-gray-700'
+                : r.factor >= this.RITMO_ALERTA ? 'border-red-300 bg-red-50'
+                : r.factor >= this.RITMO_SOSPECHA ? 'border-amber-300 bg-amber-50'
+                : 'border-green-300 bg-green-50';
+            const dato = p.estado === 'listo'
+                ? `${this.formatoDuracion(p.duracionSeg || 0)}${r ? ` · <b>${r.wpm} wpm</b>` : ''} · ${this.palabrasNarradas(p.texto)} palabras`
+                : (marca[p.estado] || '');
+            return `
+            <div class="border ${color} rounded-xl px-4 py-3">
+                <div class="flex items-start justify-between gap-3 flex-wrap">
+                    <div class="min-w-0">
+                        <p class="text-xs font-bold text-gray-500">Parte ${p.i + 1} de ${partes.length}</p>
+                        <p class="text-xs text-gray-600 dark:text-gray-300 mt-0.5">${dato}</p>
+                        ${p.error ? `<p class="text-xs text-red-600 mt-0.5">${this.escapar(p.error)}</p>` : ''}
+                    </div>
+                    <div class="flex items-center gap-3 shrink-0">
+                        ${p.url ? `<audio controls src="${p.url}" class="h-8"></audio>` : ''}
+                        <button onclick="audioLogic.regenerarParte(${p.i})" class="text-xs font-bold text-brand-600 hover:underline" ${p.estado === 'generando' ? 'disabled' : ''}>Rehacer</button>
+                    </div>
+                </div>
+                <details class="mt-2">
+                    <summary class="text-xs text-gray-500 cursor-pointer">Ver su texto</summary>
+                    <pre class="mt-1 text-xs whitespace-pre-wrap text-gray-600 dark:text-gray-300">${this.escapar(p.texto)}</pre>
+                </details>
+            </div>`;
+        }).join('');
+    },
+
+    // ── Medidor en vivo (antes de gastar una generación) ────────────────────
+    // Lo que se puede saber del clip sin pagarlo: cuánto va a durar al ritmo
+    // objetivo, en cuántas partes va a salir y si el texto se pasa del tope.
+    onTextoInput() {
+        const caja = document.getElementById('audio-medidor');
+        if (!caja) return;
+        const texto = document.getElementById('audio-texto').value;
+        const palabras = this.palabrasNarradas(texto);
+        if (!palabras) { caja.innerHTML = ''; return; }
+
+        const wpm = this.wpmObjetivo();
+        const segundos = Math.round(palabras / wpm * 60);
+        const partes = this.trocear(texto.trim()).length;
+        const chars = texto.length;
+        const chip = (t, tono = 'bg-gray-100 text-gray-700') => `<span class="px-2 py-1 rounded-lg ${tono}">${t}</span>`;
+        caja.innerHTML = [
+            chip(`${palabras} palabras habladas`),
+            chip(`≈ ${this.formatoDuracion(segundos)} a ${wpm} wpm`),
+            partes > 1
+                ? chip(`${partes} partes de ≈ ${Math.round(palabras / partes)} palabras`, 'bg-amber-100 text-amber-800')
+                : chip('una sola generación'),
+            chip(`${chars}/6000 caracteres`, chars > 5700 ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-700')
+        ].join(' ');
+    },
+
+    // Inserta un "---" donde está el cursor: corte a mano cuando el automático
+    // parte por donde no conviene (un cambio de tema, una pausa del guion).
+    insertarCorte() {
+        const campo = document.getElementById('audio-texto');
+        const pos = campo.selectionStart ?? campo.value.length;
+        campo.value = campo.value.slice(0, pos).replace(/\s*$/, '') + '\n---\n' + campo.value.slice(pos).replace(/^\s*/, '');
+        campo.focus();
+        this.onTextoInput();
+    },
+
+    // ── Instrucción de estilo y ritmo, editables ────────────────────────────
+    instruccionActual() {
+        const campo = document.getElementById('audio-instruccion');
+        const valor = campo?.value.trim();
+        return valor || ESTILOS[document.getElementById('audio-tipo').value]?.instruccion || '';
+    },
+
+    wpmObjetivo() {
+        const valor = Number(document.getElementById('audio-wpm')?.value);
+        return valor >= 80 && valor <= 220
+            ? valor
+            : (ESTILOS[document.getElementById('audio-tipo').value]?.wpm || 150);
+    },
+
+    restaurarInstruccion() {
+        const cfg = ESTILOS[document.getElementById('audio-tipo').value];
+        if (!cfg) return;
+        document.getElementById('audio-instruccion').value = cfg.instruccion;
+        document.getElementById('audio-wpm').value = cfg.wpm;
+        this.onInstruccionInput();
+        this.onTextoInput();
+    },
+
+    // Aviso al vuelo del error que ya nos costó un clip: pedir una duración en
+    // segundos a la vez que un ritmo es una pinza que el modelo resuelve al azar.
+    onInstruccionInput() {
+        const cfg = ESTILOS[document.getElementById('audio-tipo').value];
+        const campo = document.getElementById('audio-instruccion');
+        const wrap = document.getElementById('audio-instruccion-wrap');
+        if (!cfg || !campo || !wrap) return;
+        const tocada = campo.value.trim() !== cfg.instruccion.trim();
+        const pinza = /\b\d+\s*(seconds?|secondes?|segundos?|minutes?|minutos?)\b/i.test(campo.value);
+        wrap.classList.toggle('border-amber-300', tocada && !pinza);
+        wrap.classList.toggle('border-red-300', pinza);
+        if (pinza) {
+            this.aviso('Esa instrucción le pide al generador una duración en segundos. Es la pinza que ya nos dio clips atropellados: el modelo tiene que elegir entre el ritmo y la duración, y lo resuelve distinto en cada toma. Quítala.', 'error');
         }
     },
 
@@ -524,7 +899,9 @@ const audioLogic = {
         const titulo = document.getElementById('audio-titulo').value.trim();
         if (!titulo) return this.aviso('Ponle un título al clip para reconocerlo después.', 'error');
 
-        const tipo = document.getElementById('audio-tipo').value;
+        // Del clip generado, no de los selects: entre generar y guardar pueden
+        // haber cambiado, y la ficha debe describir el audio que se sube.
+        const tipo = this.sesion?.tipo || document.getElementById('audio-tipo').value;
         const cfg = ESTILOS[tipo];
         const boton = document.getElementById('audio-btn-guardar');
         boton.disabled = true;
@@ -549,32 +926,45 @@ const audioLogic = {
             ]);
             const audioUrl = await ref.getDownloadURL();
 
+            const s = this.sesion || {};
             await audioClipsCollection.doc(id).set({
                 titulo,
                 examen: cfg.examen,
                 tipo,
                 etiqueta: cfg.etiqueta,
-                transcript: document.getElementById('audio-texto').value.trim(),
-                acento: document.getElementById('audio-acento').value || '',
-                voces: cfg.hablantes >= 2
-                    ? [document.getElementById('audio-voz1').value, document.getElementById('audio-voz2').value]
-                    : [document.getElementById('audio-voz1').value],
+                transcript: s.transcript || document.getElementById('audio-texto').value.trim(),
+                acento: s.acento || '',
+                voces: (s.voces || []).map(v => v.voice),
                 // El DELF se escucha 2 veces y el TOEFL 1: el límite viaja con el
                 // clip para que el reproductor del test no tenga que deducirlo.
                 maxPlays: cfg.examen === 'delf' ? 2 : 1,
-                proveedor: this.proveedor(),
+                proveedor: s.proveedor || this.proveedor(),
                 duracionSeg: this.ultimaDuracion,
                 bytes: this.ultimoAudio.size,
                 formato: extension,
                 audioUrl,
                 audioStatus: 'generado',
+                // Con qué se generó y cómo quedó partido. Sin esto, retocar una
+                // parte meses después obligaría a rehacer el clip entero: es el
+                // dato que hace reproducible una generación.
+                wpmObjetivo: s.wpm || cfg.wpm || null,
+                instruccion: s.instruccion || '',
+                instruccionEditada: !!(s.instruccion && cfg.instruccion && !s.instruccion.startsWith(cfg.instruccion)),
+                partes: (this.partes || []).map(p => ({
+                    texto: p.texto,
+                    duracionSeg: p.duracionSeg || 0,
+                    wpm: p.ritmo?.wpm || 0
+                })),
                 createdAt: firebase.firestore.FieldValue.serverTimestamp()
             });
 
             this.ultimoAudio = null;
+            this.partes = [];
+            this.sesion = null;
             document.getElementById('audio-btn-guardar').disabled = true;
             document.getElementById('audio-preview-wrap').classList.add('hidden');
             document.getElementById('audio-titulo').value = '';
+            this.pintarPartes();
             this.aviso('Clip guardado en el banco. Ya se puede usar en un test.', 'ok');
             await this.cargar();
         } catch (e) {
@@ -598,15 +988,64 @@ const audioLogic = {
             lista.innerHTML = `<p class="text-sm text-red-600">No se pudo leer el banco: ${e.message}</p>`;
             return;
         }
+        this.pintarLista();
+    },
+
+    // El ritmo de los clips YA guardados se recalcula aquí con el mismo dato de
+    // siempre (palabras ÷ minutos). Así se ve de un vistazo cuáles de los que
+    // están en el banco salieron atropellados — antes había que escucharlos uno
+    // por uno para enterarse.
+    pintarLista() {
+        const lista = document.getElementById('audio-lista');
+        const resumen = document.getElementById('audio-lista-resumen');
+        if (!lista) return;
         if (!this.clips.length) {
             lista.innerHTML = '<p class="text-sm text-gray-500">Todavía no hay clips. El primero que generes aparecerá aquí.</p>';
+            if (resumen) resumen.textContent = '';
             return;
         }
-        lista.innerHTML = this.clips.map(c => `
+
+        const fExamen = document.getElementById('audio-filtro-examen')?.value || '';
+        const fTipo = document.getElementById('audio-filtro-tipo')?.value || '';
+        const fProv = document.getElementById('audio-filtro-proveedor')?.value || '';
+        const busca = (document.getElementById('audio-filtro-texto')?.value || '').toLowerCase().trim();
+
+        const conRitmo = this.clips.map(c => ({
+            ...c,
+            ritmo: this.evaluarRitmo(c.transcript || '', c.duracionSeg || 0, { wpm: c.wpmObjetivo || ESTILOS[c.tipo]?.wpm })
+        }));
+        const visibles = conRitmo.filter(c =>
+            (!fExamen || c.examen === fExamen) &&
+            (!fTipo || c.tipo === fTipo) &&
+            (!fProv || (c.proveedor || 'gemini') === fProv) &&
+            (!busca || `${c.titulo || ''} ${c.transcript || ''}`.toLowerCase().includes(busca)));
+
+        if (resumen) {
+            const malos = conRitmo.filter(c => c.ritmo && c.ritmo.factor >= this.RITMO_ALERTA).length;
+            const total = conRitmo.reduce((n, c) => n + (c.duracionSeg || 0), 0);
+            resumen.innerHTML = `${visibles.length} de ${this.clips.length} clips · ${this.formatoDuracion(total)} de audio`
+                + (malos ? ` · <b class="text-red-600">${malos} atropellado(s)</b>` : '');
+        }
+        if (!visibles.length) {
+            lista.innerHTML = '<p class="text-sm text-gray-500">Ningún clip coincide con el filtro.</p>';
+            return;
+        }
+
+        lista.innerHTML = visibles.map(c => {
+            const r = c.ritmo;
+            const sello = !r ? ''
+                : r.factor >= this.RITMO_ALERTA ? `<span class="px-2 py-0.5 rounded-lg text-xs bg-red-100 text-red-700">${r.wpm} wpm · atropellado</span>`
+                : r.factor >= this.RITMO_SOSPECHA ? `<span class="px-2 py-0.5 rounded-lg text-xs bg-amber-100 text-amber-800">${r.wpm} wpm · algo rápido</span>`
+                : `<span class="px-2 py-0.5 rounded-lg text-xs bg-green-100 text-green-700">${r.wpm} wpm</span>`;
+            return `
             <div class="border border-gray-200 dark:border-gray-700 rounded-xl p-4">
                 <div class="flex items-start justify-between gap-3 flex-wrap">
                     <div>
-                        <p class="font-bold text-sm">${this.escapar(c.titulo || c.id)}</p>
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <p class="font-bold text-sm">${this.escapar(c.titulo || c.id)}</p>
+                            ${sello}
+                            ${c.instruccionEditada ? '<span class="px-2 py-0.5 rounded-lg text-xs bg-purple-100 text-purple-700">instrucción editada</span>' : ''}
+                        </div>
                         <p class="text-xs text-gray-500 mt-0.5">
                             ${this.escapar(c.etiqueta || '')} ·
                             ${this.formatoDuracion(c.duracionSeg || 0)} ·
@@ -614,10 +1053,11 @@ const audioLogic = {
                             ${c.proveedor === 'elevenlabs' ? 'ElevenLabs' : 'Gemini'} ·
                             ${(c.voces || []).join(' + ')}
                             ${c.acento ? ' · ' + (ACENTOS[c.acento]?.etiqueta || c.acento) : ''} ·
-                            se escucha ${c.maxPlays === 1 ? '1 vez' : c.maxPlays + ' veces'}
+                            ${(c.partes || []).length > 1 ? (c.partes.length + ' partes · ') : ''}se escucha ${c.maxPlays === 1 ? '1 vez' : c.maxPlays + ' veces'}
                         </p>
                     </div>
                     <div class="flex items-center gap-2">
+                        <button onclick="audioLogic.reabrir('${c.id}')" class="text-xs font-bold text-gray-600 hover:underline">Cargar en el estudio</button>
                         <button onclick="audioLogic.copiarId('${c.id}')" class="text-xs font-bold text-brand-600 hover:underline">Copiar id</button>
                         <button onclick="audioLogic.eliminar('${c.id}')" class="text-xs font-bold text-red-600 hover:underline">Eliminar</button>
                     </div>
@@ -627,8 +1067,32 @@ const audioLogic = {
                     <summary class="text-xs text-gray-500 cursor-pointer">Ver transcript</summary>
                     <pre class="mt-2 text-xs whitespace-pre-wrap text-gray-600 dark:text-gray-300">${this.escapar(c.transcript || '')}</pre>
                 </details>
-            </div>
-        `).join('');
+            </div>`;
+        }).join('');
+    },
+
+    // Rehacer un clip que salió mal no debería obligar a volver a pegar el
+    // transcript y reconfigurarlo todo de memoria.
+    reabrir(id) {
+        const c = this.clips.find(x => x.id === id);
+        if (!c) return;
+        document.getElementById('audio-proveedor').value = c.proveedor || 'gemini';
+        this.onProveedorChange().then(() => {
+            document.getElementById('audio-tipo').value = c.tipo;
+            this.onTipoChange();
+            document.getElementById('audio-titulo').value = c.titulo || '';
+            document.getElementById('audio-texto').value = c.transcript || '';
+            if (c.acento) document.getElementById('audio-acento').value = c.acento;
+            if (c.wpmObjetivo) document.getElementById('audio-wpm').value = c.wpmObjetivo;
+            if (c.instruccion) document.getElementById('audio-instruccion').value = c.instruccion;
+            (c.voces || []).forEach((v, i) => {
+                const sel = document.getElementById(i === 0 ? 'audio-voz1' : 'audio-voz2');
+                if (sel && [...sel.options].some(o => o.value === v)) sel.value = v;
+            });
+            this.onTextoInput();
+            this.aviso(`Cargado "${c.titulo}" en el estudio. Al generar y guardar se crea un clip NUEVO: el viejo sigue en el banco hasta que lo elimines.`, 'info');
+            document.getElementById('audio-texto').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        });
     },
 
     async eliminar(id) {
@@ -702,7 +1166,13 @@ const audioLogic = {
             acento.innerHTML = Object.entries(ACENTOS)
                 .map(([id, a]) => `<option value="${id}">${a.etiqueta}</option>`).join('');
         }
+        const filtroTipo = document.getElementById('audio-filtro-tipo');
+        if (filtroTipo && !filtroTipo.options.length) {
+            filtroTipo.innerHTML = '<option value="">Todos los tipos</option>' + Object.entries(ESTILOS)
+                .map(([id, cfg]) => `<option value="${id}">${cfg.etiqueta}</option>`).join('');
+        }
         this.onTipoChange();
+        this.onTextoInput();
         this.cargar();
     }
 };

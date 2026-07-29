@@ -356,22 +356,63 @@
                             <p class="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Así suena el audio real de ese examen</p>
                             <div id="audio-ficha" class="border border-gray-200 dark:border-gray-700 rounded-xl p-3 mb-3"></div>
                         </div>
+
+                        <!-- Lo que se le manda de verdad al generador. Estaba oculto en el
+                             código, y el clip atropellado del 2026-07-28 vino justamente de
+                             una cláusula de este texto que nadie podía ver. -->
+                        <div class="md:col-span-2">
+                            <details id="audio-instruccion-wrap" class="border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3">
+                                <summary class="text-xs font-bold text-gray-500 uppercase tracking-wide cursor-pointer">Instrucción de estilo que recibe el generador</summary>
+                                <textarea id="audio-instruccion" class="input-field font-mono text-xs mt-3" rows="4" oninput="audioLogic.onInstruccionInput()"></textarea>
+                                <div class="flex items-center justify-between gap-3 flex-wrap mt-2">
+                                    <p class="text-xs text-gray-500">Va como preámbulo del transcript. Está calibrada contra el examen real: <b>tócala solo para probar</b>, y nunca le pidas una duración en segundos — pedir ritmo y duración a la vez es lo que hace que el modelo corra.</p>
+                                    <button type="button" onclick="audioLogic.restaurarInstruccion()" class="text-xs font-bold text-brand-600 hover:underline shrink-0">Restaurar la del preset</button>
+                                </div>
+                            </details>
+                        </div>
+
                         <div class="md:col-span-2">
                             <div class="flex items-end justify-between gap-3 flex-wrap">
                                 <label class="input-label">Transcript</label>
-                                <button type="button" onclick="audioLogic.cargarReferencia()" class="text-xs font-bold text-brand-600 hover:underline">Cargar el transcript oficial de referencia</button>
+                                <div class="flex items-center gap-3">
+                                    <button type="button" onclick="audioLogic.insertarCorte()" class="text-xs font-bold text-gray-500 hover:underline">Forzar un corte aquí</button>
+                                    <button type="button" onclick="audioLogic.cargarReferencia()" class="text-xs font-bold text-brand-600 hover:underline">Cargar el transcript oficial de referencia</button>
+                                </div>
                             </div>
-                            <textarea id="audio-texto" class="input-field font-mono text-sm" rows="8" maxlength="6000" placeholder="El texto exacto que se va a narrar."></textarea>
+                            <textarea id="audio-texto" class="input-field font-mono text-sm" rows="8" maxlength="6000" placeholder="El texto exacto que se va a narrar." oninput="audioLogic.onTextoInput()"></textarea>
                             <p id="audio-ayuda-speakers" class="hidden text-xs text-gray-500 mt-1">
                                 En los diálogos, empieza cada línea con el nombre de quien habla y dos puntos —<code>Nadia: Bonjour…</code>— para que cada personaje reciba su propia voz.
                             </p>
+                            <!-- Medidor en vivo: lo que se sabe del clip ANTES de pagarlo. -->
+                            <div id="audio-medidor" class="mt-2 flex items-center gap-2 flex-wrap text-xs"></div>
                         </div>
-                        <div class="md:col-span-2 flex items-center justify-end gap-3">
-                            <button id="audio-btn-generar" onclick="audioLogic.generar()" class="px-6 py-3 bg-amber-600 text-white font-bold rounded-xl hover:bg-amber-700 transition">Generar audio</button>
-                            <button id="audio-btn-forzar" onclick="audioLogic.forzarGuardado()" class="hidden px-4 py-3 text-sm font-bold text-red-700 border border-red-300 rounded-xl hover:bg-red-50 transition">Lo escuché, guardar igual</button>
-                            <button id="audio-btn-guardar" onclick="audioLogic.guardar()" disabled class="px-6 py-3 bg-brand-600 text-white font-bold rounded-xl hover:bg-brand-700 transition disabled:opacity-40 disabled:cursor-not-allowed">Guardar en el banco</button>
+
+                        <div class="md:col-span-2 flex items-end justify-between gap-3 flex-wrap">
+                            <div class="w-32">
+                                <label class="input-label">Ritmo objetivo</label>
+                                <div class="flex items-center gap-2">
+                                    <input id="audio-wpm" type="number" min="80" max="220" step="5" class="input-field" oninput="audioLogic.onTextoInput()">
+                                    <span class="text-xs text-gray-500 shrink-0">wpm</span>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <button id="audio-btn-generar" onclick="audioLogic.generar()" class="px-6 py-3 bg-amber-600 text-white font-bold rounded-xl hover:bg-amber-700 transition">Generar audio</button>
+                                <button id="audio-btn-forzar" onclick="audioLogic.forzarGuardado()" class="hidden px-4 py-3 text-sm font-bold text-red-700 border border-red-300 rounded-xl hover:bg-red-50 transition">Lo escuché, guardar igual</button>
+                                <button id="audio-btn-guardar" onclick="audioLogic.guardar()" disabled class="px-6 py-3 bg-brand-600 text-white font-bold rounded-xl hover:bg-brand-700 transition disabled:opacity-40 disabled:cursor-not-allowed">Guardar en el banco</button>
+                            </div>
                         </div>
                     </div>
+
+                    <!-- Tablero de trozos: un documento largo se genera por partes y cada
+                         una se mide sola, para poder rehacer solo la que salió mal. -->
+                    <div id="audio-partes-wrap" class="hidden mt-5">
+                        <div class="flex items-center justify-between gap-3 flex-wrap mb-2">
+                            <p class="text-xs font-bold text-gray-500 uppercase tracking-wide">Partes del clip</p>
+                            <p id="audio-partes-resumen" class="text-xs text-gray-500"></p>
+                        </div>
+                        <div id="audio-partes" class="space-y-2"></div>
+                    </div>
+
                     <div id="audio-preview-wrap" class="hidden mt-4">
                         <p class="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Antes de guardar, escúchalo</p>
                         <audio id="audio-preview" controls class="w-full"></audio>
@@ -381,9 +422,26 @@
                 </div>
 
                 <div class="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-gray-100">
-                    <h3 class="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2">
-                        <i class="ph-bold ph-playlist text-brand-600"></i> Banco de clips
-                    </h3>
+                    <div class="flex items-center justify-between gap-3 flex-wrap mb-4">
+                        <h3 class="text-lg font-bold text-gray-900 flex items-center gap-2">
+                            <i class="ph-bold ph-playlist text-brand-600"></i> Banco de clips
+                        </h3>
+                        <p id="audio-lista-resumen" class="text-xs text-gray-500"></p>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
+                        <select id="audio-filtro-examen" class="input-field text-sm" onchange="audioLogic.pintarLista()">
+                            <option value="">Todos los exámenes</option>
+                            <option value="delf">DELF</option>
+                            <option value="toefl">TOEFL</option>
+                        </select>
+                        <select id="audio-filtro-tipo" class="input-field text-sm" onchange="audioLogic.pintarLista()"></select>
+                        <select id="audio-filtro-proveedor" class="input-field text-sm" onchange="audioLogic.pintarLista()">
+                            <option value="">Cualquier generador</option>
+                            <option value="gemini">Gemini</option>
+                            <option value="elevenlabs">ElevenLabs</option>
+                        </select>
+                        <input id="audio-filtro-texto" class="input-field text-sm" placeholder="Buscar en título o transcript" oninput="audioLogic.pintarLista()">
+                    </div>
                     <div id="audio-lista" class="space-y-4"></div>
                 </div>
             </div>
@@ -530,7 +588,7 @@
     <script src="admin-rutas-ia.js?v=2"></script>
     <script src="admin-contactos.js?v=1"></script>
     <script src="admin-colegios.js?v=1"></script>
-    <script src="admin-audio.js?v=8"></script>
+    <script src="admin-audio.js?v=9"></script>
     <script src="icfes-data.js?v=3"></script>
     <script src="admin-icfes.js?v=8"></script>
     <script>
