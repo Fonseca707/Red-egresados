@@ -405,7 +405,7 @@ Responde SOLO con este JSON, sin markdown ni explicaciones:
                         <p class="text-[11px] text-gray-400 mb-1">${this.escapar(a ? a.corto : '')} · dificultad ${p.dificultad || 2}</p>
                         <div class="flex items-center gap-2 mb-2">
                             <span class="text-[11px] text-gray-400 shrink-0">Evalúa:</span>
-                            <select onchange="icfesAdmin.reetiquetar('${p.id}', this.value)" class="text-[11px] border border-gray-200 rounded-lg px-2 py-1 bg-white dark:bg-gray-800 max-w-full">
+                            <select onchange="icfesAdmin.reetiquetar('${p.id}', this.value)" class="text-[11px] border border-gray-200 rounded-lg px-2 py-1 bg-white max-w-full">
                                 ${Object.entries(a ? a.evidencias : {}).map(([cod, txt]) =>
                                     `<option value="${cod}" ${cod === p.evidencia ? 'selected' : ''}>${cod} — ${this.escapar(String(txt).slice(0, 70))}…</option>`).join('')}
                             </select>

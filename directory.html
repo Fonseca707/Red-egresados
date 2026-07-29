@@ -90,7 +90,7 @@
         <div class="bg-white rounded-3xl w-full max-w-2xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden animate-fade-in relative">
             <button onclick="uiLogic.closeNewsModal()" class="absolute top-4 right-4 bg-white/50 hover:bg-white p-2 rounded-full backdrop-blur-md transition z-10" aria-label="Cerrar noticia"><i class="ph-bold ph-x text-xl"></i></button>
             <div class="h-64 relative shrink-0">
-                <img id="news-modal-img" src="" class="w-full h-full object-cover">
+                <img id="news-modal-img" src="" alt="" class="w-full h-full object-cover">
                 <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
                 <div class="absolute bottom-6 left-6 right-6 text-white">
                     <span id="news-modal-cat" class="px-3 py-1 bg-brand-600 rounded-lg text-xs font-bold uppercase tracking-wide mb-2 inline-block">Categoría</span>
@@ -116,7 +116,7 @@
         <div id="slide-panel-content" class="absolute right-0 top-0 h-full w-full max-w-md bg-white shadow-2xl overflow-y-auto animate-slide-in-right flex flex-col">
             <div class="relative h-40 bg-gradient-to-r from-brand-600 to-brand-900 shrink-0">
                 <button onclick="directoryLogic.closeProfile()" class="absolute top-4 left-4 text-white hover:bg-white/20 p-2 rounded-full transition z-10" aria-label="Cerrar perfil"><i class="ph-bold ph-arrow-right text-xl"></i></button>
-                <img id="sp-img" src="" class="absolute left-6 -bottom-14 w-28 h-28 rounded-2xl border-[4px] border-white shadow-lg bg-white object-cover z-10">
+                <img id="sp-img" src="" alt="" class="absolute left-6 -bottom-14 w-28 h-28 rounded-2xl border-[4px] border-white shadow-lg bg-white object-cover z-10">
             </div>
             <div class="px-6 pt-16 pb-10 flex-1">
                 <div class="flex justify-between items-end mb-4">
@@ -217,7 +217,7 @@
                 }
 
                 grid.innerHTML = shown.map(alum => `
-                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition group cursor-pointer h-full flex flex-col" onclick="directoryLogic.openProfile('${sanitizeHTML(alum.id)}')">
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition group cursor-pointer h-full flex flex-col" role="button" tabindex="0" aria-label="Ver perfil de ${sanitizeHTML(alum.name)}" onclick="directoryLogic.openProfile('${sanitizeHTML(alum.id)}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();directoryLogic.openProfile('${sanitizeHTML(alum.id)}')}">
                         <div class="flex items-start justify-between">
                             <div class="flex gap-4">
                                 <img src="${sanitizeHTML(alum.img)}" alt="Foto de ${sanitizeHTML(alum.name)}" class="w-14 h-14 rounded-xl object-cover shadow-sm group-hover:scale-105 transition shrink-0">
@@ -251,6 +251,7 @@
                 state.selectedDirectoryUserId = String(id);
                 if (!user) return;
                 document.getElementById('sp-img').src = user.img;
+                document.getElementById('sp-img').alt = `Foto de ${user.name}`;
                 document.getElementById('sp-name').innerText = user.name;
                 document.getElementById('sp-role').innerText = user.role;
                 document.getElementById('sp-location').innerText = user.location;

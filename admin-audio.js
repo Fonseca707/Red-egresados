@@ -404,7 +404,7 @@ const audioLogic = {
                 ${fila('Ritmo', f.ritmo)}
                 ${fila('Fondo', f.fondo)}
             </dl>
-            ${f.ojo ? `<p class="text-xs text-amber-700 dark:text-amber-400">⚠️ ${this.escapar(f.ojo)}</p>` : ''}`;
+            ${f.ojo ? `<p class="text-xs text-amber-700 flex items-start gap-1"><i class="ph-bold ph-warning-circle mt-0.5 shrink-0"></i> ${this.escapar(f.ojo)}</p>` : ''}`;
     },
 
     // Carga el transcript OFICIAL de ese tipo de documento. Sirve para lo único
@@ -791,7 +791,7 @@ const audioLogic = {
         };
         caja.innerHTML = partes.map(p => {
             const r = p.ritmo;
-            const color = !r ? 'border-gray-200 dark:border-gray-700'
+            const color = !r ? 'border-gray-200'
                 : r.factor >= this.RITMO_ALERTA ? 'border-red-300 bg-red-50'
                 : r.factor >= this.RITMO_SOSPECHA ? 'border-amber-300 bg-amber-50'
                 : 'border-green-300 bg-green-50';
@@ -803,7 +803,7 @@ const audioLogic = {
                 <div class="flex items-start justify-between gap-3 flex-wrap">
                     <div class="min-w-0">
                         <p class="text-xs font-bold text-gray-500">Parte ${p.i + 1} de ${partes.length}</p>
-                        <p class="text-xs text-gray-600 dark:text-gray-300 mt-0.5">${dato}</p>
+                        <p class="text-xs text-gray-600 mt-0.5">${dato}</p>
                         ${p.error ? `<p class="text-xs text-red-600 mt-0.5">${this.escapar(p.error)}</p>` : ''}
                     </div>
                     <div class="flex items-center gap-3 shrink-0">
@@ -813,7 +813,7 @@ const audioLogic = {
                 </div>
                 <details class="mt-2">
                     <summary class="text-xs text-gray-500 cursor-pointer">Ver su texto</summary>
-                    <pre class="mt-1 text-xs whitespace-pre-wrap text-gray-600 dark:text-gray-300">${this.escapar(p.texto)}</pre>
+                    <pre class="mt-1 text-xs whitespace-pre-wrap text-gray-600">${this.escapar(p.texto)}</pre>
                 </details>
             </div>`;
         }).join('');
@@ -1038,7 +1038,7 @@ const audioLogic = {
                 : r.factor >= this.RITMO_SOSPECHA ? `<span class="px-2 py-0.5 rounded-lg text-xs bg-amber-100 text-amber-800">${r.wpm} wpm · algo rápido</span>`
                 : `<span class="px-2 py-0.5 rounded-lg text-xs bg-green-100 text-green-700">${r.wpm} wpm</span>`;
             return `
-            <div class="border border-gray-200 dark:border-gray-700 rounded-xl p-4">
+            <div class="border border-gray-200 rounded-xl p-4">
                 <div class="flex items-start justify-between gap-3 flex-wrap">
                     <div>
                         <div class="flex items-center gap-2 flex-wrap">
@@ -1065,7 +1065,7 @@ const audioLogic = {
                 <audio controls preload="none" src="${c.audioUrl}" class="w-full mt-3 h-9"></audio>
                 <details class="mt-2">
                     <summary class="text-xs text-gray-500 cursor-pointer">Ver transcript</summary>
-                    <pre class="mt-2 text-xs whitespace-pre-wrap text-gray-600 dark:text-gray-300">${this.escapar(c.transcript || '')}</pre>
+                    <pre class="mt-2 text-xs whitespace-pre-wrap text-gray-600">${this.escapar(c.transcript || '')}</pre>
                 </details>
             </div>`;
         }).join('');
