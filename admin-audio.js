@@ -704,6 +704,188 @@ const audioLogic = {
         await this.correrPendientes();
     },
 
+    // ── Banco de pruebas del ritmo ──────────────────────────────────────────
+    // Por qué existe (2026-07-28): los documentos del DELF salen rápidos
+    // SIEMPRE, y "siempre" no es varianza, es sesgo. El sospechoso es el propio
+    // preámbulo: le pide al modelo «environ 150 mots par minute», un número que
+    // no tiene forma de contar. Gemini no expone ningún parámetro de velocidad
+    // (lo verificamos en su doc: `speech_config` solo lleva voz y hablante), así
+    // que el ritmo se pide con palabras — y no sabemos QUÉ palabras funcionan.
+    //
+    // Adivinar ya nos costó una vez (los dos detectores acústicos del §14 de la
+    // nota). Así que en vez de apostar por una redacción, se generan las cuatro
+    // con el MISMO texto corto y se miden. El ganador lo dice el número.
+    VARIANTES: [
+        {
+            id: 'actual',
+            nombre: 'Como está hoy',
+            nota: 'El preámbulo tal cual, con el número de palabras por minuto.',
+            instruccion: base => base,
+            texto: t => t
+        },
+        {
+            id: 'sin-numero',
+            nombre: 'Sin el número, ritmo descrito',
+            nota: 'Fuera «150 mots par minute»; en su lugar, cómo debe sonar. Un modelo no cuenta palabras, pero sí imita un registro.',
+            instruccion: base => base.replace(/[^.:;]*\b\d+\s*(mots|words|palabras)[^.:;]*[.:;]?/gi, '').replace(/\s{2,}/g, ' ').trim()
+                + ' Speak slowly and deliberately, like a language-exam recording made for learners: clear pauses between sentences, every word fully articulated, never hurried.',
+            texto: t => t
+        },
+        {
+            id: 'etiqueta',
+            nombre: 'Con etiqueta de velocidad',
+            nota: 'La doc de Gemini admite marcas de estilo tipo [slow] dentro del prompt. Ojo: hay que comprobar que no las lea en voz alta.',
+            instruccion: base => base + ' [slow] [measured pace]',
+            texto: t => t
+        },
+        {
+            id: 'espaciado',
+            nombre: 'Texto espaciado',
+            nota: 'No toca la instrucción: separa los turnos y marca las frases largas. La puntuación sí frena a un TTS de forma determinista.',
+            instruccion: base => base,
+            texto: t => t.split('\n').filter(l => l.trim()).join('\n\n').replace(/([,;])\s+/g, '$1 … ')
+        }
+    ],
+
+    async probarRitmo() {
+        const texto = document.getElementById('audio-texto').value.trim();
+        if (!texto) return this.aviso('Pega primero el transcript: la prueba usa su primer trozo.', 'error');
+        const cfg = ESTILOS[document.getElementById('audio-tipo').value];
+
+        // Se prueba con UN trozo, no con el documento entero: la pregunta es qué
+        // redacción frena al modelo, y eso se ve igual en 80 palabras que en 300.
+        const muestra = this.trocear(texto)[0];
+        let voces;
+        if (cfg.hablantes >= 2) {
+            const marcas = [...new Set([...muestra.matchAll(/^\s*([A-Za-zÀ-ÿ0-9 _-]{1,20}):/gm)].map(m => m[1].trim()))];
+            voces = marcas.slice(0, 2).map((speaker, i) => ({ speaker, voice: document.getElementById(i === 0 ? 'audio-voz1' : 'audio-voz2').value }));
+            if (voces.length < 2) voces = [{ voice: document.getElementById('audio-voz1').value }];
+        } else {
+            voces = [{ voice: document.getElementById('audio-voz1').value }];
+        }
+
+        const acento = document.getElementById('audio-acento').value;
+        const base = [this.instruccionActual(), ACENTOS[acento]?.frase].filter(Boolean).join(' ');
+        const objetivo = this.wpmObjetivo();
+        const proveedor = this.proveedor();
+
+        this.pruebas = this.VARIANTES.map(v => ({
+            ...v,
+            estado: 'pendiente',
+            textoFinal: v.texto(muestra),
+            instruccionFinal: v.instruccion(base)
+        }));
+        this.pintarPruebas(objetivo);
+
+        const boton = document.getElementById('audio-btn-probar');
+        boton.disabled = true;
+        boton.textContent = 'Probando…';
+        this.aviso(`Generando ${this.pruebas.length} tomas del mismo trozo (${this.palabrasNarradas(muestra)} palabras) para medir cuál sale más lenta.`, 'info');
+        try {
+            const cola = [...this.pruebas];
+            await Promise.all(Array.from({ length: CONCURRENCIA }, async () => {
+                for (;;) {
+                    const p = cola.shift();
+                    if (!p) return;
+                    p.estado = 'generando';
+                    this.pintarPruebas(objetivo);
+                    try {
+                        const token = await auth.currentUser.getIdToken();
+                        const respuesta = await fetch(PROXY_TTS, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                            body: JSON.stringify({ proveedor, texto: p.textoFinal, voces, instruccion: p.instruccionFinal })
+                        });
+                        if (!respuesta.ok) {
+                            const d = await respuesta.json().catch(() => ({}));
+                            throw new Error(d.error || `respondió ${respuesta.status}`);
+                        }
+                        p.blob = await respuesta.blob();
+                        p.url = URL.createObjectURL(p.blob);
+                        p.duracionSeg = Number(respuesta.headers.get('X-Duracion-Aprox-Seg') || 0) || await this.medirDuracion(p.blob);
+                        // Se cuentan las palabras del texto ORIGINAL: la variante
+                        // espaciada añade «…», que no son palabras habladas.
+                        p.wpm = Math.round(this.palabrasNarradas(muestra) / (p.duracionSeg / 60));
+                        p.estado = 'listo';
+                    } catch (e) {
+                        p.estado = 'error';
+                        p.error = e.message;
+                    }
+                    this.pintarPruebas(objetivo);
+                }
+            }));
+
+            const listas = this.pruebas.filter(p => p.estado === 'listo');
+            const mejor = listas.sort((a, b) => a.wpm - b.wpm)[0];
+            this.aviso(mejor
+                ? `La más lenta fue «${mejor.nombre}»: ${mejor.wpm} wpm frente al objetivo de ${objetivo}. `
+                  + 'Escúchalas todas antes de adoptarla —lenta no es lo mismo que buena— y repite la prueba una segunda vez: '
+                  + 'el generador varía ~10% con el mismo texto, así que una diferencia menor que eso no significa nada.'
+                : 'Ninguna toma salió.', mejor ? 'ok' : 'error');
+        } finally {
+            boton.disabled = false;
+            boton.textContent = 'Probar el ritmo (4 formas)';
+        }
+    },
+
+    pintarPruebas(objetivo) {
+        const wrap = document.getElementById('audio-pruebas-wrap');
+        const caja = document.getElementById('audio-pruebas');
+        if (!wrap || !caja || !this.pruebas?.length) return;
+        wrap.classList.remove('hidden');
+        const listas = this.pruebas.filter(p => p.estado === 'listo');
+        document.getElementById('audio-pruebas-resumen').textContent =
+            `${listas.length} de ${this.pruebas.length} · objetivo ${objetivo} wpm`;
+
+        const menor = listas.length ? Math.min(...listas.map(p => p.wpm)) : null;
+        caja.innerHTML = this.pruebas.map((p, i) => {
+            const color = p.estado !== 'listo' ? 'border-gray-200'
+                : p.wpm <= objetivo * this.RITMO_SOSPECHA ? 'border-green-300 bg-green-50'
+                : p.wpm <= objetivo * this.RITMO_ALERTA ? 'border-amber-300 bg-amber-50'
+                : 'border-red-300 bg-red-50';
+            const dato = p.estado === 'listo'
+                ? `<b>${p.wpm} wpm</b> · ${this.formatoDuracion(p.duracionSeg)}${p.wpm === menor ? ' · <b>la más lenta</b>' : ''}`
+                : p.estado === 'generando' ? '<span class="text-amber-600">generando…</span>'
+                : p.estado === 'error' ? `<span class="text-red-600">${this.escapar(p.error || 'falló')}</span>`
+                : '<span class="text-gray-400">en cola</span>';
+            return `
+            <div class="border ${color} rounded-xl px-4 py-3">
+                <div class="flex items-start justify-between gap-3 flex-wrap">
+                    <div class="min-w-0">
+                        <p class="text-sm font-bold">${this.escapar(p.nombre)}</p>
+                        <p class="text-xs text-gray-600 mt-0.5">${dato}</p>
+                        <p class="text-xs text-gray-500 mt-0.5">${this.escapar(p.nota)}</p>
+                    </div>
+                    <div class="flex items-center gap-3 shrink-0">
+                        ${p.url ? `<audio controls src="${p.url}" class="h-8"></audio>` : ''}
+                        ${p.estado === 'listo' ? `<button onclick="audioLogic.adoptarVariante(${i})" class="text-xs font-bold text-green-700 hover:underline">Adoptar</button>` : ''}
+                    </div>
+                </div>
+                <details class="mt-2">
+                    <summary class="text-xs text-gray-500 cursor-pointer">Ver qué se le mandó</summary>
+                    <pre class="mt-1 text-xs whitespace-pre-wrap text-gray-600">${this.escapar(p.instruccionFinal)}</pre>
+                </details>
+            </div>`;
+        }).join('');
+    },
+
+    // Adoptar = dejar la instrucción ganadora en el campo editable (y, si la que
+    // ganó fue la del texto espaciado, espaciar el transcript de verdad). Así lo
+    // que se adopta queda VISIBLE y se guarda con el clip, no escondido en una
+    // bandera interna.
+    adoptarVariante(i) {
+        const p = this.pruebas?.[i];
+        if (!p) return;
+        document.getElementById('audio-instruccion').value = p.instruccionFinal;
+        if (p.id === 'espaciado') {
+            const campo = document.getElementById('audio-texto');
+            campo.value = p.texto(campo.value.trim());
+        }
+        this.onInstruccionInput();
+        this.onTextoInput();
+        this.aviso(`Adoptada «${p.nombre}». Queda escrita en la instrucción de estilo, así que se guarda con el clip y se ve qué se usó. Genera el documento completo y comprueba que el ritmo aguanta.`, 'ok');
+    },
+
     // ── 2. Ensamblar: pegar las partes en un solo clip ──────────────────────
     // Se pega en PCM decodificado, no concatenando archivos: pegar MP3 por
     // bytes deja huecos audibles en las junturas. Y se iguala el volumen de
