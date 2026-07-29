@@ -39,7 +39,7 @@ const icfesLogic = {
     // Un ítem sin revisar NUNCA se le sirve a un estudiante. Es la regla dura del
     // módulo: la IA genera, el humano aprueba, solo lo aprobado se practica.
     disponibles(prueba) {
-        const miColegio = state.userProfile?.school || state.userProfile?.colegio || '';
+        const miColegio = state.profile?.school || '';
         return this.banco.items.filter(i =>
             i.prueba === prueba &&
             i.revisado === true &&

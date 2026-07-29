@@ -53,6 +53,11 @@ const userChatsCollection = (uid) => artifactsRoot.collection('users').doc(uid).
 const userChatMessagesCollection = (uid, chatId) => userChatsCollection(uid).doc(chatId).collection('messages');
 
 const DEFAULT_SCHOOL = 'LCP';
+// Mínimo eliminatorio oficial del DELF B1 (nouveau format 2020): 5/25 por épreuve
+// (ver docs/delf-b1-formato). Única fuente de verdad: delf-practice.js:270,281,439,449
+// debería importar esta constante en vez de tener el 5 repetido a mano (no lo edito,
+// es de otro agente — reportado como pendiente).
+const DELF_MINIMO_ELIMINATORIO = 5;
 // Proxy de IA (Cloudflare Worker): el navegador nunca ve la clave de DeepSeek.
 // Código del Worker en proxy-ia/; la clave vive como secreto en Cloudflare.
 const SINAPSIS_IA_PROXY = 'https://sinapsis-ia.sinapsis-lcp.workers.dev';
@@ -433,9 +438,9 @@ function _examRowHTML(r) {
     const fecha = _examFecha(r);
     // Etiqueta de nivel: CEFR para TOEFL; para DELF, aviso del mínimo eliminatorio.
     const nivel = isDelf
-        ? ((Number(r.score) || 0) >= 4.5
-            ? `<span class="text-[10px] font-bold text-emerald-600">supera 4,5</span>`
-            : `<span class="text-[10px] font-bold text-red-500">bajo 4,5</span>`)
+        ? ((Number(r.score) || 0) >= DELF_MINIMO_ELIMINATORIO
+            ? `<span class="text-[10px] font-bold text-emerald-600">supera ${DELF_MINIMO_ELIMINATORIO}</span>`
+            : `<span class="text-[10px] font-bold text-red-500">bajo ${DELF_MINIMO_ELIMINATORIO}</span>`)
         : `<span class="text-[10px] font-bold text-blue-600">${bandToCEFR(r.score)}</span>`;
     return `
         <div class="flex items-center justify-between gap-3 rounded-xl border border-gray-100 bg-gray-50/70 px-3 py-2.5">
@@ -574,7 +579,11 @@ const rutaImagen = {
     },
 
     descargar(user, hitos = []) {
-        const EMOJI = { colegio: '🎓', educacion: '📚', practica: '🧪', empleo: '💼', emprendimiento: '🚀', logro: '🏆' };
+        // Sin emojis: esta imagen se descarga y circula fuera de la plataforma
+        // con la marca de Sinapsis, y el tipo de hito ya va escrito en texto al
+        // lado del marcador (COLEGIO, EMPLEO...), asi que el emoji era adorno
+        // redundante. El marcador es geometrico: nucleo solido en el hito
+        // actual, anillo hueco en los anteriores.
         const W = 1080, HEADER = 250, FOOTER = 110, ROW = 130;
         const rows = Math.max(hitos.length, 1);
         const H = HEADER + rows * ROW + 60 + FOOTER;
@@ -611,10 +620,8 @@ const rutaImagen = {
             ctx.fillStyle = h.actual ? '#16a34a' : '#f0fdf4';
             ctx.beginPath(); ctx.arc(lineX, y, 34, 0, Math.PI * 2); ctx.fill();
             ctx.strokeStyle = h.actual ? '#15803d' : '#bbf7d0'; ctx.lineWidth = 3; ctx.stroke();
-            ctx.font = '34px "Segoe UI Emoji", sans-serif';
-            ctx.textAlign = 'center';
-            ctx.fillText(EMOJI[h.tipo] || '📍', lineX, y + 12);
-            ctx.textAlign = 'left';
+            ctx.fillStyle = h.actual ? '#ffffff' : '#16a34a';
+            ctx.beginPath(); ctx.arc(lineX, y, 11, 0, Math.PI * 2); ctx.fill();
 
             const info = hitoTypeInfo(h.tipo);
             const years = formatHitoYears(h);
@@ -636,7 +643,7 @@ const rutaImagen = {
         ctx.fillStyle = '#f0fdf4'; ctx.fillRect(0, H - FOOTER, W, FOOTER);
         ctx.fillStyle = '#15803d';
         ctx.font = 'bold 26px "Plus Jakarta Sans", "Segoe UI", sans-serif';
-        ctx.fillText('Mi ruta también empezó en el Liceo 🌱', 70, H - FOOTER + 46);
+        ctx.fillText('Mi ruta también empezó en el Liceo', 70, H - FOOTER + 46);
         ctx.fillStyle = '#4b5563';
         ctx.font = '500 22px "Plus Jakarta Sans", "Segoe UI", sans-serif';
         ctx.fillText('Únete a la red: sinapsisred.web.app', 70, H - FOOTER + 82);
