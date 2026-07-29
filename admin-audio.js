@@ -231,6 +231,29 @@ const CORTE_MANUAL = /^\s*-{3,}\s*$/;  // una línea "---" fuerza un corte ahí
 const PAUSA_ENTRE_PARTES_MS = 350; // lo que dura una respiración entre turnos
 const CONCURRENCIA = 2;            // generaciones a la vez (el proxy limita 40/h)
 
+// ── Rescate de una parte que salió rápida (idea de Juan, 2026-07-28) ────────
+// Alargar el audio para bajarlo al ritmo objetivo. Funciona, pero con un límite
+// que no es negociable: cuando el modelo corre no solo va rápido, también come
+// consonantes y se traga las pausas. Estirar devuelve la DURACIÓN, no la
+// ARTICULACIÓN — y en un examen de comprensión la consonante nítida es lo que
+// se evalúa. Por eso esto es un rescate, no un arreglo, y va en dos escalones:
+//
+//   1. Estirar SOLO los silencios. Lo primero que el generador sacrifica al
+//      correr son las pausas entre frases; devolvérselas no toca ni una sílaba
+//      (cero artefactos) y acerca el clip al examen real, que tiene
+//      respiraciones marcadas. Muchas veces con esto basta.
+//   2. Si aún falta, estirar el habla con WSOLA (solapar y sumar buscando el
+//      mejor punto de empalme por correlación). Hasta ~12% es transparente en
+//      voz; más allá aparece el timbre metálico y el eco.
+//
+// Por encima del tope, el clip no está rápido: está roto. Ahí se regenera la
+// parte, que con el troceo cuesta 20 segundos.
+const ESTIRADO_MAX = 1.12;          // tope de estirado del habla
+const SILENCIO_UMBRAL = 0.02;       // amplitud por debajo de la cual es pausa
+const SILENCIO_MIN_MS = 60;         // pausas más cortas son parte del habla
+const WSOLA_VENTANA_MS = 40;
+const WSOLA_BUSQUEDA_MS = 10;
+
 const audioLogic = {
     ultimoAudio: null,    // Blob ya comprimido, aún sin guardar
     ultimaDuracion: 0,
@@ -323,11 +346,28 @@ const audioLogic = {
         return { wpm: Math.round(wpm), objetivo, factor: wpm / objetivo, palabras };
     },
 
-    pintarRitmo(r) {
+    pintarRitmo(r, ajuste) {
         const caja = document.getElementById('audio-ritmo');
         const forzar = document.getElementById('audio-btn-forzar');
         forzar.classList.add('hidden');
         if (!r) { caja.classList.add('hidden'); return; }
+
+        // Con partes ajustadas, el que manda es el ritmo de origen: es el que
+        // dice cómo habló el generador. El otro solo describe el archivo.
+        if (ajuste?.corregidas && ajuste.origen) {
+            const o = ajuste.origen;
+            const base = 'mt-3 text-sm rounded-xl border px-4 py-3 ';
+            const malo = o.factor >= this.RITMO_ALERTA;
+            caja.className = base + (malo ? 'bg-amber-50 text-amber-800 border-amber-200' : 'bg-green-50 text-green-800 border-green-200');
+            caja.innerHTML = `<b>${ajuste.corregidas} parte(s) van ajustadas.</b> El archivo queda en <b>${r.wpm} wpm</b>, `
+                + `pero el generador habló a <b>${o.wpm} wpm</b> (objetivo ${o.objetivo}).<br>`
+                + (malo
+                    ? 'Alargar el audio le devuelve la duración, no la articulación: las consonantes que se comió siguen comidas. Guárdalo solo si al escucharlo se entiende todo; si no, rehaz esa parte.'
+                    : 'La corrección es cosmética y el origen ya era bueno: sin problema.');
+            caja.classList.remove('hidden');
+            document.getElementById('audio-btn-guardar').disabled = false;
+            return;
+        }
 
         const base = 'mt-3 text-sm rounded-xl border px-4 py-3 ';
         const dato = `<b>${r.wpm} palabras/min</b> (el objetivo de este tipo son ${r.objetivo}). ${r.palabras} palabras habladas.`;
@@ -680,16 +720,18 @@ const audioLogic = {
         boton.textContent = 'Montando…';
         const s = this.sesion;
         let aviso;
+        // De cada parte, la toma que Juan haya aceptado.
+        const tomaDe = p => (p.usarCorregido && p.corregido ? p.corregido.blob : p.blob);
 
-        // Una sola parte con ElevenLabs: ya viene en MP3, recomprimir solo
-        // degradaría. Se deja tal cual, como antes del troceo.
-        if (listas.length === 1 && !PROVEEDORES[s.proveedor].comprimirEnCliente) {
+        // Una sola parte con ElevenLabs sin corregir: ya viene en MP3, recomprimir
+        // solo degradaría. Se deja tal cual, como antes del troceo.
+        if (listas.length === 1 && !PROVEEDORES[s.proveedor].comprimirEnCliente && !listas[0].usarCorregido) {
             this.ultimoAudio = listas[0].blob;
             this.ultimaDuracion = listas[0].duracionSeg;
             aviso = `Audio listo: ${this.formatoPeso(this.ultimoAudio.size)}.`;
         } else {
             try {
-                const { blob, duracion, crudo } = await this.pegar(listas.map(p => p.blob));
+                const { blob, duracion, crudo } = await this.pegar(listas.map(tomaDe));
                 this.ultimoAudio = blob;
                 this.ultimaDuracion = duracion;
                 const ahorro = crudo ? Math.round((1 - blob.size / crudo) * 100) : 0;
@@ -711,7 +753,19 @@ const audioLogic = {
 
         // El ritmo global se mide igual que antes (palabras ÷ minutos) y puede
         // bloquear el guardado, así que va después de habilitarlo.
-        this.pintarRitmo(this.evaluarRitmo(s.transcript, this.ultimaDuracion, { wpm: s.wpm }));
+        //
+        // ⚠️ Y aquí está la trampa del ajuste de ritmo: si una parte se alarga,
+        // este número baja solo y el semáforo se pone verde sin que el generador
+        // haya hecho nada mejor. Se calcula también el ritmo DE ORIGEN (con las
+        // duraciones tal como salieron) y es ese el que juzga la toma; el otro
+        // solo describe el archivo que se va a subir.
+        const segOrigen = listas.reduce((n, p) => n + (p.duracionSeg || 0), 0);
+        this.pintarRitmo(
+            this.evaluarRitmo(s.transcript, this.ultimaDuracion, { wpm: s.wpm }),
+            {
+                corregidas: listas.filter(p => p.usarCorregido).length,
+                origen: this.evaluarRitmo(s.transcript, segOrigen, { wpm: s.wpm })
+            });
     },
 
     async pegar(blobs) {
@@ -753,21 +807,178 @@ const audioLogic = {
             if (k < canales.length - 1) cursor += silencio; // el silencio ya es 0
         });
 
+        return {
+            blob: this.codificarMp3(pcm, tasa),
+            duracion: Math.round(total / tasa),
+            crudo: bytesCrudos
+        };
+    },
+
+    codificarMp3(pcm, tasa) {
         const encoder = new lamejs.Mp3Encoder(1, tasa, MP3_KBPS);
         const trozos = [];
-        const BLOQUE = 1152;
+        const BLOQUE = 1152; // tamaño de frame que espera el encoder
         for (let i = 0; i < pcm.length; i += BLOQUE) {
             const datos = encoder.encodeBuffer(pcm.subarray(i, i + BLOQUE));
             if (datos.length) trozos.push(datos);
         }
         const cola = encoder.flush();
         if (cola.length) trozos.push(cola);
+        return new Blob(trozos, { type: 'audio/mpeg' });
+    },
 
-        return {
-            blob: new Blob(trozos, { type: 'audio/mpeg' }),
-            duracion: Math.round(total / tasa),
-            crudo: bytesCrudos
-        };
+    async decodificar(blob) {
+        const Contexto = window.AudioContext || window.webkitAudioContext;
+        let ctx;
+        try { ctx = new Contexto({ sampleRate: 24000 }); } catch { ctx = new Contexto(); }
+        const buffer = await ctx.decodeAudioData(await blob.arrayBuffer());
+        const canal = buffer.getChannelData(0).slice();
+        const tasa = ctx.sampleRate;
+        ctx.close();
+        return { canal, tasa };
+    },
+
+    // ── Rescate: bajar el ritmo de una parte que salió rápida ───────────────
+    // Escalón 1 — alargar solo las pausas. No toca ninguna sílaba, así que no
+    // puede degradar la voz. Se rellena repitiendo el propio silencio (el ruido
+    // de sala) y no con ceros, para que no se oiga un escalón de nivel.
+    pausasDe(canal, tasa) {
+        const paso = Math.round(tasa * 0.01);        // ventanas de 10 ms
+        const minVentanas = Math.round(SILENCIO_MIN_MS / 10);
+        const pausas = [];
+        let arranque = -1, n = 0;
+        for (let v = 0; v * paso < canal.length; v++) {
+            let pico = 0;
+            const fin = Math.min((v + 1) * paso, canal.length);
+            for (let i = v * paso; i < fin; i++) pico = Math.max(pico, Math.abs(canal[i]));
+            if (pico < SILENCIO_UMBRAL) { if (arranque < 0) { arranque = v * paso; n = 0; } n++; }
+            else { if (arranque >= 0 && n >= minVentanas) pausas.push({ inicio: arranque, fin: v * paso }); arranque = -1; }
+        }
+        if (arranque >= 0 && n >= minVentanas) pausas.push({ inicio: arranque, fin: canal.length });
+        return pausas;
+    },
+
+    estirarPausas(canal, tasa, muestrasQueFaltan) {
+        const pausas = this.pausasDe(canal, tasa);
+        // Las de los extremos no cuentan: alargar el silencio inicial o final no
+        // cambia cómo se oye el habla, solo infla el archivo.
+        const utiles = pausas.filter(p => p.inicio > 0 && p.fin < canal.length);
+        const total = utiles.reduce((n, p) => n + (p.fin - p.inicio), 0);
+        if (!total || muestrasQueFaltan <= 0) return { canal, puesto: 0 };
+
+        // Tope por pausa: 2,5× lo que ya dura. Una pausa estirada sin límite deja
+        // un agujero que se oye como un corte de cinta.
+        const puedePoner = Math.min(muestrasQueFaltan, Math.round(total * 1.5));
+        const salida = new Float32Array(canal.length + puedePoner);
+        let cursor = 0, previo = 0, puesto = 0;
+        for (const p of utiles) {
+            salida.set(canal.subarray(previo, p.fin), cursor);
+            cursor += p.fin - previo;
+            const extra = Math.round(puedePoner * ((p.fin - p.inicio) / total));
+            const patron = canal.subarray(p.inicio, p.fin);
+            for (let i = 0; i < extra; i++) salida[cursor + i] = patron[i % patron.length];
+            cursor += extra; puesto += extra; previo = p.fin;
+        }
+        salida.set(canal.subarray(previo), cursor);
+        return { canal: salida.subarray(0, cursor + (canal.length - previo)), puesto };
+    },
+
+    // Escalón 2 — WSOLA: solapar y sumar buscando por correlación el punto de
+    // empalme que mejor continúa la onda anterior. Es lo que permite alargar sin
+    // bajar el tono; sin la búsqueda de empalme quedarían clics en cada juntura.
+    wsola(canal, tasa, factor) {
+        if (factor <= 1.001) return canal;
+        const N = Math.round(tasa * WSOLA_VENTANA_MS / 1000);
+        const Hs = Math.round(N / 2);                    // salto de síntesis
+        const Ha = Math.max(1, Math.round(Hs / factor)); // salto de análisis
+        const B = Math.round(tasa * WSOLA_BUSQUEDA_MS / 1000);
+        const ventana = new Float32Array(N);
+        for (let i = 0; i < N; i++) ventana[i] = 0.5 - 0.5 * Math.cos(2 * Math.PI * i / (N - 1));
+
+        const salida = new Float32Array(Math.ceil(canal.length * factor) + N);
+        let ta = 0, ts = 0;
+        let esperado = canal.subarray(0, N);             // cómo debería seguir la onda
+        while (ta + N + B < canal.length) {
+            // Mejor desplazamiento dentro de ±B (a pasos de 2: la mitad de cuentas
+            // y el máximo de correlación en voz es demasiado ancho para perderse).
+            let mejor = 0, mejorPuntaje = -Infinity;
+            for (let d = -B; d <= B; d += 2) {
+                const base = ta + d;
+                if (base < 0 || base + N > canal.length) continue;
+                let suma = 0;
+                for (let i = 0; i < N; i += 2) suma += canal[base + i] * esperado[i];
+                if (suma > mejorPuntaje) { mejorPuntaje = suma; mejor = d; }
+            }
+            const base = Math.max(0, ta + mejor);
+            for (let i = 0; i < N; i++) salida[ts + i] += canal[base + i] * ventana[i];
+            ts += Hs;
+            ta = base + Ha;
+            esperado = canal.subarray(Math.min(base + Hs, canal.length - N), Math.min(base + Hs + N, canal.length));
+        }
+        return salida.subarray(0, ts + N);
+    },
+
+    // El botón del tablero. Deja el resultado a un lado (A/B) en vez de pisar el
+    // original: la corrección es una apuesta y hay que poder compararla.
+    async ajustarRitmo(i) {
+        const parte = this.partes?.[i];
+        if (!parte?.blob || !parte.ritmo) return;
+        const objetivo = this.sesion.wpm;
+        const factor = parte.ritmo.wpm / objetivo;      // >1 = va rápido
+        if (factor <= 1.01) return this.aviso('Esa parte ya va al ritmo objetivo.', 'info');
+
+        this.aviso(`Ajustando la parte ${i + 1}…`, 'info');
+        try {
+            await this.cargarEncoder();
+            const { canal, tasa } = await this.decodificar(parte.blob);
+            const faltan = Math.round(canal.length * (factor - 1));
+
+            // 1. Las pausas primero: es gratis en calidad.
+            const { canal: conPausas, puesto } = this.estirarPausas(canal, tasa, faltan);
+
+            // 2. Lo que quede, estirando el habla, y solo hasta el tope.
+            const restante = (canal.length + faltan) / conPausas.length;
+            const estirado = Math.min(ESTIRADO_MAX, Math.max(1, restante));
+            const final = this.wsola(conPausas, tasa, estirado);
+
+            const pcm = new Int16Array(final.length);
+            for (let k = 0; k < final.length; k++) {
+                const s = Math.max(-1, Math.min(1, final[k]));
+                pcm[k] = s < 0 ? s * 0x8000 : s * 0x7fff;
+            }
+            const blob = this.codificarMp3(pcm, tasa);
+            const duracionSeg = Math.round(final.length / tasa);
+            const wpm = Math.round(this.palabrasNarradas(parte.texto) / (duracionSeg / 60));
+
+            if (parte.corregido?.url) URL.revokeObjectURL(parte.corregido.url);
+            parte.corregido = {
+                blob, url: URL.createObjectURL(blob), duracionSeg, wpm,
+                pausasMs: Math.round(puesto / tasa * 1000),
+                estirado
+            };
+            parte.usarCorregido = false;
+            this.pintarPartes();
+
+            const alcanzo = wpm <= objetivo * this.RITMO_SOSPECHA;
+            this.aviso(
+                `Parte ${i + 1}: ${parte.ritmo.wpm} → ${wpm} wpm `
+                + `(+${parte.corregido.pausasMs} ms de pausas`
+                + (estirado > 1.005 ? `, habla estirada ${Math.round((estirado - 1) * 100)}%` : ', sin tocar el habla') + '). '
+                + (alcanzo
+                    ? 'Compara los dos: si el corregido no suena arrastrado, úsalo.'
+                    : 'No alcanzó el objetivo sin pasarse del tope de estirado — esta parte conviene rehacerla, no maquillarla.'),
+                alcanzo ? 'ok' : 'error');
+        } catch (e) {
+            this.aviso(`No se pudo ajustar: ${e.message}`, 'error');
+        }
+    },
+
+    usarCorregido(i, usar) {
+        const parte = this.partes?.[i];
+        if (!parte?.corregido) return;
+        parte.usarCorregido = usar;
+        this.pintarPartes();
+        this.ensamblar();
     },
 
     // ── Tablero de partes ───────────────────────────────────────────────────
@@ -776,7 +987,10 @@ const audioLogic = {
         const caja = document.getElementById('audio-partes');
         if (!wrap || !caja) return;
         const partes = this.partes || [];
-        if (partes.length < 2) { wrap.classList.add('hidden'); return; }
+        // Con una sola parte el tablero solo estorba… salvo que esa parte haya
+        // salido rápida: entonces es donde vive el botón de ajustarla.
+        const rescatable = partes.some(p => p.corregido || (p.ritmo && p.ritmo.factor >= this.RITMO_SOSPECHA));
+        if (partes.length < 2 && !rescatable) { wrap.classList.add('hidden'); return; }
         wrap.classList.remove('hidden');
 
         const listas = partes.filter(p => p.estado === 'listo').length;
@@ -798,6 +1012,10 @@ const audioLogic = {
             const dato = p.estado === 'listo'
                 ? `${this.formatoDuracion(p.duracionSeg || 0)}${r ? ` · <b>${r.wpm} wpm</b>` : ''} · ${this.palabrasNarradas(p.texto)} palabras`
                 : (marca[p.estado] || '');
+            // El ajuste solo se ofrece cuando hay algo que ajustar: es un rescate,
+            // no un paso normal del flujo.
+            const ofreceAjuste = p.estado === 'listo' && r && r.factor >= this.RITMO_SOSPECHA && !p.corregido;
+            const c = p.corregido;
             return `
             <div class="border ${color} rounded-xl px-4 py-3">
                 <div class="flex items-start justify-between gap-3 flex-wrap">
@@ -808,9 +1026,26 @@ const audioLogic = {
                     </div>
                     <div class="flex items-center gap-3 shrink-0">
                         ${p.url ? `<audio controls src="${p.url}" class="h-8"></audio>` : ''}
+                        ${ofreceAjuste ? `<button onclick="audioLogic.ajustarRitmo(${p.i})" class="text-xs font-bold text-amber-700 hover:underline">Ajustar el ritmo</button>` : ''}
                         <button onclick="audioLogic.regenerarParte(${p.i})" class="text-xs font-bold text-brand-600 hover:underline" ${p.estado === 'generando' ? 'disabled' : ''}>Rehacer</button>
                     </div>
                 </div>
+                ${c ? `
+                <div class="mt-2 border-t border-gray-200 pt-2">
+                    <div class="flex items-center justify-between gap-3 flex-wrap">
+                        <p class="text-xs text-gray-600">
+                            Ajustada: <b>${c.wpm} wpm</b> · ${this.formatoDuracion(c.duracionSeg)} ·
+                            +${c.pausasMs} ms de pausas${c.estirado > 1.005 ? ` · habla estirada ${Math.round((c.estirado - 1) * 100)}%` : ' · habla intacta'}
+                        </p>
+                        <div class="flex items-center gap-3 shrink-0">
+                            <audio controls src="${c.url}" class="h-8"></audio>
+                            <button onclick="audioLogic.usarCorregido(${p.i}, ${!p.usarCorregido})" class="text-xs font-bold ${p.usarCorregido ? 'text-red-600' : 'text-green-700'} hover:underline">
+                                ${p.usarCorregido ? 'Volver al original' : 'Usar la ajustada'}
+                            </button>
+                        </div>
+                    </div>
+                    ${p.usarCorregido ? '<p class="text-xs text-green-700 mt-1">Esta parte entra ajustada en el clip final.</p>' : ''}
+                </div>` : ''}
                 <details class="mt-2">
                     <summary class="text-xs text-gray-500 cursor-pointer">Ver su texto</summary>
                     <pre class="mt-1 text-xs whitespace-pre-wrap text-gray-600">${this.escapar(p.texto)}</pre>
@@ -950,11 +1185,19 @@ const audioLogic = {
                 wpmObjetivo: s.wpm || cfg.wpm || null,
                 instruccion: s.instruccion || '',
                 instruccionEditada: !!(s.instruccion && cfg.instruccion && !s.instruccion.startsWith(cfg.instruccion)),
+                // El wpm de ORIGEN queda guardado aunque la parte se haya
+                // ajustado: es lo único que dice cómo habló el generador, y sin
+                // él el semáforo del banco mediría el maquillaje, no la toma.
                 partes: (this.partes || []).map(p => ({
                     texto: p.texto,
-                    duracionSeg: p.duracionSeg || 0,
-                    wpm: p.ritmo?.wpm || 0
+                    duracionSeg: (p.usarCorregido && p.corregido ? p.corregido.duracionSeg : p.duracionSeg) || 0,
+                    duracionOrigenSeg: p.duracionSeg || 0,
+                    wpm: (p.usarCorregido && p.corregido ? p.corregido.wpm : p.ritmo?.wpm) || 0,
+                    wpmOrigen: p.ritmo?.wpm || 0,
+                    ajustada: !!p.usarCorregido,
+                    estirado: p.usarCorregido ? (p.corregido?.estirado || 1) : 1
                 })),
+                ritmoAjustado: (this.partes || []).some(p => p.usarCorregido),
                 createdAt: firebase.firestore.FieldValue.serverTimestamp()
             });
 
@@ -1010,10 +1253,16 @@ const audioLogic = {
         const fProv = document.getElementById('audio-filtro-proveedor')?.value || '';
         const busca = (document.getElementById('audio-filtro-texto')?.value || '').toLowerCase().trim();
 
-        const conRitmo = this.clips.map(c => ({
-            ...c,
-            ritmo: this.evaluarRitmo(c.transcript || '', c.duracionSeg || 0, { wpm: c.wpmObjetivo || ESTILOS[c.tipo]?.wpm })
-        }));
+        // Si el clip lleva partes ajustadas, el semáforo juzga con la duración
+        // DE ORIGEN: alargar el audio baja el wpm del archivo pero no mejora la
+        // toma, y un verde ahí sería exactamente el autoengaño que este medidor
+        // existe para evitar.
+        const conRitmo = this.clips.map(c => {
+            const objetivo = { wpm: c.wpmObjetivo || ESTILOS[c.tipo]?.wpm };
+            const segOrigen = (c.partes || []).reduce((n, p) => n + (p.duracionOrigenSeg || p.duracionSeg || 0), 0);
+            const base = c.ritmoAjustado && segOrigen ? segOrigen : (c.duracionSeg || 0);
+            return { ...c, ritmo: this.evaluarRitmo(c.transcript || '', base, objetivo) };
+        });
         const visibles = conRitmo.filter(c =>
             (!fExamen || c.examen === fExamen) &&
             (!fTipo || c.tipo === fTipo) &&
@@ -1045,6 +1294,7 @@ const audioLogic = {
                             <p class="font-bold text-sm">${this.escapar(c.titulo || c.id)}</p>
                             ${sello}
                             ${c.instruccionEditada ? '<span class="px-2 py-0.5 rounded-lg text-xs bg-purple-100 text-purple-700">instrucción editada</span>' : ''}
+                            ${c.ritmoAjustado ? '<span class="px-2 py-0.5 rounded-lg text-xs bg-blue-100 text-blue-700">ritmo ajustado</span>' : ''}
                         </div>
                         <p class="text-xs text-gray-500 mt-0.5">
                             ${this.escapar(c.etiqueta || '')} ·
