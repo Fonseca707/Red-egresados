@@ -98,6 +98,22 @@ function dias(desde) {
 }
 
 // ── Plantillas ───────────────────────────────────────────────────────────────
+// Escapa datos que vienen del usuario (firstName, hitos, y sobre todo
+// extra.deNombre en /mensaje-nuevo, que llega directo del POST del cliente sin
+// pasar por Firestore) antes de interpolarlos en asunto/HTML. Sin esto, un
+// firstName o deNombre con <script> o comillas rompe la plantilla o inyecta
+// HTML en el correo. También quita saltos de línea (inyección de cabeceras en
+// el asunto) y trunca para que un nombre absurdamente largo no reviente el layout.
+function escaparHTML(s, max = 80) {
+    return String(s || '')
+        .replace(/[\r\n]+/g, ' ')
+        .slice(0, max)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
 function envoltura(env, titulo, cuerpo, cta) {
     return `<!doctype html><html><body style="margin:0;background:#f5f5f4;font-family:'Segoe UI',Helvetica,Arial,sans-serif;">
   <div style="max-width:560px;margin:0 auto;padding:32px 20px;">
@@ -118,7 +134,7 @@ function envoltura(env, titulo, cuerpo, cta) {
 }
 
 function plantilla(tipo, alum, env, extra = {}) {
-    const nombre = (alum.firstName || '').trim() || 'Hola';
+    const nombre = escaparHTML((alum.firstName || '').trim() || 'Hola', 40);
     const perfil = `${env.SITIO}/profile.html`;
     if (tipo === 'bienvenida') {
         return {
@@ -140,7 +156,7 @@ function plantilla(tipo, alum, env, extra = {}) {
         };
     }
     if (tipo === 'pulso') {
-        const donde = [alum._hitoAbierto?.rol, alum._hitoAbierto?.organizacion].filter(Boolean).join(' en ');
+        const donde = escaparHTML([alum._hitoAbierto?.rol, alum._hitoAbierto?.organizacion].filter(Boolean).join(' en '), 100);
         return {
             asunto: donde ? `¿Sigues en ${donde}?` : '¿Sigue actualizada tu ruta?',
             html: envoltura(env, 'Una pregunta rápida', `
@@ -150,10 +166,11 @@ function plantilla(tipo, alum, env, extra = {}) {
         };
     }
     if (tipo === 'mensaje-nuevo') {
+        const deNombre = escaparHTML(extra.deNombre, 80);
         return {
-            asunto: `${extra.deNombre || 'Alguien'} te escribió en Sinapsis`,
+            asunto: `${deNombre || 'Alguien'} te escribió en Sinapsis`,
             html: envoltura(env, 'Tienes un mensaje sin leer', `
-                <p>Hola ${nombre}. <strong>${extra.deNombre || 'Un miembro de la red'}</strong> te escribió en Sinapsis y aún no has leído el mensaje.</p>
+                <p>Hola ${nombre}. <strong>${deNombre || 'Un miembro de la red'}</strong> te escribió en Sinapsis y aún no has leído el mensaje.</p>
                 <p>Muchas veces es un estudiante preguntando por tu carrera. Una respuesta corta puede cambiarle la decisión.</p>`,
                 { url: `${env.SITIO}/messages.html`, texto: 'Leer el mensaje' })
         };
@@ -289,6 +306,19 @@ async function procesar(env, { simular = false } = {}) {
 }
 
 // ── Entradas ─────────────────────────────────────────────────────────────────
+// Clave del panel: preferir cabecera (Authorization: Bearer o X-Panel-Secret)
+// sobre query string, porque el query string queda en logs de Cloudflare y en
+// el historial del navegador. Se mantiene el fallback a ?clave= de forma
+// TRANSITORIA mientras se despliega admin-correos.js (que ya manda cabecera);
+// quitar el fallback una vez confirmado el despliegue del panel.
+function claveDelPanel(request, url) {
+    const auth = request.headers.get('Authorization') || '';
+    if (auth.startsWith('Bearer ')) return auth.slice(7);
+    const cabecera = request.headers.get('X-Panel-Secret');
+    if (cabecera) return cabecera;
+    return url.searchParams.get('clave') || ''; // transitorio, ver comentario arriba
+}
+
 function cors(origen) {
     return {
         'Access-Control-Allow-Origin': ORIGENES.includes(origen) ? origen : ORIGENES[0],
@@ -319,7 +349,7 @@ export default {
 
         // Interruptor maestro: encender / pausar (protegido con clave)
         if (url.pathname === '/interruptor' && request.method === 'POST') {
-            if (url.searchParams.get('clave') !== env.PANEL_SECRET) {
+            if (claveDelPanel(request, url) !== env.PANEL_SECRET) {
                 return new Response(JSON.stringify({ error: 'Clave incorrecta' }), { status: 403, headers });
             }
             const { activar } = await request.json().catch(() => ({}));
@@ -328,15 +358,26 @@ export default {
             return new Response(JSON.stringify({ pausado: !activar }), { headers });
         }
 
-        // Previsualizar: qué se enviaría hoy, sin enviar nada
+        // Previsualizar: qué se enviaría hoy, sin enviar nada.
+        // CRÍTICO (antes era público): devolvía hechos:[{para:<email real>,...}] sin
+        // ninguna autenticación, así que cualquiera con curl obtenía nombre y correo
+        // de los 68 egresados. Ahora exige la misma clave que /ejecutar, y por
+        // defecto SOLO devuelve conteos por tipo; el detalle con correos/nombres
+        // solo sale si además se pide ?detalle=1 (autenticado igual).
         if (url.pathname === '/previsualizar') {
+            if (claveDelPanel(request, url) !== env.PANEL_SECRET) {
+                return new Response(JSON.stringify({ error: 'Clave incorrecta' }), { status: 403, headers });
+            }
             const r = await procesar(env, { simular: true });
-            return new Response(JSON.stringify(r, null, 2), { headers });
+            const conteos = (r.hechos || []).reduce((acc, h) => { acc[h.tipo] = (acc[h.tipo] || 0) + 1; return acc; }, {});
+            const detalle = url.searchParams.get('detalle') === '1';
+            const cuerpo = { ...r, conteos, hechos: detalle ? r.hechos : undefined };
+            return new Response(JSON.stringify(cuerpo, null, 2), { headers });
         }
 
         // Forzar corrida manual (protegida con clave)
         if (url.pathname === '/ejecutar' && request.method === 'POST') {
-            if (url.searchParams.get('clave') !== env.PANEL_SECRET) {
+            if (claveDelPanel(request, url) !== env.PANEL_SECRET) {
                 return new Response(JSON.stringify({ error: 'Clave incorrecta' }), { status: 403, headers });
             }
             const r = await procesar(env);

@@ -48,9 +48,11 @@ const autoCorreosLogic = {
         const btn = document.getElementById('auto-correos-btn');
         if (btn) { btn.disabled = true; btn.textContent = 'Aplicando…'; }
         try {
-            const res = await fetch(`${CORREOS_WORKER}/interruptor?clave=${encodeURIComponent(clave.trim())}`, {
+            // La clave viaja por cabecera (no por query string): en la URL queda en
+            // logs de Cloudflare y en el historial del navegador.
+            const res = await fetch(`${CORREOS_WORKER}/interruptor`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${clave.trim()}` },
                 body: JSON.stringify({ activar })
             });
             const d = await res.json();
@@ -67,11 +69,20 @@ const autoCorreosLogic = {
     async previsualizar() {
         const box = document.getElementById('auto-correos-preview');
         if (!box) return;
+        // /previsualizar ahora exige la misma clave que /interruptor y /ejecutar
+        // (antes era pública y filtraba nombre+correo de los 68 egresados).
+        const clave = prompt('Clave del panel de correos (te la pide para consultar el simulacro):');
+        if (!clave) return;
         box.innerHTML = '<p class="text-xs text-gray-400"><i class="ph-bold ph-spinner animate-spin"></i> Calculando…</p>';
         try {
-            const res = await fetch(`${CORREOS_WORKER}/previsualizar`);
+            // ?detalle=1 pide además la lista de destinatarios (autenticado igual);
+            // sin él, el Worker solo devuelve conteos por tipo.
+            const res = await fetch(`${CORREOS_WORKER}/previsualizar?detalle=1`, {
+                headers: { 'Authorization': `Bearer ${clave.trim()}` }
+            });
             const d = await res.json();
-            const porTipo = (d.hechos || []).reduce((acc, h) => { acc[h.tipo] = (acc[h.tipo] || 0) + 1; return acc; }, {});
+            if (!res.ok) throw new Error(d.error || `HTTP ${res.status}`);
+            const porTipo = d.conteos || {};
             box.innerHTML = `
                 <div class="rounded-xl border border-gray-100 bg-white p-4 text-sm">
                     <p class="font-bold text-gray-900 mb-2"><i class="ph-bold ph-eye text-brand-600"></i> Si se ejecutara ahora, saldrían ${d.enviados || 0} correo${d.enviados === 1 ? '' : 's'} <span class="font-normal text-gray-400">(simulacro: no se envió nada)</span></p>
