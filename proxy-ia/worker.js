@@ -202,7 +202,12 @@ async function leerDocPublico(ruta) {
     // segmento como un método custom (:commit, :runQuery) y responde 400.
     const url = `${base}/artifacts/${encodeURIComponent(APP_ID)}/public/data/${ruta}`;
     const respuesta = await fetch(url, { headers: { 'x-goog-api-key': FIREBASE_API_KEY } });
-    if (!respuesta.ok) return null;                       // 404 = no existe
+    if (respuesta.status === 404) return null;             // 404 = no existe (caso válido)
+    // Cualquier OTRO fallo (500/429/503...) NO es "no existe": si se trata igual que 404,
+    // moduloHabilitado sigue de largo con el default true y el gate cae ABIERTO ante un
+    // error de Firestore. Debe reventar aquí para que el catch de moduloHabilitado lo
+    // capture y responda motivo:'firestore' (503), no un 403 silencioso ni un true falso.
+    if (!respuesta.ok) throw new Error(`firestore ${respuesta.status}`);
     return (await respuesta.json())?.fields || null;
 }
 
