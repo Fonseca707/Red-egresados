@@ -25,6 +25,8 @@
       "correos-worker/**",
       "docs/**",
       "README.md",
+      "CLAUDE.md",
+      "*.md",
       "firebase-config.example.js"
     ],
     "headers": [
@@ -55,6 +57,8 @@
       "correos-worker/**",
       "docs/**",
       "README.md",
+      "CLAUDE.md",
+      "*.md",
       "firebase-config.example.js"
     ],
     "headers": [

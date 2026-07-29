@@ -45,6 +45,18 @@ service cloud.firestore {
         return s == '' || s == 'LCP'
           || codigoValido(s, request.resource.data.get('codigoInvitacion', ''));
       }
+      // Campos de CONTROL del perfil: los pone la administracion, nunca el
+      // dueno. Sin esto, un usuario suspendido se reactivaba solo con
+      // update({accountStatus:'activo'}) y cualquiera se ponia la ruta
+      // destacada de la portada. Los defaults son los mismos que usa el
+      // codigo (shared.js: accountStatus||'activo', Boolean(rutaDestacada)),
+      // para que un perfil viejo sin el campo no quede bloqueado. Con
+      // set({merge:true}) request.resource.data trae el doc RESULTANTE, asi
+      // que un guardado normal de perfil conserva el valor y pasa igual.
+      function camposDeControlIntactos() {
+        return request.resource.data.get('accountStatus', 'activo') == resource.data.get('accountStatus', 'activo')
+          && request.resource.data.get('rutaDestacada', false) == resource.data.get('rutaDestacada', false);
+      }
       // En ACTUALIZACION propia: school sin cambio, completar el default LCP
       // cuando faltaba, o cambiarse con codigo valido del colegio destino.
       function schoolValidaAlActualizar() {
@@ -71,7 +83,7 @@ service cloud.firestore {
           || (isSchoolAdmin()
               && resource.data.get('school', '') == adminSchool()
               && request.resource.data.get('school', '') == adminSchool())
-          || (request.auth.uid == userId && schoolValidaAlActualizar())
+          || (request.auth.uid == userId && schoolValidaAlActualizar() && camposDeControlIntactos())
         );
         allow delete: if isSuperAdmin()
           || (isSchoolAdmin() && resource.data.get('school', '') == adminSchool());
@@ -188,9 +200,25 @@ service cloud.firestore {
       // Organizaciones normalizadas (autocompletar del onboarding/perfil).
       // Solo se usan estando autenticado; cualquier autenticado aporta,
       // solo admin depura/borra.
+      // Aceptaba create/update de cualquier autenticado SIN validar forma:
+      // se podia inflar la coleccion con documentos arbitrarios (el
+      // autocompletar los lee entero en cada onboarding). Ahora se exige la
+      // forma real que escribe upsertOrganization() en shared.js:
+      // { nombre, tipo, updatedAt } con merge. Se toleran ademas createdAt
+      // y slug por si algun documento historico los trae (con merge, el doc
+      // resultante conserva las claves viejas y sin esa tolerancia un
+      // upsert sobre ellos quedaria bloqueado). 'tipo' no se enumera a
+      // proposito: hoy son los HITO_TYPES + 'otro' y agregar un tipo nuevo
+      // no deberia exigir republicar reglas.
       match /public/data/organizaciones/{orgId} {
+        function organizacionValida() {
+          let d = request.resource.data;
+          return d.keys().hasOnly(['nombre','tipo','updatedAt','createdAt','slug'])
+            && d.nombre is string && d.nombre.size() >= 1 && d.nombre.size() <= 160
+            && d.tipo is string && d.tipo.size() <= 40;
+        }
         allow read: if request.auth != null;
-        allow create, update: if request.auth != null;
+        allow create, update: if request.auth != null && organizacionValida();
         allow delete: if isAdmin();
       }
 
@@ -222,6 +250,7 @@ service cloud.firestore {
             && d.mensaje is string && d.mensaje.size() >= 10 && d.mensaje.size() <= 3000
             && d.organizacion is string && d.organizacion.size() <= 160
             && d.telefono is string && d.telefono.size() <= 40
+            && d.userAgent is string && d.userAgent.size() <= 300
             && d.estado == 'nuevo'
             && d.createdAt == request.time;
         }
@@ -235,10 +264,24 @@ service cloud.firestore {
       // (lo crea con una app de auth secundaria, escribiendo un uid ajeno).
       // Antes decia isAdmin(): un sub-admin podia apuntar el username de
       // cualquiera a su propio uid (secuestro de login) o borrarlo.
+      // El fix anterior (create y update juntos, mirando SOLO el uid
+      // ENTRANTE) seguia siendo secuestrable: cualquier autenticado podia
+      // sobrescribir el username de otro apuntandolo a su propio uid, y la
+      // regla lo aprobaba porque el uid entrante era el suyo. Por eso ahora
+      // create y update van separados: en UPDATE se exige que el DUENO
+      // ACTUAL (resource.data.uid) sea quien escribe, ademas de que el uid
+      // resultante siga siendo el suyo (no puede regalarselo a un tercero).
+      // reserveUsername() escribe siempre uid = uid propio con merge, asi
+      // que renovar/cambiar el propio username sigue funcionando; el
+      // superadmin conserva la via libre para reservar el username de un
+      // sub-admin nuevo (uid ajeno, creado con la app de auth secundaria).
       match /usernames/{username} {
         allow read: if true;
-        allow create, update: if request.auth != null
+        allow create: if request.auth != null
           && (request.resource.data.uid == request.auth.uid || isSuperAdmin());
+        allow update: if isSuperAdmin() || (request.auth != null
+          && resource.data.uid == request.auth.uid
+          && request.resource.data.uid == request.auth.uid);
         allow delete: if isSuperAdmin();
       }
 
@@ -255,14 +298,39 @@ service cloud.firestore {
 
       // Chats: cada usuario tiene SU copia del chat; el par (peer) puede
       // escribir en la copia del otro al enviar mensaje.
+      // Antes el UPDATE miraba el peerId ENTRANTE: cualquiera podia pisar la
+      // conversacion que otro tenia con un tercero (lastMsg, peerName,
+      // peerPhotoURL) con solo poner su propio uid en peerId. Ahora, cuando
+      // el que escribe NO es el dueno del buzon, se exige que el peerId YA
+      // GUARDADO sea el suyo: solo puede tocar la copia del chat que es
+      // suya-con-el-otro. El CREATE sigue abierto al par porque asi arranca
+      // una conversacion nueva (startChatWithUser crea las dos copias a la
+      // vez, con chatId determinista [uidA,uidB].sort()).
       match /users/{userId}/chats/{chatId} {
+        function chatDelBuzon() {
+          return get(/databases/$(database)/documents/artifacts/$(appId)/users/$(userId)/chats/$(chatId)).data;
+        }
+        function esMiChatEnBuzonAjeno() {
+          return exists(/databases/$(database)/documents/artifacts/$(appId)/users/$(userId)/chats/$(chatId))
+            && chatDelBuzon().get('peerId', '') == request.auth.uid;
+        }
         allow read: if request.auth != null && request.auth.uid == userId;
-        allow create, update: if request.auth != null
+        allow create: if request.auth != null
           && (request.auth.uid == userId || request.resource.data.peerId == request.auth.uid);
+        allow update: if request.auth != null
+          && (request.auth.uid == userId
+              || (resource.data.get('peerId', '') == request.auth.uid
+                  && request.resource.data.peerId == request.auth.uid));
+        // Mensajes: se dejaba crear en el buzon de CUALQUIER usuario y en
+        // cualquier chatId, sin relacion previa (spam directo a la bandeja
+        // de un desconocido). Ahora, para escribir en buzon ajeno, el chat
+        // tiene que existir alli y apuntarme a mi como peer — que es justo
+        // lo que deja startChatWithUser antes de abrir la conversacion.
         match /messages/{messageId} {
           allow read: if request.auth != null && request.auth.uid == userId;
           allow create: if request.auth != null
-            && request.resource.data.senderId == request.auth.uid;
+            && request.resource.data.senderId == request.auth.uid
+            && (request.auth.uid == userId || esMiChatEnBuzonAjeno());
         }
       }
     }
