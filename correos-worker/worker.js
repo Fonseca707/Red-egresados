@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// Correos automáticos de Sinapsis (Cloudflare Worker + Cron + Resend)
+// Correos automáticos de Sinapsis (Cloudflare Worker + Cron + Gmail API)
 //
 // Se despierta solo cada día (cron 9:00 Colombia), lee Firestore por REST
 // (lectura pública, sin credenciales) y decide a quién le toca correo HOY.
@@ -178,26 +178,83 @@ function plantilla(tipo, alum, env, extra = {}) {
     return null;
 }
 
-// ── Envío por Resend ─────────────────────────────────────────────────────────
+// ── Envío por Gmail API (OAuth2) ─────────────────────────────────────────────
+// Por qué la API HTTP y no SMTP: esto corre en un Cloudflare Worker, y los
+// Workers no pueden abrir conexiones SMTP. Por eso una "contraseña de
+// aplicación" de Gmail NO sirve aquí — hace falta OAuth2 sobre HTTPS.
+//
+// Se autentica con un refresh_token de larga vida (secreto del Worker) que se
+// canjea por un access_token de 1 hora, cacheado mientras la instancia viva.
+// Se eligió Gmail sobre Resend porque Resend exige un dominio propio verificado
+// (con `onboarding@resend.dev` solo se puede escribir al dueño de la cuenta),
+// y Sinapsis todavía vive en `.web.app`, que no admite registros DNS.
+
+let _tokenCache = { valor: '', expira: 0 };
+
+async function accessToken(env) {
+    if (_tokenCache.valor && Date.now() < _tokenCache.expira) return _tokenCache.valor;
+    const res = await fetch('https://oauth2.googleapis.com/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+            client_id: env.GMAIL_CLIENT_ID,
+            client_secret: env.GMAIL_CLIENT_SECRET,
+            refresh_token: env.GMAIL_REFRESH_TOKEN,
+            grant_type: 'refresh_token'
+        })
+    });
+    if (!res.ok) {
+        // `invalid_grant` = el refresh token murió. Causas reales: la app OAuth
+        // quedó en modo "Testing" (Google los caduca a los 7 días), cambió la
+        // contraseña de la cuenta, se revocó el acceso, o pasaron 6 meses sin
+        // usarse. Solución: volver a autorizar y re-subir GMAIL_REFRESH_TOKEN.
+        throw new Error(`OAuth ${res.status}: ${(await res.text()).slice(0, 160)}`);
+    }
+    const d = await res.json();
+    _tokenCache = { valor: d.access_token, expira: Date.now() + (d.expires_in - 60) * 1000 };
+    return d.access_token;
+}
+
+// base64 sobre UTF-8. `btoa()` a secas rompe con tildes (solo maneja latin1),
+// así que se pasa por TextEncoder primero. Los correos van en español y los
+// nombres de los egresados llevan acentos: sin esto llegan con caracteres rotos.
+function b64(texto) {
+    const bytes = new TextEncoder().encode(texto);
+    let bin = '';
+    for (const b of bytes) bin += String.fromCharCode(b);
+    return btoa(bin);
+}
+const b64url = t => b64(t).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+
+// El asunto se codifica en RFC 2047 y el cuerpo va en base64 partido a 76
+// columnas, como manda MIME (una sola línea kilométrica la rechazan algunos
+// servidores intermedios).
+function mime({ de, para, responderA, asunto, html }) {
+    return [
+        `From: ${de}`,
+        `To: ${para}`,
+        responderA ? `Reply-To: ${responderA}` : '',
+        `Subject: =?UTF-8?B?${b64(asunto)}?=`,
+        'MIME-Version: 1.0',
+        'Content-Type: text/html; charset="UTF-8"',
+        'Content-Transfer-Encoding: base64',
+        '',
+        b64(html).replace(/(.{76})/g, '$1\r\n')
+    ].filter(Boolean).join('\r\n');
+}
+
 // Única puerta de salida: aquí se vuelve a comprobar el interruptor, para que
 // ningún camino (cron, /ejecutar, /mensaje-nuevo) pueda saltárselo por error.
 async function enviar(env, para, asunto, html) {
     if (await estaPausado(env)) throw new Error('PAUSADO: los correos automáticos están apagados');
-    const res = await fetch('https://api.resend.com/emails', {
+    const token = await accessToken(env);
+    const raw = b64url(mime({ de: env.REMITENTE, para, responderA: env.RESPUESTA_A, asunto, html }));
+    const res = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
         method: 'POST',
-        headers: {
-            'Authorization': `Bearer ${env.RESEND_API_KEY}`,
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            from: env.REMITENTE,
-            to: [para],
-            reply_to: env.RESPUESTA_A,
-            subject: asunto,
-            html
-        })
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ raw })
     });
-    if (!res.ok) throw new Error(`Resend ${res.status}: ${(await res.text()).slice(0, 120)}`);
+    if (!res.ok) throw new Error(`Gmail ${res.status}: ${(await res.text()).slice(0, 160)}`);
     return true;
 }
 

@@ -15,7 +15,12 @@ id = "5979fe3a33004c96b5b8406a4dda2f1e"
 FIRESTORE_PROJECT = "red-egresados-65a1a"
 FIRESTORE_APP_ID = "1:874010522484:web:28881821d110defd3b7221"
 SITIO = "https://sinapsisred.web.app"
-REMITENTE = "Sinapsis <onboarding@resend.dev>"
-RESPUESTA_A = "juanda.fonsecag@gmail.com"
+# El From lo impone Gmail: tiene que ser la cuenta autenticada (o un alias
+# verificado en ella). Cambiar esta dirección sin re-autorizar no sirve.
+REMITENTE = "Sinapsis <sinapsis.ecosistema@gmail.com>"
+RESPUESTA_A = "sinapsis.ecosistema@gmail.com"
 
-# Secreto (NO va aquí):  npx wrangler secret put RESEND_API_KEY
+# Secretos (NO van aquí), desde esta carpeta:
+#   npx wrangler secret put GMAIL_CLIENT_ID
+#   npx wrangler secret put GMAIL_CLIENT_SECRET
+#   npx wrangler secret put GMAIL_REFRESH_TOKEN
