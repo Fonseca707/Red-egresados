@@ -13,8 +13,18 @@ const firebaseConfig = {
 if (!firebase.apps.length) {
     firebase.initializeApp(firebaseConfig);
 }
-// Analytics (evidencia de uso para la investigación): registra vistas por página.
-try { if (firebase.analytics) firebase.analytics(); } catch (e) {}
+/*
+  Analytics QUITADO el 2026-07-29. Se cargaba `firebase-analytics-compat` en las 11
+  páginas y se inicializaba aquí, pero:
+   1. NADIE lo usaba — ni un `logEvent` en todo el repo, así que no había "evidencia de
+      uso para la investigación": solo el evento automático de vista de página.
+   2. Ese SDK lanzaba `ReferenceError: process is not defined` DENTRO de una promesa en
+      cada visita, así que este `try/catch` no lo atrapaba (un throw asíncrono no pasa
+      por aquí). Era el único error que quedaba en la consola de producción.
+  El `measurementId` sigue en la config de arriba: si algún día se quiere Analytics de
+  verdad, se repone con el SDK MODULAR (`getAnalytics`/`logEvent`), no con el compat, y
+  midiendo eventos concretos en vez de cargarlo "por si acaso".
+*/
 const auth = firebase.auth();
 const db = firebase.firestore();
 const _appId = "1:874010522484:web:28881821d110defd3b7221";
