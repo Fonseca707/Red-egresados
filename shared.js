@@ -758,27 +758,51 @@ function esInvitado() { return !esMiembro(); }
 // habilitado en la consola de Firebase, esto FALLA — y en ese caso la web debe
 // seguir funcionando en modo lectura (hoy alumni sigue con read público), no
 // quedarse en blanco. Por eso el fallo se registra y se marca en _anonAuthFallo.
-let _anonAuthIntentada = false;
+let _anonAuthPromesa = null;
 let _anonAuthFallo = false;
 function anonAuthDisponible() { return !_anonAuthFallo; }
+// Se memoriza la PROMESA, no un booleano "ya se intentó": si dos lecturas piden
+// sesión a la vez (la portada pide historias mientras el directorio pide alumni),
+// la segunda espera a la primera en vez de irse sin sesión y leer un 0.
 async function iniciarSesionInvitado() {
-    if (_anonAuthIntentada) return null;
-    _anonAuthIntentada = true;
+    if (_anonAuthPromesa) return _anonAuthPromesa;
     if (typeof auth.signInAnonymously !== 'function') {
         _anonAuthFallo = true;
         console.warn('[Sinapsis] Este SDK no expone signInAnonymously: se sigue en modo lectura sin sesión.');
         return null;
     }
-    try {
-        const cred = await auth.signInAnonymously();
-        return cred?.user || null;
-    } catch (e) {
-        _anonAuthFallo = true;
-        console.warn('[Sinapsis] No se pudo abrir la sesión de invitado (' +
-            (e?.code || e?.message || 'error desconocido') +
-            '). ¿Está habilitado el proveedor Anónimo en la consola de Firebase? La web sigue en modo lectura.');
-        return null;
-    }
+    _anonAuthPromesa = (async () => {
+        try {
+            const cred = await auth.signInAnonymously();
+            return cred?.user || null;
+        } catch (e) {
+            _anonAuthFallo = true;
+            console.warn('[Sinapsis] No se pudo abrir la sesión de invitado (' +
+                (e?.code || e?.message || 'error desconocido') +
+                '). ¿Está habilitado el proveedor Anónimo en la consola de Firebase?');
+            return null;
+        }
+    })();
+    return _anonAuthPromesa;
+}
+
+// Primer veredicto de Firebase sobre la sesión persistida. Hay que esperarlo
+// ANTES de abrir una sesión anónima: al cargar la página `auth.currentUser` es
+// null durante unos ms aunque haya un miembro con sesión guardada, y abrir el
+// anónimo en ese hueco le REEMPLAZARÍA la sesión al miembro.
+const _authResuelta = new Promise(resolve => {
+    const off = auth.onAuthStateChanged(u => { off(); resolve(u); });
+});
+
+// Puerta de toda lectura que el invitado deba poder hacer. Desde 2026-07-29
+// `alumni` exige sesión en las reglas, así que sin esto el visitante sin cuenta
+// leería un directorio vacío (y en silencio: loadAlumni se traga el error).
+// El disparo vive aquí y no en las páginas porque NINGUNA llamaba a
+// iniciarSesionInvitado(): `watchAuth()` quedó definida y sin usar.
+async function asegurarSesionParaLeer() {
+    await _authResuelta;
+    if (auth.currentUser) return;
+    await iniciarSesionInvitado();
 }
 // Marca el estado de invitado a partir de una sesión anónima. Reusa la bandera
 // state.guestMode que YA consultan messages/news/preparacion/icfes-engine, así
@@ -948,6 +972,8 @@ async function ensureDefaultSchool(uid) {
 // Consecuencia buscada: `user.phone` no existe en los objetos del directorio.
 async function loadAlumni() {
     state.directoryLoading=true;
+    // El invitado necesita sesión (anónima) para que las reglas le dejen listar.
+    await asegurarSesionParaLeer();
     try {
         const snap=await alumniCollection.get();
         state.data.alumni=snap.docs.map(doc=>{const d=doc.data();const user={id:doc.id,name:`${d.firstName||''} ${d.lastName||''}`.trim()||'Sin nombre',firstName:(d.firstName||'').trim(),lastName:(d.lastName||'').trim(),email:d.email||'',username:d.username||'',newsletterOptIn:Boolean(d.newsletterOptIn),role:d.role||'Sin rol',status:d.status||'sin-definir',statusLabel:formatStatusLabel(d.status),accountStatus:d.accountStatus||'activo',company:d.studies||formatStatusLabel(d.status),photoURL:d.photoURL||'',img:d.photoURL||buildAvatarUrl(`${d.firstName||'Usuario'} ${d.lastName||''}`.trim()),tags:[d.school||DEFAULT_SCHOOL,d.area||'General',formatStatusLabel(d.status)].filter(Boolean),fullStudies:d.studies||'No especificado',location:d.location||'Ubicación no disponible',bio:d.bio||'Sin biografía disponible.',year:d.graduationYear||'---',area:d.area||'General',skills:Array.isArray(d.skills)?d.skills:(d.skills?String(d.skills).split(','):[]),linkedin:d.linkedin||'',expectations:d.expectations||'',school:d.school||DEFAULT_SCHOOL,hitosCount:Number(d.hitosCount)||0,rutaDestacada:Boolean(d.rutaDestacada),graduationYear:d.graduationYear||'',studies:d.studies||''};return{...user,profileCompleteness:getProfileCompletenessScore(user)};}).filter(a=>hasValidFirstName(a.firstName));

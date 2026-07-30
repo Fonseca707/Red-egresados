@@ -86,25 +86,22 @@ service cloud.firestore {
           || codigoValido(nueva, request.resource.data.get('codigoInvitacion', ''));
       }
 
-      // Directorio de egresados: lectura PUBLICA, TODAVIA.
+      // Directorio de egresados: CERRADO desde 2026-07-29 (paso 3 ejecutado).
       //
-      // PASO 3 PENDIENTE (deliberado, no lo "arregles"): el cierre real de
-      // este directorio es cambiar la linea de abajo por
-      //     allow read: if request.auth != null;
-      // Eso ya NO rompe el modo invitado, porque el visitante sin cuenta
-      // recibe una sesion anonima (shared.js: iniciarSesionInvitado). Pero
-      // escribirlo ANTES de tiempo tumba el directorio publico entero.
-      // Solo se activa cuando se cumplan LAS DOS condiciones:
-      //   (a) el proveedor "Anonimo" este HABILITADO en la consola de
-      //       Firebase (Authentication > Sign-in method > Anonymous), y
-      //   (b) se haya verificado EN PRODUCCION que un visitante sin cuenta
-      //       entra al directorio y ve la lista (o sea, que la sesion
-      //       anonima arranca de verdad en el dominio de produccion).
-      // Mientras tanto el dato sensible ya esta a salvo: telefono y correo
-      // de contacto salieron de este documento y viven en la subcoleccion
-      // privada de mas abajo, que SI exige cuenta real.
+      // `read` incluye `list`, asi que con `if true` cualquiera volcaba los 68
+      // perfiles por REST sin sesion. Ahora exige sesion, y el modo invitado
+      // sobrevive porque el visitante sin cuenta recibe una sesion ANONIMA
+      // (shared.js: iniciarSesionInvitado). Las dos condiciones que bloqueaban
+      // este cambio quedaron verificadas ese dia:
+      //   (a) proveedor "Anonimo" HABILITADO en la consola (se pidio un token
+      //       anonimo por REST y lo emitio), y
+      //   (b) migracion de contacto corrida: 24 perfiles movidos, telefono y
+      //       correo de contacto ya viven en la subcoleccion privada de abajo,
+      //       que exige cuenta REAL (esMiembroReal, el anonimo no pasa).
+      // ⚠️ Si algun dia se apaga el proveedor Anonimo, esta linea tumba el
+      // directorio publico entero: las dos cosas van juntas.
       match /public/data/alumni/{userId} {
-        allow read: if true;
+        allow read: if request.auth != null;
         allow create: if request.auth != null && (
           isSuperAdmin()
           || (isSchoolAdmin() && request.resource.data.get('school', '') == adminSchool())
