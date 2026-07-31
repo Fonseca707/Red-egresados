@@ -30,6 +30,7 @@
 //   POST /interruptor    → enciende/pausa (requiere ?clave=PANEL_SECRET)
 //   GET  /previsualizar  → qué se enviaría hoy, SIN enviar (para probar)
 //   POST /ejecutar       → fuerza la corrida (requiere ?clave=PANEL_SECRET)
+//   POST /probar         → manda UN correo de prueba a ?para= (requiere clave)
 //   POST /mensaje-nuevo  → aviso de mensaje (lo llama la web)
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -247,6 +248,14 @@ function mime({ de, para, responderA, asunto, html }) {
 // ningún camino (cron, /ejecutar, /mensaje-nuevo) pueda saltárselo por error.
 async function enviar(env, para, asunto, html) {
     if (await estaPausado(env)) throw new Error('PAUSADO: los correos automáticos están apagados');
+    return enviarSinComprobar(env, para, asunto, html);
+}
+
+// El envío en crudo. SOLO lo llaman `enviar()` (que comprueba el interruptor)
+// y `/probar` (que exige PANEL_SECRET y manda a UNA dirección escrita a mano).
+// La excepción de /probar no regala poder a nadie: quien tiene PANEL_SECRET ya
+// puede encender el interruptor y lanzar una corrida entera.
+async function enviarSinComprobar(env, para, asunto, html) {
     const token = await accessToken(env);
     const raw = b64url(mime({ de: env.REMITENTE, para, responderA: env.RESPUESTA_A, asunto, html }));
     const res = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
@@ -430,6 +439,29 @@ export default {
             const detalle = url.searchParams.get('detalle') === '1';
             const cuerpo = { ...r, conteos, hechos: detalle ? r.hechos : undefined };
             return new Response(JSON.stringify(cuerpo, null, 2), { headers });
+        }
+
+        // Probar el envío de verdad SIN despertar a nadie: manda un único correo
+        // a la dirección que se le pase, funciona estando pausado y no toca el KV
+        // (así que no marca a nadie como "ya avisado"). Sirve para comprobar que
+        // las credenciales de Gmail siguen vivas sin arriesgar la lista.
+        //   POST /probar?clave=...&para=alguien@ejemplo.com
+        if (url.pathname === '/probar' && request.method === 'POST') {
+            if (claveDelPanel(request, url) !== env.PANEL_SECRET) {
+                return new Response(JSON.stringify({ error: 'Clave incorrecta' }), { status: 403, headers });
+            }
+            const para = url.searchParams.get('para') || '';
+            if (!para.includes('@')) return new Response(JSON.stringify({ error: 'Falta ?para=' }), { status: 400, headers });
+            try {
+                await enviarSinComprobar(env, para, 'Prueba de Sinapsis (envío por Gmail)',
+                    envoltura(env, 'Funciona', `
+                        <p>Si estás leyendo esto, el Worker de correos de Sinapsis ya sabe enviar por la API de Gmail.</p>
+                        <p>Este correo salió de una prueba manual: <strong>el interruptor sigue como estaba</strong> y a los egresados no les llegó nada.</p>`,
+                        { url: env.SITIO, texto: 'Abrir Sinapsis' }));
+                return new Response(JSON.stringify({ enviado: true, para }), { headers });
+            } catch (e) {
+                return new Response(JSON.stringify({ enviado: false, error: String(e.message || e) }), { status: 500, headers });
+            }
         }
 
         // Forzar corrida manual (protegida con clave)
