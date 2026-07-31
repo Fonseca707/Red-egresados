@@ -39,7 +39,11 @@
 <body class="text-stone-800 font-sans min-h-screen flex flex-col">
 
     <main class="flex-1 pt-20 pb-24 md:pb-8 px-4 bg-stone-50/60">
-        <div class="h-[calc(100vh-8rem)] max-w-6xl mx-auto bg-white rounded-3xl shadow-xl border border-gray-200 overflow-hidden flex animate-fade-in">
+        <!-- En movil hay que descontar tambien la barra de navegacion inferior
+             (73px, fixed): con 8rem el campo de escribir y el boton de enviar
+             quedaban DEBAJO de ella. dvh en vez de vh porque en iOS la barra de
+             URL de Safari se come parte de 100vh. -->
+        <div class="h-[calc(100dvh-11rem)] md:h-[calc(100vh-8rem)] max-w-6xl mx-auto bg-white rounded-3xl shadow-xl border border-gray-200 overflow-hidden flex animate-fade-in">
             <!-- Lista de Chats -->
             <div id="chat-list-panel" class="w-full md:w-80 lg:w-96 border-r border-gray-100 flex flex-col bg-gray-50/50">
                 <div class="p-5 border-b border-gray-100">
@@ -93,7 +97,7 @@
         </div>
     </main>
 
-    <script src="theme.js?v=6"></script>
+    <script src="theme.js?v=9"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore-compat.js"></script>

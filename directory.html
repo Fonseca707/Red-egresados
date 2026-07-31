@@ -57,13 +57,18 @@
                     <h2 class="text-3xl font-bold text-gray-900 tracking-tight">Directorio</h2>
                     <p class="text-gray-500 mt-1 text-sm">Conecta con compañeros de tu generación.</p>
                 </div>
-                <div class="flex gap-3 w-full md:w-auto">
-                    <div class="relative flex-1 md:w-72">
+                <!-- En movil los tres controles NO caben en una fila de 390px: el
+                     buscador quedaba reducido a la lupa y el select se salia de la
+                     pantalla (la pagina entera ganaba scroll horizontal). En movil
+                     el buscador va solo arriba y los dos filtros a mitad y mitad. -->
+                <div class="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+                    <div class="relative w-full sm:flex-1 md:w-72">
                         <i class="ph ph-magnifying-glass absolute left-3 top-3.5 text-gray-400"></i>
                         <input type="text" id="directory-search" placeholder="Buscar por nombre, cargo, empresa..." class="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100 transition shadow-sm" oninput="directoryLogic.debouncedFilter()" aria-label="Buscar egresados">
                     </div>
-                    <input type="number" id="directory-year" placeholder="Promoción" class="w-32 bg-white px-3 py-3 border border-gray-200 rounded-xl hover:bg-gray-50 text-gray-600 shadow-sm transition text-sm font-medium" oninput="directoryLogic.debouncedFilter()" aria-label="Filtrar por año de promoción">
-                    <select id="directory-filter" class="bg-white px-3 py-3 border border-gray-200 rounded-xl hover:bg-gray-50 text-gray-600 shadow-sm transition text-sm font-medium" onchange="directoryLogic.filter()">
+                    <div class="flex gap-3 w-full sm:w-auto">
+                    <input type="number" id="directory-year" placeholder="Promoción" class="flex-1 min-w-0 sm:flex-none sm:w-32 bg-white px-3 py-3 border border-gray-200 rounded-xl hover:bg-gray-50 text-gray-600 shadow-sm transition text-sm font-medium" oninput="directoryLogic.debouncedFilter()" aria-label="Filtrar por año de promoción">
+                    <select id="directory-filter" class="flex-1 min-w-0 sm:flex-none bg-white px-3 py-3 border border-gray-200 rounded-xl hover:bg-gray-50 text-gray-600 shadow-sm transition text-sm font-medium" onchange="directoryLogic.filter()">
                         <option value="all">Todos</option>
                         <option value="trabajando">Trabajando</option>
                         <option value="estudiando">Estudiando</option>
@@ -71,6 +76,7 @@
                         <option value="trabajando-estudiando">Trabajando y estudiando</option>
                         <option value="profesor">Profesor</option>
                     </select>
+                    </div>
                 </div>
             </div>
 
@@ -161,7 +167,7 @@
         </div>
     </div>
 
-    <script src="theme.js?v=6"></script>
+    <script src="theme.js?v=9"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore-compat.js"></script>

@@ -259,6 +259,21 @@ function installThemeStyles() {
         .admin-table-scroll th:first-child { min-width:260px; }
         .admin-table-scroll td:last-child,
         .admin-table-scroll th:last-child { position:sticky; right:0; z-index:1; background:inherit; box-shadow:-12px 0 18px -18px rgba(15,23,42,.45); }
+
+        /* ── Movil ──
+           Safari en iOS hace ZOOM automatico al enfocar un campo cuyo texto mide
+           menos de 16px, y no vuelve solo: el usuario queda con la pagina ampliada
+           a mitad del registro o del examen. La plataforma usa text-sm (14px) en
+           casi todos los campos, asi que el piso se pone aqui, una sola vez, en
+           vez de perseguir clase por clase. Solo por debajo de md (768px).
+           Los :not() no cambian el sentido de la regla: estan para ganarle en
+           especificidad a las clases de Tailwind (.text-sm). Sin ellos, un
+           select con text-sm se queda en 14px y sigue haciendo zoom. */
+        @media (max-width: 767px) {
+            input:not([type=checkbox]):not([type=radio]),
+            select:not([hidden]),
+            textarea:not([hidden]) { font-size: 16px; }
+        }
     `;
     document.head.appendChild(style);
 }
