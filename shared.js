@@ -1053,13 +1053,13 @@ function renderNav(activePage='') {
             </div>
         </nav>
         <nav id="mobile-nav" class="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur border-t border-gray-200 grid grid-cols-6">
-            <a href="index.html" class="py-3 text-xs font-semibold flex flex-col items-center gap-1 ${mactive('home')}"><i class="ph ph-house text-lg"></i><span>Inicio</span></a>
-            <a href="directory.html" class="py-3 text-xs font-semibold flex flex-col items-center gap-1 ${mactive('directory')}"><i class="ph ph-users text-lg"></i><span>Directorio</span></a>
-            <a href="news.html" class="py-3 text-xs font-semibold flex flex-col items-center gap-1 ${mactive('news')}"><i class="ph ph-newspaper text-lg"></i><span>Novedades</span></a>
-            <a href="preparacion.html" class="py-3 text-xs font-semibold flex flex-col items-center gap-1 ${mactive('exam-modules')}"><i class="ph ph-graduation-cap text-lg"></i><span>Prep.</span></a>
-            <a href="messages.html" class="solo-miembro hidden py-3 text-xs font-semibold flex flex-col items-center gap-1 ${mactive('messages')}"><i class="ph ph-chats-circle text-lg"></i><span>Mensajes</span></a>
-            <a href="profile.html" class="solo-miembro hidden py-3 text-xs font-semibold flex flex-col items-center gap-1 ${mactive('profile')}"><i class="ph ph-user-circle text-lg"></i><span>Perfil</span></a>
-            <a href="login.html" class="solo-invitado hidden py-3 text-xs font-semibold flex flex-col items-center gap-1 text-gray-500"><i class="ph ph-sign-in text-lg"></i><span>Entrar</span></a>
+            <a href="index.html" class="py-3 text-[10px] font-semibold flex flex-col items-center gap-1 ${mactive('home')}"><i class="ph ph-house text-lg"></i><span>Inicio</span></a>
+            <a href="directory.html" class="py-3 text-[10px] font-semibold flex flex-col items-center gap-1 ${mactive('directory')}"><i class="ph ph-users text-lg"></i><span>Directorio</span></a>
+            <a href="news.html" class="py-3 text-[10px] font-semibold flex flex-col items-center gap-1 ${mactive('news')}"><i class="ph ph-newspaper text-lg"></i><span>Novedades</span></a>
+            <a href="preparacion.html" class="py-3 text-[10px] font-semibold flex flex-col items-center gap-1 ${mactive('exam-modules')}"><i class="ph ph-graduation-cap text-lg"></i><span>Prep.</span></a>
+            <a href="messages.html" class="solo-miembro hidden py-3 text-[10px] font-semibold flex flex-col items-center gap-1 ${mactive('messages')}"><i class="ph ph-chats-circle text-lg"></i><span>Mensajes</span></a>
+            <a href="profile.html" class="solo-miembro hidden py-3 text-[10px] font-semibold flex flex-col items-center gap-1 ${mactive('profile')}"><i class="ph ph-user-circle text-lg"></i><span>Perfil</span></a>
+            <a href="login.html" class="solo-invitado hidden py-3 text-[10px] font-semibold flex flex-col items-center gap-1 text-gray-500"><i class="ph ph-sign-in text-lg"></i><span>Entrar</span></a>
         </nav>
     `);
     // La nav se pinta antes de que resuelva onAuthStateChanged: arranca en modo
