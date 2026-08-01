@@ -1,3 +1,311 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   SINAPSIS — sistema de diseño
+   Fuente de este archivo → tailwind.css (lo cargan las 11 páginas).
+   Recompilar:  npx tailwindcss@3 -i tailwind.src.css -o tailwind.css --minify
+
+   La idea que ordena todo: EL HILO.
+   El copy de la portada ya lo dice — «cada quien toma su rumbo y el hilo se
+   pierde; Sinapsis vuelve a tejer ese hilo». Así que el hilo no es un adorno:
+   es la estructura. Una línea con nodos que recorre las secciones, marca los
+   hitos de una trayectoria y encadena las tarjetas del directorio. Se dibuja
+   con el scroll y enciende el nodo al que llega. Es la misma pieza en la
+   portada, en el perfil y en el directorio, y es lo único que se permite
+   llamar la atención: el resto se mantiene callado.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* ───────────────────────────────────────────────────────────────────────────
+   1. TOKENS
+   En "R G B" (sin coma) para que Tailwind pueda componer opacidad:
+   bg-surface/60 → rgb(var(--surface) / 0.6).
+   El tema oscuro reescribe las variables; NO hace falta mapear clase por clase
+   en theme.js como pasa con las clases viejas (bg-white, text-gray-500…).
+   ─────────────────────────────────────────────────────────────────────────── */
+@layer base {
+    :root {
+        color-scheme: light;
+
+        --paper:        251 251 248;   /* fondo de página */
+        --surface:      255 255 255;   /* tarjetas, barras */
+        --surface-alt:  244 245 242;   /* zonas hundidas, campos en reposo */
+        --ink:           16  26  20;   /* texto principal: negro con verde dentro */
+        --ink-soft:      71  86  77;   /* texto secundario */
+        --ink-mute:     120 133 124;   /* metadatos, apoyos */
+        --line:         227 231 226;   /* hairline */
+        --line-soft:    239 242 238;
+
+        --brand:         27  97  68;   /* #1b6144 verde bosque */
+        --brand-deep:    15  58  41;
+        --brand-pale:   241 246 242;
+
+        /* El acento. La carga que salta la sinapsis: sólo aparece en el nodo
+           activo del hilo y en el foco de teclado. Si empieza a salir en
+           botones y bordes deja de significar algo. */
+        --signal:       194 237  69;   /* #c2ed45 */
+
+        /* Movimiento. Una sola escala para todo el sitio. */
+        --ease-salida:  cubic-bezier(0.22, 1, 0.36, 1);
+        --ease-suave:   cubic-bezier(0.65, 0, 0.35, 1);
+        --ease-resorte: cubic-bezier(0.34, 1.4, 0.64, 1);
+        --t-toque:  120ms;   /* respuesta a un clic */
+        --t-corto:  180ms;   /* hover, foco */
+        --t-medio:  320ms;   /* abrir/cerrar */
+        --t-largo:  520ms;   /* entradas, reveals */
+        --t-hilo:   800ms;   /* el trazo del hilo */
+    }
+
+    html.dark {
+        color-scheme: dark;
+
+        --paper:         12  18  16;
+        --surface:       19  26  23;
+        --surface-alt:   26  35  30;
+        --ink:          232 237 233;
+        --ink-soft:     169 181 173;
+        --ink-mute:     119 131 123;
+        --line:          38  48  43;
+        --line-soft:     30  39  34;
+
+        --brand:         95 180 137;   /* aclarado para contraste sobre oscuro */
+        --brand-deep:   140 205 168;
+        --brand-pale:    18  40  30;
+    }
+
+    html { -webkit-text-size-adjust: 100%; }
+
+    body {
+        background-color: rgb(var(--paper));
+        color: rgb(var(--ink));
+        font-feature-settings: "cv05" 1, "ss01" 1;
+        -webkit-font-smoothing: antialiased;
+        text-rendering: optimizeLegibility;
+    }
+
+    /* Titulares: serif de texto, apretados y en peso medio. El font-extrabold
+       en absolutamente todo era otro de los tics; aquí el peso alto se reserva
+       para el titular del hero. */
+    h1, h2, h3, h4, .fuente-display {
+        font-family: 'Newsreader', Georgia, serif;
+        font-weight: 500;
+        letter-spacing: -0.022em;
+        font-variation-settings: "opsz" 32;
+    }
+    h1 { font-variation-settings: "opsz" 48; }
+
+    ::selection { background: rgb(var(--signal) / 0.85); color: #101a14; }
+
+    /* Foco visible y con la identidad puesta: el anillo es la señal.
+       Antes había focus:outline-none suelto por varias páginas. */
+    :focus-visible {
+        outline: 2px solid rgb(var(--signal));
+        outline-offset: 2px;
+        border-radius: 3px;
+    }
+    html.dark :focus-visible { outline-color: rgb(var(--signal)); }
+
+    /* Safari iOS hace zoom al enfocar un campo de menos de 16px y no vuelve
+       solo (ya documentado en el vault). El piso vive aquí y en theme.js. */
+    @media (max-width: 767px) {
+        input:not([type=checkbox]):not([type=radio]),
+        select:not([hidden]),
+        textarea:not([hidden]) { font-size: 16px; }
+    }
+
+    /* Quien pidió menos movimiento recibe menos movimiento: se apagan las
+       animaciones, no la interfaz. */
+    @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after {
+            animation-duration: 0.001ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: 0.001ms !important;
+            scroll-behavior: auto !important;
+        }
+        [data-surgir] { opacity: 1 !important; transform: none !important; }
+        /* El hilo no se dibuja: aparece ya trazado. */
+        .hilo { --avance: 1 !important; }
+    }
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+   2. EL HILO  (elemento firma)
+   Estructura:
+     .hilo               contenedor con el riel a la izquierda
+       .hilo__riel       línea tenue completa (el camino por recorrer)
+       .hilo__avance     línea de marca que crece con el scroll
+       .hilo-hito        cada punto de la trayectoria
+   motion.js actualiza --avance (0→1) según cuánto se ha recorrido.
+   ─────────────────────────────────────────────────────────────────────────── */
+@layer components {
+    .hilo { position: relative; padding-left: 2rem; --avance: 0; }
+    .hilo::before,
+    .hilo::after {
+        content: ''; position: absolute; left: 5px; top: 0; width: 2px; border-radius: 2px;
+    }
+    /* riel */
+    .hilo::before { height: 100%; background: rgb(var(--line)); }
+    /* avance */
+    .hilo::after {
+        height: calc(var(--avance) * 100%);
+        background: linear-gradient(to bottom, rgb(var(--brand) / 0.25), rgb(var(--brand)));
+        transition: height var(--t-hilo) var(--ease-salida);
+    }
+
+    .hilo-hito { position: relative; }
+    .hilo-hito::before {
+        content: ''; position: absolute; left: -2rem; top: 0.45em;
+        width: 12px; height: 12px; border-radius: 50%;
+        background: rgb(var(--paper));
+        border: 2px solid rgb(var(--line));
+        transition: border-color var(--t-medio) var(--ease-salida),
+                    background-color var(--t-medio) var(--ease-salida),
+                    transform var(--t-medio) var(--ease-resorte);
+    }
+    /* Nodo alcanzado por el hilo. */
+    .hilo-hito[data-alcanzado]::before {
+        border-color: rgb(var(--brand));
+        background: rgb(var(--brand));
+        transform: scale(1.05);
+    }
+    /* Nodo activo: el único sitio donde aparece la señal. */
+    .hilo-hito[data-activo]::before {
+        background: rgb(var(--signal));
+        border-color: rgb(var(--brand));
+        animation: pulsoNodo 1.6s var(--ease-salida);
+    }
+    /* Hito final de una trayectoria: anillo, "aquí está hoy". */
+    .hilo-hito[data-actual]::before {
+        box-shadow: 0 0 0 4px rgb(var(--brand) / 0.14);
+    }
+
+    /* Variante horizontal, para el encadenado de secciones en escritorio. */
+    .hilo-h { position: relative; }
+    .hilo-h::before {
+        content: ''; position: absolute; left: 0; right: 0; top: 50%; height: 1px;
+        background: rgb(var(--line));
+    }
+
+    /* ── 3. PRIMITIVAS ─────────────────────────────────────────────────── */
+
+    /* Botones. Sin sombra de color, sin hover:scale, sin -translate-y.
+       El gesto es la flecha que avanza y un hundido de 1px al pulsar. */
+    .btn {
+        display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+        padding: 0.75rem 1.25rem; border-radius: 6px;
+        font-weight: 600; font-size: 0.9375rem; line-height: 1.2;
+        border: 1px solid transparent; cursor: pointer;
+        transition: background-color var(--t-corto) var(--ease-salida),
+                    border-color var(--t-corto) var(--ease-salida),
+                    color var(--t-corto) var(--ease-salida),
+                    transform var(--t-toque) var(--ease-salida);
+    }
+    .btn:active { transform: translateY(1px); }
+    .btn .ph-arrow-right, .btn [data-flecha] {
+        transition: transform var(--t-medio) var(--ease-salida);
+    }
+    .btn:hover .ph-arrow-right, .btn:hover [data-flecha] { transform: translateX(3px); }
+
+    .btn-primario { background: rgb(var(--brand)); color: #fff; }
+    .btn-primario:hover { background: rgb(var(--brand-deep)); }
+    html.dark .btn-primario { color: #0c1210; }
+
+    .btn-linea {
+        background: transparent; color: rgb(var(--ink));
+        border-color: rgb(var(--line));
+    }
+    .btn-linea:hover { border-color: rgb(var(--brand)); color: rgb(var(--brand)); }
+
+    .btn-plano { background: transparent; color: rgb(var(--ink-soft)); }
+    .btn-plano:hover { background: rgb(var(--surface-alt)); color: rgb(var(--ink)); }
+
+    /* Enlace de texto: el subrayado se dibuja de izquierda a derecha.
+       Reemplaza al hover:text-brand-800 sin más que había en todo el sitio. */
+    .enlace {
+        color: rgb(var(--brand)); font-weight: 600;
+        background-image: linear-gradient(rgb(var(--brand)), rgb(var(--brand)));
+        background-size: 0% 1px; background-position: 0 100%; background-repeat: no-repeat;
+        transition: background-size var(--t-medio) var(--ease-salida);
+        padding-bottom: 1px;
+    }
+    .enlace:hover, .enlace:focus-visible { background-size: 100% 1px; }
+
+    /* Superficie. Una tarjeta se distingue por su línea, no por su sombra. */
+    .lienzo {
+        background: rgb(var(--surface));
+        border: 1px solid rgb(var(--line));
+        border-radius: 8px;
+    }
+    .lienzo-interactivo {
+        transition: border-color var(--t-medio) var(--ease-salida),
+                    background-color var(--t-medio) var(--ease-salida);
+    }
+    .lienzo-interactivo:hover { border-color: rgb(var(--brand) / 0.45); }
+
+    /* Etiqueta de dato (promoción, año, área). Tipografía de UI, no serif. */
+    .dato {
+        font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+        font-size: 0.6875rem; font-weight: 700;
+        letter-spacing: 0.08em; text-transform: uppercase;
+        color: rgb(var(--ink-mute));
+    }
+
+    /* Campos. */
+    .campo {
+        width: 100%; padding: 0.6875rem 0.875rem;
+        background: rgb(var(--surface-alt));
+        border: 1px solid rgb(var(--line));
+        border-radius: 6px; color: rgb(var(--ink));
+        font-size: 0.9375rem;
+        transition: border-color var(--t-corto) var(--ease-salida),
+                    background-color var(--t-corto) var(--ease-salida);
+    }
+    .campo::placeholder { color: rgb(var(--ink-mute)); }
+    .campo:hover { border-color: rgb(var(--ink-mute) / 0.5); }
+    .campo:focus { background: rgb(var(--surface)); border-color: rgb(var(--brand)); }
+    .etiqueta {
+        display: block; margin-bottom: 0.375rem;
+        font-size: 0.8125rem; font-weight: 600; color: rgb(var(--ink-soft));
+    }
+
+    /* Carga. Un esqueleto con la forma real de lo que viene dice más que un
+       spinner girando: el usuario ya sabe qué va a aparecer y dónde. */
+    .esqueleto {
+        background: linear-gradient(90deg,
+            rgb(var(--surface-alt)) 25%,
+            rgb(var(--line-soft)) 37%,
+            rgb(var(--surface-alt)) 63%);
+        background-size: 200% 100%;
+        animation: brillo 1.4s linear infinite;
+        border-radius: 4px;
+    }
+
+    /* Barra superior. Sin glassmorphism: un velo sólido con una línea abajo.
+       Se mantiene el nombre .glass-nav porque lo usan las 11 páginas y
+       theme.js; lo que cambia es lo que significa. */
+    .glass-nav {
+        background: rgb(var(--surface) / 0.92);
+        backdrop-filter: saturate(1.4) blur(8px);
+        border-bottom: 1px solid rgb(var(--line));
+    }
+
+    .hide-scrollbar::-webkit-scrollbar { display: none; }
+    .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+    /* Reveal al scroll.
+       OJO al sentido de la regla: el ocultamiento SOLO existe bajo
+       `html.motion`, clase que pone motion.js en cuanto se ejecuta. Si el JS
+       no llega —red móvil, bloqueador, error de sintaxis— no hay nada oculto
+       que revelar y la página se ve entera. Al revés (ocultar por defecto y
+       confiar en que el JS lo destape) un tropiezo de red deja la web en
+       blanco, que es exactamente lo que ya pasó aquí con el CDN de Tailwind. */
+    html.motion [data-surgir] {
+        opacity: 0;
+        transform: translateY(10px);
+        transition: opacity var(--t-largo) var(--ease-salida),
+                    transform var(--t-largo) var(--ease-salida);
+        transition-delay: var(--retraso, 0ms);
+    }
+    html.motion [data-surgir][data-visible] { opacity: 1; transform: none; }
+}

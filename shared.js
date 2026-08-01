@@ -545,50 +545,50 @@ function formatHitoYears(h) {
     if (inicio && fin) return `${inicio} — ${fin}`;
     return String(inicio || fin || '');
 }
-// Renderizador compartido de la línea de tiempo (perfil propio, perfil público, rutas destacadas).
+// Renderizador compartido de la línea de tiempo (perfil propio, perfil público,
+// rutas destacadas).
+//
+// ── Esto es EL HILO ──────────────────────────────────────────────────────────
+// La trayectoria de un egresado es el elemento del que sale toda la identidad
+// visual del sitio: una línea con nodos que se traza al leerla. Antes cada hito
+// era una tarjeta con su icono en un cuadro redondeado, su sombra de color y un
+// `animate-ping` en el hito actual — tres adornos compitiendo por decir lo
+// mismo que ya dicen la posición en la línea y el año.
+//
+// Ahora el hito es texto colgando del hilo. Lo que queda: el nodo (posición),
+// la etiqueta del tipo, los años y el dato. El icono se fue a propósito: la
+// etiqueta ya dice «EDUCACIÓN SUPERIOR», el icono lo repetía en dibujo.
+//
+// Quien inserte esto tiene que llamar después a motion.refrescar(contenedor)
+// para que el hilo se registre y se dibuje con el scroll.
 function renderTimelineHTML(hitos = [], { editable = false, editorNS = 'rutaLogic' } = {}) {
     if (!hitos.length) {
-        return `<div class="text-center py-8 text-gray-400">
-            <i class="ph ph-path text-4xl mb-2 block"></i>
-            <p class="text-sm font-medium">Aún no hay hitos en esta ruta.</p>
+        return `<div class="py-8 text-center">
+            <p class="text-sm text-ink-mute">Aún no hay hitos en esta ruta.</p>
         </div>`;
     }
     const last = hitos.length - 1;
-    return `<ol class="relative">` + hitos.map((h, i) => {
+    return `<ol class="hilo">` + hitos.map((h, i) => {
         const info = hitoTypeInfo(h.tipo);
         const years = formatHitoYears(h);
         const actions = (editable && h.id) ? `
-            <span class="flex gap-1 shrink-0">
-                <button type="button" onclick="${editorNS}.editHito('${sanitizeHTML(h.id)}')" class="p-1.5 rounded-lg text-gray-400 hover:text-brand-600 hover:bg-brand-50 transition" title="Editar hito"><i class="ph-bold ph-pencil-simple"></i></button>
-                <button type="button" onclick="${editorNS}.removeHito('${sanitizeHTML(h.id)}')" class="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition" title="Eliminar hito"><i class="ph-bold ph-trash"></i></button>
+            <span class="flex gap-0.5 shrink-0 opacity-0 group-hover/hito:opacity-100 focus-within:opacity-100 transition-opacity duration-180">
+                <button type="button" onclick="${editorNS}.editHito('${sanitizeHTML(h.id)}')" class="p-1.5 rounded text-ink-mute hover:text-brand-600 transition-colors duration-180" title="Editar hito"><i class="ph-bold ph-pencil-simple"></i></button>
+                <button type="button" onclick="${editorNS}.removeHito('${sanitizeHTML(h.id)}')" class="p-1.5 rounded text-ink-mute hover:text-red-600 transition-colors duration-180" title="Eliminar hito"><i class="ph-bold ph-trash"></i></button>
             </span>` : '';
         return `
-        <li class="relative flex gap-4 ${i < last ? 'pb-2' : ''}">
-            <div class="flex flex-col items-center shrink-0">
-                <span class="relative z-10 w-11 h-11 rounded-2xl flex items-center justify-center text-xl shadow-sm ${h.actual ? 'bg-brand-600 text-white shadow-brand-600/30' : 'bg-white text-brand-600 border border-brand-100'}">
-                    <i class="ph-duotone ${info.icon}"></i>
-                    ${h.actual ? '<span class="absolute -top-1 -right-1 flex h-3 w-3"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-400 opacity-75"></span><span class="relative inline-flex rounded-full h-3 w-3 bg-brand-500 border-2 border-white"></span></span>' : ''}
-                </span>
-                ${i < last ? '<span class="w-0.5 flex-1 my-1 rounded-full bg-gradient-to-b from-brand-300 to-brand-100"></span>' : ''}
-            </div>
-            <div class="min-w-0 flex-1 pb-5">
-                <div class="rounded-2xl border ${h.actual ? 'border-brand-100 bg-brand-50' : 'border-gray-100 bg-white'} px-4 py-3 shadow-sm hover:shadow-md transition group/hito">
-                    <div class="flex items-start justify-between gap-2">
-                        <div class="min-w-0">
-                            <div class="flex items-center gap-2 flex-wrap mb-0.5">
-                                <span class="text-[11px] font-bold uppercase tracking-widest text-brand-600">${sanitizeHTML(info.label)}</span>
-                                ${h.actual ? '<span class="text-[10px] font-bold px-2 py-0.5 bg-brand-600 text-white rounded-full uppercase tracking-wide">Hoy</span>' : ''}
-                            </div>
-                            <p class="font-bold text-gray-900 leading-snug">${sanitizeHTML(h.organizacion || h.rol || 'Sin detalle')}</p>
-                            ${h.organizacion && h.rol ? `<p class="text-sm text-gray-500 leading-snug">${sanitizeHTML(h.rol)}</p>` : ''}
-                            ${h.descripcion ? `<p class="text-xs text-gray-400 mt-1.5 leading-relaxed">${sanitizeHTML(h.descripcion)}</p>` : ''}
-                        </div>
-                        <div class="flex flex-col items-end gap-1 shrink-0">
-                            ${years ? `<span class="text-[11px] font-bold px-2 py-1 rounded-lg bg-gray-50 border border-gray-100 text-gray-500 whitespace-nowrap">${sanitizeHTML(years)}</span>` : ''}
-                            ${actions}
-                        </div>
+        <li class="hilo-hito group/hito ${i < last ? 'pb-7' : ''}"${h.actual ? ' data-actual' : ''}>
+            <div class="flex items-start justify-between gap-3">
+                <div class="min-w-0">
+                    <div class="flex items-baseline gap-2.5 flex-wrap mb-1">
+                        <span class="dato text-brand-600">${sanitizeHTML(info.label)}</span>
+                        ${years ? `<span class="dato">${sanitizeHTML(years)}</span>` : ''}
                     </div>
+                    <p class="fuente-display text-[1.0625rem] leading-snug text-ink">${sanitizeHTML(h.organizacion || h.rol || 'Sin detalle')}</p>
+                    ${h.organizacion && h.rol ? `<p class="text-sm text-ink-soft leading-snug mt-0.5">${sanitizeHTML(h.rol)}</p>` : ''}
+                    ${h.descripcion ? `<p class="text-sm text-ink-mute mt-1.5 leading-relaxed max-w-lectura">${sanitizeHTML(h.descripcion)}</p>` : ''}
                 </div>
+                ${actions}
             </div>
         </li>`;
     }).join('') + `</ol>`;
@@ -702,19 +702,21 @@ async function checkPulsoRuta() {
         const etiqueta = [abierto.rol, abierto.organizacion].filter(Boolean).join(' en ') || 'lo mismo';
         const banner = document.createElement('div');
         banner.id = 'pulso-banner';
-        banner.className = 'fixed bottom-20 md:bottom-6 left-1/2 -translate-x-1/2 z-50 w-[calc(100vw-2rem)] max-w-md bg-white rounded-2xl border border-gray-200 shadow-2xl p-4 animate-slide-up';
+        banner.className = 'fixed bottom-20 md:bottom-6 left-1/2 -translate-x-1/2 z-50 w-[calc(100vw-2rem)] max-w-md bg-surface rounded-lg border border-line shadow-alzado p-4 animate-surgir';
+        // El punto de la izquierda es el nodo del hilo: lo que se está pidiendo
+        // es justamente que el egresado extienda su trayectoria un tramo más.
         banner.innerHTML = `
             <div class="flex items-start gap-3">
-                <div class="w-10 h-10 rounded-xl bg-brand-50 text-brand-600 border border-brand-100 flex items-center justify-center text-xl shrink-0"><i class="ph-duotone ph-path"></i></div>
+                <span class="mt-1.5 w-3 h-3 rounded-full bg-signal border-2 border-brand-600 shrink-0"></span>
                 <div class="min-w-0 flex-1">
-                    <p class="text-sm font-bold text-gray-900">¿Sigues en ${sanitizeHTML(etiqueta)}?</p>
-                    <p class="text-xs text-gray-500 mt-0.5">Tu ruta lleva un tiempo sin actualizarse.</p>
+                    <p class="fuente-display text-base text-ink leading-snug">¿Sigues en ${sanitizeHTML(etiqueta)}?</p>
+                    <p class="text-sm text-ink-soft mt-0.5">Tu ruta lleva un tiempo sin actualizarse.</p>
                     <div class="flex gap-2 mt-3">
-                        <button onclick="confirmarPulso('${sanitizeHTML(abierto.id)}')" class="px-4 py-2 bg-brand-600 text-white text-xs font-bold rounded-lg hover:bg-brand-700 transition">Sí, sigo ahí</button>
-                        <a href="profile.html" class="px-4 py-2 bg-gray-50 border border-gray-200 text-gray-600 text-xs font-bold rounded-lg hover:bg-gray-100 transition">Actualizar mi ruta</a>
+                        <button onclick="confirmarPulso('${sanitizeHTML(abierto.id)}')" class="btn btn-primario !py-2 !px-3.5 !text-sm">Sí, sigo ahí</button>
+                        <a href="profile.html" class="btn btn-linea !py-2 !px-3.5 !text-sm">Actualizar mi ruta</a>
                     </div>
                 </div>
-                <button onclick="snoozePulso()" class="p-1 text-gray-300 hover:text-gray-500 transition shrink-0" title="Recordar en 30 días"><i class="ph-bold ph-x"></i></button>
+                <button onclick="snoozePulso()" class="p-1 text-ink-mute hover:text-ink transition-colors duration-180 shrink-0" title="Recordar en 30 días"><i class="ph-bold ph-x"></i></button>
             </div>`;
         document.body.appendChild(banner);
     } catch (e) {}
@@ -725,7 +727,7 @@ async function confirmarPulso(hitoId) {
     } catch (e) {}
     const b = document.getElementById('pulso-banner');
     if (b) {
-        b.innerHTML = '<p class="text-sm font-bold text-brand-700 text-center py-1"><i class="ph-bold ph-check-circle"></i> Gracias, tu ruta quedó al día.</p>';
+        b.innerHTML = '<p class="text-sm font-semibold text-brand-700 text-center py-1"><i class="ph-bold ph-check-circle"></i> Gracias, tu ruta quedó al día.</p>';
         setTimeout(() => b.remove(), 2200);
     }
 }
@@ -847,15 +849,15 @@ function mostrarFalloDeCarga() {
     if (document.getElementById('aviso-carga')) return;
     const aviso = document.createElement('div');
     aviso.id = 'aviso-carga';
-    aviso.className = 'fixed bottom-20 md:bottom-6 left-4 right-4 md:left-auto md:right-6 md:max-w-sm z-50 bg-white border border-red-200 rounded-2xl shadow-xl p-4 flex items-start gap-3';
+    aviso.className = 'fixed bottom-20 md:bottom-6 left-4 right-4 md:left-auto md:right-6 md:max-w-sm z-50 bg-surface border border-red-300 rounded-lg shadow-alzado p-4 flex items-start gap-3 animate-surgir';
     aviso.innerHTML =
         '<i class="ph-fill ph-warning-circle text-red-500 text-xl shrink-0"></i>' +
         '<div class="flex-1">' +
-        '<p class="text-sm font-bold text-gray-900">No pudimos cargar esta página</p>' +
-        '<p class="text-xs text-gray-600 mt-0.5">Suele ser la conexión. Vuelve a intentarlo.</p>' +
-        '<button onclick="location.reload()" class="mt-2 px-3 py-2 bg-brand-600 text-white text-xs font-bold rounded-lg">Reintentar</button>' +
+        '<p class="text-sm font-semibold text-ink">No pudimos cargar esta página</p>' +
+        '<p class="text-sm text-ink-soft mt-0.5">Suele ser la conexión. Vuelve a intentarlo.</p>' +
+        '<button onclick="location.reload()" class="btn btn-primario !py-2 !px-3 !text-sm mt-2.5">Reintentar</button>' +
         '</div>' +
-        '<button onclick="this.parentElement.remove()" aria-label="Cerrar aviso" class="text-gray-400 p-1"><i class="ph ph-x"></i></button>';
+        '<button onclick="this.parentElement.remove()" aria-label="Cerrar aviso" class="text-ink-mute hover:text-ink transition-colors duration-180 p-1"><i class="ph ph-x"></i></button>';
     document.body.appendChild(aviso);
 }
 (function blindarArranque() {
@@ -1137,42 +1139,57 @@ function goto(page) {
     window.location.href=m[page]||'index.html';
 }
 
+// Logo de marca. El dibujo NO se toca (Juan tiene 16 propuestas pendientes de
+// elegir, ver identidad-visual en el vault): lo único que cambia son los verdes,
+// que estaban en el #22c55e/#16a34a de fábrica de Tailwind y desentonaban contra
+// el verde bosque de la marca nueva.
+function logoSinapsisSVG(clase = 'w-9 h-9', idGrad = 'neuro') {
+    return `<svg viewBox="0 0 32 32" role="img" aria-label="Sinapsis" class="${clase} shrink-0"><defs><linearGradient id="${idGrad}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2e7a57"/><stop offset="1" stop-color="#0f3a29"/></linearGradient></defs><g fill="none" stroke="#1b6144" stroke-width="1.5" stroke-linecap="round" opacity=".85"><path d="M13.6 12.6 L9.4 5.6 M11 15 L3.6 12.2 M12.4 19.6 L6.6 25.4 M17.6 19.8 L21.4 26.4 M19.4 14.6 L27.4 11.4 M18.2 12.2 L22.6 6.2"/></g><g fill="none" stroke="#8cb69c" stroke-width="1.1" stroke-linecap="round" opacity=".7"><path d="M9.4 5.6 L3.6 12.2 M21.4 26.4 L27.4 11.4 M3.6 12.2 L6.6 25.4"/></g><circle cx="15.6" cy="16.2" r="5" fill="url(#${idGrad})"/><circle cx="15.6" cy="16.2" r="2" fill="#dce9e0"/><g fill="#1b6144"><circle cx="9" cy="4.6" r="2"/><circle cx="2.8" cy="11.8" r="2"/><circle cx="6" cy="26.2" r="2"/><circle cx="21.9" cy="27.4" r="2"/><circle cx="28.4" cy="11" r="2"/><circle cx="23.2" cy="5.4" r="2"/></g></svg>`;
+}
+
 function renderNav(activePage='') {
     document.getElementById('theme-floating-toggle')?.remove();
-    const active=(id)=>activePage===id?'text-brand-600 bg-brand-50 px-3 py-1 rounded-lg':'text-gray-500 hover:text-brand-600';
-    const mactive=(id)=>activePage===id?'text-brand-600':'text-gray-500';
+    // La página actual se marca con una regla bajo el enlace, no con una píldora
+    // de fondo de color: la barra queda plana y el estado se lee igual.
+    const active = (id) => activePage === id
+        ? 'text-ink after:scale-x-100'
+        : 'text-ink-soft hover:text-ink after:scale-x-0 hover:after:scale-x-100';
+    const mactive = (id) => activePage === id ? 'text-brand-600' : 'text-ink-mute';
+    const enlaceNav = 'relative py-1 text-sm font-medium transition-colors duration-180 ' +
+        'after:absolute after:left-0 after:right-0 after:-bottom-0.5 after:h-px after:bg-brand-600 ' +
+        'after:origin-left after:transition-transform after:duration-260 after:ease-salida';
     document.body.insertAdjacentHTML('afterbegin', `
-        <nav class="glass-nav fixed w-full z-40 top-0 h-16 flex items-center justify-between px-4 lg:px-8 shadow-sm">
-            <a href="index.html" class="flex items-center gap-3">
-                <svg viewBox="0 0 32 32" role="img" aria-label="Sinapsis" class="w-9 h-9 shrink-0"><defs><linearGradient id="neuro-nav" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#22c55e"/><stop offset="1" stop-color="#15803d"/></linearGradient></defs><g fill="none" stroke="#16a34a" stroke-width="1.5" stroke-linecap="round" opacity=".85"><path d="M13.6 12.6 L9.4 5.6 M11 15 L3.6 12.2 M12.4 19.6 L6.6 25.4 M17.6 19.8 L21.4 26.4 M19.4 14.6 L27.4 11.4 M18.2 12.2 L22.6 6.2"/></g><g fill="none" stroke="#86efac" stroke-width="1.1" stroke-linecap="round" opacity=".7"><path d="M9.4 5.6 L3.6 12.2 M21.4 26.4 L27.4 11.4 M3.6 12.2 L6.6 25.4"/></g><circle cx="15.6" cy="16.2" r="5" fill="url(#neuro-nav)"/><circle cx="15.6" cy="16.2" r="2" fill="#dcfce7"/><g fill="#16a34a"><circle cx="9" cy="4.6" r="2"/><circle cx="2.8" cy="11.8" r="2"/><circle cx="6" cy="26.2" r="2"/><circle cx="21.9" cy="27.4" r="2"/><circle cx="28.4" cy="11" r="2"/><circle cx="23.2" cy="5.4" r="2"/></g></svg>
-                <span class="font-bold text-xl tracking-tight text-gray-900">Sinap<span class="text-brand-600">sis</span></span>
+        <nav class="glass-nav fixed w-full z-40 top-0 h-16 flex items-center justify-between px-4 lg:px-8">
+            <a href="index.html" class="flex items-center gap-2.5 group/marca">
+                ${logoSinapsisSVG('w-8 h-8', 'neuro-nav')}
+                <span class="fuente-display text-[1.35rem] font-semibold tracking-tight text-ink">Sinapsis</span>
             </a>
-            <div class="hidden md:flex items-center gap-6" id="nav-links">
-                <a href="index.html" class="font-medium transition ${active('home')}" id="nav-home">Ecosistema</a>
-                <a href="directory.html" class="font-medium transition ${active('directory')}" id="nav-dir">Comunidad</a>
-                <a href="news.html" class="font-medium transition ${active('news')}" id="nav-news">Novedades</a>
-                <a href="preparacion.html" class="font-medium transition ${active('exam-modules')}" id="nav-exams">Preparación</a>
-                <a href="messages.html" class="solo-miembro hidden font-medium transition ${active('messages')}" id="nav-msg">Mensajes</a>
-                <a href="admin.html" class="hidden font-medium transition ${active('admin')}" id="nav-admin">Admin</a>
+            <div class="hidden md:flex items-center gap-7" id="nav-links">
+                <a href="index.html" class="${enlaceNav} ${active('home')}" id="nav-home">Ecosistema</a>
+                <a href="directory.html" class="${enlaceNav} ${active('directory')}" id="nav-dir">Comunidad</a>
+                <a href="news.html" class="${enlaceNav} ${active('news')}" id="nav-news">Novedades</a>
+                <a href="preparacion.html" class="${enlaceNav} ${active('exam-modules')}" id="nav-exams">Preparación</a>
+                <a href="messages.html" class="solo-miembro hidden ${enlaceNav} ${active('messages')}" id="nav-msg">Mensajes</a>
+                <a href="admin.html" class="hidden ${enlaceNav} ${active('admin')}" id="nav-admin">Admin</a>
             </div>
             <div class="flex items-center gap-2">
                 <button type="button" class="theme-toggle" data-theme-toggle onclick="toggleThemeMode()" aria-label="Cambiar tema"></button>
-                <a href="profile.html" id="profile-menu-trigger" class="solo-miembro hidden h-10 w-10 rounded-full bg-brand-50 overflow-hidden ring-2 ring-transparent hover:ring-brand-300 transition-all shadow-sm" title="Ver perfil">
-                    <img src="https://ui-avatars.com/api/?name=Usuario&background=22c55e&color=fff" alt="Perfil" class="object-cover w-full h-full" id="header-avatar">
+                <a href="profile.html" id="profile-menu-trigger" class="solo-miembro hidden h-9 w-9 rounded-full overflow-hidden border border-line hover:border-brand-600 transition-colors duration-180" title="Ver perfil">
+                    <img src="https://ui-avatars.com/api/?name=Usuario&background=1b6144&color=fff" alt="Perfil" class="object-cover w-full h-full" id="header-avatar">
                 </a>
-                <a href="profile.html" class="solo-miembro hidden md:flex items-center gap-1 text-xs text-gray-500 font-semibold hover:text-brand-600 transition px-2 py-1 rounded-lg hover:bg-brand-50"><span>Mi perfil</span><i class="ph-bold ph-caret-down"></i></a>
-                <a href="login.html" id="nav-login" class="solo-invitado hidden inline-flex items-center gap-1 text-xs font-bold text-gray-600 hover:text-brand-700 transition px-3 py-2 rounded-lg border border-gray-200 bg-white hover:bg-brand-50"><i class="ph-bold ph-sign-in"></i><span>Entrar</span></a>
-                <a href="register.html" id="nav-register" class="solo-invitado hidden md:flex items-center gap-1 text-xs font-bold text-white bg-brand-600 hover:bg-brand-700 transition px-3 py-2 rounded-lg shadow-sm"><span>Crear cuenta</span></a>
+                <a href="profile.html" class="solo-miembro hidden md:inline-flex items-center text-sm text-ink-soft hover:text-ink transition-colors duration-180 px-1">Mi perfil</a>
+                <a href="login.html" id="nav-login" class="solo-invitado hidden btn btn-plano !py-2 !px-3 !text-sm">Entrar</a>
+                <a href="register.html" id="nav-register" class="solo-invitado hidden md:inline-flex btn btn-primario !py-2 !px-3.5 !text-sm">Crear cuenta</a>
             </div>
         </nav>
-        <nav id="mobile-nav" class="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur border-t border-gray-200 grid grid-cols-6">
-            <a href="index.html" class="py-3 text-[10px] font-semibold flex flex-col items-center gap-1 ${mactive('home')}"><i class="ph ph-house text-lg"></i><span>Inicio</span></a>
-            <a href="directory.html" class="py-3 text-[10px] font-semibold flex flex-col items-center gap-1 ${mactive('directory')}"><i class="ph ph-users text-lg"></i><span>Directorio</span></a>
-            <a href="news.html" class="py-3 text-[10px] font-semibold flex flex-col items-center gap-1 ${mactive('news')}"><i class="ph ph-newspaper text-lg"></i><span>Novedades</span></a>
-            <a href="preparacion.html" class="py-3 text-[10px] font-semibold flex flex-col items-center gap-1 ${mactive('exam-modules')}"><i class="ph ph-graduation-cap text-lg"></i><span>Prep.</span></a>
-            <a href="messages.html" class="solo-miembro hidden py-3 text-[10px] font-semibold flex flex-col items-center gap-1 ${mactive('messages')}"><i class="ph ph-chats-circle text-lg"></i><span>Mensajes</span></a>
-            <a href="profile.html" class="solo-miembro hidden py-3 text-[10px] font-semibold flex flex-col items-center gap-1 ${mactive('profile')}"><i class="ph ph-user-circle text-lg"></i><span>Perfil</span></a>
-            <a href="login.html" class="solo-invitado hidden py-3 text-[10px] font-semibold flex flex-col items-center gap-1 text-gray-500"><i class="ph ph-sign-in text-lg"></i><span>Entrar</span></a>
+        <nav id="mobile-nav" class="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-surface/95 backdrop-blur border-t border-line grid grid-cols-6">
+            <a href="index.html" class="py-3 text-[10px] font-semibold flex flex-col items-center gap-1 transition-colors duration-180 ${mactive('home')}"><i class="ph ph-house text-lg"></i><span>Inicio</span></a>
+            <a href="directory.html" class="py-3 text-[10px] font-semibold flex flex-col items-center gap-1 transition-colors duration-180 ${mactive('directory')}"><i class="ph ph-users text-lg"></i><span>Directorio</span></a>
+            <a href="news.html" class="py-3 text-[10px] font-semibold flex flex-col items-center gap-1 transition-colors duration-180 ${mactive('news')}"><i class="ph ph-newspaper text-lg"></i><span>Novedades</span></a>
+            <a href="preparacion.html" class="py-3 text-[10px] font-semibold flex flex-col items-center gap-1 transition-colors duration-180 ${mactive('exam-modules')}"><i class="ph ph-graduation-cap text-lg"></i><span>Prep.</span></a>
+            <a href="messages.html" class="solo-miembro hidden py-3 text-[10px] font-semibold flex flex-col items-center gap-1 transition-colors duration-180 ${mactive('messages')}"><i class="ph ph-chats-circle text-lg"></i><span>Mensajes</span></a>
+            <a href="profile.html" class="solo-miembro hidden py-3 text-[10px] font-semibold flex flex-col items-center gap-1 transition-colors duration-180 ${mactive('profile')}"><i class="ph ph-user-circle text-lg"></i><span>Perfil</span></a>
+            <a href="login.html" class="solo-invitado hidden py-3 text-[10px] font-semibold flex flex-col items-center gap-1 text-ink-mute"><i class="ph ph-sign-in text-lg"></i><span>Entrar</span></a>
         </nav>
     `);
     // La nav se pinta antes de que resuelva onAuthStateChanged: arranca en modo
