@@ -835,6 +835,43 @@ const _authResuelta = new Promise(resolve => {
     const off = auth.onAuthStateChanged(u => { off(); resolve(u); });
 });
 
+// ── Red de seguridad del arranque ───────────────────────────────────────────
+// TODA pagina arranca dentro de un callback async de onAuthStateChanged, y
+// ninguna (salvo el directorio, que ya se arreglo) captura sus excepciones: una
+// lectura de Firestore que falla —lo normal en la red de un celular— deja la
+// promesa rechazada sin dueño y la pagina a medio pintar, en silencio, sin que
+// el usuario sepa si esperar o recargar. Se envuelve aqui, una vez, para que
+// eso nunca vuelva a ser invisible en ninguna pagina (ni en las que se
+// escriban despues).
+function mostrarFalloDeCarga() {
+    if (document.getElementById('aviso-carga')) return;
+    const aviso = document.createElement('div');
+    aviso.id = 'aviso-carga';
+    aviso.className = 'fixed bottom-20 md:bottom-6 left-4 right-4 md:left-auto md:right-6 md:max-w-sm z-50 bg-white border border-red-200 rounded-2xl shadow-xl p-4 flex items-start gap-3';
+    aviso.innerHTML =
+        '<i class="ph-fill ph-warning-circle text-red-500 text-xl shrink-0"></i>' +
+        '<div class="flex-1">' +
+        '<p class="text-sm font-bold text-gray-900">No pudimos cargar esta página</p>' +
+        '<p class="text-xs text-gray-600 mt-0.5">Suele ser la conexión. Vuelve a intentarlo.</p>' +
+        '<button onclick="location.reload()" class="mt-2 px-3 py-2 bg-brand-600 text-white text-xs font-bold rounded-lg">Reintentar</button>' +
+        '</div>' +
+        '<button onclick="this.parentElement.remove()" aria-label="Cerrar aviso" class="text-gray-400 p-1"><i class="ph ph-x"></i></button>';
+    document.body.appendChild(aviso);
+}
+(function blindarArranque() {
+    const original = auth.onAuthStateChanged.bind(auth);
+    auth.onAuthStateChanged = function (cb, ...resto) {
+        if (typeof cb !== 'function') return original(cb, ...resto);
+        return original(async function (u) {
+            try { return await cb.call(this, u); }
+            catch (e) {
+                console.error('[Sinapsis] el arranque de la página falló:', e);
+                mostrarFalloDeCarga();
+            }
+        }, ...resto);
+    };
+})();
+
 // Vigilancia central de "la sesion del miembro se cayo". Va aqui y no en cada
 // pagina porque el directorio (y otras) normalizan el anonimo a "invitado" por
 // su cuenta, sin pasar por hydrateAuthenticatedUser: puesto alli, este aviso no
