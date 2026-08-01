@@ -419,6 +419,9 @@ const delfLogic = {
 
         const audio = new Audio(clip.audioUrl);
         s.coAudio = audio;
+        // Si alguna vez hace falta la duración, la manda la FICHA del clip y no
+        // este elemento: lamejs no escribe cabecera Xing, así que `audio.duration`
+        // puede mentir mientras el archivo se está descargando.
         audio.onended = () => {
             if (s.coAudio !== audio) return;
             const ultima = s.coPlays[doc.id] >= (doc.maxPlays || 2);
