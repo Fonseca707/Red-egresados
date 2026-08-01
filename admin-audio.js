@@ -12,18 +12,28 @@ const audioClipsCollection = artifactsRoot.collection('public').doc('data').coll
 const PROXY_TTS = 'https://sinapsis-ia.sinapsis-lcp.workers.dev/tts';
 const PROXY_TTS_VOCES = PROXY_TTS + '/voces';
 
-// Dos generadores, para poder comparar con los oídos antes de casarse con uno.
-// Gemini: barato, ya configurado, pero el acento se pide por escrito y sus
-// consonantes son más blandas — justo lo que un examen de escucha evalúa.
-// ElevenLabs: más nítido y sus acentos son voces reales (británica, australiana),
-// no una instrucción que el modelo puede ignorar. Devuelve MP3 ya comprimido.
-// Los dos están operativos (la clave de Gemini quedó puesta en el Worker el
-// 2026-07-26). ElevenLabs va primero —o sea, sale por defecto— porque sus
-// acentos son voces reales y no una instrucción escrita que el modelo puede
-// ignorar, y en un examen de escucha el acento es parte de lo que se evalúa.
+// Dos generadores, y cuál se usa YA NO ES UNA PREFERENCIA: es una decisión
+// cerrada por examen (Juan, 2026-07-31, después de comparar los dos a oído).
+//
+//   · DELF (francés) → ElevenLabs. Sale estable tirada tras tirada y el francés
+//     no se le oye a IA. El francés queda cerrado: no se toca el preset.
+//   · TOEFL (inglés) → Gemini. Es mucho MÁS volátil, y esa es justamente la
+//     razón: da variedad entre clips (voces, acentos, habla coloquial) y el
+//     TOEFL la pide. El precio es revisar cada clip con más cuidado — por eso
+//     abajo existen las tomas: se generan varias y se elige a oído.
+//
+// El select sigue existiendo para poder saltarse la regla en un caso puntual,
+// pero al cambiar de examen se repone el que corresponde.
 const PROVEEDORES = {
-    elevenlabs: { etiqueta: 'ElevenLabs — voces con acento real (recomendado)', comprimirEnCliente: false },
-    gemini:     { etiqueta: 'Gemini — más barato, acento por instrucción', comprimirEnCliente: true }
+    elevenlabs: { etiqueta: 'ElevenLabs — estable (el del DELF)', comprimirEnCliente: false, maxCharsDialogo: 2000 },
+    gemini:     { etiqueta: 'Gemini — variado (el del TOEFL)',    comprimirEnCliente: true }
+};
+
+const GENERADOR_POR_EXAMEN = { delf: 'elevenlabs', toefl: 'gemini' };
+
+const PORQUE_ESE_GENERADOR = {
+    delf:  'ElevenLabs sale estable tirada tras tirada; en francés es lo que decidió Juan y no se cambia.',
+    toefl: 'Gemini varía mucho entre tomas, y esa variedad es la que el TOEFL necesita. Genera varias tomas y quédate con la que mejor suene.'
 };
 
 // Voces del generador. La descripción es la que guía al elegir: en el DELF los
@@ -202,19 +212,24 @@ const ACENTOS = {
 const ENCODER_CDN = 'https://cdn.jsdelivr.net/npm/lamejs@1.2.1/lame.min.js';
 const MP3_KBPS = 64;
 
-// ── Troceo de los documentos largos ─────────────────────────────────────────
-// Por qué (2026-07-28, reporte de Juan): los clips largos salen atropellados
-// "casi siempre", mientras que los cortos salen bien. Es el mismo modo de fallo
-// que ya medimos —el modelo corre para caber— pero agravado por la longitud:
-// cuanto más texto de un tirón, más margen tiene para acelerar.
+// ── Troceo: RED DE SEGURIDAD, ya no un paso normal ──────────────────────────
+// Se construyó el 2026-07-28 para los documentos largos, que salían
+// atropellados: partir el texto le quitaba al modelo margen para acelerar y
+// permitía rehacer solo la parte mala.
 //
-// Trocear ataca la causa y además cambia la economía del error: hoy un
-// documento de 2 min que sale rápido se tira ENTERO; por partes se rehace solo
-// la parte mala (20 s de generación) y las buenas se conservan.
+// ⛔ Juan lo DESCARTÓ el 2026-07-31, y por buenas razones, una por generador:
+//   · TOEFL/Gemini: la volatilidad entre tiradas es tan alta que dos partes
+//     generadas por separado no suenan a la misma grabación. El remedio salía
+//     peor que la enfermedad — y esa volatilidad ahora se busca a propósito.
+//   · DELF/ElevenLabs: ya no hace falta. Sale estable de una sola tirada, y los
+//     tres documentos del sujet oficial miden 1633 / 1716 / 1842 caracteres
+//     contra el tope de 2000 del endpoint de diálogo: caben enteros.
 //
-// El miedo legítimo era el salto de tono entre partes. Con Gemini no existe el
-// encadenado nativo de ElevenLabs (previous_text / previous_request_ids), así
-// que la continuidad se fabrica con cuatro reglas, en orden de peso:
+// Así que el troceo NO se dispara por longitud. Solo salta cuando el texto no
+// cabe de una en el proveedor —si no, la petición se rechazaría entera— y
+// cuando se pide a mano con "---". En ambos casos se avisa, no se hace en
+// silencio. La continuidad entre partes se fabrica con cuatro reglas, en orden
+// de peso, que siguen valiendo cuando toca partir:
 //   1. La voz es un id fijo → el TIMBRE no puede cambiar. Nunca se cambia de
 //      voz ni de mapeo hablante→voz entre partes de un mismo clip.
 //   2. El preámbulo de estilo viaja IDÉNTICO, carácter por carácter, en todas.
@@ -225,8 +240,8 @@ const MP3_KBPS = 64;
 //   4. Al pegar se iguala el volumen de cada parte (mismo RMS) y se separa con
 //      un silencio corto. Un trozo más fuerte que el anterior se oye como
 //      "otro corte" aunque la voz sea la misma.
-const TROCEO_DESDE_PALABRAS = 120; // por debajo de esto, una sola generación
-const TROCEO_OBJETIVO = 85;        // palabras por parte (≈ 34 s a 150 wpm)
+const TROCEO_OBJETIVO = 85;        // palabras por parte cuando SÍ toca partir
+const PROXY_MAX_CHARS = 6000;      // tope del Worker, igual para los dos generadores
 const CORTE_MANUAL = /^\s*-{3,}\s*$/;  // una línea "---" fuerza un corte ahí
 const PAUSA_ENTRE_PARTES_MS = 350; // lo que dura una respiración entre turnos
 const CONCURRENCIA = 2;            // generaciones a la vez (el proxy limita 40/h)
@@ -255,11 +270,32 @@ const WSOLA_VENTANA_MS = 40;
 const WSOLA_BUSQUEDA_MS = 10;
 
 const audioLogic = {
-    ultimoAudio: null,    // Blob ya comprimido, aún sin guardar
-    ultimaDuracion: 0,
     clips: [],
-    partes: [],           // trozos del clip en curso, cada uno con su medida
-    sesion: null,         // configuración congelada al empezar a generar
+
+    // ── Tomas ───────────────────────────────────────────────────────────────
+    // Por qué existen (2026-07-31): el TOEFL se genera con Gemini justamente
+    // porque varía mucho entre tiradas. Con un solo hueco, cada "vuelve a
+    // generar" PISABA la toma anterior: si la primera era la buena, se perdía y
+    // había que rezar para que volviera a salir. Ahora cada generación se apila
+    // con su wpm y su reproductor, se escuchan seguidas y se elige una.
+    //
+    // Cada toma es un clip completo e independiente (sus partes, su sesión, su
+    // audio), así que rehacer una parte o ajustar el ritmo dentro de una toma no
+    // toca a las demás.
+    tomas: [],
+    tomaActiva: -1,
+
+    get toma() { return this.tomas[this.tomaActiva] || null; },
+    // Alias sobre la toma activa: el resto del código sigue hablando de
+    // this.partes / this.sesion / this.ultimoAudio como antes de las tomas.
+    get partes() { return this.toma?.partes || []; },
+    set partes(v) { if (this.toma) this.toma.partes = v; },
+    get sesion() { return this.toma?.sesion || null; },
+    set sesion(v) { if (this.toma) this.toma.sesion = v; },
+    get ultimoAudio() { return this.toma?.audio || null; },
+    set ultimoAudio(v) { if (this.toma) this.toma.audio = v; },
+    get ultimaDuracion() { return this.toma?.duracionSeg || 0; },
+    set ultimaDuracion(v) { if (this.toma) this.toma.duracionSeg = v; },
 
     // ── Compresión (en el navegador del admin, antes de subir) ──────────────
     cargarEncoder() {
@@ -408,9 +444,29 @@ const audioLogic = {
         caja.classList.remove('hidden');
     },
 
-    // Al cambiar el tipo de documento se ajusta cuántas voces se piden: el
-    // diálogo necesita dos, el monólogo una.
+    // Al cambiar el tipo de documento, lo primero es el GENERADOR: cada examen
+    // tiene el suyo decidido (DELF→ElevenLabs, TOEFL→Gemini) y elegir a mano se
+    // presta a generar medio banco con el que no era.
+    //
+    // Solo se repone al cambiar de EXAMEN, no de tipo: dentro del mismo examen
+    // se respeta lo que haya puesto Juan, por si está comparando algo puntual.
     onTipoChange() {
+        const cfg = ESTILOS[document.getElementById('audio-tipo').value];
+        if (!cfg) return;
+        const select = document.getElementById('audio-proveedor');
+        const debido = GENERADOR_POR_EXAMEN[cfg.examen];
+        const cambioDeExamen = this.examenActual !== cfg.examen;
+        this.examenActual = cfg.examen;
+        if (cambioDeExamen && debido && select?.value && select.value !== debido) {
+            select.value = debido;
+            return this.onProveedorChange();   // este termina llamando a aplicarTipo()
+        }
+        this.aplicarTipo();
+    },
+
+    // Lo que depende del tipo una vez el generador ya está fijado: cuántas
+    // voces se piden (el diálogo necesita dos, el monólogo una) y la ficha.
+    aplicarTipo() {
         const tipo = document.getElementById('audio-tipo').value;
         const cfg = ESTILOS[tipo];
         // Al abrir la pestaña, onProveedorChange corre antes de que el select de
@@ -423,9 +479,36 @@ const audioLogic = {
         const esGemini = this.proveedor() === 'gemini';
         document.getElementById('audio-acento-wrap').classList.toggle('hidden', cfg.examen !== 'toefl' || !esGemini);
         this.pintarFicha(cfg);
+        this.pintarNotaGenerador(cfg);
         // Cada tipo trae su propia instrucción y su ritmo: cambiar de tipo los
         // repone, para no arrastrar los del anterior sin darse cuenta.
         this.restaurarInstruccion();
+    },
+
+    // Por qué ese generador y no el otro, escrito bajo el select. Si está
+    // puesto uno distinto del que manda la decisión, se dice — que salte a la
+    // vista antes de generar, no después de tener el clip en el banco.
+    pintarNotaGenerador(cfg) {
+        const caja = document.getElementById('audio-generador-nota');
+        if (!caja || !cfg) return;
+        const debido = GENERADOR_POR_EXAMEN[cfg.examen];
+        const actual = this.proveedor();
+        if (debido && actual !== debido) {
+            caja.className = 'text-xs mt-1 text-red-700';
+            caja.innerHTML = `<b>No es el generador de este examen.</b> ${this.escapar(PORQUE_ESE_GENERADOR[cfg.examen] || '')} `
+                + `<button type="button" onclick="audioLogic.reponerGenerador()" class="font-bold underline">Volver a ${PROVEEDORES[debido].etiqueta.split(' —')[0]}</button>`;
+        } else {
+            caja.className = 'text-xs mt-1 text-gray-500';
+            caja.textContent = PORQUE_ESE_GENERADOR[cfg.examen] || '';
+        }
+    },
+
+    reponerGenerador() {
+        const cfg = ESTILOS[document.getElementById('audio-tipo').value];
+        const debido = GENERADOR_POR_EXAMEN[cfg?.examen];
+        if (!debido) return;
+        document.getElementById('audio-proveedor').value = debido;
+        this.onProveedorChange();
     },
 
     // ── Ficha "así suena el audio real" ─────────────────────────────────────
@@ -469,7 +552,7 @@ const audioLogic = {
         const cual = this.proveedor();
         const voz1 = document.getElementById('audio-voz1');
         const voz2 = document.getElementById('audio-voz2');
-        this.onTipoChange();
+        this.aplicarTipo();   // aplicarTipo y no onTipoChange: si no, se llaman en círculo
 
         if (cual === 'gemini') {
             const opciones = VOCES.map(v => `<option value="${v.id}">${v.id} — ${v.nota}</option>`).join('');
@@ -546,14 +629,39 @@ const audioLogic = {
         return salida.filter(u => u.texto);
     },
 
+    // ¿Cuántos caracteres acepta de una sola vez el generador elegido? Si el
+    // transcript se pasa, la petición se rechaza entera: ese —y solo ese— es el
+    // caso en que partir sigue siendo mejor que no tener clip.
+    topeDeCaracteres(proveedor = this.proveedor(), hablantes = 1) {
+        const p = PROVEEDORES[proveedor] || {};
+        return hablantes >= 2 && p.maxCharsDialogo
+            ? Math.min(p.maxCharsDialogo, PROXY_MAX_CHARS)
+            : PROXY_MAX_CHARS;
+    },
+
+    // Motivo por el que habría que partir, o '' si cabe de una. Se usa tanto
+    // para decidir como para explicárselo a Juan antes de gastar la generación.
+    motivoDeTroceo(texto, proveedor = this.proveedor(), hablantes = null) {
+        const cfg = ESTILOS[document.getElementById('audio-tipo')?.value];
+        const n = hablantes ?? (cfg?.hablantes || 1);
+        const tope = this.topeDeCaracteres(proveedor, n);
+        if (texto.length > tope) {
+            return `el transcript son ${texto.length} caracteres y ${PROVEEDORES[proveedor]?.etiqueta.split(' —')[0] || 'el generador'} solo acepta ${tope} de una vez`;
+        }
+        if (this.unidades(texto).some(u => u.corteDespues)) return 'lo pediste tú con «---»';
+        return '';
+    },
+
     // Agrupa las unidades en partes parejas. El número de partes sale de una
     // división —no de un tope— para que todas queden del mismo tamaño: con 350
     // palabras salen 4 de ~88, no 3 de 120 y una de 30.
+    //
+    // Ya NO se parte por ser largo (ver el comentario de arriba): solo si no
+    // cabe en el generador o si hay un "---" puesto a mano.
     trocear(texto) {
         const total = this.palabrasNarradas(texto);
         const us = this.unidades(texto);
-        const cortesManuales = us.some(u => u.corteDespues);
-        if (total < TROCEO_DESDE_PALABRAS && !cortesManuales) return [texto.trim()];
+        if (!this.motivoDeTroceo(texto)) return [texto.trim()];
 
         const n = Math.max(1, Math.round(total / TROCEO_OBJETIVO));
         const objetivo = total / n;
@@ -612,26 +720,55 @@ const audioLogic = {
         }
 
         const acento = document.getElementById('audio-acento').value;
-        this.sesion = {
+        const sesion = {
             tipo, cfg, voces, acento,
             proveedor: this.proveedor(),
             wpm: this.wpmObjetivo(),
             instruccion: [this.instruccionActual(), ACENTOS[acento]?.frase].filter(Boolean).join(' '),
             transcript: texto
         };
+
+        // Las tomas solo son comparables si son del MISMO encargo. Si cambió el
+        // transcript, las voces o la instrucción, lo anterior ya no es "otra
+        // toma de esto": es otro clip, y apilarlas juntas invitaría a guardar la
+        // de un texto viejo creyendo que es la buena.
+        if (this.firma(this.sesion) && this.firma(sesion) !== this.firma(this.sesion)) this.limpiarTomas();
+
+        this.tomas.push({ n: this.tomas.length + 1, sesion, partes: [], audio: null, duracionSeg: 0 });
+        this.tomaActiva = this.tomas.length - 1;
         this.partes = this.trocear(texto).map((t, i) => ({ i, texto: t, estado: 'pendiente' }));
-        this.ultimoAudio = null;
-        this.ultimaDuracion = 0;
+
         document.getElementById('audio-btn-guardar').disabled = true;
         document.getElementById('audio-preview-wrap').classList.add('hidden');
         this.pintarRitmo(null);
         this.pintarPartes();
+        this.pintarTomas();
 
         const n = this.partes.length;
+        const motivo = this.motivoDeTroceo(texto, sesion.proveedor, cfg.hablantes);
         this.aviso(n > 1
-            ? `Generando ${n} partes de una misma grabación. Cada una se mide por separado, así que si alguna sale atropellada se rehace sola.`
-            : 'Generando el audio.', 'info');
+            ? `Va por partes porque ${motivo}. Se generan ${n} y se pegan en un solo clip; cada una se mide por separado, así que si alguna sale atropellada se rehace sola.`
+            : (this.tomas.length > 1 ? `Generando la toma ${this.tomas.length}. Las anteriores se conservan para comparar.` : 'Generando el audio.'), 'info');
         await this.correrPendientes();
+    },
+
+    // Identidad del encargo: dos generaciones con la misma firma son tomas
+    // alternativas de lo mismo y se pueden comparar; con firma distinta, no.
+    firma(s) {
+        if (!s) return '';
+        return [s.tipo, s.proveedor, s.wpm, s.acento, (s.voces || []).map(v => v.voice).join('+'), s.instruccion, s.transcript].join(' ');
+    },
+
+    limpiarTomas() {
+        for (const t of this.tomas) {
+            for (const p of t.partes || []) {
+                if (p.url) URL.revokeObjectURL(p.url);
+                if (p.corregido?.url) URL.revokeObjectURL(p.corregido.url);
+            }
+            if (t.url) URL.revokeObjectURL(t.url);
+        }
+        this.tomas = [];
+        this.tomaActiva = -1;
     },
 
     // Lanza las partes pendientes de a CONCURRENCIA y pega el resultado.
@@ -654,8 +791,21 @@ const audioLogic = {
             this.aviso(`No se pudo generar: ${e.message}`, 'error');
         } finally {
             boton.disabled = false;
-            boton.textContent = 'Generar audio';
+            this.pintarBotonGenerar();
         }
+    },
+
+    // El mismo botón sirve para la primera generación y para pedir otra toma;
+    // lo que cambia es el nombre, para que se entienda que no pisa la anterior.
+    pintarBotonGenerar() {
+        const boton = document.getElementById('audio-btn-generar');
+        if (!boton) return;
+        const texto = document.getElementById('audio-texto')?.value.trim() || '';
+        const mismoEncargo = this.toma?.audio && this.sesion?.transcript === texto;
+        boton.textContent = mismoEncargo ? 'Otra toma' : 'Generar audio';
+        boton.title = mismoEncargo
+            ? 'Genera otra versión del mismo texto sin perder las anteriores: se apilan abajo y eliges cuál guardar.'
+            : '';
     },
 
     async generarParte(parte) {
@@ -704,188 +854,6 @@ const audioLogic = {
         await this.correrPendientes();
     },
 
-    // ── Banco de pruebas del ritmo ──────────────────────────────────────────
-    // Por qué existe (2026-07-28): los documentos del DELF salen rápidos
-    // SIEMPRE, y "siempre" no es varianza, es sesgo. El sospechoso es el propio
-    // preámbulo: le pide al modelo «environ 150 mots par minute», un número que
-    // no tiene forma de contar. Gemini no expone ningún parámetro de velocidad
-    // (lo verificamos en su doc: `speech_config` solo lleva voz y hablante), así
-    // que el ritmo se pide con palabras — y no sabemos QUÉ palabras funcionan.
-    //
-    // Adivinar ya nos costó una vez (los dos detectores acústicos del §14 de la
-    // nota). Así que en vez de apostar por una redacción, se generan las cuatro
-    // con el MISMO texto corto y se miden. El ganador lo dice el número.
-    VARIANTES: [
-        {
-            id: 'actual',
-            nombre: 'Como está hoy',
-            nota: 'El preámbulo tal cual, con el número de palabras por minuto.',
-            instruccion: base => base,
-            texto: t => t
-        },
-        {
-            id: 'sin-numero',
-            nombre: 'Sin el número, ritmo descrito',
-            nota: 'Fuera «150 mots par minute»; en su lugar, cómo debe sonar. Un modelo no cuenta palabras, pero sí imita un registro.',
-            instruccion: base => base.replace(/[^.:;]*\b\d+\s*(mots|words|palabras)[^.:;]*[.:;]?/gi, '').replace(/\s{2,}/g, ' ').trim()
-                + ' Speak slowly and deliberately, like a language-exam recording made for learners: clear pauses between sentences, every word fully articulated, never hurried.',
-            texto: t => t
-        },
-        {
-            id: 'etiqueta',
-            nombre: 'Con etiqueta de velocidad',
-            nota: 'La doc de Gemini admite marcas de estilo tipo [slow] dentro del prompt. Ojo: hay que comprobar que no las lea en voz alta.',
-            instruccion: base => base + ' [slow] [measured pace]',
-            texto: t => t
-        },
-        {
-            id: 'espaciado',
-            nombre: 'Texto espaciado',
-            nota: 'No toca la instrucción: separa los turnos y marca las frases largas. La puntuación sí frena a un TTS de forma determinista.',
-            instruccion: base => base,
-            texto: t => t.split('\n').filter(l => l.trim()).join('\n\n').replace(/([,;])\s+/g, '$1 … ')
-        }
-    ],
-
-    async probarRitmo() {
-        const texto = document.getElementById('audio-texto').value.trim();
-        if (!texto) return this.aviso('Pega primero el transcript: la prueba usa su primer trozo.', 'error');
-        const cfg = ESTILOS[document.getElementById('audio-tipo').value];
-
-        // Se prueba con UN trozo, no con el documento entero: la pregunta es qué
-        // redacción frena al modelo, y eso se ve igual en 80 palabras que en 300.
-        const muestra = this.trocear(texto)[0];
-        let voces;
-        if (cfg.hablantes >= 2) {
-            const marcas = [...new Set([...muestra.matchAll(/^\s*([A-Za-zÀ-ÿ0-9 _-]{1,20}):/gm)].map(m => m[1].trim()))];
-            voces = marcas.slice(0, 2).map((speaker, i) => ({ speaker, voice: document.getElementById(i === 0 ? 'audio-voz1' : 'audio-voz2').value }));
-            if (voces.length < 2) voces = [{ voice: document.getElementById('audio-voz1').value }];
-        } else {
-            voces = [{ voice: document.getElementById('audio-voz1').value }];
-        }
-
-        const acento = document.getElementById('audio-acento').value;
-        const base = [this.instruccionActual(), ACENTOS[acento]?.frase].filter(Boolean).join(' ');
-        const objetivo = this.wpmObjetivo();
-        const proveedor = this.proveedor();
-
-        this.pruebas = this.VARIANTES.map(v => ({
-            ...v,
-            estado: 'pendiente',
-            textoFinal: v.texto(muestra),
-            instruccionFinal: v.instruccion(base)
-        }));
-        this.pintarPruebas(objetivo);
-
-        const boton = document.getElementById('audio-btn-probar');
-        boton.disabled = true;
-        boton.textContent = 'Probando…';
-        this.aviso(`Generando ${this.pruebas.length} tomas del mismo trozo (${this.palabrasNarradas(muestra)} palabras) para medir cuál sale más lenta.`, 'info');
-        try {
-            const cola = [...this.pruebas];
-            await Promise.all(Array.from({ length: CONCURRENCIA }, async () => {
-                for (;;) {
-                    const p = cola.shift();
-                    if (!p) return;
-                    p.estado = 'generando';
-                    this.pintarPruebas(objetivo);
-                    try {
-                        const token = await auth.currentUser.getIdToken();
-                        const respuesta = await fetch(PROXY_TTS, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                            body: JSON.stringify({ proveedor, texto: p.textoFinal, voces, instruccion: p.instruccionFinal })
-                        });
-                        if (!respuesta.ok) {
-                            const d = await respuesta.json().catch(() => ({}));
-                            throw new Error(d.error || `respondió ${respuesta.status}`);
-                        }
-                        p.blob = await respuesta.blob();
-                        p.url = URL.createObjectURL(p.blob);
-                        p.duracionSeg = Number(respuesta.headers.get('X-Duracion-Aprox-Seg') || 0) || await this.medirDuracion(p.blob);
-                        // Se cuentan las palabras del texto ORIGINAL: la variante
-                        // espaciada añade «…», que no son palabras habladas.
-                        p.wpm = Math.round(this.palabrasNarradas(muestra) / (p.duracionSeg / 60));
-                        p.estado = 'listo';
-                    } catch (e) {
-                        p.estado = 'error';
-                        p.error = e.message;
-                    }
-                    this.pintarPruebas(objetivo);
-                }
-            }));
-
-            const listas = this.pruebas.filter(p => p.estado === 'listo');
-            const mejor = listas.sort((a, b) => a.wpm - b.wpm)[0];
-            this.aviso(mejor
-                ? `La más lenta fue «${mejor.nombre}»: ${mejor.wpm} wpm frente al objetivo de ${objetivo}. `
-                  + 'Escúchalas todas antes de adoptarla —lenta no es lo mismo que buena— y repite la prueba una segunda vez: '
-                  + 'el generador varía ~10% con el mismo texto, así que una diferencia menor que eso no significa nada.'
-                : 'Ninguna toma salió.', mejor ? 'ok' : 'error');
-        } finally {
-            boton.disabled = false;
-            boton.textContent = 'Probar el ritmo (4 formas)';
-        }
-    },
-
-    pintarPruebas(objetivo) {
-        const wrap = document.getElementById('audio-pruebas-wrap');
-        const caja = document.getElementById('audio-pruebas');
-        if (!wrap || !caja || !this.pruebas?.length) return;
-        wrap.classList.remove('hidden');
-        const listas = this.pruebas.filter(p => p.estado === 'listo');
-        document.getElementById('audio-pruebas-resumen').textContent =
-            `${listas.length} de ${this.pruebas.length} · objetivo ${objetivo} wpm`;
-
-        const menor = listas.length ? Math.min(...listas.map(p => p.wpm)) : null;
-        caja.innerHTML = this.pruebas.map((p, i) => {
-            const color = p.estado !== 'listo' ? 'border-gray-200'
-                : p.wpm <= objetivo * this.RITMO_SOSPECHA ? 'border-green-300 bg-green-50'
-                : p.wpm <= objetivo * this.RITMO_ALERTA ? 'border-amber-300 bg-amber-50'
-                : 'border-red-300 bg-red-50';
-            const dato = p.estado === 'listo'
-                ? `<b>${p.wpm} wpm</b> · ${this.formatoDuracion(p.duracionSeg)}${p.wpm === menor ? ' · <b>la más lenta</b>' : ''}`
-                : p.estado === 'generando' ? '<span class="text-amber-600">generando…</span>'
-                : p.estado === 'error' ? `<span class="text-red-600">${this.escapar(p.error || 'falló')}</span>`
-                : '<span class="text-gray-400">en cola</span>';
-            return `
-            <div class="border ${color} rounded-xl px-4 py-3">
-                <div class="flex items-start justify-between gap-3 flex-wrap">
-                    <div class="min-w-0">
-                        <p class="text-sm font-bold">${this.escapar(p.nombre)}</p>
-                        <p class="text-xs text-gray-600 mt-0.5">${dato}</p>
-                        <p class="text-xs text-gray-500 mt-0.5">${this.escapar(p.nota)}</p>
-                    </div>
-                    <div class="flex items-center gap-3 shrink-0">
-                        ${p.url ? `<audio controls src="${p.url}" class="h-8"></audio>` : ''}
-                        ${p.estado === 'listo' ? `<button onclick="audioLogic.adoptarVariante(${i})" class="text-xs font-bold text-green-700 hover:underline">Adoptar</button>` : ''}
-                    </div>
-                </div>
-                <details class="mt-2">
-                    <summary class="text-xs text-gray-500 cursor-pointer">Ver qué se le mandó</summary>
-                    <pre class="mt-1 text-xs whitespace-pre-wrap text-gray-600">${this.escapar(p.instruccionFinal)}</pre>
-                </details>
-            </div>`;
-        }).join('');
-    },
-
-    // Adoptar = dejar la instrucción ganadora en el campo editable (y, si la que
-    // ganó fue la del texto espaciado, espaciar el transcript de verdad). Así lo
-    // que se adopta queda VISIBLE y se guarda con el clip, no escondido en una
-    // bandera interna.
-    adoptarVariante(i) {
-        const p = this.pruebas?.[i];
-        if (!p) return;
-        document.getElementById('audio-instruccion').value = p.instruccionFinal;
-        if (p.id === 'espaciado') {
-            const campo = document.getElementById('audio-texto');
-            campo.value = p.texto(campo.value.trim());
-        }
-        this.onInstruccionInput();
-        this.onTextoInput();
-        this.aviso(`Adoptada «${p.nombre}». Queda escrita en la instrucción de estilo, así que se guarda con el clip y se ve qué se usó. Genera el documento completo y comprueba que el ritmo aguanta.`, 'ok');
-    },
-
     // ── 2. Ensamblar: pegar las partes en un solo clip ──────────────────────
     // Se pega en PCM decodificado, no concatenando archivos: pegar MP3 por
     // bytes deja huecos audibles en las junturas. Y se iguala el volumen de
@@ -927,11 +895,15 @@ const audioLogic = {
             }
         }
 
-        const reproductor = document.getElementById('audio-preview');
-        reproductor.src = URL.createObjectURL(this.ultimoAudio);
+        // Una URL por toma, no una por ensamblado: la toma se remonta cada vez
+        // que se rehace una parte, y cada createObjectURL retiene su blob.
+        const t = this.toma;
+        if (t.url) URL.revokeObjectURL(t.url);
+        t.url = URL.createObjectURL(this.ultimoAudio);
+        document.getElementById('audio-preview').src = t.url;
         document.getElementById('audio-preview-wrap').classList.remove('hidden');
         document.getElementById('audio-btn-guardar').disabled = false;
-        this.aviso(`${aviso} Escúchalo entero antes de guardarlo — sobre todo las junturas entre partes.`, 'ok');
+        this.aviso(`${aviso} Escúchalo entero antes de guardarlo${listas.length > 1 ? ' — sobre todo las junturas entre partes' : ''}.`, 'ok');
 
         // El ritmo global se mide igual que antes (palabras ÷ minutos) y puede
         // bloquear el guardado, así que va después de habilitarlo.
@@ -942,12 +914,95 @@ const audioLogic = {
         // duraciones tal como salieron) y es ese el que juzga la toma; el otro
         // solo describe el archivo que se va a subir.
         const segOrigen = listas.reduce((n, p) => n + (p.duracionSeg || 0), 0);
-        this.pintarRitmo(
-            this.evaluarRitmo(s.transcript, this.ultimaDuracion, { wpm: s.wpm }),
-            {
-                corregidas: listas.filter(p => p.usarCorregido).length,
-                origen: this.evaluarRitmo(s.transcript, segOrigen, { wpm: s.wpm })
-            });
+        t.ritmo = this.evaluarRitmo(s.transcript, this.ultimaDuracion, { wpm: s.wpm });
+        t.ritmoOrigen = this.evaluarRitmo(s.transcript, segOrigen, { wpm: s.wpm });
+        t.ajustadas = listas.filter(p => p.usarCorregido).length;
+        this.pintarRitmo(t.ritmo, { corregidas: t.ajustadas, origen: t.ritmoOrigen });
+        this.pintarTomas();
+    },
+
+    // ── Tablero de tomas ────────────────────────────────────────────────────
+    // Aparece desde la segunda: con una sola no hay nada que comparar y sería
+    // ruido. La activa es la que se guarda, y se dice explícitamente.
+    pintarTomas() {
+        const wrap = document.getElementById('audio-tomas-wrap');
+        const caja = document.getElementById('audio-tomas');
+        if (!wrap || !caja) return;
+        if (this.tomas.length < 2) { wrap.classList.add('hidden'); return; }
+        wrap.classList.remove('hidden');
+
+        // El que juzga es el ritmo de ORIGEN, por lo mismo de siempre: si una
+        // parte se ajustó, el del archivo describe el maquillaje, no la toma.
+        const juzga = t => t.ritmoOrigen || t.ritmo;
+        const buenas = this.tomas.filter(t => juzga(t) && juzga(t).factor < this.RITMO_SOSPECHA);
+        const mejor = buenas.sort((a, b) => Math.abs(juzga(a).factor - 1) - Math.abs(juzga(b).factor - 1))[0];
+        document.getElementById('audio-tomas-resumen').textContent =
+            `${this.tomas.length} tomas · se guarda la que esté marcada`;
+
+        caja.innerHTML = this.tomas.map((t, i) => {
+            const r = juzga(t);
+            const activa = i === this.tomaActiva;
+            const color = !r ? 'border-gray-200'
+                : r.factor >= this.RITMO_ALERTA ? 'border-red-300 bg-red-50'
+                : r.factor >= this.RITMO_SOSPECHA ? 'border-amber-300 bg-amber-50'
+                : 'border-green-300 bg-green-50';
+            const dato = t.audio
+                ? `<b>${r ? r.wpm + ' wpm' : '—'}</b> · ${this.formatoDuracion(t.duracionSeg)} · ${this.formatoPeso(t.audio.size)}`
+                  + (t.ajustadas ? ` · ${t.ajustadas} parte(s) ajustada(s)` : '')
+                  + (mejor && t === mejor && this.tomas.length > 1 ? ' · <b>la más fiel al ritmo</b>' : '')
+                : '<span class="text-gray-400">sin montar</span>';
+            return `
+            <div class="border ${activa ? 'border-2 border-brand-500' : color} rounded-xl px-4 py-3">
+                <div class="flex items-center justify-between gap-3 flex-wrap">
+                    <div class="min-w-0">
+                        <p class="text-sm font-bold">Toma ${t.n}${activa ? ' · <span class="text-brand-600">es la que se guarda</span>' : ''}</p>
+                        <p class="text-xs text-gray-600 mt-0.5">${dato}</p>
+                    </div>
+                    <div class="flex items-center gap-3 shrink-0">
+                        ${t.url ? `<audio controls src="${t.url}" class="h-8"></audio>` : ''}
+                        ${activa ? '' : `<button onclick="audioLogic.elegirToma(${i})" class="text-xs font-bold text-green-700 hover:underline">Usar esta</button>`}
+                        <button onclick="audioLogic.descartarToma(${i})" class="text-xs font-bold text-gray-400 hover:underline">Descartar</button>
+                    </div>
+                </div>
+            </div>`;
+        }).join('');
+    },
+
+    elegirToma(i) {
+        const t = this.tomas[i];
+        if (!t) return;
+        this.tomaActiva = i;
+        document.getElementById('audio-preview').src = t.url || '';
+        document.getElementById('audio-preview-wrap').classList.toggle('hidden', !t.url);
+        document.getElementById('audio-btn-guardar').disabled = !t.audio;
+        this.pintarRitmo(t.ritmo, { corregidas: t.ajustadas, origen: t.ritmoOrigen });
+        this.pintarPartes();
+        this.pintarTomas();
+        this.aviso(`Toma ${t.n} elegida: es la que se guarda en el banco.`, 'ok');
+    },
+
+    descartarToma(i) {
+        const t = this.tomas[i];
+        if (!t) return;
+        if (t.url) URL.revokeObjectURL(t.url);
+        for (const p of t.partes || []) {
+            if (p.url) URL.revokeObjectURL(p.url);
+            if (p.corregido?.url) URL.revokeObjectURL(p.corregido.url);
+        }
+        this.tomas.splice(i, 1);
+        this.tomas.forEach((x, k) => { x.n = k + 1; });
+        // Si se cae la activa, manda la última que quede: es la más reciente.
+        if (this.tomaActiva === i) {
+            this.tomaActiva = Math.min(i, this.tomas.length - 1);
+            if (this.tomaActiva >= 0) return this.elegirToma(this.tomaActiva);
+            document.getElementById('audio-preview-wrap').classList.add('hidden');
+            document.getElementById('audio-btn-guardar').disabled = true;
+            this.pintarRitmo(null);
+        } else if (this.tomaActiva > i) {
+            this.tomaActiva--;
+        }
+        this.pintarPartes();
+        this.pintarTomas();
     },
 
     async pegar(blobs) {
@@ -1248,17 +1303,21 @@ const audioLogic = {
 
         const wpm = this.wpmObjetivo();
         const segundos = Math.round(palabras / wpm * 60);
-        const partes = this.trocear(texto.trim()).length;
+        const cfg = ESTILOS[document.getElementById('audio-tipo').value];
+        const motivo = this.motivoDeTroceo(texto.trim());
+        const partes = motivo ? this.trocear(texto.trim()).length : 1;
         const chars = texto.length;
+        const tope = this.topeDeCaracteres(this.proveedor(), cfg?.hablantes || 1);
         const chip = (t, tono = 'bg-gray-100 text-gray-700') => `<span class="px-2 py-1 rounded-lg ${tono}">${t}</span>`;
         caja.innerHTML = [
             chip(`${palabras} palabras habladas`),
             chip(`≈ ${this.formatoDuracion(segundos)} a ${wpm} wpm`),
             partes > 1
-                ? chip(`${partes} partes de ≈ ${Math.round(palabras / partes)} palabras`, 'bg-amber-100 text-amber-800')
+                ? chip(`${partes} partes — ${this.escapar(motivo)}`, 'bg-amber-100 text-amber-800')
                 : chip('una sola generación'),
-            chip(`${chars}/6000 caracteres`, chars > 5700 ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-700')
+            chip(`${chars}/${tope} caracteres`, chars > tope * 0.95 ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-700')
         ].join(' ');
+        this.pintarBotonGenerar();
     },
 
     // Inserta un "---" donde está el cursor: corte a mano cuando el automático
@@ -1383,13 +1442,15 @@ const audioLogic = {
                 createdAt: firebase.firestore.FieldValue.serverTimestamp()
             });
 
-            this.ultimoAudio = null;
-            this.partes = [];
-            this.sesion = null;
+            // Se van TODAS las tomas, no solo la guardada: las otras eran
+            // alternativas de este mismo clip y quedarse con ellas invitaría a
+            // guardar dos veces lo mismo sin darse cuenta.
+            this.limpiarTomas();
             document.getElementById('audio-btn-guardar').disabled = true;
             document.getElementById('audio-preview-wrap').classList.add('hidden');
             document.getElementById('audio-titulo').value = '';
             this.pintarPartes();
+            this.pintarTomas();
             this.aviso('Clip guardado en el banco. Ya se puede usar en un test.', 'ok');
             await this.cargar();
         } catch (e) {
@@ -1605,6 +1666,7 @@ const audioLogic = {
         }
         this.onTipoChange();
         this.onTextoInput();
+        this.pintarTomas();
         this.cargar();
     }
 };

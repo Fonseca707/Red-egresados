@@ -346,6 +346,9 @@
                         <div>
                             <label class="input-label">Generador</label>
                             <select id="audio-proveedor" class="input-field" onchange="audioLogic.onProveedorChange()"></select>
+                            <!-- Cuál va con cada examen está decidido; la nota dice por qué,
+                                 y avisa en rojo si está puesto el otro. -->
+                            <p id="audio-generador-nota" class="text-xs mt-1 text-gray-500"></p>
                         </div>
                         <div>
                             <label class="input-label">Tipo de documento</label>
@@ -411,7 +414,6 @@
                                 </div>
                             </div>
                             <div class="flex items-center gap-3">
-                                <button id="audio-btn-probar" onclick="audioLogic.probarRitmo()" class="px-4 py-3 text-sm font-bold text-gray-700 border border-gray-300 rounded-xl hover:bg-gray-50 transition" title="Genera un trozo corto con 4 formas de pedir el ritmo y mide cuál sale más fiel">Probar el ritmo (4 formas)</button>
                                 <button id="audio-btn-generar" onclick="audioLogic.generar()" class="px-6 py-3 bg-amber-600 text-white font-bold rounded-xl hover:bg-amber-700 transition">Generar audio</button>
                                 <button id="audio-btn-forzar" onclick="audioLogic.forzarGuardado()" class="hidden px-4 py-3 text-sm font-bold text-red-700 border border-red-300 rounded-xl hover:bg-red-50 transition">Lo escuché, guardar igual</button>
                                 <button id="audio-btn-guardar" onclick="audioLogic.guardar()" disabled class="px-6 py-3 bg-brand-600 text-white font-bold rounded-xl hover:bg-brand-700 transition disabled:opacity-40 disabled:cursor-not-allowed">Guardar en el banco</button>
@@ -419,19 +421,20 @@
                         </div>
                     </div>
 
-                    <!-- Banco de pruebas del ritmo: la única forma honesta de saber qué
-                         instrucción hace hablar más despacio al generador es generarlas
-                         todas con el mismo texto y medirlas. -->
-                    <div id="audio-pruebas-wrap" class="hidden mt-5">
+                    <!-- Tomas: el TOEFL se genera con Gemini porque varía entre tiradas, así
+                         que cada generación se apila en vez de pisar la anterior. Se
+                         escuchan seguidas y se guarda la elegida. -->
+                    <div id="audio-tomas-wrap" class="hidden mt-5">
                         <div class="flex items-center justify-between gap-3 flex-wrap mb-2">
-                            <p class="text-xs font-bold text-gray-500 uppercase tracking-wide">Cómo pedir el ritmo · medido</p>
-                            <p id="audio-pruebas-resumen" class="text-xs text-gray-500"></p>
+                            <p class="text-xs font-bold text-gray-500 uppercase tracking-wide">Tomas del mismo texto</p>
+                            <p id="audio-tomas-resumen" class="text-xs text-gray-500"></p>
                         </div>
-                        <div id="audio-pruebas" class="space-y-2"></div>
+                        <div id="audio-tomas" class="space-y-2"></div>
                     </div>
 
-                    <!-- Tablero de trozos: un documento largo se genera por partes y cada
-                         una se mide sola, para poder rehacer solo la que salió mal. -->
+                    <!-- Tablero de trozos: solo aparece cuando el texto NO cabe de una en el
+                         generador (o se pidió un corte con "---"). Partir por ser largo se
+                         descartó: con Gemini las partes no suenan a la misma grabación. -->
                     <div id="audio-partes-wrap" class="hidden mt-5">
                         <div class="flex items-center justify-between gap-3 flex-wrap mb-2">
                             <p class="text-xs font-bold text-gray-500 uppercase tracking-wide">Partes del clip</p>
@@ -615,7 +618,7 @@
     <script src="admin-contactos.js?v=1"></script>
     <script src="admin-migracion.js?v=1"></script>
     <script src="admin-colegios.js?v=2"></script>
-    <script src="admin-audio.js?v=11"></script>
+    <script src="admin-audio.js?v=12"></script>
     <script src="icfes-data.js?v=3"></script>
     <script src="admin-icfes.js?v=9"></script>
     <script>
