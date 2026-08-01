@@ -23,7 +23,7 @@
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
-    <link rel="stylesheet" href="tailwind.css?v=4">
+    <link rel="stylesheet" href="tailwind.css?v=7">
 </head>
 <body class="text-stone-800 font-sans min-h-screen flex flex-col">
 
@@ -76,15 +76,12 @@
 
                     <img src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=800&q=80" alt="Networking Egresados" class="rounded-[3rem] shadow-2xl object-cover w-full h-[400px] lg:h-[550px] border-4 border-white">
 
-                    <div class="absolute -bottom-6 -left-4 lg:-left-12 bg-white p-5 rounded-2xl shadow-xl border border-gray-100 flex items-center gap-4 animate-slide-up" style="animation-delay: 300ms;">
-                        <div class="w-12 h-12 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-2xl shrink-0">
-                            <i class="ph-fill ph-briefcase"></i>
-                        </div>
-                        <div>
-                            <p class="text-sm text-gray-500 font-semibold">Nuevas oportunidades</p>
-                            <p class="text-lg font-bold text-gray-900">Cada semana</p>
-                        </div>
-                    </div>
+                    <!-- Aquí flotaba una tarjeta blanca con "Nuevas oportunidades
+                         · Cada semana". Se va por dos motivos a la vez: es una
+                         caja más, y afirma un dato que ningún sitio respalda
+                         (contra la regla de no mostrar nada falso, ni de
+                         adorno). Si algún día hay una cifra real de vacantes,
+                         vuelve — con el número de verdad. -->
                 </div>
             </section>
 
@@ -128,28 +125,35 @@
                     <p class="text-lg text-gray-500 mt-4 max-w-2xl mx-auto">En cuatro pasos, tu historia se vuelve el mapa que un estudiante del Liceo estaba buscando.</p>
                 </div>
 
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <div class="relative bg-white p-7 rounded-3xl border border-gray-100 shadow-sm">
-                        <span class="absolute -top-4 left-7 w-9 h-9 bg-brand-600 text-white rounded-xl flex items-center justify-center font-extrabold shadow-md shadow-brand-500/30">1</span>
-                        <div class="text-brand-600 text-3xl mb-4 mt-3"><i class="ph-duotone ph-user-plus"></i></div>
+                <!-- Sin las cuatro tarjetas idénticas.
+                     Lo que sostiene ahora la composición no es el contorno sino
+                     una regla horizontal por columna y el número del paso: es el
+                     recurso de una publicación impresa, y aguanta perfectamente
+                     el peso que hacía la caja. El número deja de ir en su
+                     cuadradito flotante y pasa a ser tipografía, que es lo que
+                     siempre fue. -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-10 gap-y-12">
+                    <div class="border-t border-gray-900 pt-5">
+                        <span class="text-xs font-extrabold tracking-widest text-brand-600">PASO 1</span>
+                        <div class="text-brand-600 text-2xl mt-4 mb-3"><i class="ph-duotone ph-user-plus"></i></div>
                         <h4 class="font-bold text-gray-900 mb-2">Crea tu cuenta</h4>
                         <p class="text-sm text-gray-500 leading-relaxed">Egresado o estudiante del Liceo Campestre. Toma menos de un minuto.</p>
                     </div>
-                    <div class="relative bg-white p-7 rounded-3xl border border-gray-100 shadow-sm">
-                        <span class="absolute -top-4 left-7 w-9 h-9 bg-brand-600 text-white rounded-xl flex items-center justify-center font-extrabold shadow-md shadow-brand-500/30">2</span>
-                        <div class="text-brand-600 text-3xl mb-4 mt-3"><i class="ph-duotone ph-path"></i></div>
+                    <div class="border-t border-gray-900 pt-5">
+                        <span class="text-xs font-extrabold tracking-widest text-brand-600">PASO 2</span>
+                        <div class="text-brand-600 text-2xl mt-4 mb-3"><i class="ph-duotone ph-path"></i></div>
                         <h4 class="font-bold text-gray-900 mb-2">Cuenta tu ruta</h4>
                         <p class="text-sm text-gray-500 leading-relaxed">Del Liceo a la universidad, a tu primer trabajo y a donde estás hoy: tu trayectoria paso a paso.</p>
                     </div>
-                    <div class="relative bg-white p-7 rounded-3xl border border-gray-100 shadow-sm">
-                        <span class="absolute -top-4 left-7 w-9 h-9 bg-brand-600 text-white rounded-xl flex items-center justify-center font-extrabold shadow-md shadow-brand-500/30">3</span>
-                        <div class="text-brand-600 text-3xl mb-4 mt-3"><i class="ph-duotone ph-magnifying-glass"></i></div>
+                    <div class="border-t border-gray-900 pt-5">
+                        <span class="text-xs font-extrabold tracking-widest text-brand-600">PASO 3</span>
+                        <div class="text-brand-600 text-2xl mt-4 mb-3"><i class="ph-duotone ph-magnifying-glass"></i></div>
                         <h4 class="font-bold text-gray-900 mb-2">Explora y conecta</h4>
                         <p class="text-sm text-gray-500 leading-relaxed">Busca por carrera o área, escríbele a quien ya recorrió tu camino y pregunta a Karla, la orientadora.</p>
                     </div>
-                    <div class="relative bg-white p-7 rounded-3xl border border-gray-100 shadow-sm">
-                        <span class="absolute -top-4 left-7 w-9 h-9 bg-brand-600 text-white rounded-xl flex items-center justify-center font-extrabold shadow-md shadow-brand-500/30">4</span>
-                        <div class="text-brand-600 text-3xl mb-4 mt-3"><i class="ph-duotone ph-plant"></i></div>
+                    <div class="border-t border-gray-900 pt-5">
+                        <span class="text-xs font-extrabold tracking-widest text-brand-600">Y ENTONCES</span>
+                        <div class="text-brand-600 text-2xl mt-4 mb-3"><i class="ph-duotone ph-plant"></i></div>
                         <h4 class="font-bold text-gray-900 mb-2">La red crece contigo</h4>
                         <p class="text-sm text-gray-500 leading-relaxed">Cada ruta nueva le abre una posibilidad a quien viene detrás. La red se cultiva entre todos.</p>
                     </div>
@@ -162,21 +166,26 @@
                     <h2 class="text-sm font-bold text-brand-600 uppercase tracking-widest mb-3">Para quién es</h2>
                     <h3 class="text-3xl md:text-4xl font-extrabold text-gray-900">Un punto de encuentro para toda la comunidad</h3>
                 </div>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-                    <div class="bg-gradient-to-b from-brand-50 to-white p-8 rounded-3xl border border-brand-100 shadow-sm">
-                        <div class="w-14 h-14 bg-white text-brand-600 rounded-2xl flex items-center justify-center text-3xl mb-5 shadow-sm"><i class="ph-duotone ph-student"></i></div>
+                <!-- Tres tarjetas con degradado → tres columnas separadas por
+                     una línea vertical. El icono sale de su cuadro blanco y se
+                     queda solo, más grande: pasa a ser el que abre la columna.
+                     Ganancia lateral: las tres columnas tienen ahora la misma
+                     altura visual sin trucos, porque no hay caja que estirar. -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-10 md:gap-0 md:divide-x md:divide-gray-200">
+                    <div class="md:pr-10">
+                        <div class="text-brand-600 text-4xl mb-5"><i class="ph-duotone ph-student"></i></div>
                         <h4 class="text-xl font-bold text-gray-900 mb-3">Estudiantes</h4>
                         <p class="text-gray-500 leading-relaxed mb-5">Descubre a dónde llevan las carreras que te interesan viendo trayectorias reales, no folletos. Prepárate para el TOEFL y el DELF y pregúntale a quien ya lo vivió.</p>
                         <a href="directory.html" class="text-brand-600 font-bold text-sm hover:text-brand-800 transition inline-flex items-center gap-1">Explorar trayectorias <i class="ph-bold ph-arrow-right"></i></a>
                     </div>
-                    <div class="bg-gradient-to-b from-brand-50 to-white p-8 rounded-3xl border border-brand-100 shadow-sm">
-                        <div class="w-14 h-14 bg-white text-brand-600 rounded-2xl flex items-center justify-center text-3xl mb-5 shadow-sm"><i class="ph-duotone ph-graduation-cap"></i></div>
+                    <div class="md:px-10">
+                        <div class="text-brand-600 text-4xl mb-5"><i class="ph-duotone ph-graduation-cap"></i></div>
                         <h4 class="text-xl font-bold text-gray-900 mb-3">Egresados</h4>
                         <p class="text-gray-500 leading-relaxed mb-5">Reencuéntrate con tu promoción, comparte tu camino y conviértete en el referente que a ti te habría servido tener. Tu experiencia orienta a quien viene detrás.</p>
                         <a href="register.html" class="text-brand-600 font-bold text-sm hover:text-brand-800 transition inline-flex items-center gap-1">Sumar mi trayectoria <i class="ph-bold ph-arrow-right"></i></a>
                     </div>
-                    <div class="bg-gradient-to-b from-sun-50 to-white p-8 rounded-3xl border border-sun-200 shadow-sm">
-                        <div class="w-14 h-14 bg-white text-sun-600 rounded-2xl flex items-center justify-center text-3xl mb-5 shadow-sm"><i class="ph-duotone ph-handshake"></i></div>
+                    <div class="md:pl-10">
+                        <div class="text-sun-600 text-4xl mb-5"><i class="ph-duotone ph-handshake"></i></div>
                         <h4 class="text-xl font-bold text-gray-900 mb-3">Empresas y aliados</h4>
                         <p class="text-gray-500 leading-relaxed mb-5">¿Buscas talento del Liceo, quieres ofrecer prácticas o mentorías, o proponer una alianza? Escríbele directamente a la red: leemos cada mensaje.</p>
                         <button onclick="contactoLogic.open('empresa')" class="text-sun-600 font-bold text-sm hover:text-sun-700 transition inline-flex items-center gap-1">Contactar la red <i class="ph-bold ph-arrow-right"></i></button>
@@ -191,27 +200,29 @@
                     <h3 class="text-3xl md:text-4xl font-extrabold text-gray-900">Una red que se recorre</h3>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-                    <div class="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm hover:shadow-xl transition duration-300 group transform hover:-translate-y-1">
-                        <div class="w-16 h-16 bg-brand-50 text-brand-600 rounded-2xl flex items-center justify-center text-3xl mb-6 group-hover:bg-brand-600 group-hover:text-white transition duration-300">
-                            <i class="ph-duotone ph-address-book"></i>
-                        </div>
-                        <h4 class="text-xl font-bold text-gray-900 mb-3">Directorio de egresados</h4>
-                        <p class="text-gray-500 leading-relaxed">Busca por promoción, área o nombre, y conecta con quienes ya recorrieron el camino que te interesa.</p>
+                <!-- Era el TERCER grid de tarjetas seguido, con la misma forma
+                     que los dos de arriba. Aunque cada tarjeta estuviera bien,
+                     tres rejillas iguales una detrás de otra es lo que hace que
+                     una página se lea como plantilla.
+                     Ahora es una lista: tres filas anchas separadas por una
+                     línea, con el título a la izquierda y la explicación en su
+                     columna. Cambia el ritmo, y de paso el texto se lee mejor
+                     porque tiene ancho de lectura en vez de columna estrecha. -->
+                <div class="divide-y divide-gray-200 border-t border-b border-gray-200">
+                    <div class="grid md:grid-cols-12 gap-2 md:gap-8 py-8 group">
+                        <div class="md:col-span-1 text-brand-600 text-3xl"><i class="ph-duotone ph-address-book"></i></div>
+                        <h4 class="md:col-span-4 text-xl font-bold text-gray-900">Directorio de egresados</h4>
+                        <p class="md:col-span-7 text-gray-500 leading-relaxed">Busca por promoción, área o nombre, y conecta con quienes ya recorrieron el camino que te interesa.</p>
                     </div>
-                    <div class="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm hover:shadow-xl transition duration-300 group transform hover:-translate-y-1">
-                        <div class="w-16 h-16 bg-brand-50 text-brand-600 rounded-2xl flex items-center justify-center text-3xl mb-6 group-hover:bg-brand-600 group-hover:text-white transition duration-300">
-                            <i class="ph-duotone ph-path"></i>
-                        </div>
-                        <h4 class="text-xl font-bold text-gray-900 mb-3">Trayectorias reales</h4>
-                        <p class="text-gray-500 leading-relaxed">Cada egresado cuenta su ruta paso a paso: del Liceo a la universidad, a su primer trabajo y a donde está hoy.</p>
+                    <div class="grid md:grid-cols-12 gap-2 md:gap-8 py-8 group">
+                        <div class="md:col-span-1 text-brand-600 text-3xl"><i class="ph-duotone ph-path"></i></div>
+                        <h4 class="md:col-span-4 text-xl font-bold text-gray-900">Trayectorias reales</h4>
+                        <p class="md:col-span-7 text-gray-500 leading-relaxed">Cada egresado cuenta su ruta paso a paso: del Liceo a la universidad, a su primer trabajo y a donde está hoy.</p>
                     </div>
-                    <div class="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm hover:shadow-xl transition duration-300 group transform hover:-translate-y-1">
-                        <div class="w-16 h-16 bg-brand-50 text-brand-600 rounded-2xl flex items-center justify-center text-3xl mb-6 group-hover:bg-brand-600 group-hover:text-white transition duration-300">
-                            <i class="ph-duotone ph-chats-circle"></i>
-                        </div>
-                        <h4 class="text-xl font-bold text-gray-900 mb-3">Mensajes y orientación</h4>
-                        <p class="text-gray-500 leading-relaxed">Escríbele directamente a un egresado para preguntarle por su carrera, o consulta a la orientadora sobre tus opciones.</p>
+                    <div class="grid md:grid-cols-12 gap-2 md:gap-8 py-8 group">
+                        <div class="md:col-span-1 text-brand-600 text-3xl"><i class="ph-duotone ph-chats-circle"></i></div>
+                        <h4 class="md:col-span-4 text-xl font-bold text-gray-900">Mensajes y orientación</h4>
+                        <p class="md:col-span-7 text-gray-500 leading-relaxed">Escríbele directamente a un egresado para preguntarle por su carrera, o consulta a la orientadora sobre tus opciones.</p>
                     </div>
                 </div>
             </section>
@@ -235,28 +246,51 @@
 
             <!-- CONTACTO DE TERCEROS -->
             <section id="contacto" class="py-16 scroll-mt-24">
-                <div class="bg-white rounded-3xl border border-gray-200 shadow-sm overflow-hidden md:flex">
-                    <div class="md:w-2/5 bg-gradient-to-br from-brand-600 to-brand-800 p-8 md:p-12 text-white flex flex-col justify-center">
-                        <div class="w-14 h-14 bg-white/15 rounded-2xl flex items-center justify-center text-3xl mb-6 backdrop-blur"><i class="ph-duotone ph-paper-plane-tilt"></i></div>
-                        <h2 class="text-2xl md:text-3xl font-extrabold mb-4 leading-tight">¿Quieres contactar la red?</h2>
-                        <p class="text-brand-100 leading-relaxed">Empresas, universidades, otras instituciones o cualquier persona: escríbenos. Ofertas de empleo o prácticas, mentorías, alianzas o una simple consulta llegan directo al equipo de Sinapsis.</p>
+                <!-- Aquí había una caja grande que contenía tres cajas más: el
+                     anidamiento en su forma más pura. La exterior no separaba
+                     nada del resto de la página (ya lo hacía el espacio), y las
+                     tres interiores son botones, así que su contorno solo
+                     compite con el de fuera.
+                     Ahora: la mitad de color se queda —es un bloque con voz
+                     propia, no una tarjeta— y las tres opciones bajan a filas
+                     pulsables con la flecha que avanza al pasar el ratón. -->
+                <div class="md:flex md:gap-16">
+                    <div class="md:w-2/5 mb-10 md:mb-0">
+                        <div class="text-brand-600 text-4xl mb-6"><i class="ph-duotone ph-paper-plane-tilt"></i></div>
+                        <h2 class="text-2xl md:text-3xl font-extrabold mb-4 leading-tight text-gray-900">¿Quieres contactar la red?</h2>
+                        <p class="text-gray-500 leading-relaxed">Empresas, universidades, otras instituciones o cualquier persona: escríbenos. Ofertas de empleo o prácticas, mentorías, alianzas o una simple consulta llegan directo al equipo de Sinapsis.</p>
                     </div>
-                    <div class="md:w-3/5 p-8 md:p-12">
-                        <div class="grid sm:grid-cols-3 gap-4 mb-8">
-                            <button onclick="contactoLogic.open('empresa')" class="text-left p-5 rounded-2xl border border-gray-100 hover:border-brand-300 hover:bg-brand-50/50 transition group">
-                                <i class="ph-duotone ph-briefcase text-3xl text-brand-600 mb-3 block"></i>
-                                <p class="font-bold text-gray-900">Empresas</p>
-                                <p class="text-xs text-gray-500 mt-1">Empleo, prácticas, mentorías o talento del Liceo.</p>
+                    <div class="md:w-3/5">
+                        <div class="divide-y divide-gray-200 border-t border-b border-gray-200 mb-8">
+                            <button onclick="contactoLogic.open('empresa')" class="w-full text-left py-5 flex items-center justify-between gap-4 group">
+                                <span class="flex items-center gap-4">
+                                    <i class="ph-duotone ph-briefcase text-2xl text-brand-600 shrink-0"></i>
+                                    <span>
+                                        <span class="block font-bold text-gray-900 group-hover:text-brand-600 transition">Empresas</span>
+                                        <span class="block text-xs text-gray-500 mt-0.5">Empleo, prácticas, mentorías o talento del Liceo.</span>
+                                    </span>
+                                </span>
+                                <i class="ph-bold ph-arrow-right text-gray-300 group-hover:text-brand-600 group-hover:translate-x-1 transition shrink-0"></i>
                             </button>
-                            <button onclick="contactoLogic.open('aliado')" class="text-left p-5 rounded-2xl border border-gray-100 hover:border-brand-300 hover:bg-brand-50/50 transition group">
-                                <i class="ph-duotone ph-handshake text-3xl text-brand-600 mb-3 block"></i>
-                                <p class="font-bold text-gray-900">Instituciones y aliados</p>
-                                <p class="text-xs text-gray-500 mt-1">Convenios, alianzas y proyectos conjuntos.</p>
+                            <button onclick="contactoLogic.open('aliado')" class="w-full text-left py-5 flex items-center justify-between gap-4 group">
+                                <span class="flex items-center gap-4">
+                                    <i class="ph-duotone ph-handshake text-2xl text-brand-600 shrink-0"></i>
+                                    <span>
+                                        <span class="block font-bold text-gray-900 group-hover:text-brand-600 transition">Instituciones y aliados</span>
+                                        <span class="block text-xs text-gray-500 mt-0.5">Convenios, alianzas y proyectos conjuntos.</span>
+                                    </span>
+                                </span>
+                                <i class="ph-bold ph-arrow-right text-gray-300 group-hover:text-brand-600 group-hover:translate-x-1 transition shrink-0"></i>
                             </button>
-                            <button onclick="contactoLogic.open('general')" class="text-left p-5 rounded-2xl border border-gray-100 hover:border-brand-300 hover:bg-brand-50/50 transition group">
-                                <i class="ph-duotone ph-chat-teardrop-text text-3xl text-brand-600 mb-3 block"></i>
-                                <p class="font-bold text-gray-900">Contacto general</p>
-                                <p class="text-xs text-gray-500 mt-1">Prensa, familias o cualquier otra consulta.</p>
+                            <button onclick="contactoLogic.open('general')" class="w-full text-left py-5 flex items-center justify-between gap-4 group">
+                                <span class="flex items-center gap-4">
+                                    <i class="ph-duotone ph-chat-teardrop-text text-2xl text-brand-600 shrink-0"></i>
+                                    <span>
+                                        <span class="block font-bold text-gray-900 group-hover:text-brand-600 transition">Contacto general</span>
+                                        <span class="block text-xs text-gray-500 mt-0.5">Prensa, familias o cualquier otra consulta.</span>
+                                    </span>
+                                </span>
+                                <i class="ph-bold ph-arrow-right text-gray-300 group-hover:text-brand-600 group-hover:translate-x-1 transition shrink-0"></i>
                             </button>
                         </div>
                         <button onclick="contactoLogic.open('empresa')" class="px-8 py-4 bg-brand-600 text-white font-bold rounded-xl shadow-lg shadow-brand-500/30 hover:bg-brand-700 transition inline-flex items-center gap-2">
@@ -272,34 +306,34 @@
                     <h2 class="text-sm font-bold text-brand-600 uppercase tracking-widest mb-3">Preguntas frecuentes</h2>
                     <h3 class="text-3xl md:text-4xl font-extrabold text-gray-900">Lo que suelen preguntarnos</h3>
                 </div>
-                <div class="max-w-3xl mx-auto space-y-4">
-                    <details class="group bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-                        <summary class="flex items-center justify-between gap-4 p-6 cursor-pointer font-bold text-gray-900 list-none">
+                <div class="max-w-3xl mx-auto divide-y divide-gray-200 border-t border-b border-gray-200">
+                    <details class="group">
+                        <summary class="flex items-center justify-between gap-4 py-5 cursor-pointer font-bold text-gray-900 list-none">
                             ¿Quién puede registrarse en Sinapsis?
                             <i class="ph-bold ph-caret-down text-brand-600 transition group-open:rotate-180 shrink-0"></i>
                         </summary>
-                        <p class="px-6 pb-6 text-gray-500 leading-relaxed">Egresados y estudiantes del Liceo Campestre de Pereira. El registro es gratuito y toma menos de un minuto.</p>
+                        <p class="pb-5 text-gray-500 leading-relaxed">Egresados y estudiantes del Liceo Campestre de Pereira. El registro es gratuito y toma menos de un minuto.</p>
                     </details>
-                    <details class="group bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-                        <summary class="flex items-center justify-between gap-4 p-6 cursor-pointer font-bold text-gray-900 list-none">
+                    <details class="group">
+                        <summary class="flex items-center justify-between gap-4 py-5 cursor-pointer font-bold text-gray-900 list-none">
                             ¿Tiene algún costo?
                             <i class="ph-bold ph-caret-down text-brand-600 transition group-open:rotate-180 shrink-0"></i>
                         </summary>
-                        <p class="px-6 pb-6 text-gray-500 leading-relaxed">No. Sinapsis es gratuito para egresados y estudiantes. Es un proyecto de la comunidad del Liceo, no un producto comercial para ellos.</p>
+                        <p class="pb-5 text-gray-500 leading-relaxed">No. Sinapsis es gratuito para egresados y estudiantes. Es un proyecto de la comunidad del Liceo, no un producto comercial para ellos.</p>
                     </details>
-                    <details class="group bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-                        <summary class="flex items-center justify-between gap-4 p-6 cursor-pointer font-bold text-gray-900 list-none">
+                    <details class="group">
+                        <summary class="flex items-center justify-between gap-4 py-5 cursor-pointer font-bold text-gray-900 list-none">
                             Soy una empresa o institución, ¿cómo llego a los egresados?
                             <i class="ph-bold ph-caret-down text-brand-600 transition group-open:rotate-180 shrink-0"></i>
                         </summary>
-                        <p class="px-6 pb-6 text-gray-500 leading-relaxed">Usa el formulario de <button onclick="contactoLogic.open('empresa')" class="text-brand-600 font-bold hover:underline">contacto de la red</button>. Cuéntanos qué buscas (talento, prácticas, mentorías o una alianza) y el equipo de Sinapsis te responde.</p>
+                        <p class="pb-5 text-gray-500 leading-relaxed">Usa el formulario de <button onclick="contactoLogic.open('empresa')" class="text-brand-600 font-bold hover:underline">contacto de la red</button>. Cuéntanos qué buscas (talento, prácticas, mentorías o una alianza) y el equipo de Sinapsis te responde.</p>
                     </details>
-                    <details class="group bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-                        <summary class="flex items-center justify-between gap-4 p-6 cursor-pointer font-bold text-gray-900 list-none">
+                    <details class="group">
+                        <summary class="flex items-center justify-between gap-4 py-5 cursor-pointer font-bold text-gray-900 list-none">
                             ¿Qué se hace con mis datos?
                             <i class="ph-bold ph-caret-down text-brand-600 transition group-open:rotate-180 shrink-0"></i>
                         </summary>
-                        <p class="px-6 pb-6 text-gray-500 leading-relaxed">Solo se muestran en el directorio los datos que tú decides compartir, y puedes editarlos cuando quieras. Tu correo y teléfono nunca aparecen públicos. Consulta los <a href="terms.html" class="text-brand-600 font-bold hover:underline">términos y la política de datos</a>.</p>
+                        <p class="pb-5 text-gray-500 leading-relaxed">Solo se muestran en el directorio los datos que tú decides compartir, y puedes editarlos cuando quieras. Tu correo y teléfono nunca aparecen públicos. Consulta los <a href="terms.html" class="text-brand-600 font-bold hover:underline">términos y la política de datos</a>.</p>
                     </details>
                 </div>
             </section>
@@ -428,15 +462,15 @@
                 <div class="space-y-6">
                     <div>
                         <h4 class="text-sm font-bold text-gray-900 uppercase tracking-wide mb-3 flex items-center gap-2"><i class="ph-duotone ph-path text-brand-600"></i> Su Ruta</h4>
-                        <div id="sp-timeline" class="bg-gray-50 p-4 rounded-xl border border-gray-100"></div>
+                        <div id="sp-timeline"></div>
                     </div>
                     <div>
                         <h4 class="text-sm font-bold text-gray-900 uppercase tracking-wide mb-3">Sobre mí</h4>
-                        <p id="sp-bio" class="text-gray-600 text-sm leading-relaxed bg-gray-50 p-4 rounded-xl border border-gray-100">Sin información disponible.</p>
+                        <p id="sp-bio" class="text-gray-600 text-sm leading-relaxed">Sin información disponible.</p>
                     </div>
                     <div>
                         <h4 class="text-sm font-bold text-gray-900 uppercase tracking-wide mb-3">Proyecciones</h4>
-                        <p id="sp-expectations" class="text-gray-600 text-sm leading-relaxed bg-gray-50 p-4 rounded-xl border border-gray-100">No especificadas.</p>
+                        <p id="sp-expectations" class="text-gray-600 text-sm leading-relaxed">No especificadas.</p>
                     </div>
                     <div>
                         <h4 class="text-sm font-bold text-gray-900 uppercase tracking-wide mb-3">Información Académica</h4>
