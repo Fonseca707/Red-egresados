@@ -26,15 +26,23 @@ const delfLogic = {
             };
         }
         this.stopTimer();
+        this.pararAudio();
         this.session = {
             test,
-            section,            // 'ce' | 'pe'
+            section,            // 'ce' | 'co' | 'pe'
             stage: 'intro',
             timer: null,
             // ce
             taskIndex: 0,
             ceAnswers: {},      // taskIndex -> array de índices elegidos
             ceExpired: false,
+            // co
+            coIndex: 0,
+            coFase: 'consigne',
+            coAnswers: {},      // docId -> array de índices elegidos
+            coPlays: {},        // docId -> escuchas gastadas (el límite del DELF)
+            clips: null,        // docId -> clip del banco; null = aún no cargado
+            coExpired: false,
             // pe
             peText: '',
             peExpired: false,
@@ -42,6 +50,14 @@ const delfLogic = {
         };
         router.navigate('delf-practice');
         this.render();
+        // El CO necesita saber qué audios existen antes de dejar empezar. Se
+        // pinta primero el intro ("Buscando los audios…") y se repinta al
+        // llegar: así la pantalla nunca se queda en blanco esperando la red.
+        if (section === 'co') {
+            this.cargarClips().then(() => {
+                if (this.session?.section === 'co' && this.session.stage === 'intro') this.renderIntro();
+            });
+        }
     },
 
     exit() {
@@ -49,6 +65,7 @@ const delfLogic = {
             if (!confirm('¿Salir de la práctica? Se perderá el progreso de esta sesión.')) return;
         }
         this.stopTimer();
+        this.pararAudio();
         this.session = null;
         router.navigate('exam-modules');
     },
@@ -73,14 +90,20 @@ const delfLogic = {
         if (this.session) this.session.timer = null;
     },
     paintTimer() {
-        const el = document.getElementById('delf-timer');
-        if (!el || !this.session?.timer) return;
+        if (!this.session?.timer) return;
         const r = Math.max(0, this.session.timer.remaining);
         const mm = String(Math.floor(r / 60)).padStart(2, '0');
         const ss = String(r % 60).padStart(2, '0');
-        el.textContent = `${mm}:${ss}`;
-        el.classList.toggle('text-red-600', r < 120);
-        el.classList.toggle('animate-pulse', r < 120);
+        const el = document.getElementById('delf-timer');
+        if (el) {
+            el.textContent = `${mm}:${ss}`;
+            el.classList.toggle('text-red-600', r < 120);
+            el.classList.toggle('animate-pulse', r < 120);
+        }
+        // El CO repite la cuenta en grande dentro del panel de la fase: sus
+        // pausas son de 10-60 s y en la cabecera pasan desapercibidas.
+        const fase = document.getElementById('delf-fase-timer');
+        if (fase) fase.textContent = `${mm}:${ss}`;
     },
 
     getHistory() {
@@ -120,12 +143,14 @@ const delfLogic = {
         if (!s) return;
         if (s.stage === 'intro') return this.renderIntro();
         if (s.section === 'ce') return this.renderCE();
+        if (s.section === 'co') return this.renderCO();
         return this.renderPE();
     },
 
     // ── Intro ────────────────────────────────────────────────────────────────
     renderIntro() {
         const s = this.session;
+        if (s.section === 'co') return this.renderCOIntro();
         const isCE = s.section === 'ce';
         const history = this.getHistory().filter(h => h.section === s.section).slice(0, 3);
         const details = isCE ? [
@@ -175,6 +200,78 @@ const delfLogic = {
         });
     },
 
+    // Intro del CO. Es distinto del de CE/PE porque aquí hay una condición que
+    // los otros no tienen: sin clips en el banco no hay examen, y hay que decir
+    // exactamente qué falta generar en vez de dejar un botón que no hace nada.
+    renderCOIntro() {
+        const s = this.session;
+        const history = this.getHistory().filter(h => h.section === 'co').slice(0, 3);
+        const cargando = s.clips === null;
+        const disponibles = cargando ? [] : this.docsConAudio();
+        const faltan = cargando ? [] : s.test.co.documents.filter(d => !s.clips?.[d.id]?.audioUrl);
+
+        this.root().innerHTML = this.shell({
+            banner: 'Compréhension de l’oral · Práctica',
+            timed: false,
+            body: `
+                <div class="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 md:p-10">
+                    <span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-purple-50 text-purple-700 text-xs font-bold uppercase tracking-widest border border-purple-100 mb-4">
+                        <i class="ph-duotone ph-headphones"></i> Nouveau format officiel
+                    </span>
+                    <h2 class="text-3xl font-extrabold text-gray-900 mb-2">Compréhension de l’oral — DELF B1</h2>
+                    <p class="text-gray-500 mb-8">3 documentos · 25 puntos · cada documento se escucha <strong>exactamente 2 veces</strong>, como en el examen real.</p>
+
+                    <div class="grid md:grid-cols-3 gap-4 mb-6">
+                        ${[
+                            ['ph-speaker-high', 'Dos escuchas y ya', 'No se puede pausar, retroceder ni repetir. El contador de escuchas se agota y no vuelve.'],
+                            ['ph-timer', 'Con las pausas del examen', 'Un minuto para leer las preguntas, 10 s entre las dos escuchas y 30 s para responder. Puedes saltarlas si ya terminaste.'],
+                            ['ph-scales', 'Puntos desiguales', 'Como en el DELF real, no todas las preguntas valen lo mismo: hay ítems de 1 y de 1,5 puntos.']
+                        ].map(([icon, name, desc]) => `
+                            <div class="rounded-2xl border border-gray-100 bg-gray-50/70 p-4">
+                                <i class="ph-duotone ${icon} text-2xl text-purple-600"></i>
+                                <h4 class="font-bold text-gray-900 mt-2 mb-1">${name}</h4>
+                                <p class="text-xs text-gray-500 leading-relaxed">${desc}</p>
+                            </div>`).join('')}
+                    </div>
+
+                    <div class="rounded-2xl border border-purple-200 bg-purple-50 px-4 py-3 text-sm text-purple-900 flex gap-2 mb-6">
+                        <i class="ph-bold ph-info mt-0.5 shrink-0"></i>
+                        <p>Necesitas mínimo <strong>5/25 en cada prueba</strong> y <strong>50/100 en total</strong> para aprobar el diploma. Usa auriculares si puedes.</p>
+                    </div>
+
+                    ${cargando ? `
+                        <p class="text-sm text-gray-500 mb-6 flex items-center gap-2"><i class="ph-bold ph-spinner animate-spin"></i> Buscando los audios…</p>
+                    ` : s.clipsError ? `
+                        <div class="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 mb-6">
+                            No se pudo leer el banco de audios: ${sanitizeHTML(s.clipsError)}
+                        </div>
+                    ` : faltan.length ? `
+                        <div class="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 mb-6">
+                            <p class="font-bold mb-1">${disponibles.length ? `Solo ${disponibles.length} de ${s.test.co.documents.length} documentos tienen audio.` : 'Todavía no hay audios para esta prueba.'}</p>
+                            <p>Faltan por generar: ${faltan.map(d => sanitizeHTML(d.title)).join(' · ')}.
+                            ${disponibles.length ? 'Puedes practicar con los que hay, pero la nota no será sobre 25.' : ''}</p>
+                        </div>` : ''}
+
+                    ${history.length ? `
+                        <div class="mb-6">
+                            <p class="text-xs font-bold uppercase tracking-widest text-gray-400 mb-2">Tus últimos intentos</p>
+                            <div class="flex flex-wrap gap-2">
+                                ${history.map(h => `<span class="px-3 py-1.5 rounded-xl bg-gray-50 border border-gray-100 text-xs font-semibold text-gray-600">${new Date(h.date).toLocaleDateString()} · ${sanitizeHTML(h.summary)}</span>`).join('')}
+                            </div>
+                        </div>` : ''}
+
+                    ${disponibles.length ? `
+                        <button onclick="delfLogic.begin()"
+                            class="w-full md:w-auto px-8 py-3.5 bg-purple-600 text-white font-bold rounded-xl hover:bg-purple-700 transition shadow-lg shadow-purple-600/20 flex items-center justify-center gap-2">
+                            <i class="ph-bold ph-play"></i> ${disponibles.length < s.test.co.documents.length ? 'Practicar con los documentos disponibles' : 'Comenzar la prueba'}
+                        </button>`
+                    : !cargando ? `
+                        <p class="text-sm text-gray-500 flex items-center gap-2"><i class="ph-bold ph-lock-simple"></i> La prueba se activa en cuanto haya audio generado en el estudio.</p>`
+                    : ''}
+                </div>`
+        });
+    },
+
     begin() {
         const s = this.session;
         if (s.section === 'ce') {
@@ -182,11 +279,375 @@ const delfLogic = {
             s.taskIndex = 0;
             this.renderCE();
             this.startTimer(s.test.ce.minutes, () => this.finishCE(true));
+        } else if (s.section === 'co') {
+            s.stage = 'doc';
+            // Se arranca en el primer documento QUE TENGA audio: si el ej.1 aún
+            // no está generado, empezar por él dejaría el examen mudo.
+            const primero = s.test.co.documents.findIndex(d => s.clips?.[d.id]?.audioUrl);
+            if (primero < 0) return;
+            s.coIndex = primero;
+            this.entrarFase('consigne');
         } else {
             s.stage = 'write';
             this.renderPE();
             this.startTimer(s.test.pe.minutes, () => this.submitPE(true));
         }
+    },
+
+    // ═════════════════════════════════════════════════════════════════════════
+    // Compréhension de l'oral
+    // ═════════════════════════════════════════════════════════════════════════
+    //
+    // En el examen real la pista es UNA grabación continua que el vigilante ni
+    // toca: consigna hablada → 1 min para leer las preguntas → 1ª escucha →
+    // 10 s → 2ª escucha → 30 s para responder, con un BIP antes de cada escucha.
+    //
+    // Aquí el clip guardado es SOLO el documento (así el mismo audio sirve para
+    // las dos escuchas y no se paga TTS de las consignas): la pista la arma este
+    // reproductor alrededor. Las pausas son las del nouveau format y corren
+    // solas, pero se pueden saltar — decisión de Juan: practicar no es
+    // examinarse, y esperar 30 s con la respuesta ya marcada no enseña nada.
+    //
+    // Lo que NO es negociable es el límite de escuchas: en el DELF son 2 y ya.
+    // Si se pudiera repetir, la prueba mediría otra cosa.
+
+    // Cada documento lleva escrito en `clipTipo` qué tipo de clip le toca, y su
+    // transcript es el mismo que carga el botón «transcript oficial de
+    // referencia» del estudio. Así el examen encuentra su audio solo, sin un
+    // panel que los empareje a mano: se genera el clip y queda enganchado.
+    normalizarTranscript(t) {
+        return (t || '')
+            .replace(/^[ \t]*[A-Za-zÀ-ÿ0-9 _-]{1,20}:[ \t]*/gm, ' ')   // marcas de hablante
+            .normalize('NFD').replace(/[̀-ͯ]/g, '')          // acentos
+            .replace(/[^a-z0-9]/gi, '').toLowerCase().slice(0, 300);
+    },
+
+    async cargarClips() {
+        const s = this.session;
+        s.clips = {};
+        let banco = [];
+        try {
+            const snap = await artifactsRoot.collection('public').doc('data')
+                .collection('audioClips').where('examen', '==', 'delf').get();
+            banco = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        } catch (e) {
+            s.clipsError = e.message;
+            return;
+        }
+        // Más nuevo primero: si hay varias versiones de un documento, gana la
+        // última generada.
+        banco.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+        for (const doc of s.test.co.documents) {
+            const esperado = this.normalizarTranscript(doc.transcript);
+            s.clips[doc.id] =
+                banco.find(c => this.normalizarTranscript(c.transcript) === esperado)
+                || banco.find(c => c.tipo === doc.clipTipo)
+                || null;
+        }
+    },
+
+    // Los documentos que sí tienen audio. Se puede practicar con los que haya:
+    // un examen a medias es peor que nada solo si no se dice, y se dice.
+    docsConAudio() {
+        const s = this.session;
+        return s.test.co.documents.filter(d => s.clips?.[d.id]?.audioUrl);
+    },
+
+    // ── El bip que anuncia cada escucha ─────────────────────────────────────
+    // Se sintetiza, no es un archivo: son dos tonos de 0,25 s y traerlos de
+    // Storage sería un archivo más que puede fallar en mitad de un examen. Las
+    // rampas de entrada y salida existen para que no suene un clic seco.
+    bip() {
+        return new Promise(resolver => {
+            let ctx;
+            try { ctx = new (window.AudioContext || window.webkitAudioContext)(); }
+            catch { return resolver(); }
+            const ahora = ctx.currentTime;
+            [0, 0.3].forEach(retraso => {
+                const osc = ctx.createOscillator();
+                const vol = ctx.createGain();
+                osc.frequency.value = 880;
+                osc.connect(vol); vol.connect(ctx.destination);
+                vol.gain.setValueAtTime(0, ahora + retraso);
+                vol.gain.linearRampToValueAtTime(0.25, ahora + retraso + 0.02);
+                vol.gain.setValueAtTime(0.25, ahora + retraso + 0.2);
+                vol.gain.linearRampToValueAtTime(0, ahora + retraso + 0.25);
+                osc.start(ahora + retraso);
+                osc.stop(ahora + retraso + 0.26);
+            });
+            setTimeout(() => { ctx.close().catch(() => {}); resolver(); }, 650);
+        });
+    },
+
+    // ── Máquina de fases ────────────────────────────────────────────────────
+    // consigne → leer(60s) → escucha 1 → entre(10s) → escucha 2 → responder(30s)
+    entrarFase(fase) {
+        const s = this.session;
+        this.stopTimer();
+        this.pararAudio();
+        s.coFase = fase;
+        const p = s.test.co.pausas;
+        this.renderCO();
+
+        if (fase === 'leer')      this.contar(p.leer,          () => this.entrarFase('escucha'));
+        if (fase === 'entre')     this.contar(p.entreEscuchas, () => this.entrarFase('escucha'));
+        if (fase === 'responder') this.contar(p.responder,     () => this.siguienteDocumento());
+        if (fase === 'escucha')   this.reproducir();
+    },
+
+    contar(segundos, alTerminar) {
+        this.startTimer(segundos / 60, alTerminar);
+    },
+
+    // Saltar la espera. No salta la ESCUCHA: eso sería otra cosa.
+    saltarPausa() {
+        const s = this.session;
+        if (s.coFase === 'leer' || s.coFase === 'entre') return this.entrarFase('escucha');
+        if (s.coFase === 'responder') return this.siguienteDocumento();
+    },
+
+    async reproducir() {
+        const s = this.session;
+        const doc = s.test.co.documents[s.coIndex];
+        const clip = s.clips?.[doc.id];
+        if (!clip?.audioUrl) return this.entrarFase('responder');
+
+        s.coPlays[doc.id] = (s.coPlays[doc.id] || 0) + 1;
+        this.renderCO();
+        await this.bip();
+        if (s.coFase !== 'escucha') return;   // salió del examen mientras sonaba el bip
+
+        const audio = new Audio(clip.audioUrl);
+        s.coAudio = audio;
+        audio.onended = () => {
+            if (s.coAudio !== audio) return;
+            const ultima = s.coPlays[doc.id] >= (doc.maxPlays || 2);
+            this.entrarFase(ultima ? 'responder' : 'entre');
+        };
+        audio.onerror = () => {
+            if (s.coAudio !== audio) return;
+            s.coErrorAudio = 'No se pudo cargar el audio de este documento.';
+            this.entrarFase('responder');
+        };
+        try { await audio.play(); }
+        catch {
+            // Autoplay bloqueado: el navegador exige un gesto. Se pide.
+            s.coNecesitaGesto = true;
+            this.renderCO();
+        }
+    },
+
+    // Botón de rescate cuando el navegador bloquea la reproducción automática.
+    reanudar() {
+        const s = this.session;
+        s.coNecesitaGesto = false;
+        s.coAudio?.play().catch(() => {});
+        this.renderCO();
+    },
+
+    pararAudio() {
+        const s = this.session;
+        if (!s?.coAudio) return;
+        s.coAudio.onended = null;
+        s.coAudio.onerror = null;
+        s.coAudio.pause();
+        s.coAudio = null;
+    },
+
+    setCO(qi, oi) {
+        const s = this.session;
+        const doc = s.test.co.documents[s.coIndex];
+        if (!s.coAnswers[doc.id]) s.coAnswers[doc.id] = doc.questions.map(() => null);
+        s.coAnswers[doc.id][qi] = oi;
+        this.renderCO();
+    },
+
+    siguienteDocumento() {
+        const s = this.session;
+        this.stopTimer();
+        this.pararAudio();
+        // Se salta lo que no tenga audio: no se puede responder a lo que no sonó.
+        let i = s.coIndex + 1;
+        while (i < s.test.co.documents.length && !s.clips?.[s.test.co.documents[i].id]?.audioUrl) i++;
+        if (i >= s.test.co.documents.length) return this.finishCO(false);
+        s.coIndex = i;
+        this.entrarFase('consigne');
+    },
+
+    finishCO(expired) {
+        this.stopTimer();
+        this.pararAudio();
+        const s = this.session;
+        s.coExpired = expired;
+        s.stage = 'results';
+        this.renderCOResults();
+    },
+
+    // ── Vista del CO ────────────────────────────────────────────────────────
+    renderCO() {
+        const s = this.session;
+        if (s.stage === 'results') return this.renderCOResults();
+        const doc = s.test.co.documents[s.coIndex];
+        const disponibles = this.docsConAudio();
+        const cual = disponibles.indexOf(doc) + 1;
+        const escuchas = s.coPlays[doc.id] || 0;
+        const maxPlays = doc.maxPlays || 2;
+        const sonando = s.coFase === 'escucha';
+        if (!s.coAnswers[doc.id]) s.coAnswers[doc.id] = doc.questions.map(() => null);
+        const respuestas = s.coAnswers[doc.id];
+
+        // Las preguntas se ven desde la fase de lectura —que existe justamente
+        // para leerlas— pero durante la escucha no se pueden tocar: en el examen
+        // real tampoco se escribe mientras suena.
+        const puedeResponder = s.coFase === 'responder' || s.coFase === 'entre';
+        const verPreguntas = s.coFase !== 'consigne';
+
+        const cabecera = {
+            consigne:  ['ph-info', 'Consigne', 'Lee la consigna. Cuando empieces, tendrás un minuto para leer las preguntas.'],
+            leer:      ['ph-eye', 'Lisez les questions', 'Aprovecha para leer las preguntas antes de la primera escucha.'],
+            escucha:   ['ph-speaker-high', `Écoute ${escuchas} sur ${maxPlays}`, 'Escucha con atención: no se puede pausar ni repetir.'],
+            entre:     ['ph-hourglass', 'Entre les deux écoutes', 'Pausa antes de la segunda escucha.'],
+            responder: ['ph-pencil-simple', 'Répondez', 'Última oportunidad para completar tus respuestas de este documento.']
+        }[s.coFase] || ['ph-info', '', ''];
+
+        this.root().innerHTML = this.shell({
+            banner: `Compréhension orale · ${cual}/${disponibles.length}`,
+            timed: s.coFase === 'leer' || s.coFase === 'entre' || s.coFase === 'responder',
+            body: `
+                <div class="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 md:p-8">
+                    <p class="text-xs font-bold uppercase tracking-widest text-purple-600 mb-1">${sanitizeHTML(doc.title)} · ${doc.points} points</p>
+                    <p class="text-sm text-gray-500 mb-6">${sanitizeHTML(doc.consigne)}</p>
+
+                    <div class="rounded-2xl border ${sonando ? 'border-purple-300 bg-purple-50' : 'border-gray-100 bg-gray-50/70'} p-6 mb-6 text-center">
+                        <i class="ph-duotone ${cabecera[0]} text-4xl ${sonando ? 'text-purple-600 animate-pulse' : 'text-gray-400'}"></i>
+                        <p class="font-extrabold text-gray-900 mt-2">${sanitizeHTML(cabecera[1])}</p>
+                        <p class="text-xs text-gray-500 mt-1 max-w-md mx-auto">${sanitizeHTML(cabecera[2])}</p>
+
+                        ${s.coFase === 'consigne' ? `
+                            <button onclick="delfLogic.entrarFase('leer')" class="mt-4 px-6 py-2.5 rounded-xl bg-purple-600 text-white font-bold hover:bg-purple-700 transition inline-flex items-center gap-2">
+                                <i class="ph-bold ph-play"></i> Commencer
+                            </button>` : ''}
+
+                        ${(s.coFase === 'leer' || s.coFase === 'entre' || s.coFase === 'responder') ? `
+                            <p class="font-mono font-extrabold text-3xl text-gray-900 mt-3"><span id="delf-fase-timer">--:--</span></p>
+                            <button onclick="delfLogic.saltarPausa()" class="mt-2 text-xs font-bold text-purple-600 hover:underline">
+                                ${s.coFase === 'responder' ? 'Ya respondí, continuar' : 'Saltar la espera'}
+                            </button>` : ''}
+
+                        ${s.coNecesitaGesto ? `
+                            <button onclick="delfLogic.reanudar()" class="mt-4 px-6 py-2.5 rounded-xl bg-purple-600 text-white font-bold hover:bg-purple-700 transition inline-flex items-center gap-2">
+                                <i class="ph-bold ph-play"></i> Tu navegador bloqueó el audio — pulsa para escuchar
+                            </button>` : ''}
+
+                        <div class="flex items-center justify-center gap-1.5 mt-4">
+                            ${Array.from({ length: maxPlays }, (_, i) => `
+                                <span class="w-2.5 h-2.5 rounded-full ${i < escuchas ? 'bg-purple-600' : 'bg-gray-300'}"></span>`).join('')}
+                            <span class="text-xs text-gray-500 ml-1.5">${escuchas} de ${maxPlays} escuchas</span>
+                        </div>
+                    </div>
+
+                    ${verPreguntas ? `
+                    <div class="space-y-4 ${puedeResponder ? '' : 'opacity-60 pointer-events-none'}">
+                        ${doc.questions.map((qu, qi) => `
+                            <div>
+                                <p class="font-bold text-gray-900 mb-2 text-sm">${qi + 1}. ${sanitizeHTML(qu.q)}
+                                    <span class="font-normal text-xs text-gray-400">· ${qu.points} pt${qu.points > 1 ? 's' : ''}</span></p>
+                                <div class="space-y-1.5">
+                                    ${qu.options.map((opt, oi) => `
+                                        <label class="flex items-start gap-2.5 p-2.5 rounded-xl border ${respuestas[qi] === oi ? 'border-purple-400 bg-purple-50' : 'border-gray-100 bg-white hover:bg-gray-50'} cursor-pointer transition text-sm">
+                                            <input type="radio" name="delf-co-${doc.id}-${qi}" ${respuestas[qi] === oi ? 'checked' : ''} onchange="delfLogic.setCO(${qi}, ${oi})" class="mt-0.5 accent-purple-600">
+                                            <span class="text-gray-700">${sanitizeHTML(opt)}</span>
+                                        </label>`).join('')}
+                                </div>
+                            </div>`).join('')}
+                    </div>
+                    ${!puedeResponder ? '<p class="text-xs text-gray-400 mt-3 text-center">Podrás marcar tus respuestas después de la primera escucha.</p>' : ''}
+                    ` : ''}
+
+                    ${s.coErrorAudio ? `<p class="mt-4 text-sm text-red-600">${sanitizeHTML(s.coErrorAudio)}</p>` : ''}
+                </div>`
+        });
+        this.paintTimer();
+    },
+
+    renderCOResults() {
+        const s = this.session;
+        const disponibles = this.docsConAudio();
+        let obtenidos = 0, posibles = 0;
+        const desglose = disponibles.map(doc => {
+            let p = 0;
+            doc.questions.forEach((qu, qi) => {
+                posibles += qu.points;
+                if (s.coAnswers[doc.id]?.[qi] === qu.answer) { p += qu.points; obtenidos += qu.points; }
+            });
+            return { doc, puntos: p };
+        });
+
+        // La nota se da SOBRE LO PRESENTADO. Si faltaban audios, decirlo: un /25
+        // calculado sobre 7 puntos sería una nota inventada.
+        const parcial = disponibles.length < s.test.co.documents.length;
+        const puntos = Math.round(obtenidos * 10) / 10;
+        const sobre = Math.round(posibles * 10) / 10;
+        const eliminatorio = !parcial && puntos < 5;
+
+        this.saveAttempt({
+            section: 'co',
+            summary: `Compréhension orale ${puntos}/${sobre}${parcial ? ' (parcial)' : ''}`,
+            score: puntos, max: sobre
+        });
+
+        this.root().innerHTML = this.shell({
+            banner: 'Compréhension orale · Resultados',
+            timed: false,
+            body: `
+                <div class="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 md:p-10">
+                    <p class="text-xs font-bold uppercase tracking-widest text-purple-600 mb-2">Résultat</p>
+                    <p class="text-5xl font-extrabold text-gray-900 mb-1">${puntos}<span class="text-2xl text-gray-400">/${sobre}</span></p>
+                    ${parcial ? `<p class="text-sm text-amber-700 mb-4">Solo ${disponibles.length} de ${s.test.co.documents.length} documentos tenían audio, así que esta nota <strong>no es sobre 25</strong> y no equivale a la épreuve completa.</p>` : ''}
+                    ${eliminatorio ? `<div class="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 mb-4 flex gap-2">
+                        <i class="ph-bold ph-warning mt-0.5 shrink-0"></i>
+                        <p>Menos de <strong>5/25</strong>: en el examen real esta nota es <strong>eliminatoria</strong> y hace perder el diploma completo, aunque las otras pruebas vayan bien.</p></div>` : ''}
+
+                    <div class="space-y-2 mb-6">
+                        ${desglose.map(d => `
+                            <div class="flex items-center justify-between gap-3 rounded-xl border border-gray-100 bg-gray-50/70 px-4 py-3">
+                                <p class="text-sm font-bold text-gray-700 truncate">${sanitizeHTML(d.doc.title)}</p>
+                                <p class="text-sm font-mono font-bold text-gray-900 shrink-0">${Math.round(d.puntos * 10) / 10}/${d.doc.points}</p>
+                            </div>`).join('')}
+                    </div>
+
+                    <p class="text-xs font-bold uppercase tracking-widest text-gray-400 mb-2">Corrección y transcripciones</p>
+                    <div class="space-y-3 mb-6">
+                        ${desglose.map(({ doc }) => `
+                            <details class="rounded-2xl border border-gray-100 bg-gray-50/70 px-4 py-3">
+                                <summary class="text-sm font-bold text-gray-700 cursor-pointer">${sanitizeHTML(doc.title)}</summary>
+                                <div class="mt-3 space-y-2">
+                                    ${doc.questions.map((qu, qi) => {
+                                        const mia = s.coAnswers[doc.id]?.[qi];
+                                        const bien = mia === qu.answer;
+                                        return `<div class="text-sm">
+                                            <p class="font-semibold text-gray-800">${qi + 1}. ${sanitizeHTML(qu.q)}</p>
+                                            <p class="${bien ? 'text-green-700' : 'text-red-600'}">
+                                                <i class="ph-bold ${bien ? 'ph-check' : 'ph-x'}"></i>
+                                                ${mia == null ? 'Sin responder' : sanitizeHTML(qu.options[mia])}
+                                                ${bien ? '' : ` · correcta: <strong>${sanitizeHTML(qu.options[qu.answer])}</strong>`}
+                                            </p>
+                                        </div>`;
+                                    }).join('')}
+                                    <div class="mt-3 pt-3 border-t border-gray-200">
+                                        <p class="text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-1">Transcription</p>
+                                        <p class="text-xs text-gray-600 whitespace-pre-line leading-relaxed">${sanitizeHTML(doc.transcript)}</p>
+                                    </div>
+                                </div>
+                            </details>`).join('')}
+                    </div>
+
+                    <div class="flex flex-wrap gap-3">
+                        <button onclick="delfLogic.start('co')" class="px-6 py-3 rounded-xl bg-purple-600 text-white font-bold hover:bg-purple-700 transition">Repetir la prueba</button>
+                        <button onclick="delfLogic.exit()" class="px-6 py-3 rounded-xl border border-gray-200 text-gray-600 font-bold hover:bg-gray-50 transition">Volver a los módulos</button>
+                    </div>
+                </div>`
+        });
     },
 
     // ── Compréhension écrite ─────────────────────────────────────────────────
