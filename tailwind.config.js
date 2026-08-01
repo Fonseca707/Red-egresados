@@ -35,7 +35,7 @@ module.exports = {
      * plantillas de JS o se agregan por classList, donde el escaner es fragil.
      * Aqui se fijan para que existan siempre: son ~30 reglas, no pesan. */
     safelist: [
-        'hilo', 'hilo-h', 'hilo-hito',
+        'hilo', 'hilo-h', 'hilo-hito', 'franja',
         'btn', 'btn-primario', 'btn-linea', 'btn-plano',
         'enlace', 'lienzo', 'lienzo-interactivo', 'dato',
         'campo', 'etiqueta', 'esqueleto', 'fuente-display',

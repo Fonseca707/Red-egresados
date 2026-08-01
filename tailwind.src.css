@@ -57,21 +57,25 @@
         --t-hilo:   800ms;   /* el trazo del hilo */
     }
 
+    /* El primer oscuro salió casi negro (#0c1210) y con las superficies pegadas
+       al fondo: la página se veía apagada y sin relieve. Este es un verde
+       carbón, con cada capa claramente separada de la anterior y el verde de
+       marca bastante más vivo. */
     html.dark {
         color-scheme: dark;
 
-        --paper:         12  18  16;
-        --surface:       19  26  23;
-        --surface-alt:   26  35  30;
-        --ink:          232 237 233;
-        --ink-soft:     169 181 173;
-        --ink-mute:     119 131 123;
-        --line:          38  48  43;
-        --line-soft:     30  39  34;
+        --paper:         18  26  22;   /* #121a16 */
+        --surface:       26  36  31;   /* #1a241f — se despega del fondo */
+        --surface-alt:   34  46  39;   /* #222e27 */
+        --ink:          237 242 238;
+        --ink-soft:     178 190 182;
+        --ink-mute:     133 146 138;
+        --line:          51  66  56;   /* #334238 — visible, no adivinada */
+        --line-soft:     40  53  45;
 
-        --brand:         95 180 137;   /* aclarado para contraste sobre oscuro */
-        --brand-deep:   140 205 168;
-        --brand-pale:    18  40  30;
+        --brand:        108 199 154;   /* #6cc79a, vivo sobre oscuro */
+        --brand-deep:   154 216 180;
+        --brand-pale:    23  47  35;
     }
 
     html { -webkit-text-size-adjust: 100%; }
@@ -139,26 +143,28 @@
    motion.js actualiza --avance (0→1) según cuánto se ha recorrido.
    ─────────────────────────────────────────────────────────────────────────── */
 @layer components {
-    .hilo { position: relative; padding-left: 2rem; --avance: 0; }
+    /* El hilo, con presencia. A 2px y nodos de 12px se leía como el borde de una
+       tabla cualquiera: es el elemento firma de la marca, tiene que verse. */
+    .hilo { position: relative; padding-left: 2.25rem; --avance: 0; }
     .hilo::before,
     .hilo::after {
-        content: ''; position: absolute; left: 5px; top: 0; width: 2px; border-radius: 2px;
+        content: ''; position: absolute; left: 5px; top: 0; width: 3px; border-radius: 3px;
     }
     /* riel */
     .hilo::before { height: 100%; background: rgb(var(--line)); }
     /* avance */
     .hilo::after {
         height: calc(var(--avance) * 100%);
-        background: linear-gradient(to bottom, rgb(var(--brand) / 0.25), rgb(var(--brand)));
+        background: linear-gradient(to bottom, rgb(var(--brand) / 0.35), rgb(var(--brand)));
         transition: height var(--t-hilo) var(--ease-salida);
     }
 
     .hilo-hito { position: relative; }
     .hilo-hito::before {
-        content: ''; position: absolute; left: -2rem; top: 0.45em;
-        width: 12px; height: 12px; border-radius: 50%;
+        content: ''; position: absolute; left: -2.25rem; top: 0.4em;
+        width: 14px; height: 14px; border-radius: 50%;
         background: rgb(var(--paper));
-        border: 2px solid rgb(var(--line));
+        border: 3px solid rgb(var(--line));
         transition: border-color var(--t-medio) var(--ease-salida),
                     background-color var(--t-medio) var(--ease-salida),
                     transform var(--t-medio) var(--ease-resorte);
@@ -293,6 +299,17 @@
     .hide-scrollbar::-webkit-scrollbar { display: none; }
     .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
+    /* Acordeón de preguntas.
+       `list-style:none` de Tailwind no basta: Safari dibuja su triángulo con
+       ::-webkit-details-marker y hay que apagarlo aparte.
+       La apertura se anima con la entrada del contenido en vez de animar la
+       altura del <details>, que ningún navegador deja transicionar de forma
+       fiable todavía. El cierre es instantáneo a propósito: nadie espera a ver
+       cerrarse algo que acaba de decidir cerrar. */
+    .faq summary::-webkit-details-marker { display: none; }
+    .faq summary { list-style: none; }
+    .faq[open] .faq-cuerpo { animation: surgir var(--t-medio) var(--ease-salida); }
+
     /* Reveal al scroll.
        OJO al sentido de la regla: el ocultamiento SOLO existe bajo
        `html.motion`, clase que pone motion.js en cuanto se ejecuta. Si el JS
@@ -302,10 +319,15 @@
        blanco, que es exactamente lo que ya pasó aquí con el CDN de Tailwind. */
     html.motion [data-surgir] {
         opacity: 0;
-        transform: translateY(10px);
+        transform: translateY(18px);
         transition: opacity var(--t-largo) var(--ease-salida),
                     transform var(--t-largo) var(--ease-salida);
         transition-delay: var(--retraso, 0ms);
     }
     html.motion [data-surgir][data-visible] { opacity: 1; transform: none; }
+
+    /* Franja de sección a sangre. El contenido sigue centrado dentro, pero el
+       color llega hasta los bordes: es lo que da ritmo a la página y lo que
+       faltaba cuando todo era blanco con líneas. */
+    .franja { margin-left: calc(50% - 50vw); margin-right: calc(50% - 50vw); padding-left: max(1.25rem, calc(50vw - 36rem)); padding-right: max(1.25rem, calc(50vw - 36rem)); }
 }
