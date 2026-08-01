@@ -39,7 +39,10 @@ const historiasLogic = {
                   ].slice(0, 10);
             const historias = [];
             for (const alum of candidatos) {
-                let hitos = alum.hitosCount > 0 ? await loadHitos(alum.id) : [];
+                // >= 2 y no > 0: abajo se exige que la ruta tenga al menos dos
+                // hitos, así que pedir los de quien solo tiene uno era pagar una
+                // lectura para descartarla. Eran 9 llamadas para pintar 4 rutas.
+                let hitos = alum.hitosCount >= 2 ? await loadHitos(alum.id) : [];
                 if (!hitos.length) hitos = deriveLegacyHitos(alum);
                 if (hitos.length >= 2) historias.push({ alum, hitos });
                 if (historias.length === HISTORIAS_MAX) break;

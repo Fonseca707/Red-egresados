@@ -1164,17 +1164,32 @@ function watchAuth(handler) {
 
 // ── Contacto privado (teléfono / correo de contacto) ─────────────────────────
 // Se lee BAJO DEMANDA (al abrir un perfil), nunca en el listado masivo.
+// El contacto PROPIO se pedía una vez por página (6 lecturas en el recorrido
+// medido) y es un dato del usuario que no cambia mientras navega. Se cachea por
+// uid durante la sesión de pestaña; el de OTROS egresados no se cachea, porque
+// se pide al abrir su perfil y ahí sí interesa el dato del momento.
+const CONTACTO_CACHE = 'sinapsis_contacto_propio';
 async function loadContactoPrivado(uid) {
     const vacio = { phone: '', contactEmail: '' };
     if (!uid) return vacio;
     // Un invitado anónimo no tiene permiso: ni se intenta (así no ensucia la
     // consola con permission-denied ni deja huecos en la UI).
     if (!esMiembro()) return vacio;
+    const esPropio = uid === state.user?.uid;
+    if (esPropio) {
+        try {
+            const c = JSON.parse(sessionStorage.getItem(CONTACTO_CACHE) || 'null');
+            if (c && c.uid === uid) return { phone: c.phone || '', contactEmail: c.contactEmail || '' };
+        } catch {}
+    }
     try {
         const doc = await contactoPrivadoDoc(uid).get();
-        if (!doc.exists) return vacio;
-        const d = doc.data() || {};
-        return { phone: d.phone || '', contactEmail: d.contactEmail || '' };
+        const d = doc.exists ? (doc.data() || {}) : {};
+        const salida = { phone: d.phone || '', contactEmail: d.contactEmail || '' };
+        // Se cachea aunque venga vacío: el documento que no existe también se
+        // factura, y volver a preguntarlo en cada página cuesta lo mismo.
+        if (esPropio) { try { sessionStorage.setItem(CONTACTO_CACHE, JSON.stringify({ uid, ...salida })); } catch {} }
+        return salida;
     } catch (e) { return vacio; }
 }
 async function saveContactoPrivado(uid, { phone, contactEmail } = {}) {
@@ -1183,6 +1198,9 @@ async function saveContactoPrivado(uid, { phone, contactEmail } = {}) {
     if (phone !== undefined) payload.phone = String(phone || '').trim();
     if (contactEmail !== undefined) payload.contactEmail = String(contactEmail || '').trim().toLowerCase();
     await contactoPrivadoDoc(uid).set(payload, { merge: true });
+    // Sin esto, guardar el teléfono y volver al perfil mostraría el anterior:
+    // la caché tiene que morir donde se escribe, no solo por tiempo.
+    try { sessionStorage.removeItem(CONTACTO_CACHE); } catch {}
 }
 
 function getDisplayNameFromProfileOrAuth() {
@@ -1320,7 +1338,75 @@ async function ensureDefaultSchool(uid) {
 // listado es un `list` de una colección de lectura pública, cualquiera podía
 // volcar por REST el teléfono y el correo de los 68 egresados sin login.
 // Consecuencia buscada: `user.phone` no existe en los objetos del directorio.
-async function loadAlumni() {
+// ── Caché del directorio (lo que de verdad cuesta) ──────────────────────────
+// Medido en producción el 2026-08-01 con el medidor de arriba: un recorrido de
+// 5 páginas costaba 252 documentos, y **204 de ellos eran esta colección** — el
+// 81 %. Dos causas, las dos aquí:
+//   · La PORTADA la leía DOS VECES: una en su arranque y otra desde
+//     `historiasLogic.init(true)`, cuyo throttle de 30 s no puede funcionar
+//     porque `_lastLoad` vive en memoria y cada página es un HTML nuevo, así
+//     que siempre está "vencido". 136 documentos para pintar 4 historias.
+//   · Cada página vuelve a leerla entera. Sinapsis no es una SPA: ir de la
+//     portada al directorio son dos cargas completas, y el directorio releía
+//     lo que la portada acababa de traer.
+//
+// Se arregla en UN sitio, no en cada llamador: quien pida el directorio dos
+// veces seguidas recibe la misma lectura. `sessionStorage` y no `localStorage`
+// a propósito — la caché muere al cerrar la pestaña, así que nadie se queda
+// con un directorio viejo de ayer.
+//
+// Quien necesite datos frescos de verdad (el admin tras editar un perfil) pide
+// `{ forzar: true }`, igual que en loadNews.
+const ALUMNI_CACHE = 'sinapsis_alumni_cache';
+const ALUMNI_TTL_MS = 300000;   // 5 min: sobra para una sesión de navegación
+let _alumniEnVuelo = null;
+
+function _alumniDesdeCache() {
+    try {
+        const c = JSON.parse(sessionStorage.getItem(ALUMNI_CACHE) || 'null');
+        if (!c || Date.now() - c.t > ALUMNI_TTL_MS || !Array.isArray(c.datos)) return null;
+        return c.datos;
+    } catch { return null; }
+}
+function _guardarAlumniEnCache(datos) {
+    try { sessionStorage.setItem(ALUMNI_CACHE, JSON.stringify({ t: Date.now(), datos })); }
+    catch { /* cuota llena: se sigue sin caché, no es un error que deba verse */ }
+}
+function invalidarCacheAlumni() {
+    try { sessionStorage.removeItem(ALUMNI_CACHE); } catch {}
+}
+
+// La caché se invalida sola cuando alguien ESCRIBE en alumni, envolviendo el
+// prototipo — no pidiéndole a los 8 sitios que escriben (admin, onboarding,
+// perfil, registro, migración…) que se acuerden de llamar a la invalidación.
+// Una caché que depende de que nadie olvide una línea acaba sirviendo datos
+// viejos: aquí el suspendido seguiría apareciendo activo hasta 5 minutos.
+(function autoInvalidarAlumni() {
+    const D = firebase.firestore.DocumentReference;
+    if (!D?.prototype || D.prototype._invalidaAlumni) return;
+    for (const metodo of ['set', 'update', 'delete']) {
+        const original = D.prototype[metodo];
+        if (typeof original !== 'function') continue;
+        D.prototype[metodo] = function (...args) {
+            // `/alumni/xxx` sí; `/alumni/xxx/hitos/yyy` también (cambia hitosCount).
+            if (/(^|\/)alumni\//.test(this.path || '')) invalidarCacheAlumni();
+            return original.apply(this, args);
+        };
+    }
+    D.prototype._invalidaAlumni = true;
+})();
+
+async function loadAlumni({ forzar = false } = {}) {
+    if (!forzar) {
+        const cache = _alumniDesdeCache();
+        if (cache) { state.data.alumni = cache; state.directoryLoading = false; state.directoryError = null; return; }
+        if (_alumniEnVuelo) return _alumniEnVuelo;   // dos llamadas a la vez = una sola lectura
+    }
+    _alumniEnVuelo = _loadAlumniDeVerdad().finally(() => { _alumniEnVuelo = null; });
+    return _alumniEnVuelo;
+}
+
+async function _loadAlumniDeVerdad() {
     state.directoryLoading=true;
     state.directoryError=null;
     // El invitado necesita sesión (anónima) para que las reglas le dejen listar.
@@ -1337,6 +1423,9 @@ async function loadAlumni() {
         state.data.alumni=state.data.alumni.length?state.data.alumni:[];
     }
     finally{ state.directoryLoading=false; }
+    // Solo se cachea lo que se leyó BIEN: si falló, la próxima página debe
+    // reintentar contra Firestore, no heredar un directorio vacío.
+    if (!state.directoryError && state.data.alumni.length) _guardarAlumniEnCache(state.data.alumni);
 }
 // `index.html` la llamaba DOS veces por carga —una en DOMContentLoaded, para que
 // el invitado vea las noticias sin esperar a la autenticación, y otra dentro del

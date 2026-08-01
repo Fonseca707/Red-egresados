@@ -184,5 +184,73 @@ comprobar('el origen se filtra por ARCHIVO, no por nombre de función (que el SD
 comprobar('queda escrito por qué la v1 devolvía el propio wrapper',
     /el nombre de este propio wrapper/.test(SRC));
 
+console.log('\n11) Caché del directorio (204 de 252 documentos medidos)');
+{
+    // Se carga el bloque de caché de alumni con un sessionStorage de mentira.
+    const inicio = SRC.indexOf('const ALUMNI_CACHE');
+    const fin = SRC.indexOf('async function loadAlumni');
+    const alm = {};
+    const env = {
+        sessionStorage: {
+            getItem: k => (k in alm ? alm[k] : null),
+            setItem: (k, v) => { alm[k] = String(v); },
+            removeItem: k => { delete alm[k]; }
+        },
+        firebase: { firestore: { DocumentReference: function () {} } }
+    };
+    env.firebase.firestore.DocumentReference.prototype = {
+        set() { return 'escrito'; }, update() { return 'ok'; }, delete() { return 'ok'; }
+    };
+    const api = new Function(...Object.keys(env),
+        SRC.slice(inicio, fin) + '\n return { _alumniDesdeCache, _guardarAlumniEnCache, invalidarCacheAlumni, DR: firebase.firestore.DocumentReference };'
+    )(...Object.values(env));
+
+    api._guardarAlumniEnCache([{ id: 'a' }, { id: 'b' }]);
+    comprobar('lo guardado se recupera', api._alumniDesdeCache()?.length === 2);
+    api.invalidarCacheAlumni();
+    comprobar('invalidar la vacía', api._alumniDesdeCache() === null);
+
+    // Caducada por tiempo
+    alm['sinapsis_alumni_cache'] = JSON.stringify({ t: Date.now() - 600000, datos: [{ id: 'a' }] });
+    comprobar('una caché de hace 10 min NO se usa (TTL 5 min)', api._alumniDesdeCache() === null);
+    // Basura no debe reventar
+    alm['sinapsis_alumni_cache'] = 'no es json';
+    comprobar('una caché corrupta se ignora sin lanzar', api._alumniDesdeCache() === null);
+
+    // ⭐ Lo que impide servir datos viejos: escribir en alumni la mata sola
+    api._guardarAlumniEnCache([{ id: 'a' }]);
+    const ref = new api.DR();
+    ref.path = 'artifacts/x/public/data/alumni/u1';
+    ref.set({ accountStatus: 'suspendido' });
+    comprobar('⭐ un set sobre alumni/{id} invalida la caché', api._alumniDesdeCache() === null);
+
+    api._guardarAlumniEnCache([{ id: 'a' }]);
+    const hito = new api.DR();
+    hito.path = 'artifacts/x/public/data/alumni/u1/hitos/h1';
+    hito.update({ x: 1 });
+    comprobar('un update en un hito también (cambia hitosCount)', api._alumniDesdeCache() === null);
+
+    api._guardarAlumniEnCache([{ id: 'a' }]);
+    const otro = new api.DR();
+    otro.path = 'artifacts/x/public/data/news/n1';
+    otro.set({ t: 1 });
+    comprobar('escribir en OTRA colección no la invalida', api._alumniDesdeCache()?.length === 1);
+
+    comprobar('la escritura sigue devolviendo lo que devolvía', ref.set({}) === 'escrito');
+}
+
+console.log('\n12) Los otros dos arreglos medidos en vivo');
+comprobar('loadAlumni acepta { forzar } y deduplica en vuelo',
+    /async function loadAlumni\(\{ forzar = false \} = \{\}\)/.test(SRC) && /if \(_alumniEnVuelo\) return _alumniEnVuelo/.test(SRC));
+comprobar('solo se cachea un directorio leído SIN error',
+    /if \(!state\.directoryError && state\.data\.alumni\.length\) _guardarAlumniEnCache/.test(SRC));
+comprobar('el contacto propio se cachea por uid',
+    /const esPropio = uid === state\.user\?\.uid/.test(SRC));
+comprobar('y se borra al guardarlo, no solo por tiempo',
+    /removeItem\(CONTACTO_CACHE\)/.test(SRC));
+const hist = fs.readFileSync('./historias.js', 'utf8');
+comprobar('la portada solo pide hitos de quien tiene 2 o más',
+    /alum\.hitosCount >= 2 \? await loadHitos/.test(hist));
+
 console.log(`\n${ok} ok · ${fallos} fallas`);
 process.exit(fallos ? 1 : 0);
