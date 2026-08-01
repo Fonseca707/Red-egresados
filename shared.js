@@ -556,11 +556,19 @@ function sortHitos(hitos = []) {
         return (a.actual ? 1 : 0) - (b.actual ? 1 : 0);
     });
 }
+// La portada gastaba 27 documentos en 9 llamadas pintando las rutas destacadas,
+// y las repetía enteras al volver a ella. Se cachea por uid durante la sesión;
+// cualquier escritura bajo `alumni/` la tira (ver invalidarCacheAlumni), así que
+// añadir o editar un hito se ve al instante.
 async function loadHitos(uid) {
     if (!uid) return [];
+    const cache = _cacheLeer(HITOS_CACHE, uid);
+    if (cache) return cache;
     try {
         const snap = await hitosCollection(uid).get();
-        return sortHitos(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+        const hitos = sortHitos(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+        _cacheEscribir(HITOS_CACHE, hitos, uid);
+        return hitos;
     } catch (e) { return []; }
 }
 async function saveHito(uid, hito, hitoId = null) {
@@ -1168,7 +1176,6 @@ function watchAuth(handler) {
 // medido) y es un dato del usuario que no cambia mientras navega. Se cachea por
 // uid durante la sesión de pestaña; el de OTROS egresados no se cachea, porque
 // se pide al abrir su perfil y ahí sí interesa el dato del momento.
-const CONTACTO_CACHE = 'sinapsis_contacto_propio';
 async function loadContactoPrivado(uid) {
     const vacio = { phone: '', contactEmail: '' };
     if (!uid) return vacio;
@@ -1314,7 +1321,12 @@ async function conReintento(fn, intentos = 2, esperaMs = 700) {
     throw ultimo;
 }
 
+// El perfil propio se leía una vez por página (5 lecturas en el recorrido
+// medido) y no cambia mientras se navega. Se cachea el objeto `state.profile`
+// ya montado; cualquier escritura bajo `alumni/` lo tira.
 async function loadProfile(uid) {
+    const guardado = _cacheLeer(PERFIL_CACHE, uid);
+    if (guardado) { state.profile = guardado; refreshHeaderIdentity(); return; }
     const doc=await conReintento(()=>alumniCollection.doc(uid).get());
     if(!doc.exists){ state.profile={firstName:state.user?.displayName?.split(' ')[0]||'',lastName:state.user?.displayName?.split(' ').slice(1).join(' ')||'',graduationYear:'',location:'',status:'trabajando',role:'',area:'',studies:'',bio:'',skills:'',topics:'',expectations:'',phone:'',linkedin:'',photoURL:state.user?.photoURL||'',school:DEFAULT_SCHOOL,username:'',onboardingCompleted:false}; refreshHeaderIdentity(); return; }
     const d=doc.data();
@@ -1325,6 +1337,9 @@ async function loadProfile(uid) {
     const contacto = await loadContactoPrivado(uid);
     if (contacto.phone) state.profile.phone = contacto.phone;
     state.profile.contactEmail = contacto.contactEmail || d.contactEmail || '';
+    // Se guarda DESPUÉS del contacto privado: si se cacheara antes, la siguiente
+    // página mostraría el perfil sin teléfono ni correo de contacto.
+    _cacheEscribir(PERFIL_CACHE, state.profile, uid);
     refreshHeaderIdentity();
 }
 async function ensureDefaultSchool(uid) {
@@ -1372,8 +1387,34 @@ function _guardarAlumniEnCache(datos) {
     try { sessionStorage.setItem(ALUMNI_CACHE, JSON.stringify({ t: Date.now(), datos })); }
     catch { /* cuota llena: se sigue sin caché, no es un error que deba verse */ }
 }
+// Todo lo que se deriva de `alumni` caduca junto: el listado, los hitos y el
+// perfil propio. Una sola función, para que invalidar no sea una lista que
+// alguien pueda dejar incompleta.
+const CONTACTO_CACHE = 'sinapsis_contacto_propio';
+const HITOS_CACHE = 'sinapsis_hitos_cache';
+const PERFIL_CACHE = 'sinapsis_perfil_propio';
 function invalidarCacheAlumni() {
-    try { sessionStorage.removeItem(ALUMNI_CACHE); } catch {}
+    for (const k of [ALUMNI_CACHE, HITOS_CACHE, PERFIL_CACHE, CONTACTO_CACHE]) {
+        try { sessionStorage.removeItem(k); } catch {}
+    }
+}
+
+// Caché con TTL sobre sessionStorage, para lo que se releía en cada página.
+function _cacheLeer(clave, subclave) {
+    try {
+        const c = JSON.parse(sessionStorage.getItem(clave) || 'null');
+        if (!c || Date.now() - c.t > ALUMNI_TTL_MS) return null;
+        return subclave ? (subclave in (c.datos || {}) ? c.datos[subclave] : null) : c.datos;
+    } catch { return null; }
+}
+function _cacheEscribir(clave, valor, subclave) {
+    try {
+        if (!subclave) { sessionStorage.setItem(clave, JSON.stringify({ t: Date.now(), datos: valor })); return; }
+        const c = JSON.parse(sessionStorage.getItem(clave) || 'null');
+        const datos = (c && Date.now() - c.t <= ALUMNI_TTL_MS) ? (c.datos || {}) : {};
+        datos[subclave] = valor;
+        sessionStorage.setItem(clave, JSON.stringify({ t: c?.t || Date.now(), datos }));
+    } catch {}
 }
 
 // La caché se invalida sola cuando alguien ESCRIBE en alumni, envolviendo el

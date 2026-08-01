@@ -252,5 +252,15 @@ const hist = fs.readFileSync('./historias.js', 'utf8');
 comprobar('la portada solo pide hitos de quien tiene 2 o más',
     /alum\.hitosCount >= 2 \? await loadHitos/.test(hist));
 
+console.log('\n13) Hitos y perfil propio: cacheados y con invalidación COMÚN');
+comprobar('loadHitos consulta la caché por uid antes de leer',
+    /const cache = _cacheLeer\(HITOS_CACHE, uid\);\s*\n\s*if \(cache\) return cache;/.test(SRC));
+comprobar('loadProfile también',
+    /const guardado = _cacheLeer\(PERFIL_CACHE, uid\);/.test(SRC));
+comprobar('⭐ el perfil se cachea DESPUÉS del contacto privado, no antes',
+    SRC.indexOf('_cacheEscribir(PERFIL_CACHE') > SRC.indexOf('const contacto = await loadContactoPrivado(uid)'));
+comprobar('invalidar borra las CUATRO cachés de una vez (no una lista que se quede corta)',
+    /for \(const k of \[ALUMNI_CACHE, HITOS_CACHE, PERFIL_CACHE, CONTACTO_CACHE\]\)/.test(SRC));
+
 console.log(`\n${ok} ok · ${fallos} fallas`);
 process.exit(fallos ? 1 : 0);
