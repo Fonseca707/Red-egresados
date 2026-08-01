@@ -741,7 +741,7 @@ const state = {
     data: { alumni:[], news:[], chats:[], subAdmins:[] },
     profile: { firstName:'',lastName:'',graduationYear:'',location:'',status:'trabajando',role:'',area:'',studies:'',bio:'',skills:'',topics:'',expectations:'',phone:'',linkedin:'',photoURL:'',school:DEFAULT_SCHOOL,username:'',onboardingCompleted:false },
     guestMode: false, activeChatId:null, messagesByChat:{}, selectedDirectoryUserId:null,
-    directoryLoading:false, directoryPage:1, adminEmail:'juanda.fonsecag@gmail.com', adminTab:'users', editingNewsId:null,
+    directoryLoading:false, directoryError:null, directoryPage:1, adminEmail:'juanda.fonsecag@gmail.com', adminTab:'users', editingNewsId:null,
     adminRole: null, adminSchool: null,
     listeners: { chats:null, messages:null }
 };
@@ -771,11 +771,42 @@ function esInvitado() { return !esMiembro(); }
 let _anonAuthPromesa = null;
 let _anonAuthFallo = false;
 function anonAuthDisponible() { return !_anonAuthFallo; }
+
+// ── Marca de "este navegador tiene un miembro" ──────────────────────────────
+// signInAnonymously() REEMPLAZA al usuario actual, y la sesion anonima queda
+// guardada: a partir de ahi el miembro entra como invitado en cada refresco
+// —directorio sin contactos, sin Mensajes, sin su perfil— y nada lo devuelve a
+// su cuenta. Basta UN instante con currentUser == null (IndexedDB en disputa
+// entre pestañas, un arranque lento en el celular) para perderla sin aviso.
+// Por eso, si este navegador tuvo sesion de miembro, NO se abre la anonima: se
+// prefiere quedarse sin sesion y decirlo, que es reversible.
+// La marca se pone al hidratar un miembro y se borra al cerrar sesion o al
+// pedir el modo invitado a proposito.
+const MARCA_MIEMBRO = 'sinapsis-miembro';
+function marcarNavegadorConMiembro() { try { localStorage.setItem(MARCA_MIEMBRO, '1'); } catch (e) {} }
+function olvidarNavegadorConMiembro() { try { localStorage.removeItem(MARCA_MIEMBRO); } catch (e) {} }
+function navegadorTuvoMiembro() { try { return localStorage.getItem(MARCA_MIEMBRO) === '1'; } catch (e) { return false; } }
+// La levanta quien detecta que un miembro se quedo sin sesion; la UI la usa
+// para avisar en vez de disfrazarlo de visita anonima.
+let _sesionMiembroPerdida = false;
+function sesionMiembroPerdida() { return _sesionMiembroPerdida; }
 // Se memoriza la PROMESA, no un booleano "ya se intentó": si dos lecturas piden
 // sesión a la vez (la portada pide historias mientras el directorio pide alumni),
 // la segunda espera a la primera en vez de irse sin sesión y leer un 0.
 async function iniciarSesionInvitado() {
     if (_anonAuthPromesa) return _anonAuthPromesa;
+    // Este navegador es de un miembro y ahora mismo no hay sesion: NO abrir la
+    // anonima encima (ver MARCA_MIEMBRO). Se avisa y se le deja volver a entrar.
+    // OJO: aqui NO vale mirar state.guestMode. Se pone solo en cuanto se detecta
+    // un usuario anonimo, asi que no distingue "el usuario pidio entrar como
+    // invitado" de "ya lo pisaron una vez"; con esa condicion el guardia se
+    // saltaba justo en el caso que tenia que frenar. La intencion explicita ya
+    // esta cubierta: browseAsGuest() y el logout borran la marca de miembro.
+    if (navegadorTuvoMiembro()) {
+        _sesionMiembroPerdida = true;
+        console.warn('[Sinapsis] Habia sesion de miembro en este navegador y ahora no hay ninguna: no se abre sesion de invitado para no pisarla.');
+        return null;
+    }
     if (typeof auth.signInAnonymously !== 'function') {
         _anonAuthFallo = true;
         console.warn('[Sinapsis] Este SDK no expone signInAnonymously: se sigue en modo lectura sin sesión.');
@@ -802,6 +833,17 @@ async function iniciarSesionInvitado() {
 // anónimo en ese hueco le REEMPLAZARÍA la sesión al miembro.
 const _authResuelta = new Promise(resolve => {
     const off = auth.onAuthStateChanged(u => { off(); resolve(u); });
+});
+
+// Vigilancia central de "la sesion del miembro se cayo". Va aqui y no en cada
+// pagina porque el directorio (y otras) normalizan el anonimo a "invitado" por
+// su cuenta, sin pasar por hydrateAuthenticatedUser: puesto alli, este aviso no
+// se enteraba nunca. Un anonimo en un navegador marcado como de miembro, o
+// ninguna sesion habiendo marca, es exactamente el caso que hay que avisar.
+auth.onAuthStateChanged(u => {
+    if (!navegadorTuvoMiembro()) return;
+    if (!u || u.isAnonymous) _sesionMiembroPerdida = true;
+    else _sesionMiembroPerdida = false;
 });
 
 // Puerta de toda lectura que el invitado deba poder hacer. Desde 2026-07-29
@@ -931,6 +973,9 @@ async function hydrateAuthenticatedUser(user, { redirectOnboarding = false } = {
     // loadProfile/ensureDefaultSchool/loadAdminRole crearía documentos vacíos y
     // lo mandaría al onboarding de una cuenta que no existe.
     if (user.isAnonymous) {
+        // Anonimo en un navegador que tenia miembro = la sesion se perdio (o la
+        // piso una anonima vieja). No disfrazarlo de visita: hay que decirlo.
+        if (navegadorTuvoMiembro()) _sesionMiembroPerdida = true;
         marcarInvitadoAnonimo(user);
         updateAdminNavVisibility();
         updateMemberNavVisibility();
@@ -938,14 +983,26 @@ async function hydrateAuthenticatedUser(user, { redirectOnboarding = false } = {
     }
     state.guestMode = false;
     sessionStorage.removeItem('guestMode');
+    marcarNavegadorConMiembro();
+    _sesionMiembroPerdida = false;
     state.user = user;
-    await loadProfile(user.uid);
-    await ensureDefaultSchool(user.uid);
+    // ⚠️ Estas tres lecturas NO pueden tumbar el arranque de la pagina. Antes
+    // iban sueltas: si loadProfile fallaba (una red movil que parpadea basta),
+    // la excepcion mataba el callback de onAuthStateChanged y la pagina se
+    // quedaba con el directorio vacio o con los esqueletos girando para
+    // siempre, sin un solo mensaje. El sintoma que reporto Juan.
+    let perfilOk = true;
+    try { await loadProfile(user.uid); }
+    catch (e) { perfilOk = false; console.warn('[Sinapsis] No se pudo leer el perfil:', e?.code || e?.message || e); }
+    try { await ensureDefaultSchool(user.uid); }
+    catch (e) { console.warn('[Sinapsis] No se pudo asegurar el colegio:', e?.code || e?.message || e); }
     await loadAdminRole(user.uid);
     updateAdminNavVisibility();
     updateMemberNavVisibility();
     refreshHeaderIdentity();
-    if (redirectOnboarding && !state.profile.onboardingCompleted && !window.location.pathname.endsWith('/onboarding.html')) {
+    // Sin perfil leido, onboardingCompleted es el `false` del objeto vacio: si
+    // se redirige, se manda al onboarding a alguien que ya lo hizo hace meses.
+    if (redirectOnboarding && perfilOk && !state.profile.onboardingCompleted && !window.location.pathname.endsWith('/onboarding.html')) {
         goto('onboarding');
         return false;
     }
@@ -956,8 +1013,19 @@ async function loadSubAdmins() {
     catch(e) { state.data.subAdmins=[]; }
 }
 
+// Un tropiezo de red en el celular no puede costar la sesion visible: se
+// reintenta una vez antes de dar la lectura por perdida.
+async function conReintento(fn, intentos = 2, esperaMs = 700) {
+    let ultimo;
+    for (let i = 0; i < intentos; i++) {
+        try { return await fn(); }
+        catch (e) { ultimo = e; if (i < intentos - 1) await new Promise(r => setTimeout(r, esperaMs)); }
+    }
+    throw ultimo;
+}
+
 async function loadProfile(uid) {
-    const doc=await alumniCollection.doc(uid).get();
+    const doc=await conReintento(()=>alumniCollection.doc(uid).get());
     if(!doc.exists){ state.profile={firstName:state.user?.displayName?.split(' ')[0]||'',lastName:state.user?.displayName?.split(' ').slice(1).join(' ')||'',graduationYear:'',location:'',status:'trabajando',role:'',area:'',studies:'',bio:'',skills:'',topics:'',expectations:'',phone:'',linkedin:'',photoURL:state.user?.photoURL||'',school:DEFAULT_SCHOOL,username:'',onboardingCompleted:false}; refreshHeaderIdentity(); return; }
     const d=doc.data();
     // OJO: d.phone / d.contactEmail son RESIDUO de antes del cierre del
@@ -982,12 +1050,20 @@ async function ensureDefaultSchool(uid) {
 // Consecuencia buscada: `user.phone` no existe en los objetos del directorio.
 async function loadAlumni() {
     state.directoryLoading=true;
+    state.directoryError=null;
     // El invitado necesita sesión (anónima) para que las reglas le dejen listar.
     await asegurarSesionParaLeer();
     try {
-        const snap=await alumniCollection.get();
+        const snap=await conReintento(()=>alumniCollection.get());
         state.data.alumni=snap.docs.map(doc=>{const d=doc.data();const user={id:doc.id,name:`${d.firstName||''} ${d.lastName||''}`.trim()||'Sin nombre',firstName:(d.firstName||'').trim(),lastName:(d.lastName||'').trim(),email:d.email||'',username:d.username||'',newsletterOptIn:Boolean(d.newsletterOptIn),role:d.role||'Sin rol',status:d.status||'sin-definir',statusLabel:formatStatusLabel(d.status),accountStatus:d.accountStatus||'activo',company:d.studies||formatStatusLabel(d.status),photoURL:d.photoURL||'',img:d.photoURL||buildAvatarUrl(`${d.firstName||'Usuario'} ${d.lastName||''}`.trim()),tags:[d.school||DEFAULT_SCHOOL,d.area||'General',formatStatusLabel(d.status)].filter(Boolean),fullStudies:d.studies||'No especificado',location:d.location||'Ubicación no disponible',bio:d.bio||'Sin biografía disponible.',year:d.graduationYear||'---',area:d.area||'General',skills:Array.isArray(d.skills)?d.skills:(d.skills?String(d.skills).split(','):[]),linkedin:d.linkedin||'',expectations:d.expectations||'',school:d.school||DEFAULT_SCHOOL,hitosCount:Number(d.hitosCount)||0,rutaDestacada:Boolean(d.rutaDestacada),graduationYear:d.graduationYear||'',studies:d.studies||''};return{...user,profileCompleteness:getProfileCompletenessScore(user)};}).filter(a=>hasValidFirstName(a.firstName));
-    } catch(e){ state.data.alumni=state.data.alumni.length?state.data.alumni:[];}
+    } catch(e){
+        // Antes esto se tragaba el error y el directorio salia VACIO como si la
+        // red no tuviera a nadie. Ahora queda constancia para que la pagina lo
+        // diga y ofrezca reintentar (el 90% de las veces es la red del celular).
+        state.directoryError = e?.code || e?.message || 'error-desconocido';
+        console.warn('[Sinapsis] No se pudo cargar el directorio:', state.directoryError);
+        state.data.alumni=state.data.alumni.length?state.data.alumni:[];
+    }
     finally{ state.directoryLoading=false; }
 }
 async function loadNews() {

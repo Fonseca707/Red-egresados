@@ -32,7 +32,7 @@
         .detail-row:last-child { border-bottom:0; }
         .detail-icon { width:2.5rem; height:2.5rem; border-radius:0.75rem; background:#f0fdf4; color:#16a34a; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:1.25rem; }
     </style>
-    <link rel="stylesheet" href="tailwind.css?v=1">
+    <link rel="stylesheet" href="tailwind.css?v=2">
 </head>
 <body class="text-stone-800 font-sans min-h-screen flex flex-col">
 
@@ -157,7 +157,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore-compat.js"></script>
-    <script src="shared.js?v=18"></script>
+    <script src="shared.js?v=21"></script>
     <script src="orientadora.js?v=3"></script>
     <script>
         renderNav('directory');
@@ -167,6 +167,13 @@
             render: (items = state.data.alumni) => {
                 directoryLogic._currentItems = rankAlumniForDirectory(items);
                 directoryLogic._renderPage(1);
+            },
+            reintentar: async () => {
+                state.directoryError = null;
+                state.directoryLoading = true;
+                directoryLogic.render();
+                await loadAlumni();
+                directoryLogic.render();
             },
             _renderPage: (page) => {
                 state.directoryPage = page;
@@ -189,6 +196,20 @@
                             <div class="h-3 bg-gray-100 rounded w-5/6"></div>
                         </div>
                     `).join('');
+                    if (loadMoreBtn) loadMoreBtn.classList.add('hidden');
+                    return;
+                }
+
+                // La lectura fallo (tipicamente la red del celular). Antes esto
+                // se veia igual que "la red no tiene a nadie": una lista vacia.
+                if (state.directoryError && !items.length) {
+                    grid.innerHTML = `
+                        <div class="col-span-full bg-white border border-gray-100 rounded-2xl p-8 text-center">
+                            <i class="ph ph-wifi-slash text-3xl text-gray-400"></i>
+                            <p class="mt-3 font-bold text-gray-900">No pudimos cargar el directorio</p>
+                            <p class="mt-1 text-sm text-gray-500">Revisa tu conexión e inténtalo otra vez.</p>
+                            <button onclick="directoryLogic.reintentar()" class="mt-4 px-5 py-2.5 bg-brand-600 text-white text-sm font-bold rounded-xl">Reintentar</button>
+                        </div>`;
                     if (loadMoreBtn) loadMoreBtn.classList.add('hidden');
                     return;
                 }
@@ -396,25 +417,59 @@
         window.uiLogic = uiLogic;
 
         auth.onAuthStateChanged(async (user) => {
-            // El invitado anonimo se normaliza a "sin sesion + modo invitado".
-            if (user && user.isAnonymous) { state.guestMode = true; user = null; }
-            const isGuest = state.guestMode;
-            if (!user && !isGuest) { goto('login'); return; }
-            if (user) {
-                const ready = await hydrateAuthenticatedUser(user, { redirectOnboarding: true });
-                if (!ready) return;
-            } else {
-                refreshHeaderIdentity();
-                updateAdminNavVisibility();
-            }
-            await loadAlumni();
-            directoryLogic.render();
-            // Deep link: abrir el perfil pedido en la URL (?perfil=<id>)
-            const requestedProfile = new URLSearchParams(window.location.search).get('perfil');
-            if (requestedProfile && state.data.alumni.some(u => String(u.id) === String(requestedProfile))) {
-                directoryLogic.openProfile(requestedProfile);
+            // ⚠️ TODO este callback va dentro de un try: cualquier excepcion aqui
+            // (una lectura de Firestore que falla en la red del celular) dejaba
+            // la pagina sin llamar a loadAlumni y el directorio se quedaba vacio
+            // o con los esqueletos girando, sin decir nada. Nunca en silencio.
+            try {
+                // El invitado anonimo se normaliza a "sin sesion + modo invitado".
+                if (user && user.isAnonymous) { state.guestMode = true; user = null; }
+                const isGuest = state.guestMode;
+                if (!user && !isGuest) { goto('login'); return; }
+                if (user) {
+                    const ready = await hydrateAuthenticatedUser(user, { redirectOnboarding: true });
+                    if (!ready) return;
+                } else {
+                    refreshHeaderIdentity();
+                    updateAdminNavVisibility();
+                }
+                await loadAlumni();
+                directoryLogic.render();
+                // Deep link: abrir el perfil pedido en la URL (?perfil=<id>)
+                const requestedProfile = new URLSearchParams(window.location.search).get('perfil');
+                if (requestedProfile && state.data.alumni.some(u => String(u.id) === String(requestedProfile))) {
+                    directoryLogic.openProfile(requestedProfile);
+                }
+            } catch (e) {
+                console.error('[Sinapsis] El directorio no pudo arrancar:', e);
+                state.directoryLoading = false;
+                state.directoryError = e?.code || e?.message || 'error-desconocido';
+                directoryLogic.render();
             }
         });
+
+        // La sesion de miembro se perdio (ver MARCA_MIEMBRO en shared.js): se le
+        // dice, en vez de dejarlo navegando como invitado sin entender por que
+        // no ve sus contactos ni sus mensajes.
+        (function avisarSesionPerdida() {
+            const revisar = () => {
+                if (!sesionMiembroPerdida() || document.getElementById('aviso-sesion')) return;
+                const aviso = document.createElement('div');
+                aviso.id = 'aviso-sesion';
+                aviso.className = 'fixed bottom-20 md:bottom-6 left-4 right-4 md:left-auto md:right-6 md:max-w-sm z-50 bg-white border border-amber-200 rounded-2xl shadow-xl p-4 flex items-start gap-3';
+                aviso.innerHTML = `
+                    <i class="ph-fill ph-warning-circle text-amber-500 text-xl shrink-0"></i>
+                    <div class="flex-1">
+                        <p class="text-sm font-bold text-gray-900">Tu sesión se cerró</p>
+                        <p class="text-xs text-gray-600 mt-0.5">Estás viendo la red como visitante. Vuelve a entrar para ver tus mensajes y los contactos.</p>
+                        <a href="login.html" class="inline-block mt-2 px-3 py-2 bg-brand-600 text-white text-xs font-bold rounded-lg">Entrar de nuevo</a>
+                    </div>
+                    <button onclick="this.parentElement.remove()" aria-label="Cerrar aviso" class="text-gray-400 p-1"><i class="ph ph-x"></i></button>`;
+                document.body.appendChild(aviso);
+            };
+            setTimeout(revisar, 2500);
+            setTimeout(revisar, 6000);
+        })();
     </script>
 </body>
 </html>
