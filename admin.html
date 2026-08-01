@@ -628,9 +628,23 @@
         const tabPermitida = (tab) => !SUPER_ONLY_TABS.includes(tab) || state.adminRole === 'superadmin';
 
         const adminLogic = {
-            switchTab: (tab) => {
+            // opciones.desdeHistorial = lo disparo el boton "atras" del navegador
+            // (o la carga inicial): en ese caso NO se apila otra entrada.
+            switchTab: (tab, opciones = {}) => {
                 if (!tabPermitida(tab)) tab = 'users';
                 state.adminTab = tab;
+                // La pestaña vive en la URL. Sin esto, en el celular el gesto de
+                // "volver" —que es como se navega ahi— sacaba del panel entero en
+                // vez de regresar a la pestaña anterior, y recargar devolvia
+                // siempre a Usuarios por mucho que estuvieras en Saber 11.
+                try {
+                    const url = new URL(window.location.href);
+                    if (url.searchParams.get('tab') !== tab) {
+                        url.searchParams.set('tab', tab);
+                        if (opciones.desdeHistorial) history.replaceState({ tab }, '', url);
+                        else history.pushState({ tab }, '', url);
+                    }
+                } catch (e) {}
                 const tabMap = {
                     users:     { btn:'tab-users',      panel:'admin-users-tab' },
                     news:      { btn:'tab-news-admin', panel:'admin-news-tab' },
@@ -666,6 +680,11 @@
                     else document.getElementById('auto-correos-card')?.classList.add('hidden');
                 }
                 if (tab === 'contactos') contactosAdminLogic.load();
+                // La barra de pestañas se desplaza en movil: si la activa queda
+                // fuera, no hay forma de saber donde estas. Se trae a la vista.
+                // Sin 'smooth' a proposito: aqui el salto instantaneo es mas
+                // fiable que una animacion que el navegador puede no ejecutar.
+                document.getElementById(tabMap[tab]?.btn)?.scrollIntoView({ inline: 'center', block: 'nearest' });
             },
             getVisibleUsers: () => {
                 return state.adminRole === 'superadmin'
@@ -1288,8 +1307,17 @@
                 contactosAdminLogic.load();
             }
             adminLogic.renderUsers();
-            adminLogic.switchTab('users');
+            // Se abre la pestaña que diga la URL (?tab=), no siempre Usuarios:
+            // asi recargar, compartir el enlace o volver con el boton "atras"
+            // devuelven donde estabas. tabPermitida() sigue filtrando: un
+            // sub-admin que reciba ?tab=colegios cae en Usuarios igual.
+            const tabPedida = new URLSearchParams(window.location.search).get('tab');
+            adminLogic.switchTab(tabPedida || 'users', { desdeHistorial: true });
             if (isSuperAdmin) limpiezaLogic.renderCard();
+
+            window.addEventListener('popstate', (e) => {
+                adminLogic.switchTab(e.state?.tab || 'users', { desdeHistorial: true });
+            });
         });
     </script>
 </body>
