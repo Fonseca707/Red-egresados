@@ -20,7 +20,7 @@
         .input-field { width:100%; padding:0.85rem 1rem; background:rgba(250,250,249,0.9); border:1px solid #e7e5e4; border-radius:0.75rem; outline:none; transition:all 0.2s ease; font-size:0.9rem; font-weight:500; color:#292524; }
         .input-field:focus { border-color:#16a34a; box-shadow:0 0 0 4px rgb(34 197 94/0.15); background:#fff; }
     </style>
-    <link rel="stylesheet" href="tailwind.css?v=2">
+    <link rel="stylesheet" href="tailwind.css?v=3">
 </head>
 <body class="text-stone-800 font-sans min-h-screen flex flex-col">
 
@@ -33,7 +33,13 @@
                 <p class="text-gray-500 mt-1 text-sm">Gestiona la comunidad y el contenido de la plataforma.</p>
             </div>
 
-            <div class="flex gap-6 mb-6 border-b border-gray-200">
+            <!-- Con las 8 pestañas visibles (superadmin) esta fila mide ~657px:
+                 en un celular de 390 no cabe, y sin overflow propio el que se
+                 desplazaba era el DOCUMENTO — Colegios, Audio, Saber 11 y
+                 Sub-Administradores quedaban fuera de la pantalla, inalcanzables.
+                 Ahora scrollea la barra (y no la página), con los botones sin
+                 encogerse para que el texto no se parta. -->
+            <div class="flex gap-6 mb-6 border-b border-gray-200 overflow-x-auto hide-scrollbar [&>button]:shrink-0 [&>button]:whitespace-nowrap">
                 <button onclick="adminLogic.switchTab('users')" id="tab-users" class="pb-3 text-sm font-bold border-b-2 border-brand-600 text-brand-600 transition">Usuarios</button>
                 <button onclick="adminLogic.switchTab('news')" id="tab-news-admin" class="pb-3 text-sm font-bold border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition">Noticias</button>
                 <button onclick="adminLogic.switchTab('correos')" id="tab-correos" class="pb-3 text-sm font-bold border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition">Correos</button>
