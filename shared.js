@@ -27,6 +27,206 @@ if (!firebase.apps.length) {
 */
 const auth = firebase.auth();
 const db = firebase.firestore();
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MEDIDOR DE LECTURAS DE FIRESTORE
+// ─────────────────────────────────────────────────────────────────────────────
+// Por qué existe (2026-08-01, Juan): «las lecturas son muy altas y solo yo uso
+// Sinapsis». Leyendo el código se ven candidatos —la portada trae los 68
+// perfiles completos, las noticias se piden dos veces, no hay caché entre
+// páginas— pero NINGUNO explica un número desproporcionado con un solo usuario.
+// Optimizar sin medir sería repetir el error del audio: dos rondas de solución
+// sobre un problema que nadie había medido.
+//
+// Se envuelven los PROTOTIPOS de Firestore, no las 19 llamadas del repo: así
+// queda contado todo —incluido lo de admin-*.js y lo que se escriba mañana— sin
+// que nadie tenga que acordarse de instrumentarlo.
+//
+// El contador vive en sessionStorage porque el problema es de NAVEGACIÓN: son
+// 11 HTML sueltos, y lo que hay que ver es cuánto cuesta ir de la portada al
+// directorio y de ahí a un perfil, no cada página por separado.
+//
+// Se activa con `?lecturas=1` (queda encendido el resto de la sesión) y se apaga
+// con `?lecturas=0`. Apagado no envuelve nada: cero coste para el usuario normal.
+const MEDIDOR_CLAVE = 'sinapsis_medidor_lecturas';
+const medidorLecturas = {
+    activo: false,
+    registros: [],
+
+    arrancar() {
+        const url = new URLSearchParams(location.search).get('lecturas');
+        if (url === '0') { sessionStorage.removeItem(MEDIDOR_CLAVE); sessionStorage.removeItem(MEDIDOR_CLAVE + '_datos'); return; }
+        if (url === '1') sessionStorage.setItem(MEDIDOR_CLAVE, '1');
+        if (sessionStorage.getItem(MEDIDOR_CLAVE) !== '1') return;
+
+        this.activo = true;
+        try { this.registros = JSON.parse(sessionStorage.getItem(MEDIDOR_CLAVE + '_datos')) || []; } catch { this.registros = []; }
+        this.envolver();
+        // El panel necesita el DOM; el medidor tiene que estar antes de la
+        // primera lectura, que ocurre mucho antes de DOMContentLoaded.
+        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => this.pintar());
+        else this.pintar();
+    },
+
+    // De la traza sale QUIÉN pidió la lectura. Sin esto sabríamos que se leyó
+    // `alumni` tres veces, pero no desde dónde — que es lo que hay que arreglar.
+    origen() {
+        const lineas = (new Error().stack || '').split('\n').slice(3);
+        for (const l of lineas) {
+            const m = l.match(/at\s+(?:async\s+)?([A-Za-z0-9_$.]+)\s/);
+            const arch = l.match(/\/([a-z0-9-]+\.(?:js|html)):(\d+)/i);
+            if (m && !/medidor|envolver|Object\.get/.test(m[1])) {
+                return m[1] + (arch ? ` (${arch[1]}:${arch[2]})` : '');
+            }
+        }
+        return '?';
+    },
+
+    anotar(ruta, docs, tipo, desdeCache) {
+        this.registros.push({
+            pagina: location.pathname.split('/').pop() || 'index.html',
+            ruta, docs, tipo,
+            cache: !!desdeCache,
+            origen: this.origen(),
+            t: Date.now()
+        });
+        try { sessionStorage.setItem(MEDIDOR_CLAVE + '_datos', JSON.stringify(this.registros.slice(-500))); } catch {}
+        this.pintar();
+    },
+
+    envolver() {
+        const F = firebase.firestore;
+        const medidor = this;
+        // CollectionReference hereda de Query, así que envolver Query.get cubre
+        // colecciones y consultas con where/orderBy/limit de una vez.
+        const envolverGet = (Clase, tipo) => {
+            if (!Clase?.prototype?.get || Clase.prototype.get._medido) return;
+            const original = Clase.prototype.get;
+            const nuevo = async function (...args) {
+                const r = await original.apply(this, args);
+                const docs = r.docs ? r.docs.length : (r.exists ? 1 : 0);
+                medidor.anotar(medidor.rutaDe(this), docs, tipo, r.metadata?.fromCache);
+                return r;
+            };
+            nuevo._medido = true;
+            Clase.prototype.get = nuevo;
+        };
+        envolverGet(F.Query, 'consulta');
+        envolverGet(F.DocumentReference, 'documento');
+
+        // onSnapshot cobra los documentos de la primera entrega y luego uno por
+        // cada cambio. Un listener olvidado es una fuga que no se ve.
+        [F.Query, F.DocumentReference].forEach(Clase => {
+            if (!Clase?.prototype?.onSnapshot || Clase.prototype.onSnapshot._medido) return;
+            const original = Clase.prototype.onSnapshot;
+            const ruta = this.rutaDe.bind(this);
+            const nuevo = function (...args) {
+                const r = ruta(this);
+                const envolverCb = cb => typeof cb !== 'function' ? cb : (snap, ...resto) => {
+                    const docs = snap?.docs ? snap.docs.length : (snap?.exists ? 1 : 0);
+                    medidor.anotar(r, docs, 'listener', snap?.metadata?.fromCache);
+                    return cb(snap, ...resto);
+                };
+                // onSnapshot acepta (cb) o ({next,error}) y opcionalmente opciones antes.
+                const nuevos = args.map(a => typeof a === 'function' ? envolverCb(a)
+                    : (a && typeof a.next === 'function' ? { ...a, next: envolverCb(a.next) } : a));
+                return original.apply(this, nuevos);
+            };
+            nuevo._medido = true;
+            Clase.prototype.onSnapshot = nuevo;
+        });
+    },
+
+    // Ruta legible y AGRUPABLE: los ids concretos se sustituyen por {id}, si no
+    // "hitos de 40 personas" saldrían como 40 rutas distintas y no se vería que
+    // son el mismo patrón repetido.
+    rutaDe(ref) {
+        const p = ref?.path || ref?._query?.path?.canonicalString?.() || ref?.ref?.path || '';
+        return String(p)
+            .replace(/^artifacts\/[^/]+\//, '')
+            .replace(/public\/data\//, '')
+            .split('/')
+            .map((seg, i) => (i % 2 === 1 ? '{id}' : seg))
+            .join('/') || '?';
+    },
+
+    // Resumen por colección: lo que se mira primero es qué colección se lleva
+    // los documentos, no la lista cronológica.
+    resumen() {
+        const por = {};
+        for (const r of this.registros) {
+            const k = r.ruta;
+            por[k] ||= { ruta: k, llamadas: 0, docs: 0, cache: 0, paginas: new Set(), origenes: {} };
+            por[k].llamadas++;
+            por[k].docs += r.docs;
+            if (r.cache) por[k].cache++;
+            por[k].paginas.add(r.pagina);
+            por[k].origenes[r.origen] = (por[k].origenes[r.origen] || 0) + 1;
+        }
+        return Object.values(por).sort((a, b) => b.docs - a.docs);
+    },
+
+    total() { return this.registros.reduce((n, r) => n + r.docs, 0); },
+
+    reiniciar() {
+        this.registros = [];
+        sessionStorage.removeItem(MEDIDOR_CLAVE + '_datos');
+        this.pintar();
+    },
+
+    // Vuelca al portapapeles lo que hace falta para diagnosticar sin pedirle a
+    // Juan que interprete nada: total, tabla por colección y quién la pidió.
+    async copiar() {
+        const lineas = [
+            `LECTURAS DE FIRESTORE — ${this.total()} documentos en ${this.registros.length} llamadas`,
+            `Páginas visitadas: ${[...new Set(this.registros.map(r => r.pagina))].join(' → ')}`,
+            ''
+        ];
+        for (const r of this.resumen()) {
+            lineas.push(`${String(r.docs).padStart(5)} docs · ${String(r.llamadas).padStart(3)} llamadas · ${r.ruta}`
+                + (r.cache ? ` · ${r.cache} desde caché` : ''));
+            for (const [o, n] of Object.entries(r.origenes).sort((a, b) => b[1] - a[1])) {
+                lineas.push(`               ${n}× ${o}`);
+            }
+        }
+        const texto = lineas.join('\n');
+        try { await navigator.clipboard.writeText(texto); } catch {}
+        console.log(texto);
+        return texto;
+    },
+
+    pintar() {
+        if (!this.activo) return;
+        let caja = document.getElementById('medidor-lecturas');
+        if (!caja) {
+            if (!document.body) return;
+            caja = document.createElement('div');
+            caja.id = 'medidor-lecturas';
+            caja.style.cssText = 'position:fixed;bottom:8px;right:8px;z-index:99999;background:#111;color:#e5e5e5;'
+                + 'font:12px/1.45 ui-monospace,monospace;padding:10px 12px;border-radius:10px;max-width:min(92vw,460px);'
+                + 'max-height:60vh;overflow:auto;box-shadow:0 8px 24px rgba(0,0,0,.4)';
+            document.body.appendChild(caja);
+        }
+        const filas = this.resumen().slice(0, 12).map(r =>
+            `<tr><td style="text-align:right;padding-right:8px;color:#fbbf24">${r.docs}</td>`
+            + `<td style="text-align:right;padding-right:8px;color:#9ca3af">${r.llamadas}×</td>`
+            + `<td style="word-break:break-all">${r.ruta}</td></tr>`).join('');
+        caja.innerHTML = `
+            <div style="display:flex;justify-content:space-between;gap:10px;align-items:baseline;margin-bottom:6px">
+                <b style="color:#fff">${this.total()} lecturas</b>
+                <span style="color:#9ca3af">${this.registros.length} llamadas</span>
+            </div>
+            <table style="border-collapse:collapse;width:100%">${filas}</table>
+            <div style="margin-top:8px;display:flex;gap:10px;flex-wrap:wrap">
+                <a href="#" onclick="medidorLecturas.copiar();return false" style="color:#60a5fa">copiar informe</a>
+                <a href="#" onclick="medidorLecturas.reiniciar();return false" style="color:#60a5fa">reiniciar</a>
+                <a href="?lecturas=0" style="color:#f87171">apagar</a>
+            </div>
+            <div style="margin-top:4px;color:#6b7280">acumulado de toda la navegación, no de esta página</div>`;
+    }
+};
+medidorLecturas.arrancar();
+
 const _appId = "1:874010522484:web:28881821d110defd3b7221";
 const artifactsRoot = db.collection('artifacts').doc(_appId);
 const alumniCollection = artifactsRoot.collection('public').doc('data').collection('alumni');
@@ -1103,8 +1303,29 @@ async function loadAlumni() {
     }
     finally{ state.directoryLoading=false; }
 }
-async function loadNews() {
-    try { const s=await newsCollection.orderBy('createdAt','desc').get(); state.data.news=s.docs.map(doc=>{const d=doc.data();return{id:doc.id,title:d.title||'Sin título',category:d.category||'Noticia',date:formatNewsDate(d.createdAt),summary:d.summary||'',img:d.img||'https://placehold.co/600x400/7e22ce/FFF?text=Noticia',audiencia:d.audiencia||'todos'};}); } catch(e){}
+// `index.html` la llamaba DOS veces por carga —una en DOMContentLoaded, para que
+// el invitado vea las noticias sin esperar a la autenticación, y otra dentro del
+// arranque autenticado— y cada una se traía la colección entera. No sobra
+// ninguna de las dos llamadas: sobra la segunda LECTURA.
+//
+// Se resuelve reusando la carga reciente en vez de borrar una llamada: así
+// tampoco duele si mañana alguien añade una tercera. Quien de verdad necesita
+// datos frescos —el admin, tras publicar o borrar— pide `{ forzar: true }`.
+// El TTL es corto a propósito: esto deduplica el arranque de UNA página, no
+// pretende ser una caché entre páginas (eso se decidirá con el medidor).
+let _newsCargadas = 0, _newsEnVuelo = null;
+const NEWS_TTL_MS = 30000;
+async function loadNews({ forzar = false } = {}) {
+    if (!forzar && _newsEnVuelo) return _newsEnVuelo;
+    if (!forzar && state.data.news?.length && Date.now() - _newsCargadas < NEWS_TTL_MS) return;
+    _newsEnVuelo = (async () => {
+        try {
+            const s=await newsCollection.orderBy('createdAt','desc').get(); state.data.news=s.docs.map(doc=>{const d=doc.data();return{id:doc.id,title:d.title||'Sin título',category:d.category||'Noticia',date:formatNewsDate(d.createdAt),summary:d.summary||'',img:d.img||'https://placehold.co/600x400/7e22ce/FFF?text=Noticia',audiencia:d.audiencia||'todos'};});
+            _newsCargadas = Date.now();
+        } catch(e){}
+        finally { _newsEnVuelo = null; }
+    })();
+    return _newsEnVuelo;
 }
 async function loadChatsForUser(uid) {
     try { const s=await userChatsCollection(uid).orderBy('updatedAt','desc').get(); state.data.chats=s.docs.map(doc=>{const d=doc.data();return{id:doc.id,peerId:d.peerId||'',name:d.peerName||'Usuario',img:d.peerPhotoURL||buildAvatarUrl(d.peerName||'Usuario'),lastMsg:d.lastMsg||'Sin mensajes',time:formatChatTime(d.updatedAt)};}); } catch(e){ state.data.chats=[]; }

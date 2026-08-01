@@ -610,7 +610,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-storage-compat.js"></script>
-    <script src="shared.js?v=22"></script>
+    <script src="shared.js?v=23"></script>
     <script src="admin-correos.js?v=4"></script>
     <script src="admin-rutas-ia.js?v=2"></script>
     <script src="admin-contactos.js?v=1"></script>
@@ -1203,7 +1203,7 @@
                             createdAt: firebase.firestore.FieldValue.serverTimestamp()
                         });
                     }
-                    await loadNews();
+                    await loadNews({ forzar: true });
                     adminLogic.renderNewsList();
                     adminLogic.cancelNewsEdit();
                 } catch (error) {
@@ -1214,7 +1214,7 @@
                 if (!confirm('¿Eliminar esta noticia?')) return;
                 try {
                     await newsCollection.doc(String(id)).delete();
-                    await loadNews();
+                    await loadNews({ forzar: true });
                     adminLogic.renderNewsList();
                 } catch (error) {
                     alert(`No se pudo eliminar la noticia: ${error.message}`);
