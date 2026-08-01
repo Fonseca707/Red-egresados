@@ -27,7 +27,9 @@
       "README.md",
       "CLAUDE.md",
       "*.md",
-      "firebase-config.example.js"
+      "firebase-config.example.js",
+      "tailwind.config.js",
+      "tailwind.src.css"
     ],
     "headers": [
       {
@@ -59,7 +61,9 @@
       "README.md",
       "CLAUDE.md",
       "*.md",
-      "firebase-config.example.js"
+      "firebase-config.example.js",
+      "tailwind.config.js",
+      "tailwind.src.css"
     ],
     "headers": [
       {
