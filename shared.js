@@ -69,15 +69,27 @@ const medidorLecturas = {
     },
 
     // De la traza sale QUIÉN pidió la lectura. Sin esto sabríamos que se leyó
-    // `alumni` tres veces, pero no desde dónde — que es lo que hay que arreglar.
+    // `alumni` siete veces, pero no desde dónde — que es lo que hay que arreglar.
+    //
+    // ⚠️ La primera versión devolvía `tl.nuevo` / `$h.nuevo` en TODAS: `nuevo` es
+    // el nombre de este propio wrapper y `tl`/`$h` son las clases minificadas del
+    // SDK compat. Se estaba leyendo el medidor a sí mismo. Ahora el filtro es por
+    // ARCHIVO —solo cuentan los del repo— en vez de por nombre de función, que es
+    // lo único que el minificado no puede disfrazar.
     origen() {
-        const lineas = (new Error().stack || '').split('\n').slice(3);
+        const lineas = (new Error().stack || '').split('\n');
         for (const l of lineas) {
-            const m = l.match(/at\s+(?:async\s+)?([A-Za-z0-9_$.]+)\s/);
-            const arch = l.match(/\/([a-z0-9-]+\.(?:js|html)):(\d+)/i);
-            if (m && !/medidor|envolver|Object\.get/.test(m[1])) {
-                return m[1] + (arch ? ` (${arch[1]}:${arch[2]})` : '');
-            }
+            const arch = l.match(/\/([a-z0-9-]+\.(?:js|html)):(\d+):/i);
+            if (!arch) continue;
+            const fichero = arch[1].toLowerCase();
+            if (fichero.startsWith('firebase-') || fichero === 'shared.js') continue;  // SDK y este medidor
+            const m = l.match(/at\s+(?:async\s+)?([A-Za-z0-9_$.<>]+)\s/);
+            return `${m && m[1] !== 'new' ? m[1] : 'anónima'} (${arch[1]}:${arch[2]})`;
+        }
+        // Todo el stack es de shared.js: la pidió una de sus funciones de carga.
+        for (const l of lineas.slice(2)) {
+            const m = l.match(/at\s+(?:async\s+)?([A-Za-z0-9_$.]*(?:load|fetch|get|save)[A-Za-z0-9_$.]*)\s/i);
+            if (m && !/medidor/i.test(m[1])) return m[1] + ' (shared.js)';
         }
         return '?';
     },
@@ -104,8 +116,7 @@ const medidorLecturas = {
             const original = Clase.prototype.get;
             const nuevo = async function (...args) {
                 const r = await original.apply(this, args);
-                const docs = r.docs ? r.docs.length : (r.exists ? 1 : 0);
-                medidor.anotar(medidor.rutaDe(this), docs, tipo, r.metadata?.fromCache);
+                medidor.anotar(medidor.rutaDe(this, r), medidor.cobradas(r), tipo, r.metadata?.fromCache);
                 return r;
             };
             nuevo._medido = true;
@@ -123,8 +134,7 @@ const medidorLecturas = {
             const nuevo = function (...args) {
                 const r = ruta(this);
                 const envolverCb = cb => typeof cb !== 'function' ? cb : (snap, ...resto) => {
-                    const docs = snap?.docs ? snap.docs.length : (snap?.exists ? 1 : 0);
-                    medidor.anotar(r, docs, 'listener', snap?.metadata?.fromCache);
+                    medidor.anotar(medidor.rutaDe(this, snap) || r, medidor.cobradas(snap), 'listener', snap?.metadata?.fromCache);
                     return cb(snap, ...resto);
                 };
                 // onSnapshot acepta (cb) o ({next,error}) y opcionalmente opciones antes.
@@ -137,17 +147,42 @@ const medidorLecturas = {
         });
     },
 
+    // Lo que Firestore FACTURA, que no es lo mismo que lo que devuelve:
+    //  · un `get` de documento inexistente se cobra igual, como 1 lectura;
+    //  · una consulta sin resultados tiene un mínimo de 1 lectura.
+    // La v1 los contaba como 0 y por eso las 9 llamadas a `privado/{id}` salían
+    // gratis en el informe cuando en la factura no lo son.
+    cobradas(r) {
+        if (r?.docs) return Math.max(1, r.docs.length);
+        return 1;
+    },
+
     // Ruta legible y AGRUPABLE: los ids concretos se sustituyen por {id}, si no
     // "hitos de 40 personas" saldrían como 40 rutas distintas y no se vería que
     // son el mismo patrón repetido.
-    rutaDe(ref) {
-        const p = ref?.path || ref?._query?.path?.canonicalString?.() || ref?.ref?.path || '';
-        return String(p)
+    //
+    // ⚠️ En la v1, 250 de 821 documentos salieron como `?`: una Query construida
+    // con where/orderBy NO expone `.path` en el SDK compat (lo guarda en internos
+    // minificados que cambian entre versiones). La ruta fiable sale del RESULTADO
+    // —`docs[0].ref.parent.path`—, que es dato público del snapshot y no depende
+    // de cómo esté hecho el SDK por dentro.
+    rutaDe(ref, snap) {
+        const bruta =
+            snap?.docs?.[0]?.ref?.parent?.path            // consulta con resultados
+            || snap?.ref?.path                            // documento suelto
+            || ref?.path                                  // colección sin filtros
+            || ref?._delegate?._query?.path?.segments?.join('/')
+            || ref?._query?.path?.canonicalString?.()
+            || '';
+        const limpia = String(bruta)
             .replace(/^artifacts\/[^/]+\//, '')
             .replace(/public\/data\//, '')
             .split('/')
             .map((seg, i) => (i % 2 === 1 ? '{id}' : seg))
-            .join('/') || '?';
+            .join('/');
+        // Si ni así se sabe, al menos que se diga cuántos documentos trajo: un
+        // "?" mudo es lo que hizo inútil el 30% del primer informe.
+        return limpia || `? (${snap?.docs ? snap.docs.length + ' docs' : 'doc suelto'})`;
     },
 
     // Resumen por colección: lo que se mira primero es qué colección se lleva

@@ -19,7 +19,17 @@ function construirFirebase() {
         orderBy() { return this; }
         where() { return this; }
         limit() { return this; }
-        async get() { return { docs: Array.from({ length: this._n ?? 3 }, (_, i) => ({ id: 'd' + i, data: () => ({}) })), metadata: { fromCache: false } }; }
+        // Los docs traen `ref.parent.path` como los de verdad: es de ahí de donde
+        // el medidor saca la ruta cuando la Query no expone `.path`.
+        async get() {
+            // __realPath simula el caso real: la Query no expone `.path`, pero
+            // los documentos que devuelve sí saben de qué colección salieron.
+            const path = this.__realPath ?? this.path;
+            return {
+                docs: Array.from({ length: this._n ?? 3 }, (_, i) => ({ id: 'd' + i, ref: { parent: { path } }, data: () => ({}) })),
+                metadata: { fromCache: false }
+            };
+        }
         onSnapshot(cb) { cb({ docs: [{ id: 'a', data: () => ({}) }, { id: 'b', data: () => ({}) }], metadata: { fromCache: false } }); return () => {}; }
     }
     class CollectionReference extends Query {
@@ -28,7 +38,7 @@ function construirFirebase() {
     class DocumentReference {
         constructor(path) { this.path = path; }
         collection(name) { return new CollectionReference(this.path + '/' + name); }
-        async get() { return { exists: true, id: 'x', data: () => ({}), metadata: { fromCache: false } }; }
+        async get() { return { exists: this._existe !== false, id: 'x', ref: { path: this.path }, data: () => ({}), metadata: { fromCache: false } }; }
         onSnapshot(cb) { cb({ exists: true, metadata: { fromCache: false } }); return () => {}; }
     }
     const firestore = () => ({ collection: n => new CollectionReference(n) });
@@ -137,6 +147,42 @@ comprobar('reusa la carga reciente por TTL', /Date\.now\(\) - _newsCargadas < NE
 const admin = fs.readFileSync('./admin.html', 'utf8');
 comprobar('el admin fuerza la recarga tras publicar y tras borrar',
     (admin.match(/loadNews\(\{ forzar: true \}\)/g) || []).length === 2);
+
+console.log('\n8) Lo que Firestore FACTURA (arreglado tras el primer informe real)');
+{
+    const alm = {};
+    const { medidorLecturas: M2, db: db2 } = cargarMedidor('index.html', alm);
+    const ref = db2.collection('x').doc('y');
+    ref._existe = false;                 // el mock responde "no existe" DESDE EL PROTOTIPO
+    await ref.get();
+    comprobar('un get de documento INEXISTENTE cuenta 1 lectura', M2.total() === 1, `→ ${M2.total()}`);
+    const q = db2.collection('z');
+    q._n = 0;                            // consulta sin resultados
+    await q.get();
+    comprobar('una consulta VACÍA cuenta 1 (mínimo de Firestore)', M2.total() === 2, `→ ${M2.total()}`);
+}
+
+console.log('\n9) La ruta sale del RESULTADO, no de los internos del SDK');
+{
+    const alm = {};
+    const { medidorLecturas: M3, db: db3 } = cargarMedidor('index.html', alm);
+    // Una Query con where/orderBy no expone .path en el compat: es el caso que
+    // en el primer informe dejó 250 documentos como '?'.
+    const q = db3.collection('artifacts').doc('a').collection('public').doc('data').collection('news');
+    const conPath = q.path;
+    Object.defineProperty(q, 'path', { get: () => undefined });   // como una Query con where
+    q._n = 1;
+    q.__realPath = conPath;
+    await q.get();
+    comprobar('una consulta sin .path se identifica por docs[0].ref.parent.path',
+        M3.resumen()[0].ruta === 'news', `→ ${M3.resumen()[0].ruta}`);
+}
+
+console.log('\n10) El medidor ya no se lee a sí mismo');
+comprobar('el origen se filtra por ARCHIVO, no por nombre de función (que el SDK minifica)',
+    /fichero\.startsWith\('firebase-'\)/.test(SRC) && /fichero === 'shared\.js'/.test(SRC));
+comprobar('queda escrito por qué la v1 devolvía el propio wrapper',
+    /el nombre de este propio wrapper/.test(SRC));
 
 console.log(`\n${ok} ok · ${fallos} fallas`);
 process.exit(fallos ? 1 : 0);
