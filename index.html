@@ -491,8 +491,8 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore-compat.js"></script>
-    <script src="shared.js?v=27"></script>
-    <script src="orientadora.js?v=3"></script>
+    <script src="shared.js?v=28"></script>
+    <script src="orientadora.js?v=4"></script>
     <script src="historias.js?v=6"></script>
     <script>
         // ── Estado global: base en shared.js. La nav (desktop + móvil) la
@@ -733,7 +733,7 @@
                 state.adminSchool = null;
                 if (state.listeners.chats) { state.listeners.chats(); state.listeners.chats = null; }
                 if (state.listeners.messages) { state.listeners.messages(); state.listeners.messages = null; }
-                state.profile = { firstName: '', lastName: '', graduationYear: '', location: '', status: 'trabajando', role: '', area: '', studies: '', bio: '', skills: '', topics: '', expectations: '', phone: '', linkedin: '', school: DEFAULT_SCHOOL, username: '', onboardingCompleted: false };
+                state.profile = { firstName: '', lastName: '', graduationYear: '', location: '', status: 'trabajando', role: '', area: '', studies: '', bio: '', skills: '', topics: '', expectations: '', phone: '', linkedin: '', school: '', username: '', onboardingCompleted: false };
                 refreshHeaderIdentity();
             }
             if (typeof historiasLogic !== 'undefined') historiasLogic.init(true);

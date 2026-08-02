@@ -610,9 +610,9 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-storage-compat.js"></script>
-    <script src="shared.js?v=27"></script>
+    <script src="shared.js?v=28"></script>
     <script src="admin-correos.js?v=4"></script>
-    <script src="admin-rutas-ia.js?v=2"></script>
+    <script src="admin-rutas-ia.js?v=3"></script>
     <script src="admin-contactos.js?v=1"></script>
     <script src="admin-migracion.js?v=1"></script>
     <script src="admin-colegios.js?v=2"></script>
@@ -725,7 +725,10 @@
                 const users = adminLogic.getVisibleUsers();
                 const active = users.filter(u => (u.accountStatus || ACCOUNT_STATUS.ACTIVO) !== ACCOUNT_STATUS.SUSPENDIDO).length;
                 const suspended = users.length - active;
-                const withLcp = users.filter(u => (u.school || DEFAULT_SCHOOL) === DEFAULT_SCHOOL).length;
+                // Se cuenta el tag REAL: desde el 2026-08-02 hay usuarios sin
+                // colegio (registro sin código) y contarlos como LCP tapaba
+                // justo el dato que importa para vender.
+                const withLcp = users.filter(u => u.school === DEFAULT_SCHOOL).length;
                 const incomplete = users.filter(u => !u.role || !u.year || !u.location).length;
                 const stats = [
                     { label:'Egresados', value:users.length, icon:'ph-users-three', color:'text-brand-600 bg-brand-50' },

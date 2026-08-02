@@ -264,8 +264,8 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore-compat.js"></script>
-    <script src="shared.js?v=27"></script>
-    <script src="orientadora.js?v=3"></script>
+    <script src="shared.js?v=28"></script>
+    <script src="orientadora.js?v=4"></script>
     <script>
         renderNav('profile');
 
@@ -288,7 +288,7 @@
                 document.getElementById('p-expectations').value = p.expectations || '';
                 document.getElementById('p-phone').value = p.phone || '';
                 document.getElementById('p-linkedin').value = p.linkedin || '';
-                document.getElementById('p-school-display').textContent = p.school || DEFAULT_SCHOOL;
+                document.getElementById('p-school-display').textContent = p.school || 'Sin colegio';
                 const fullName = `${p.firstName || ''} ${p.lastName || ''}`.trim() || state.user?.displayName || 'Usuario';
                 const avatar = p.photoURL || buildAvatarUrl(fullName);
                 document.getElementById('profile-avatar').src = avatar;

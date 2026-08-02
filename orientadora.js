@@ -249,11 +249,16 @@ ${rutas || '(la red aún no tiene rutas registradas: orienta con conocimiento ge
             this.messages.push({ role: 'model', text: reply });
         } catch (err) {
             const detail = String(err?.message || err);
+            // Al invitado se le dice qué le falta, no que algo salió mal: no es
+            // un fallo, es que Karla es para miembros.
+            const faltaCuenta = err?.motivo === 'sesion' || detail.includes('401');
             this.messages.push({
                 role: 'model',
-                text: detail.includes('429')
-                    ? 'Hay muchas consultas en este momento. Espera un minuto e inténtalo de nuevo.'
-                    : 'No pude responder en este momento. Revisa tu conexión e inténtalo de nuevo.'
+                text: faltaCuenta
+                    ? 'Entra con tu cuenta para conversar conmigo. Si todavía no tienes, puedes crearla desde «Ingresar».'
+                    : detail.includes('429')
+                        ? 'Hay muchas consultas en este momento. Espera un minuto e inténtalo de nuevo.'
+                        : 'No pude responder en este momento. Revisa tu conexión e inténtalo de nuevo.'
             });
         } finally {
             this.busy = false;
@@ -269,9 +274,21 @@ ${rutas || '(la red aún no tiene rutas registradas: orienta con conocimiento ge
                 .slice(-12)
                 .map(m => ({ role: m.role === 'model' ? 'assistant' : 'user', content: m.text }))
         ];
+        // Karla exige cuenta real desde el 2026-08-02 (el Worker responde 401 a
+        // quien no la tiene). Se corta aquí para dar un mensaje entendible en vez
+        // de un error de red: el visitante no ha hecho nada mal, le falta entrar.
+        const token = await idTokenIA();
+        if (!token) {
+            const err = new Error('Entra con tu cuenta para conversar con Karla.');
+            err.motivo = 'sesion';
+            throw err;
+        }
         const res = await fetch(SINAPSIS_IA_PROXY, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
             body: JSON.stringify({
                 model: ORIENTADORA_MODEL,
                 messages,

@@ -61,7 +61,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore-compat.js"></script>
-    <script src="shared.js?v=27"></script>
+    <script src="shared.js?v=28"></script>
     <script src="toefl-data.js?v=2"></script>
     <script src="toefl-practice.js?v=12"></script>
     <script src="delf-data.js?v=2"></script>
@@ -69,7 +69,7 @@
     <script src="icfes-engine.js?v=3"></script>
     <script src="delf-practice.js?v=7"></script>
     <script src="ia-calificadora.js?v=4"></script>
-    <script src="orientadora.js?v=3"></script>
+    <script src="orientadora.js?v=4"></script>
     <script>
         renderNav('exam-modules');
 
@@ -169,13 +169,21 @@
                 const grid = document.getElementById('exam-modules-grid');
                 if (!grid) return;
                 // Gate por colegio: los módulos son valor agregado que cada colegio
-                // activa (doc colegios/{tag}.modulos). Sin dato aún → se muestran
-                // (MODULOS_DEFAULT); si el colegio del usuario lo desactivó → tarjeta
-                // bloqueada. Esto es solo UI (se salta desde la consola); el gate
-                // DURO vive en el Worker: POST /calificar exige sesión y verifica
-                // server-side el módulo del colegio antes de gastar en la IA.
+                // activa (doc colegios/{tag}.modulos). Esto es solo UI (se salta
+                // desde la consola); el gate DURO vive en el Worker: POST /calificar
+                // exige cuenta real y verifica server-side el módulo del colegio
+                // antes de gastar en la IA.
+                //
+                // Se BLOQUEA la tarjeta solo a quien tiene colegio y su colegio no
+                // activó el módulo. Al visitante y a quien entró sin código se le
+                // deja ver y PRACTICAR: lo que se vende es la corrección con IA, no
+                // el banco de preguntas (que además es un .js descargable). Cerrar
+                // la tarjeta entera mataría el escaparate comercial y no protegería
+                // nada — el aviso de que la corrección pide colegio lo da la propia
+                // calificadora, en el momento justo en que se intenta.
                 const disponibles = state.modulosDisponibles || null;
-                const habilitado = (code) => !disponibles || disponibles[code.toLowerCase()] !== false;
+                const tieneColegio = typeof esMiembro === 'function' && esMiembro() && !!state.profile?.school;
+                const habilitado = (code) => !tieneColegio || !disponibles || disponibles[code.toLowerCase()] !== false;
                 grid.innerHTML = state.examModules.map((module) => {
                     if (!habilitado(module.code)) {
                         return `

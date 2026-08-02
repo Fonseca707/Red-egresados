@@ -98,9 +98,11 @@ const rutasIaLogic = {
 - En "educacion", el campo "rol" es la carrera o programa (ej. "Medicina") si aparece en los datos.
 - "actual" es true solo si el texto indica que sigue en eso (ej. estado "Estudiando" o "Trabajando").
 Devuelve JSON: {"hitos":[{"tipo":"...","organizacion":"...o null","rol":"...o null","anioInicio":null,"anioFin":null,"actual":false}]}`;
+        // El proxy exige cuenta real desde el 2026-08-02, también aquí: el admin
+        // llama a la misma raíz que Karla.
         const res = await fetch(SINAPSIS_IA_PROXY, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${await idTokenIA()}` },
             body: JSON.stringify({
                 model: 'deepseek-v4-flash',
                 messages: [
@@ -277,7 +279,7 @@ Devuelve JSON: {"hitos":[{"tipo":"...","organizacion":"...o null","rol":"...o nu
 No inventes nada: usa solo lo que hay en la lista. Devuelve JSON: {"seleccion":[{"id":"...","razon":"una frase corta"}]}`;
             const res = await fetch(SINAPSIS_IA_PROXY, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${await idTokenIA()}` },
                 body: JSON.stringify({
                     model: 'deepseek-v4-flash',
                     messages: [

@@ -57,11 +57,14 @@ service cloud.firestore {
       function estaBloqueado(uid) {
         return exists(/databases/$(database)/documents/artifacts/$(appId)/public/data/bloqueados/$(uid));
       }
-      // En CREACION propia: sin school, red general (LCP mientras sea el
-      // unico colegio), o school respaldado por codigo valido.
+      // En CREACION propia: o se nace SIN colegio (red general, sin modulos
+      // pagados) o con el colegio que respalde un codigo valido. Ya no se
+      // acepta 'LCP' a pelo: hasta el 2026-08-02 esa concesion dejaba que
+      // cualquiera se autodeclarara del colegio desde la consola y heredara
+      // TOEFL/DELF, que es justo lo que se le cobra a los colegios.
       function schoolValidaAlCrear() {
         let s = request.resource.data.get('school', '');
-        return s == '' || s == 'LCP'
+        return s == ''
           || codigoValido(s, request.resource.data.get('codigoInvitacion', ''));
       }
       // Campos de CONTROL del perfil: los pone la administracion, nunca el
@@ -78,11 +81,13 @@ service cloud.firestore {
       }
       // En ACTUALIZACION propia: school sin cambio, completar el default LCP
       // cuando faltaba, o cambiarse con codigo valido del colegio destino.
+      // Al ACTUALIZAR: se conserva el colegio que ya se tenia, o se reclama uno
+      // con codigo valido. La linea (vieja=='' && nueva=='LCP') se quito el
+      // 2026-08-02 por lo mismo que en la creacion: era autodeclararse el tag.
       function schoolValidaAlActualizar() {
         let nueva = request.resource.data.get('school', '');
         let vieja = resource.data.get('school', '');
         return nueva == vieja
-          || (vieja == '' && nueva == 'LCP')
           || codigoValido(nueva, request.resource.data.get('codigoInvitacion', ''));
       }
 

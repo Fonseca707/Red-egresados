@@ -319,6 +319,19 @@ const DELF_MINIMO_ELIMINATORIO = 5;
 // Código del Worker en proxy-ia/; la clave vive como secreto en Cloudflare.
 const SINAPSIS_IA_PROXY = 'https://sinapsis-ia.sinapsis-lcp.workers.dev';
 
+// Toda llamada al proxy va firmada con el ID token del miembro (2026-08-02):
+// el Worker exige cuenta REAL —la sesión anónima del modo invitado no cuenta—
+// tanto para Karla como para la corrección de writing. Devuelve null si quien
+// mira es un invitado, y entonces quien llama debe pedirle que entre en vez de
+// disparar una petición que va a volver 401.
+async function idTokenIA() {
+    try {
+        if (!esMiembro()) return null;
+        const u = (typeof auth !== 'undefined' && auth.currentUser) || null;
+        return (u && !u.isAnonymous) ? await u.getIdToken() : null;
+    } catch (e) { return null; }
+}
+
 // Worker de correos (código en correos-worker/): cron diario + aviso de mensaje.
 // El Worker verifica el consentimiento (newsletterOptIn) antes de enviar nada.
 const SINAPSIS_CORREOS = 'https://sinapsis-correos.sinapsis-lcp.workers.dev';
@@ -468,10 +481,13 @@ function rankAlumniForDirectory(items = []) {
 // ===== MULTI-TENANT (colegios, códigos de invitación, módulos) =====
 // Regla dura: el tag de colegio NUNCA se autodeclara — nace del código de
 // invitación (las reglas de Firestore validan código→colegio en la escritura).
-// Sin código, el registro cae en la red general (LCP mientras sea el único
-// colegio). Los módulos pagados (TOEFL/DELF) se activan por colegio en su doc;
-// si el colegio no tiene doc aplican los módulos por defecto (la era LCP).
-const MODULOS_DEFAULT = { toefl: true, delf: true };
+// Sin código, el registro entra a la red general SIN COLEGIO (2026-08-02):
+// perfil, directorio y novedades generales sí; los módulos pagados no. Antes
+// caía en LCP y heredaba TOEFL+DELF, o sea que cualquiera con un correo
+// obtenía lo que se le cobra a los colegios.
+// **No hay módulos por defecto**: lo que no está activo en el doc del colegio,
+// no está. Este mapa es solo la lista de los que existen, todos en falso.
+const MODULOS_DEFAULT = { toefl: false, delf: false };
 async function loadColegios() {
     try { const s = await colegiosCollection.get(); return s.docs.map(d => ({ id: d.id, ...d.data() })); }
     catch (e) { return []; }
@@ -495,10 +511,13 @@ async function validarCodigoInvitacion(codigo) {
         return { codigo: clean, colegioId, colegio: await getColegio(colegioId) };
     } catch (e) { return null; }
 }
-// Módulos disponibles para el usuario actual según su colegio (invitados y
-// usuarios sin tag ven los módulos por defecto).
+// Módulos disponibles para el usuario actual según su colegio. Sin cuenta o sin
+// colegio no hay ninguno: los módulos son lo que cada colegio activa para los
+// suyos. Esto es el gate VISUAL —se salta desde la consola—; el que manda es el
+// del Worker (`/calificar`), que comprueba lo mismo server-side.
 async function getModulosUsuario() {
-    const school = (esMiembro() && state.profile?.school) ? state.profile.school : DEFAULT_SCHOOL;
+    const school = (esMiembro() && state.profile?.school) ? state.profile.school : '';
+    if (!school) return { ...MODULOS_DEFAULT };
     const colegio = await getColegio(school);
     return (colegio && colegio.modulos) ? { ...MODULOS_DEFAULT, ...colegio.modulos } : { ...MODULOS_DEFAULT };
 }
@@ -755,7 +774,9 @@ async function syncHitosCount(uid, count) {
 function deriveLegacyHitos(profile = {}) {
     const hitos = [];
     if (profile.graduationYear || profile.school) {
-        hitos.push({ tipo: 'colegio', organizacion: profile.school || DEFAULT_SCHOOL, rol: 'Bachiller', anioInicio: null, anioFin: Number(profile.graduationYear) || null, actual: false, descripcion: '', legacy: true });
+        // Sin colegio no se inventa uno: el hito de bachiller solo existe si el
+        // perfil tiene tag (antes se escribía 'LCP' a cualquiera).
+        if (profile.school) hitos.push({ tipo: 'colegio', organizacion: profile.school, rol: 'Bachiller', anioInicio: null, anioFin: Number(profile.graduationYear) || null, actual: false, descripcion: '', legacy: true });
     }
     if (hasProfileValue(profile.studies, ['No especificado'])) {
         hitos.push({ tipo: 'educacion', organizacion: '', rol: profile.studies, anioInicio: Number(profile.graduationYear) || null, anioFin: null, actual: String(profile.status || '').includes('estudiando'), descripcion: '', legacy: true });
@@ -982,7 +1003,7 @@ const state = {
     // news arranca vacío: las noticias demo (eventos y vacantes inventados)
     // se mostraban cuando Firestore no traía nada y hacían ver la red falsa.
     data: { alumni:[], news:[], chats:[], subAdmins:[] },
-    profile: { firstName:'',lastName:'',graduationYear:'',location:'',status:'trabajando',role:'',area:'',studies:'',bio:'',skills:'',topics:'',expectations:'',phone:'',linkedin:'',photoURL:'',school:DEFAULT_SCHOOL,username:'',onboardingCompleted:false },
+    profile: { firstName:'',lastName:'',graduationYear:'',location:'',status:'trabajando',role:'',area:'',studies:'',bio:'',skills:'',topics:'',expectations:'',phone:'',linkedin:'',photoURL:'',school:'',username:'',onboardingCompleted:false },
     guestMode: false, activeChatId:null, messagesByChat:{}, selectedDirectoryUserId:null,
     directoryLoading:false, directoryError:null, directoryPage:1, adminEmail:'juanda.fonsecag@gmail.com', adminTab:'users', editingNewsId:null,
     adminRole: null, adminSchool: null,
@@ -1328,12 +1349,12 @@ async function loadProfile(uid) {
     const guardado = _cacheLeer(PERFIL_CACHE, uid);
     if (guardado) { state.profile = guardado; refreshHeaderIdentity(); return; }
     const doc=await conReintento(()=>alumniCollection.doc(uid).get());
-    if(!doc.exists){ state.profile={firstName:state.user?.displayName?.split(' ')[0]||'',lastName:state.user?.displayName?.split(' ').slice(1).join(' ')||'',graduationYear:'',location:'',status:'trabajando',role:'',area:'',studies:'',bio:'',skills:'',topics:'',expectations:'',phone:'',linkedin:'',photoURL:state.user?.photoURL||'',school:DEFAULT_SCHOOL,username:'',onboardingCompleted:false}; refreshHeaderIdentity(); return; }
+    if(!doc.exists){ state.profile={firstName:state.user?.displayName?.split(' ')[0]||'',lastName:state.user?.displayName?.split(' ').slice(1).join(' ')||'',graduationYear:'',location:'',status:'trabajando',role:'',area:'',studies:'',bio:'',skills:'',topics:'',expectations:'',phone:'',linkedin:'',photoURL:state.user?.photoURL||'',school:'',username:'',onboardingCompleted:false}; refreshHeaderIdentity(); return; }
     const d=doc.data();
     // OJO: d.phone / d.contactEmail son RESIDUO de antes del cierre del
     // directorio (perfiles que aún no pasó la migración). La fuente de verdad
     // es alumni/{uid}/privado/contacto, que se lee justo abajo y pisa esto.
-    state.profile={firstName:d.firstName||'',lastName:d.lastName||'',graduationYear:d.graduationYear||'',location:d.location||'',status:d.status||'trabajando',role:d.role||'',area:d.area||'',studies:d.studies||'',bio:d.bio||'',skills:Array.isArray(d.skills)?d.skills.join(', '):(d.skills||''),topics:d.topics||'',expectations:d.expectations||'',phone:d.phone||'',linkedin:d.linkedin||'',photoURL:d.photoURL||'',school:d.school||DEFAULT_SCHOOL,username:d.username||'',onboardingCompleted:d.onboardingCompleted||false};
+    state.profile={firstName:d.firstName||'',lastName:d.lastName||'',graduationYear:d.graduationYear||'',location:d.location||'',status:d.status||'trabajando',role:d.role||'',area:d.area||'',studies:d.studies||'',bio:d.bio||'',skills:Array.isArray(d.skills)?d.skills.join(', '):(d.skills||''),topics:d.topics||'',expectations:d.expectations||'',phone:d.phone||'',linkedin:d.linkedin||'',photoURL:d.photoURL||'',school:d.school||'',username:d.username||'',onboardingCompleted:d.onboardingCompleted||false};
     const contacto = await loadContactoPrivado(uid);
     if (contacto.phone) state.profile.phone = contacto.phone;
     state.profile.contactEmail = contacto.contactEmail || d.contactEmail || '';
@@ -1342,11 +1363,12 @@ async function loadProfile(uid) {
     _cacheEscribir(PERFIL_CACHE, state.profile, uid);
     refreshHeaderIdentity();
 }
-async function ensureDefaultSchool(uid) {
-    if (!uid || !esMiembro() || state.profile.school) return;
-    state.profile.school = DEFAULT_SCHOOL;
-    await alumniCollection.doc(uid).set({ school: DEFAULT_SCHOOL, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
-}
+// Sellaba `school: 'LCP'` a todo miembro que no lo tuviera. Nació para que los
+// 68 de la era LCP conservaran su tag, y ese trabajo ya está hecho (los 68 lo
+// tienen escrito, verificado el 2026-08-02). Se queda como no-op deliberado:
+// mantenerla regalaría el colegio —y con él los módulos pagados— a cualquiera
+// que se registre sin código. El tag solo se obtiene con código de invitación.
+async function ensureDefaultSchool(_uid) { /* sin colegio se queda sin colegio */ }
 // Listado del directorio. NO trae `phone` ni `contactEmail`: ese par vive ahora
 // en alumni/{uid}/privado/contacto y se pide BAJO DEMANDA al abrir un perfil
 // (loadContactoPrivado), solo si esMiembro(). Antes viajaban aquí, y como este
@@ -1454,7 +1476,7 @@ async function _loadAlumniDeVerdad() {
     await asegurarSesionParaLeer();
     try {
         const snap=await conReintento(()=>alumniCollection.get());
-        state.data.alumni=snap.docs.map(doc=>{const d=doc.data();const user={id:doc.id,name:`${d.firstName||''} ${d.lastName||''}`.trim()||'Sin nombre',firstName:(d.firstName||'').trim(),lastName:(d.lastName||'').trim(),email:d.email||'',username:d.username||'',newsletterOptIn:Boolean(d.newsletterOptIn),role:d.role||'Sin rol',status:d.status||'sin-definir',statusLabel:formatStatusLabel(d.status),accountStatus:d.accountStatus||'activo',company:d.studies||formatStatusLabel(d.status),photoURL:d.photoURL||'',img:d.photoURL||buildAvatarUrl(`${d.firstName||'Usuario'} ${d.lastName||''}`.trim()),tags:[d.school||DEFAULT_SCHOOL,d.area||'General',formatStatusLabel(d.status)].filter(Boolean),fullStudies:d.studies||'No especificado',location:d.location||'Ubicación no disponible',bio:d.bio||'Sin biografía disponible.',year:d.graduationYear||'---',area:d.area||'General',skills:Array.isArray(d.skills)?d.skills:(d.skills?String(d.skills).split(','):[]),linkedin:d.linkedin||'',expectations:d.expectations||'',school:d.school||DEFAULT_SCHOOL,hitosCount:Number(d.hitosCount)||0,rutaDestacada:Boolean(d.rutaDestacada),graduationYear:d.graduationYear||'',studies:d.studies||''};return{...user,profileCompleteness:getProfileCompletenessScore(user)};}).filter(a=>hasValidFirstName(a.firstName));
+        state.data.alumni=snap.docs.map(doc=>{const d=doc.data();const user={id:doc.id,name:`${d.firstName||''} ${d.lastName||''}`.trim()||'Sin nombre',firstName:(d.firstName||'').trim(),lastName:(d.lastName||'').trim(),email:d.email||'',username:d.username||'',newsletterOptIn:Boolean(d.newsletterOptIn),role:d.role||'Sin rol',status:d.status||'sin-definir',statusLabel:formatStatusLabel(d.status),accountStatus:d.accountStatus||'activo',company:d.studies||formatStatusLabel(d.status),photoURL:d.photoURL||'',img:d.photoURL||buildAvatarUrl(`${d.firstName||'Usuario'} ${d.lastName||''}`.trim()),tags:[d.school||'',d.area||'General',formatStatusLabel(d.status)].filter(Boolean),fullStudies:d.studies||'No especificado',location:d.location||'Ubicación no disponible',bio:d.bio||'Sin biografía disponible.',year:d.graduationYear||'---',area:d.area||'General',skills:Array.isArray(d.skills)?d.skills:(d.skills?String(d.skills).split(','):[]),linkedin:d.linkedin||'',expectations:d.expectations||'',school:d.school||'',hitosCount:Number(d.hitosCount)||0,rutaDestacada:Boolean(d.rutaDestacada),graduationYear:d.graduationYear||'',studies:d.studies||''};return{...user,profileCompleteness:getProfileCompletenessScore(user)};}).filter(a=>hasValidFirstName(a.firstName));
     } catch(e){
         // Antes esto se tragaba el error y el directorio salia VACIO como si la
         // red no tuviera a nadie. Ahora queda constancia para que la pagina lo

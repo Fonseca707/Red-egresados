@@ -139,7 +139,14 @@ function base64ABytes(b64) {
 }
 
 // Valida el ID token contra Google (sin criptografía a mano) y devuelve
-// {uid, email, emailVerified} o null. Base de todo gate del Worker.
+// {uid, email, emailVerified, anonimo, idToken} o null. Base de todo gate.
+//
+// `anonimo` importa: el modo invitado del sitio entra con Anonymous Auth, así
+// que "tiene sesión" NO significa "tiene cuenta". Un anónimo es un visitante de
+// paso sin colegio posible, y todo lo que cuesta plata se le cierra.
+// Se reconoce por no traer NINGÚN proveedor: los de correo o Google siempre
+// traen al menos uno. Mirar solo el email no basta (un usuario de Google puede
+// no exponerlo).
 async function lookupUsuario(request) {
     const cabecera = request.headers.get('Authorization') || '';
     if (!cabecera.startsWith('Bearer ')) return null;
@@ -158,7 +165,9 @@ async function lookupUsuario(request) {
     return {
         uid: usuario.localId,
         email: usuario.email || '',
-        emailVerified: usuario.emailVerified === true
+        emailVerified: usuario.emailVerified === true,
+        anonimo: !(usuario.providerUserInfo || []).length,
+        idToken: cabecera.slice(7)
     };
 }
 
@@ -180,28 +189,41 @@ async function superadminAutenticado(request) {
 // writing vive en su propia ruta, exige sesión y comprueba aquí —server-side—
 // que el colegio del alumno tenga el módulo activo.
 //
-// La paridad con el cliente (shared.js getModulosUsuario) es deliberada: sin
-// perfil o sin colegio se cae a DEFAULT_SCHOOL, y un colegio sin doc o sin mapa
-// `modulos` hereda MODULOS_DEFAULT — así los 68 usuarios de la era LCP siguen
-// calificando igual y el gate no rompe nada que hoy funcione.
-const MODULOS_DEFAULT = { toefl: true, delf: true };
+// ⚠️ EL DEFAULT ES «NADA», y esto es una decisión de negocio, no un detalle
+// (2026-08-02). Hasta hoy, quien no tenía colegio se trataba como del LCP y
+// heredaba TOEFL+DELF: cualquier persona del mundo con un correo obtenía
+// gratis lo que se le va a cobrar a los colegios. Ahora:
+//   sin cuenta real → no; sin colegio → no; colegio sin el módulo activo → no.
+// Se verificó antes de voltearlo que los 68 perfiles existentes ya tienen
+// `school: 'LCP'` escrito, así que nadie pierde acceso por el cambio.
+// La paridad con el cliente (shared.js getModulosUsuario) sigue siendo
+// deliberada: las dos capas dicen lo mismo, la de aquí es la que manda.
 const MODULOS_VALIDOS = ['toefl', 'delf'];
-const DEFAULT_SCHOOL = 'LCP';
 const PROJECT_ID = 'red-egresados-65a1a';
 const APP_ID = '1:874010522484:web:28881821d110defd3b7221';
 const CALIFICACIONES_POR_HORA = 30;      // freno de saldo por alumno
 
 const calificaHits = new Map(); // uid -> {count, windowStart}
 
-// `alumni` y `colegios` son de lectura pública en firestore.rules (el modo
-// invitado explora el directorio sin login), así que basta la API key: no hace
-// falta propagar el token del usuario ni una cuenta de servicio.
-async function leerDocPublico(ruta) {
+// 🔴 SE LEE CON EL TOKEN DEL PROPIO USUARIO, no con la API key desnuda.
+// Esto costó cinco días de caída silenciosa (28-jul → 2-ago): `alumni` era de
+// lectura pública cuando se escribió el gate, el commit `292b403` la cerró a
+// `request.auth != null` para tapar el volcado del directorio por REST, y desde
+// entonces Firestore le respondía 403 al Worker. Como un gate no debe caerse
+// abierto, eso se convertía en un 503 y NADIE podía calificar.
+// Con el token del usuario la lectura pasa la regla y además el Worker nunca
+// ve más de lo que el propio usuario ya puede ver. `colegios` sigue siendo
+// público, pero va por el mismo camino: un solo modo de leer, no dos.
+async function leerDocDeUsuario(ruta, idToken) {
     const base = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents`;
     // El appId lleva ':' y hay que escaparlo: sin encodear, Firestore lee el
     // segmento como un método custom (:commit, :runQuery) y responde 400.
     const url = `${base}/artifacts/${encodeURIComponent(APP_ID)}/public/data/${ruta}`;
-    const respuesta = await fetch(url, { headers: { 'x-goog-api-key': FIREBASE_API_KEY } });
+    const respuesta = await fetch(url, {
+        headers: idToken
+            ? { 'Authorization': `Bearer ${idToken}` }
+            : { 'x-goog-api-key': FIREBASE_API_KEY }
+    });
     if (respuesta.status === 404) return null;             // 404 = no existe (caso válido)
     // Cualquier OTRO fallo (500/429/503...) NO es "no existe": si se trata igual que 404,
     // moduloHabilitado sigue de largo con el default true y el gate cae ABIERTO ante un
@@ -214,22 +236,22 @@ async function leerDocPublico(ruta) {
 // Decide si el alumno puede usar la calificadora de ESE módulo.
 // Devuelve {ok, school, motivo}. Ante un fallo de red de Firestore NO se abre la
 // puerta: se responde que no, porque un gate que se cae abierto no es un gate.
-async function moduloHabilitado(uid, modulo) {
-    let school = DEFAULT_SCHOOL;
+async function moduloHabilitado(usuario, modulo) {
     try {
-        const perfil = await leerDocPublico(`alumni/${encodeURIComponent(uid)}`);
-        const declarado = perfil?.school?.stringValue || '';
-        if (declarado) school = declarado;
+        const perfil = await leerDocDeUsuario(`alumni/${encodeURIComponent(usuario.uid)}`, usuario.idToken);
+        const school = perfil?.school?.stringValue || '';
+        // Sin colegio no hay a quién cobrarle: la red general no incluye los
+        // módulos. Es el caso de quien se registró sin código de invitación.
+        if (!school) return { ok: false, school: '', motivo: 'sin-colegio' };
 
-        const colegio = await leerDocPublico(`colegios/${encodeURIComponent(school)}`);
+        const colegio = await leerDocDeUsuario(`colegios/${encodeURIComponent(school)}`, usuario.idToken);
+        // Un colegio sin doc o sin mapa `modulos` no tiene nada contratado.
+        // Antes heredaba {toefl,delf} y ese default era el agujero.
         const mapa = colegio?.modulos?.mapValue?.fields;
-        if (!mapa) return { ok: MODULOS_DEFAULT[modulo] === true, school };
-        // Un módulo ausente del mapa hereda el default (era LCP), igual que el cliente.
-        const valor = mapa[modulo];
-        const activo = valor ? valor.booleanValue === true : MODULOS_DEFAULT[modulo] === true;
-        return { ok: activo, school };
+        if (!mapa) return { ok: false, school, motivo: 'modulo' };
+        return { ok: mapa[modulo]?.booleanValue === true, school, motivo: 'modulo' };
     } catch (e) {
-        return { ok: false, school, motivo: 'firestore' };
+        return { ok: false, school: '', motivo: 'firestore' };
     }
 }
 
@@ -541,6 +563,15 @@ async function calificarEscritura(request, env, origin) {
             motivo: 'sesion'
         }, 401);
     }
+    // El modo invitado entra con Anonymous Auth, así que tener sesión no basta:
+    // un visitante de paso no pertenece a ningún colegio y no puede gastar la
+    // corrección que se le vende a los colegios.
+    if (usuario.anonimo) {
+        return json({
+            error: 'La corrección con IA es para miembros con cuenta. Crea la tuya para recibirla.',
+            motivo: 'invitado'
+        }, 401);
+    }
 
     let cuerpo;
     try { cuerpo = await request.json(); } catch { return json({ error: 'JSON inválido' }, 400); }
@@ -561,13 +592,22 @@ async function calificarEscritura(request, env, origin) {
     // El superadmin pasa siempre: necesita poder probar cualquier módulo aunque
     // su propio colegio lo tenga apagado.
     if (!esSuperadmin(usuario)) {
-        const veredicto = await moduloHabilitado(usuario.uid, modulo);
+        const veredicto = await moduloHabilitado(usuario, modulo);
         if (!veredicto.ok) {
             if (veredicto.motivo === 'firestore') {
                 return json({
                     error: 'No pudimos verificar tu acceso a este módulo. Intenta de nuevo en un momento.',
                     motivo: 'verificacion'
                 }, 503);
+            }
+            // Sin colegio y colegio sin módulo son cosas distintas para quien
+            // lee el mensaje: al primero hay que decirle QUÉ le falta (unirse
+            // con el código de su colegio), no que su colegio no pagó.
+            if (veredicto.motivo === 'sin-colegio') {
+                return json({
+                    error: 'Tu cuenta no está vinculada a ningún colegio. La corrección con IA es parte de lo que cada colegio activa para los suyos: pide el código de invitación de tu colegio para acceder.',
+                    motivo: 'sin-colegio'
+                }, 403);
             }
             return json({
                 error: `Tu colegio no tiene activo el módulo de ${modulo.toUpperCase()}. La práctica y la autoevaluación siguen disponibles; la corrección con IA es parte del módulo.`,
@@ -597,6 +637,18 @@ export default {
         if (ruta === '/items') return generarItems(request, env, origin);
         // Calificación de writing: exige sesión + módulo del colegio (gate duro)
         if (ruta === '/calificar') return calificarEscritura(request, env, origin);
+
+        // Karla (la raíz) exige CUENTA REAL desde el 2026-08-02. Antes bastaba
+        // con abrir la web: el origen permitido y un freno por IP eran todo, así
+        // que cualquier visitante de paso gastaba DeepSeek. La IA de la casa es
+        // parte de lo que se le ofrece a los colegios, no un servicio abierto.
+        const usuario = await lookupUsuario(request);
+        if (!usuario || usuario.anonimo) {
+            return new Response(JSON.stringify({
+                error: 'Entra con tu cuenta para conversar con Karla.',
+                motivo: usuario ? 'invitado' : 'sesion'
+            }), { status: 401, headers: { ...corsHeaders(origin), 'Content-Type': 'application/json' } });
+        }
 
         const ip = request.headers.get('CF-Connecting-IP') || 'desconocida';
         if (rateLimited(ip)) {
