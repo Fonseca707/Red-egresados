@@ -1334,6 +1334,16 @@ async function hydrateAuthenticatedUser(user, { redirectOnboarding = false } = {
     let perfilOk = true;
     try { await loadProfile(user.uid); }
     catch (e) { perfilOk = false; console.warn('[Sinapsis] No se pudo leer el perfil:', e?.code || e?.message || e); }
+    // Cuenta suspendida: hasta el 2026-08-02 "suspender" solo la sacaba de la
+    // portada y de los correos —seguía en el directorio, entrando, escribiendo y
+    // gastando IA—. Ahora no entra. Este corte es del CLIENTE y por eso no es el
+    // único: el Worker de la IA rechaza al suspendido con el token verificado, y
+    // las reglas de Firestore le impiden escribir. Aquí se corta la sesión porque
+    // es donde se puede explicar; el gate de verdad está en los otros dos.
+    if (perfilOk && state.profile.accountStatus === ACCOUNT_STATUS.SUSPENDIDO) {
+        bloquearPorSuspension();
+        return false;
+    }
     try { await ensureDefaultSchool(user.uid); }
     catch (e) { console.warn('[Sinapsis] No se pudo asegurar el colegio:', e?.code || e?.message || e); }
     await loadAdminRole(user.uid);
@@ -1348,6 +1358,24 @@ async function hydrateAuthenticatedUser(user, { redirectOnboarding = false } = {
     }
     return true;
 }
+// Pantalla completa y sesión cerrada. Sin culpar ni dar detalles que no toca dar
+// por aquí: quien suspende sabe por qué, y el correo de contacto es el camino.
+function bloquearPorSuspension() {
+    try { auth.signOut(); } catch (_) {}
+    try { invalidarCacheAlumni(); sessionStorage.clear(); } catch (_) {}
+    document.body.innerHTML = `
+        <div class="min-h-screen flex items-center justify-center p-6 bg-stone-50">
+            <div class="bg-white rounded-3xl border border-gray-200 shadow-xl max-w-md w-full p-8 text-center">
+                <div class="w-16 h-16 bg-red-50 text-red-500 rounded-2xl border border-red-100 flex items-center justify-center text-3xl mx-auto mb-5">
+                    <i class="ph-duotone ph-prohibit"></i>
+                </div>
+                <h1 class="text-xl font-extrabold text-gray-900 mb-2">Tu cuenta está suspendida</h1>
+                <p class="text-sm text-gray-500 leading-relaxed">No puedes usar Sinapsis por ahora. Si crees que es un error, escríbele a la administración de la red desde el correo con el que te registraste.</p>
+                <a href="index.html" class="mt-6 inline-block px-5 py-2.5 bg-gray-100 text-gray-700 text-sm font-bold rounded-xl hover:bg-gray-200 transition">Volver al inicio</a>
+            </div>
+        </div>`;
+}
+
 async function loadSubAdmins() {
     try { const s=await adminsCollection.get(); state.data.subAdmins=s.docs.map(d=>({uid:d.id,...d.data()})); }
     catch(e) { state.data.subAdmins=[]; }
@@ -1371,12 +1399,12 @@ async function loadProfile(uid) {
     const guardado = _cacheLeer(PERFIL_CACHE, uid);
     if (guardado) { state.profile = guardado; refreshHeaderIdentity(); return; }
     const doc=await conReintento(()=>alumniCollection.doc(uid).get());
-    if(!doc.exists){ state.profile={firstName:state.user?.displayName?.split(' ')[0]||'',lastName:state.user?.displayName?.split(' ').slice(1).join(' ')||'',graduationYear:'',location:'',status:'trabajando',role:'',area:'',studies:'',bio:'',skills:'',topics:'',expectations:'',phone:'',linkedin:'',photoURL:state.user?.photoURL||'',school:'',username:'',onboardingCompleted:false}; refreshHeaderIdentity(); return; }
+    if(!doc.exists){ state.profile={firstName:state.user?.displayName?.split(' ')[0]||'',lastName:state.user?.displayName?.split(' ').slice(1).join(' ')||'',graduationYear:'',location:'',status:'trabajando',role:'',area:'',studies:'',bio:'',skills:'',topics:'',expectations:'',phone:'',linkedin:'',photoURL:state.user?.photoURL||'',school:'',username:'',onboardingCompleted:false,accountStatus:'activo'}; refreshHeaderIdentity(); return; }
     const d=doc.data();
     // OJO: d.phone / d.contactEmail son RESIDUO de antes del cierre del
     // directorio (perfiles que aún no pasó la migración). La fuente de verdad
     // es alumni/{uid}/privado/contacto, que se lee justo abajo y pisa esto.
-    state.profile={firstName:d.firstName||'',lastName:d.lastName||'',graduationYear:d.graduationYear||'',location:d.location||'',status:d.status||'trabajando',role:d.role||'',area:d.area||'',studies:d.studies||'',bio:d.bio||'',skills:Array.isArray(d.skills)?d.skills.join(', '):(d.skills||''),topics:d.topics||'',expectations:d.expectations||'',phone:d.phone||'',linkedin:d.linkedin||'',photoURL:d.photoURL||'',school:d.school||'',username:d.username||'',onboardingCompleted:d.onboardingCompleted||false};
+    state.profile={firstName:d.firstName||'',lastName:d.lastName||'',graduationYear:d.graduationYear||'',location:d.location||'',status:d.status||'trabajando',role:d.role||'',area:d.area||'',studies:d.studies||'',bio:d.bio||'',skills:Array.isArray(d.skills)?d.skills.join(', '):(d.skills||''),topics:d.topics||'',expectations:d.expectations||'',phone:d.phone||'',linkedin:d.linkedin||'',photoURL:d.photoURL||'',school:d.school||'',username:d.username||'',onboardingCompleted:d.onboardingCompleted||false,accountStatus:d.accountStatus||'activo'};
     const contacto = await loadContactoPrivado(uid);
     if (contacto.phone) state.profile.phone = contacto.phone;
     state.profile.contactEmail = contacto.contactEmail || d.contactEmail || '';
@@ -1554,7 +1582,11 @@ async function loadAlumniBloque({ limite = DIRECTORY_PAGE_SIZE } = {}) {
         // basura parecería el final del directorio.
         if (snap.size < limite) _directorioCompleto = true;
         if (snap.size) _cursorDirectorio = snap.docs[snap.size - 1];
-        const nuevos = snap.docs.map(mapearAlumno).filter(a => hasValidFirstName(a.firstName));
+        // Los suspendidos no salen en el directorio (el admin los ve por su propia
+        // vía, que lee la colección entera). Se filtran DESPUÉS de decidir el final
+        // de la colección: si no, un bloque lleno de suspendidos parecería el final.
+        const nuevos = snap.docs.map(mapearAlumno)
+            .filter(a => hasValidFirstName(a.firstName) && a.accountStatus !== ACCOUNT_STATUS.SUSPENDIDO);
         const vistos = new Set(state.data.alumni.map(a => a.id));
         state.data.alumni = [...state.data.alumni, ...nuevos.filter(a => !vistos.has(a.id))];
     } catch (e) {

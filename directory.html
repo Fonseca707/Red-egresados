@@ -157,7 +157,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore-compat.js"></script>
-    <script src="shared.js?v=32"></script>
+    <script src="shared.js?v=33"></script>
     <script src="orientadora.js?v=5"></script>
     <script>
         renderNav('directory');
@@ -169,7 +169,11 @@
             // feo: al llegar un bloque nuevo, las tarjetas YA VISTAS cambiaban de sitio
             // bajo el dedo. Se conserva el orden de las que ya están pintadas y solo se
             // barajan las que llegan nuevas.
-            render: (items = state.data.alumni) => {
+            render: (itemsCrudos = state.data.alumni) => {
+                // Segundo filtro de suspendidos, y no sobra: la lista puede venir de
+                // la caché completa (la llena una búsqueda, o el admin), no solo de
+                // los bloques paginados que ya los descartan.
+                const items = itemsCrudos.filter(u => u.accountStatus !== 'suspendido');
                 const previos = directoryLogic._currentItems;
                 const enPantalla = new Set(items.map(u => String(u.id)));
                 const conservados = previos.filter(u => enPantalla.has(String(u.id)));

@@ -408,11 +408,22 @@ service cloud.firestore {
         // de un desconocido). Ahora, para escribir en buzon ajeno, el chat
         // tiene que existir alli y apuntarme a mi como peer — que es justo
         // lo que deja startChatWithUser antes de abrir la conversacion.
+        // Suspendido = no escribe. Hasta el 2026-08-02 "suspender" no impedia
+        // nada: seguia entrando, apareciendo en el directorio y mandando
+        // mensajes. El corte del navegador se puede saltar desde la consola;
+        // este no. Cuesta una lectura por mensaje enviado (volumen bajo: son
+        // escrituras de persona, no de bucle), y solo se aplica al CREATE.
+        function remitenteSuspendido() {
+          return exists(/databases/$(database)/documents/artifacts/$(appId)/public/data/alumni/$(request.auth.uid))
+            && get(/databases/$(database)/documents/artifacts/$(appId)/public/data/alumni/$(request.auth.uid))
+                 .data.get('accountStatus', 'activo') == 'suspendido';
+        }
         match /messages/{messageId} {
           allow read: if request.auth != null && request.auth.uid == userId;
           allow create: if request.auth != null
             && request.resource.data.senderId == request.auth.uid
-            && (request.auth.uid == userId || esMiChatEnBuzonAjeno());
+            && (request.auth.uid == userId || esMiChatEnBuzonAjeno())
+            && !remitenteSuspendido();
         }
       }
     }

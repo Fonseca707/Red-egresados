@@ -236,9 +236,22 @@ async function leerDocDeUsuario(ruta, idToken) {
 // Decide si el alumno puede usar la calificadora de ESE módulo.
 // Devuelve {ok, school, motivo}. Ante un fallo de red de Firestore NO se abre la
 // puerta: se responde que no, porque un gate que se cae abierto no es un gate.
+// Suspendido = fuera de todo lo que cuesta plata. El corte del navegador (cierra
+// la sesión al entrar) se puede saltar desde la consola; este no, porque el token
+// se verifica contra Firebase y el perfil se lee aquí. Devuelve true solo si
+// consta que está suspendido: un fallo de lectura no puede dejar fuera a alguien
+// legítimo (para eso están los otros gates, que sí caen cerrados).
+async function estaSuspendido(usuario) {
+    try {
+        const perfil = await leerDocDeUsuario(`alumni/${encodeURIComponent(usuario.uid)}`, usuario.idToken);
+        return perfil?.accountStatus?.stringValue === 'suspendido';
+    } catch (e) { return false; }
+}
+
 async function moduloHabilitado(usuario, modulo) {
     try {
         const perfil = await leerDocDeUsuario(`alumni/${encodeURIComponent(usuario.uid)}`, usuario.idToken);
+        if (perfil?.accountStatus?.stringValue === 'suspendido') return { ok: false, school: '', motivo: 'suspendido' };
         const school = perfil?.school?.stringValue || '';
         // Sin colegio no hay a quién cobrarle: la red general no incluye los
         // módulos. Es el caso de quien se registró sin código de invitación.
@@ -648,6 +661,12 @@ export default {
                 error: 'Entra con tu cuenta para conversar con Karla.',
                 motivo: usuario ? 'invitado' : 'sesion'
             }), { status: 401, headers: { ...corsHeaders(origin), 'Content-Type': 'application/json' } });
+        }
+        if (await estaSuspendido(usuario)) {
+            return new Response(JSON.stringify({
+                error: 'Tu cuenta está suspendida.',
+                motivo: 'suspendido'
+            }), { status: 403, headers: { ...corsHeaders(origin), 'Content-Type': 'application/json' } });
         }
 
         const ip = request.headers.get('CF-Connecting-IP') || 'desconocida';
