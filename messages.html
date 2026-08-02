@@ -54,11 +54,12 @@
                         </button>
                         <div class="relative">
                             <img id="chat-header-img" src="" alt="" class="w-10 h-10 rounded-full object-cover border border-gray-100">
-                            <span class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-white rounded-full"></span>
                         </div>
                         <div>
                             <h3 id="chat-header-name" class="font-bold text-gray-900 text-sm">Selecciona un chat</h3>
-                            <p class="text-xs text-gray-500">En línea</p>
+                            <!-- "En línea" era fijo para todo el mundo, igual que el punto verde
+                                 de la lista: presencia inventada. Va el dato que sí es cierto. -->
+                            <p id="chat-header-sub" class="text-xs text-gray-500">Egresado del Liceo</p>
                         </div>
                     </div>
                     <button class="text-gray-400 hover:text-gray-600 p-2 rounded-full hover:bg-gray-100 transition" aria-label="Opciones del chat"><i class="ph ph-dots-three-vertical text-xl"></i></button>
@@ -128,7 +129,12 @@
                     <div onclick="chatLogic.openChat('${sanitizeHTML(chat.id)}')" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}" class="p-4 hover:bg-white cursor-pointer border-b border-gray-100 flex gap-3 transition ${String(state.activeChatId) === String(chat.id) ? 'bg-white' : ''}">
                         <div class="relative">
                             <img src="${sanitizeHTML(chat.img)}" alt="Foto de ${sanitizeHTML(chat.name)}" class="w-12 h-12 rounded-full object-cover">
-                            <span class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></span>
+                            <!-- Aquí había un punto verde de "en línea" para TODOS, siempre.
+                                 Sinapsis no tiene presencia: nadie sabe quién está conectado.
+                                 Es la misma regla por la que se quitó la tarjeta de "nuevas
+                                 oportunidades cada semana" de la portada — no se muestra un
+                                 dato que no existe, ni de adorno. Si algún día hay presencia
+                                 de verdad (lastSeen), el punto vuelve con el dato detrás. -->
                         </div>
                         <div class="flex-1 min-w-0">
                             <div class="flex justify-between items-baseline mb-1">
