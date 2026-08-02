@@ -259,8 +259,32 @@ comprobar('loadProfile también',
     /const guardado = _cacheLeer\(PERFIL_CACHE, uid\);/.test(SRC));
 comprobar('⭐ el perfil se cachea DESPUÉS del contacto privado, no antes',
     SRC.indexOf('_cacheEscribir(PERFIL_CACHE') > SRC.indexOf('const contacto = await loadContactoPrivado(uid)'));
-comprobar('invalidar borra las CUATRO cachés de una vez (no una lista que se quede corta)',
-    /for \(const k of \[ALUMNI_CACHE, HITOS_CACHE, PERFIL_CACHE, CONTACTO_CACHE\]\)/.test(SRC));
+comprobar('invalidar borra TODAS las cachés derivadas de alumni de una vez (no una lista que se quede corta)',
+    /for \(const k of \[ALUMNI_CACHE, HITOS_CACHE, PERFIL_CACHE, CONTACTO_CACHE, DESTACADOS_CACHE\]\)/.test(SRC));
+
+console.log('\n14) Lecturas acotadas: bloques del directorio y destacados de la portada');
+comprobar('el directorio pagina con cursor de verdad (orderBy + limit + startAfter)',
+    /orderBy\('firstName'\)\.limit\(limite\)/.test(SRC) && /startAfter\(_cursorDirectorio\)/.test(SRC));
+comprobar('⭐ el fin de la colección se decide ANTES de filtrar por nombre válido',
+    SRC.indexOf('if (snap.size < limite) _directorioCompleto = true;') <
+    SRC.indexOf('const nuevos = snap.docs.map(mapearAlumno)'));
+comprobar('leer la colección entera marca el directorio como completo',
+    /state\.data\.alumni=snap\.docs\.map\(mapearAlumno\)[\s\S]{0,200}_directorioCompleto = true/.test(SRC));
+comprobar('⭐ los destacados NO se guardan en la caché de alumni (el directorio los heredaría)',
+    /_cacheEscribir\(DESTACADOS_CACHE, lista\)/.test(SRC) &&
+    !/_guardarAlumniEnCache\(lista\)/.test(SRC));
+comprobar('los destacados tienen dedupe en vuelo (se pedían 3 veces por carga)',
+    /if \(_destacadosEnVuelo\) return _destacadosEnVuelo;/.test(SRC));
+comprobar('un solo mapeo de documento para las tres formas de leer alumni',
+    (SRC.match(/function mapearAlumno\(doc\)/g) || []).length === 1 &&
+    (SRC.match(/\.map\(mapearAlumno\)/g) || []).length >= 2);
+const dir = fs.readFileSync('./directory.html', 'utf8');
+comprobar('⭐ buscar trae la red entera una vez (o el buscador mentiría sobre quién está)',
+    /_filtrando && hayMasDirectorio\(\)[\s\S]{0,200}await loadAlumni\(\)/.test(dir));
+comprobar('el orden de las tarjetas ya pintadas no cambia al llegar un bloque nuevo',
+    /conservados\.length[\s\S]{0,120}rankAlumniForDirectory\(nuevos\)/.test(dir));
+comprobar('el scroll infinito reusa el mismo botón (que sigue existiendo para el teclado)',
+    /IntersectionObserver/.test(dir) && /directoryLogic\.loadMore\(\)/.test(dir));
 
 console.log(`\n${ok} ok · ${fallos} fallas`);
 process.exit(fallos ? 1 : 0);
