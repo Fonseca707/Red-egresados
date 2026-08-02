@@ -502,6 +502,63 @@ function rankAlumniForDirectory(items = []) {
 // **No hay módulos por defecto**: lo que no está activo en el doc del colegio,
 // no está. Este mapa es solo la lista de los que existen, todos en falso.
 const MODULOS_DEFAULT = { toefl: false, delf: false };
+
+// ===== LO QUE DESBLOQUEA UN COLEGIO =====
+// Quien entra sin código queda en la red general: perfil, directorio, novedades
+// y mensajes sí; lo que cuesta plata, no (2026-08-02). En vez de dejarlo con una
+// puerta cerrada y sin explicación, se le dice QUÉ hay al otro lado y se le da el
+// mensaje ya escrito para que se lo lleve a su colegio — el egresado es el mejor
+// comercial que tiene Sinapsis, pero solo si sabe qué está vendiendo.
+//
+// ⚠️ Esta lista solo puede contener cosas que EXISTEN. Prometer un módulo que no
+// está construido es la forma más rápida de quemar al que iba a abrirte la puerta.
+const VENTAJAS_CON_COLEGIO = [
+    { icono: 'ph-chats-circle', titulo: 'Karla, la orientadora', que: 'Un chat que conoce las rutas reales de los egresados y ayuda a decidir qué estudiar.' },
+    { icono: 'ph-translate', titulo: 'Preparación TOEFL', que: 'Simulacros con el formato real y corrección del writing con IA, con las bandas explicadas.' },
+    { icono: 'ph-globe-hemisphere-west', titulo: 'Preparación DELF', que: 'Las cuatro pruebas del nuevo formato, con audios y la misma corrección con IA.' },
+    { icono: 'ph-chart-line-up', titulo: 'Reportes para la institución', que: 'El colegio ve cómo va su comunidad por competencia, no solo la nota final.' }
+];
+function mensajeParaElColegio(nombre = '') {
+    const firma = nombre ? `\n\n— ${nombre}` : '';
+    return `Hola, les escribo por Sinapsis (${location.origin}), la red de egresados que ya usa el Liceo Campestre de Pereira.\n\n` +
+        `Además del directorio de egresados y sus trayectorias, la institución puede activar:\n` +
+        VENTAJAS_CON_COLEGIO.map(v => `• ${v.titulo}: ${v.que}`).join('\n') +
+        `\n\nMe gustaría que nuestra comunidad lo tuviera. ¿Puedo pasarles el contacto?${firma}`;
+}
+// Bloque reutilizable: lo mismo en la tarjeta de un módulo cerrado y en Karla.
+function htmlDesbloqueaConColegio({ titulo = 'Esto lo activa tu colegio' } = {}) {
+    return `
+        <div class="text-left">
+            <h4 class="text-sm font-extrabold text-gray-900 mb-1">${sanitizeHTML(titulo)}</h4>
+            <p class="text-xs text-gray-500 mb-3">Tu cuenta está en la red general. Si tu institución entra a Sinapsis, se abren:</p>
+            <ul class="space-y-2 mb-4">
+                ${VENTAJAS_CON_COLEGIO.map(v => `
+                    <li class="flex gap-2.5 items-start">
+                        <i class="ph-duotone ${v.icono} text-brand-600 text-lg shrink-0 mt-0.5"></i>
+                        <span class="text-xs text-gray-600"><span class="font-bold text-gray-900">${sanitizeHTML(v.titulo)}.</span> ${sanitizeHTML(v.que)}</span>
+                    </li>`).join('')}
+            </ul>
+            <button onclick="copiarMensajeParaElColegio(this)" class="w-full px-4 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-xl transition flex items-center justify-center gap-2">
+                <i class="ph-bold ph-copy"></i> Copiar el mensaje para tu colegio
+            </button>
+            <p class="text-[11px] text-gray-400 mt-2 text-center">Se copia listo para enviar por correo o WhatsApp.</p>
+        </div>`;
+}
+async function copiarMensajeParaElColegio(boton) {
+    const nombre = `${state?.profile?.firstName || ''} ${state?.profile?.lastName || ''}`.trim();
+    const texto = mensajeParaElColegio(nombre);
+    try { await navigator.clipboard.writeText(texto); }
+    catch (_) {
+        // Sin permiso de portapapeles (pasa en algunos navegadores móviles): se
+        // muestra para copiar a mano antes que dejar el botón sin hacer nada.
+        window.prompt('Copia este mensaje y envíaselo a tu colegio:', texto);
+        return;
+    }
+    if (!boton) return;
+    const antes = boton.innerHTML;
+    boton.innerHTML = '<i class="ph-bold ph-check"></i> Copiado';
+    setTimeout(() => { boton.innerHTML = antes; }, 2200);
+}
 async function loadColegios() {
     try { const s = await colegiosCollection.get(); return s.docs.map(d => ({ id: d.id, ...d.data() })); }
     catch (e) { return []; }

@@ -119,11 +119,16 @@ const orientadoraLogic = {
 
     bubbleHTML(m) {
         const isUser = m.role === 'user';
+        // `m.html` solo lo pone ESTE archivo (el bloque de "lo que activa tu
+        // colegio"), nunca el modelo ni el usuario: lo que llega de la IA pasa
+        // siempre por formatText, que escapa. Si algún día hay más burbujas
+        // ricas, que sigan naciendo aquí y no de una respuesta.
+        const cuerpo = m.html ? m.html : this.formatText(m.text);
         return `
             <div class="flex ${isUser ? 'justify-end' : ''}">
                 <div class="max-w-[85%] px-3.5 py-2.5 rounded-2xl ${isUser
                     ? 'bg-brand-600 text-white rounded-br-md'
-                    : 'bg-white border border-gray-200 text-gray-700 rounded-bl-md'} text-sm leading-relaxed">${this.formatText(m.text)}</div>
+                    : 'bg-white border border-gray-200 text-gray-700 rounded-bl-md'} text-sm leading-relaxed">${cuerpo}</div>
             </div>`;
     },
 
@@ -253,14 +258,25 @@ ${rutas || '(la red aún no tiene rutas registradas: orienta con conocimiento ge
             const detail = String(err?.message || err);
             // Al invitado se le dice qué le falta, no que algo salió mal: no es
             // un fallo, es que Karla es para miembros.
-            const faltaCuenta = err?.motivo === 'sesion' || detail.includes('401');
-            this.messages.push({
+            const faltaCuenta = err?.motivo === 'sesion' || err?.motivo === 'invitado' || detail.includes('401');
+            // Sin colegio no es un error ni un "no puedes": es una puerta con algo
+            // detrás. Se le dice QUÉ hay y se le da el mensaje escrito para que se lo
+            // lleve a su institución — el egresado es el mejor comercial que tiene
+            // Sinapsis, pero solo si sabe qué está vendiendo.
+            if (err?.motivo === 'sin-colegio') {
+                this.messages.push({
+                    role: 'model',
+                    html: htmlDesbloqueaConColegio({ titulo: 'Karla la activa tu colegio' })
+                });
+            } else this.messages.push({
                 role: 'model',
                 text: faltaCuenta
                     ? 'Entra con tu cuenta para conversar conmigo. Si todavía no tienes, puedes crearla desde «Ingresar».'
-                    : detail.includes('429')
-                        ? 'Hay muchas consultas en este momento. Espera un minuto e inténtalo de nuevo.'
-                        : 'No pude responder en este momento. Revisa tu conexión e inténtalo de nuevo.'
+                    : err?.motivo === 'suspendido'
+                        ? 'Tu cuenta está suspendida, así que no puedo conversar contigo por ahora.'
+                        : detail.includes('429')
+                            ? 'Hay muchas consultas en este momento. Espera un minuto e inténtalo de nuevo.'
+                            : 'No pude responder en este momento. Revisa tu conexión e inténtalo de nuevo.'
             });
         } finally {
             this.busy = false;

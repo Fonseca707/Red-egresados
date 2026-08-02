@@ -241,11 +241,10 @@ async function leerDocDeUsuario(ruta, idToken) {
 // se verifica contra Firebase y el perfil se lee aquí. Devuelve true solo si
 // consta que está suspendido: un fallo de lectura no puede dejar fuera a alguien
 // legítimo (para eso están los otros gates, que sí caen cerrados).
-async function estaSuspendido(usuario) {
+async function perfilDeUsuario(usuario) {
     try {
-        const perfil = await leerDocDeUsuario(`alumni/${encodeURIComponent(usuario.uid)}`, usuario.idToken);
-        return perfil?.accountStatus?.stringValue === 'suspendido';
-    } catch (e) { return false; }
+        return await leerDocDeUsuario(`alumni/${encodeURIComponent(usuario.uid)}`, usuario.idToken);
+    } catch (e) { return null; }
 }
 
 async function moduloHabilitado(usuario, modulo) {
@@ -662,10 +661,22 @@ export default {
                 motivo: usuario ? 'invitado' : 'sesion'
             }), { status: 401, headers: { ...corsHeaders(origin), 'Content-Type': 'application/json' } });
         }
-        if (await estaSuspendido(usuario)) {
+        // Karla exige COLEGIO desde el 2026-08-02 (tarde). Por la mañana bastaba
+        // con tener cuenta real; Juan lo corrigió el mismo día con la regla general:
+        // lo que el colegio no ha activado, no se toca. Karla es IA de pago, o sea
+        // parte de lo que se le vende a la institución. De paso quita el incentivo
+        // de crear cuentas basura: sin colegio no hay nada que gastar.
+        const perfilKarla = await perfilDeUsuario(usuario);
+        if (perfilKarla?.accountStatus?.stringValue === 'suspendido') {
             return new Response(JSON.stringify({
                 error: 'Tu cuenta está suspendida.',
                 motivo: 'suspendido'
+            }), { status: 403, headers: { ...corsHeaders(origin), 'Content-Type': 'application/json' } });
+        }
+        if (!(perfilKarla?.school?.stringValue || '')) {
+            return new Response(JSON.stringify({
+                error: 'Karla la activa tu colegio.',
+                motivo: 'sin-colegio'
             }), { status: 403, headers: { ...corsHeaders(origin), 'Content-Type': 'application/json' } });
         }
 

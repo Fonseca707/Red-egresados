@@ -16,7 +16,7 @@
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
-    <link rel="stylesheet" href="tailwind.css?v=4">
+    <link rel="stylesheet" href="tailwind.css?v=5">
 </head>
 <body class="text-stone-800 font-sans min-h-screen flex flex-col">
 
@@ -61,7 +61,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore-compat.js"></script>
-    <script src="shared.js?v=34"></script>
+    <script src="shared.js?v=35"></script>
     <script src="toefl-data.js?v=2"></script>
     <script src="toefl-practice.js?v=12"></script>
     <script src="delf-data.js?v=2"></script>
@@ -69,7 +69,7 @@
     <script src="icfes-engine.js?v=3"></script>
     <script src="delf-practice.js?v=7"></script>
     <script src="ia-calificadora.js?v=4"></script>
-    <script src="orientadora.js?v=6"></script>
+    <script src="orientadora.js?v=7"></script>
     <script>
         renderNav('exam-modules');
 
@@ -215,7 +215,8 @@
                                 <h3 class="text-xl font-extrabold text-gray-900 mb-2">${sanitizeHTML(module.title)}</h3>
                                 <p class="text-sm text-gray-500 max-w-sm mx-auto">${tieneColegio
                                     ? 'Este módulo no está habilitado para tu colegio. Si te interesa, cuéntale a tu institución: es uno de los valores agregados que puede activar para su comunidad.'
-                                    : 'La preparación en idiomas la activa cada colegio para su comunidad. Si el tuyo hace parte de Sinapsis, entra con el enlace de invitación que te dieron; si no, cuéntales que existe.'}</p>
+                                    : 'La preparación en idiomas la activa cada colegio para su comunidad. Si el tuyo hace parte de Sinapsis, entra con el enlace de invitación que te dieron.'}</p>
+                                ${tieneColegio ? '' : `<div class="mt-6 pt-6 border-t border-gray-100 max-w-sm mx-auto">${htmlDesbloqueaConColegio({ titulo: 'Lo que se abre con tu colegio' })}</div>`}
                             </div>
                         </article>`;
                     }
