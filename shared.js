@@ -586,16 +586,31 @@ function sortHitos(hitos = []) {
 // y las repetía enteras al volver a ella. Se cachea por uid durante la sesión;
 // cualquier escritura bajo `alumni/` la tira (ver invalidarCacheAlumni), así que
 // añadir o editar un hito se ve al instante.
+//
+// La caché sola NO bastaba: la portada pide los hitos de la misma persona DOS
+// veces a la vez —una en las trayectorias destacadas (index.html) y otra en las
+// historias (historias.js)—, y entre que sale la primera consulta y se escribe
+// la caché no hay nada que detenga a la segunda. Se veía en el medidor como
+// pares de llamadas idénticas separadas por 2 ms. Por eso también hay dedupe en
+// vuelo, igual que en `alumni`: dos peticiones simultáneas del mismo uid son una
+// sola lectura.
+const _hitosEnVuelo = new Map();
 async function loadHitos(uid) {
     if (!uid) return [];
     const cache = _cacheLeer(HITOS_CACHE, uid);
     if (cache) return cache;
-    try {
-        const snap = await hitosCollection(uid).get();
-        const hitos = sortHitos(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-        _cacheEscribir(HITOS_CACHE, hitos, uid);
-        return hitos;
-    } catch (e) { return []; }
+    if (_hitosEnVuelo.has(uid)) return _hitosEnVuelo.get(uid);
+    const promesa = (async () => {
+        try {
+            const snap = await hitosCollection(uid).get();
+            const hitos = sortHitos(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+            _cacheEscribir(HITOS_CACHE, hitos, uid);
+            return hitos;
+        } catch (e) { return []; }
+        finally { _hitosEnVuelo.delete(uid); }
+    })();
+    _hitosEnVuelo.set(uid, promesa);
+    return promesa;
 }
 async function saveHito(uid, hito, hitoId = null) {
     const payload = {
@@ -1011,7 +1026,7 @@ const state = {
     // se mostraban cuando Firestore no traía nada y hacían ver la red falsa.
     data: { alumni:[], news:[], chats:[], subAdmins:[] },
     profile: { firstName:'',lastName:'',graduationYear:'',location:'',status:'trabajando',role:'',area:'',studies:'',bio:'',skills:'',topics:'',expectations:'',phone:'',linkedin:'',photoURL:'',school:'',username:'',onboardingCompleted:false },
-    guestMode: false, activeChatId:null, messagesByChat:{}, selectedDirectoryUserId:null,
+    guestMode: false, activeChatId:null, messagesByChat:{}, chatsCargados:false, selectedDirectoryUserId:null,
     directoryLoading:false, directoryError:null, directoryPage:1, adminEmail:'juanda.fonsecag@gmail.com', adminTab:'users', editingNewsId:null,
     adminRole: null, adminSchool: null,
     listeners: { chats:null, messages:null }
@@ -1530,6 +1545,10 @@ async function loadMessagesForChat(uid,chatId) {
 function watchChatsInRealtime(uid) {
     if(state.listeners.chats) state.listeners.chats();
     state.listeners.chats=userChatsCollection(uid).orderBy('updatedAt','desc').onSnapshot(snap=>{
+        // `chatsCargados` distingue "todavía no sé" de "sé que no hay ninguno": desde
+        // que la bandeja se lee SOLO por listener, sin esto la página diría "sin
+        // conversaciones" durante los ~200 ms previos al primer snapshot.
+        state.chatsCargados=true;
         state.data.chats=snap.docs.map(doc=>{const d=doc.data();return{id:doc.id,peerId:d.peerId||'',name:d.peerName||'Usuario',img:d.peerPhotoURL||buildAvatarUrl(d.peerName||'Usuario'),lastMsg:d.lastMsg||'Sin mensajes',time:formatChatTime(d.updatedAt)};});
         // No basta con que chatLogic exista: index.html define una version
         // PARCIAL (solo para abrir un chat desde el directorio) que no tiene
@@ -1537,7 +1556,7 @@ function watchChatsInRealtime(uid) {
         // no el objeto: asi este listener nunca vuelve a reventar en una
         // pagina que no muestra chats.
         if(typeof chatLogic!=='undefined'&&typeof chatLogic.renderList==='function') chatLogic.renderList();
-    },()=>{ state.data.chats=[]; if(typeof chatLogic!=='undefined'&&typeof chatLogic.renderList==='function') chatLogic.renderList(); });
+    },()=>{ state.chatsCargados=true; state.data.chats=[]; if(typeof chatLogic!=='undefined'&&typeof chatLogic.renderList==='function') chatLogic.renderList(); });
 }
 function watchMessagesInRealtime(uid,chatId) {
     if(state.listeners.messages) state.listeners.messages();

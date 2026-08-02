@@ -87,7 +87,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore-compat.js"></script>
-    <script src="shared.js?v=29"></script>
+    <script src="shared.js?v=30"></script>
     <script src="orientadora.js?v=4"></script>
     <script>
         renderNav('messages');
@@ -104,11 +104,18 @@
                     activeArea.classList.remove('flex');
                 }
                 if (!state.data.chats.length) {
-                    list.innerHTML = `
+                    // La bandeja ya no se lee con un `get` antes del listener, así que
+                    // "sin conversaciones" solo es verdad DESPUÉS de que el listener haya
+                    // hablado una vez (state.chatsCargados). Antes de eso está cargando.
+                    list.innerHTML = state.chatsCargados ? `
                         <div class="flex flex-col items-center justify-center h-full py-12 px-6 text-center">
                             <i class="ph ph-chats-circle text-4xl text-gray-300 mb-3"></i>
                             <p class="text-sm font-semibold text-gray-500">Sin conversaciones aún</p>
                             <p class="text-xs text-gray-400 mt-1">Busca un egresado en el <a href="directory.html" class="text-brand-600 font-bold hover:underline">Directorio</a> y pulsa "Mensaje".</p>
+                        </div>` : `
+                        <div class="flex flex-col items-center justify-center h-full py-12 px-6 text-center">
+                            <i class="ph ph-circle-notch text-4xl text-gray-300 mb-3 animate-spin"></i>
+                            <p class="text-sm font-semibold text-gray-400">Cargando conversaciones…</p>
                         </div>`;
                     state.activeChatId = null;
                     return;
@@ -185,18 +192,28 @@
                 state.activeChatId = chatId;
                 document.getElementById('chat-header-img').src = chat.img;
                 document.getElementById('chat-header-name').innerText = chat.name;
-                if (!state.messagesByChat[chatId] && state.user && !state.guestMode) {
+                // Antes se hacía un `get` de los mensajes y ACTO SEGUIDO se montaba el
+                // listener sobre la misma consulta: Firestore cobraba los dos, y el
+                // segundo llegaba con lo mismo. El listener ya trae el estado inicial,
+                // así que el `get` sobra siempre que vaya a haber listener.
+                const habraListener = state.user && !state.guestMode;
+                if (!state.messagesByChat[chatId] && !habraListener) {
                     await loadMessagesForChat(state.user.uid, chatId);
                 }
-                if (state.user && !state.guestMode && !preserveListener) {
+                if (habraListener && !preserveListener) {
                     watchMessagesInRealtime(state.user.uid, chatId);
                 }
                 const body = document.getElementById('chat-body');
                 const messages = state.messagesByChat[chatId] || [];
                 if (messages.length === 0) {
+                    // Sin el `get` previo, el hueco entre abrir el chat y el primer
+                    // snapshot son unos 200 ms. Decir "Sin mensajes" ahí sería mentir a
+                    // quien sí tiene conversación: mientras el listener no haya hablado
+                    // ni una vez, esto es "cargando", no "vacío".
+                    const yaRespondio = Array.isArray(state.messagesByChat[chatId]);
                     body.innerHTML = `
                         <div class="flex flex-col items-center justify-center py-6">
-                            <span class="text-xs bg-gray-100 px-3 py-1 rounded-full text-gray-500">Sin mensajes</span>
+                            <span class="text-xs bg-gray-100 px-3 py-1 rounded-full text-gray-500">${yaRespondio ? 'Sin mensajes' : 'Cargando…'}</span>
                         </div>
                     `;
                     return;
@@ -295,7 +312,10 @@
             }
             const ready = await hydrateAuthenticatedUser(user, { redirectOnboarding: true });
             if (!ready) return;
-            await loadChatsForUser(user.uid);
+            // Sin `loadChatsForUser`: el listener trae la bandeja entera en su primer
+            // snapshot, así que el `get` de antes solo servía para pagar dos veces los
+            // mismos chats en cada carga de la página. `renderList` pinta el esqueleto y
+            // el listener lo repinta al llegar.
             watchChatsInRealtime(user.uid);
             chatLogic.renderList();
         });
