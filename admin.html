@@ -610,7 +610,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-storage-compat.js"></script>
-    <script src="shared.js?v=33"></script>
+    <script src="shared.js?v=34"></script>
     <script src="admin-correos.js?v=4"></script>
     <script src="admin-rutas-ia.js?v=3"></script>
     <script src="admin-contactos.js?v=1"></script>
@@ -1292,6 +1292,10 @@
                 document.getElementById('migration-banner')?.classList.add('hidden');
             }
             await loadAlumni();
+            // El panel es el único sitio que lee la red entera, así que es el que
+            // deja los agregados escritos para todos los demás (portada y Karla).
+            // Solo escribe si los números cambiaron. Ver `guardarResumenRed`.
+            if (isSuperAdmin) guardarResumenRed(state.data.alumni);
             // Audiencia de noticias: el superadmin elige (toda la red o un colegio);
             // el sub-admin publica SOLO a su colegio (selector fijo).
             const audienciaSelect = document.getElementById('admin-news-audiencia');

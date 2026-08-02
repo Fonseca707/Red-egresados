@@ -285,6 +285,17 @@ service cloud.firestore {
         allow delete: if isAdmin();
       }
 
+      // Agregados de la red (cuantos egresados, promociones, areas, rutas
+      // completas). Lectura publica porque la portada los pinta antes de que
+      // nadie inicie sesion; ESCRITURA solo de la administracion, que es la
+      // unica que lee la coleccion entera y la unica en la que se puede
+      // confiar para el numero. Si cualquiera pudiera escribir aqui, la
+      // portada mostraria las cifras que le dictara un navegador ajeno.
+      match /public/data/resumen/{docId} {
+        allow read: if true;
+        allow write: if isSuperAdmin();
+      }
+
       // Noticias: lectura publica; el superadmin publica a cualquier
       // audiencia y el sub-admin SOLO a su colegio (campo audiencia).
       match /public/data/news/{newsId} {

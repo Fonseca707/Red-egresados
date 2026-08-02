@@ -53,10 +53,15 @@ const historiasLogic = {
                 if (historias.length === HISTORIAS_MAX) break;
             }
 
-            // Agregados: solo con masa crítica (nunca mostrar números pequeños)
-            const rutasCompletas = activos.filter(a => (a.hitosCount || 0) >= 2).length;
-            this.renderStats(activos, rutasCompletas);
-            this.renderHeroSocial(activos);
+            // ⚠️ Los agregados NO salen de `activos`: desde que la portada pide solo
+            // sus historias, esa lista son 4 personas, no la red. Contar ahí decía
+            // «4 egresados conectados» —y peor: el umbral de 35 rutas completas no se
+            // habría cruzado nunca, así que las métricas jamás volverían a aparecer
+            // por muy grande que se hiciera la red—. Vienen de `resumen/red`, un
+            // documento que el admin mantiene y que cuesta UNA lectura.
+            const resumen = await loadResumenRed();
+            this.renderStats(resumen);
+            this.renderHeroSocial(activos, resumen);
 
             // Con menos de 2 historias no se muestra nada: una fila medio vacía
             // también delata una red que apenas comienza.
@@ -70,8 +75,12 @@ const historiasLogic = {
     // Prueba social del hero con caras reales (nunca inventadas). Sin decir el
     // número exacto si la red es pequeña: se habla de promociones, que siempre
     // suenan sólidas (principio de Juan: no delatar el tamaño de la red).
-    renderHeroSocial(activos) {
+    renderHeroSocial(activos, resumen) {
         const wrap = document.getElementById('hero-social');
+        // Las CARAS salen de los destacados (son los que la portada ya trajo); el
+        // NÚMERO de promociones sale del resumen de la red. Antes se contaban las
+        // promociones de las cuatro caras y salía "Egresados del Liceo", el texto
+        // de reserva, con 60 personas y 20 promociones detrás.
         if (!wrap || activos.length < 4) return;
         const conFoto = activos.filter(a => a.photoURL);
         const muestra = [...(conFoto.length >= 4 ? conFoto : activos)]
@@ -80,26 +89,29 @@ const historiasLogic = {
         document.getElementById('hero-avatars').innerHTML = muestra.map(a => `
             <img class="w-10 h-10 rounded-full border-2 border-white object-cover" src="${sanitizeHTML(a.img)}" alt="Egresado ${sanitizeHTML(a.name)}" title="${sanitizeHTML(a.name)}">`).join('') +
             `<div class="w-10 h-10 rounded-full border-2 border-white bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-500">+</div>`;
-        const promos = new Set(activos.map(a => String(a.year)).filter(y => y && y !== '---')).size;
+        const promos = Number(resumen?.promociones) ||
+            new Set(activos.map(a => String(a.year)).filter(y => y && y !== '---')).size;
         document.getElementById('hero-social-text').innerHTML = promos >= 3
             ? `Egresados de ${promos} promociones <span class="font-normal text-gray-500">ya están en la red.</span>`
             : `Egresados del Liceo <span class="font-normal text-gray-500">ya están en la red.</span>`;
         wrap.classList.remove('hidden');
     },
 
-    renderStats(activos, rutasCompletas) {
+    renderStats(resumen) {
         const section = document.getElementById('home-stats-section');
         if (!section) return;
-        if (rutasCompletas < HISTORIAS_UMBRAL_AGREGADOS) {
+        // Sin resumen no se inventa un cero: se calla, que es lo que hacía antes de
+        // cruzar el umbral. El documento lo escribe el admin la primera vez que
+        // abre el panel.
+        if (!resumen || (resumen.rutasCompletas || 0) < HISTORIAS_UMBRAL_AGREGADOS) {
             section.classList.add('hidden');
             return;
         }
-        const distinct = (arr) => new Set(arr.filter(Boolean)).size;
         const stats = [
-            [activos.length, 'Egresados conectados'],
-            [distinct(activos.map(a => a.year)), 'Promociones'],
-            [distinct(activos.map(a => a.area === 'General' ? '' : a.area)), 'Áreas profesionales'],
-            [rutasCompletas, 'Rutas completas']
+            [resumen.total, 'Egresados conectados'],
+            [resumen.promociones, 'Promociones'],
+            [resumen.areas, 'Áreas profesionales'],
+            [resumen.rutasCompletas, 'Rutas completas']
         ];
         const cells = section.querySelectorAll('[data-stat]');
         cells.forEach((cell, i) => {

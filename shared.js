@@ -283,6 +283,13 @@ const colegiosCollection = artifactsRoot.collection('public').doc('data').collec
 // a ser SEMILLA + RESPALDO: si esta colección está vacía, el motor usa el JS.
 const examTestsCollection = artifactsRoot.collection('public').doc('data').collection('examTests');
 const codigosCollection = artifactsRoot.collection('public').doc('data').collection('codigos');
+// Agregados de la red en UN documento: cuántos egresados, cuántas promociones,
+// cuántas áreas, cuántas rutas completas. Existe porque desde que cada pantalla
+// pide solo lo que pinta (2026-08-02), nadie tiene ya la red entera en la mano
+// para contarla — y la portada estaba contando 4 personas y llamándolas "la red".
+// Lo reescribe el admin, que sí lee la colección completa; se lee en la portada
+// y en Karla con UNA lectura en vez de 68.
+const resumenRedDoc = artifactsRoot.collection('public').doc('data').collection('resumen').doc('red');
 // Veto de reingreso: uid de usuarios eliminados por la administracion. Existe
 // porque el cliente NO puede borrar una cuenta de Firebase Auth (hace falta el
 // Admin SDK), asi que sin esto un usuario eliminado volvia a entrar y el
@@ -1599,6 +1606,77 @@ async function loadAlumniBloque({ limite = DIRECTORY_PAGE_SIZE } = {}) {
 // La portada solo pinta historias: las curadas desde el admin (`rutaDestacada`)
 // y, si no llegan a dos, quien tenga al menos dos hitos. Son 4-10 documentos en
 // vez de 68, y no crece con cada egresado nuevo.
+// ===== RESUMEN DE LA RED =====
+// Quién lo escribe: el admin, que es el único que ya lee la colección entera —
+// así no hace falta ni un cron ni una Cloud Function, y nadie puede inventarse
+// los números desde el navegador (las reglas solo dejan escribir a la
+// administración). Se refresca cada vez que Juan abre el panel; para «cuántos
+// egresados hay» eso sobra.
+const RESUMEN_CACHE = 'sinapsis_resumen_red';
+function calcularResumenRed(alumni) {
+    const activos = alumni.filter(a => a.accountStatus !== ACCOUNT_STATUS.SUSPENDIDO);
+    const distintos = (arr) => new Set(arr.filter(Boolean)).size;
+    const anios = activos.map(a => parseInt(a.year, 10)).filter(Number.isFinite);
+    return {
+        total: activos.length,
+        promociones: distintos(activos.map(a => String(a.year)).filter(y => y && y !== '---')),
+        promoMin: anios.length ? Math.min(...anios) : null,
+        promoMax: anios.length ? Math.max(...anios) : null,
+        areas: distintos(activos.map(a => (a.area === 'General' ? '' : a.area))),
+        // Con nombre y conteo, porque Karla los cita («Áreas más frecuentes:
+        // Finanzas (3), Salud (1)…»). El número suelto le sirve a la portada.
+        areasTop: Object.entries(activos.reduce((acc, a) => {
+            const area = a.area && a.area !== 'General' ? a.area : null;
+            if (area) acc[area] = (acc[area] || 0) + 1;
+            return acc;
+        }, {})).sort((x, y) => y[1] - x[1]).slice(0, 8).map(([a, n]) => `${a} (${n})`),
+        rutasCompletas: activos.filter(a => (a.hitosCount || 0) >= 2).length,
+        actualizado: Date.now()
+    };
+}
+// Solo se llama desde el admin, y solo si los números cambiaron: reescribir el
+// mismo documento en cada carga del panel es una escritura regalada.
+async function guardarResumenRed(alumni) {
+    try {
+        const nuevo = calcularResumenRed(alumni);
+        const previo = _cacheLeer(RESUMEN_CACHE);
+        const igual = previo && ['total','promociones','areas','rutasCompletas','promoMin','promoMax']
+            .every(k => previo[k] === nuevo[k]);
+        if (igual) return;
+        await resumenRedDoc.set(nuevo, { merge: true });
+        _cacheEscribir(RESUMEN_CACHE, nuevo);
+    } catch (e) { console.warn('[Sinapsis] No se pudo guardar el resumen de la red:', e?.code || e?.message); }
+}
+// Una lectura, y sirve a la portada y a Karla. Devuelve null si el documento aún
+// no existe: quien lo use tiene que saber callarse, no inventar un cero.
+async function loadResumenRed() {
+    const cache = _cacheLeer(RESUMEN_CACHE);
+    if (cache) return cache;
+    try {
+        await asegurarSesionParaLeer();
+        const doc = await resumenRedDoc.get();
+        if (!doc.exists) return null;
+        const datos = doc.data();
+        _cacheEscribir(RESUMEN_CACHE, datos);
+        return datos;
+    } catch (e) { return null; }
+}
+
+// Los perfiles que tienen ruta que contar, para Karla. `hitosCount >= 1` es el
+// filtro correcto y además el barato: quien no tiene hitos no aporta una ruta
+// real, y pedirlos era pagar por descartarlos. No se puede ordenar por
+// `profileCompleteness` porque ese número se calcula en el navegador.
+async function loadAlumniConRutas({ limite = 18 } = {}) {
+    const cache = _alumniDesdeCache();
+    if (cache) return cache.filter(a => (a.hitosCount || 0) >= 1).slice(0, limite);
+    try {
+        await asegurarSesionParaLeer();
+        const snap = await conReintento(() => alumniCollection.where('hitosCount', '>=', 1).limit(limite).get());
+        return snap.docs.map(mapearAlumno)
+            .filter(a => hasValidFirstName(a.firstName) && a.accountStatus !== ACCOUNT_STATUS.SUSPENDIDO);
+    } catch (e) { return []; }
+}
+
 let _destacadosEnVuelo = null;
 async function loadAlumniDestacados({ limite = 8 } = {}) {
     const cache = _alumniDesdeCache();

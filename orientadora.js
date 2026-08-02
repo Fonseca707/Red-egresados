@@ -146,33 +146,27 @@ const orientadoraLogic = {
             // necesita la colección completa —resume la red— y la pide explícita.
             // `hayMasDirectorio()` es falso cuando ya se leyó entera (o está en
             // caché), así que esto no repite la lectura.
-            if (hayMasDirectorio()) await loadAlumni();
-            const alumni = state.data.alumni;
+            // Karla necesita DOS cosas y cada una tiene su fuente barata: los
+            // números de la red salen de `resumen/red` (1 lectura) y las rutas, de
+            // los perfiles que tienen hitos (18 como mucho). Antes leía los 68
+            // perfiles enteros para las dos: ~68 lecturas cada vez que un egresado
+            // abría el chat, y Karla la puede usar cualquiera con cuenta.
+            const red = await loadResumenRed();
+            let resumen;
+            if (red && red.total) {
+                const promoRango = red.promoMin && red.promoMax ? `${red.promoMin}–${red.promoMax}` : 'sin dato';
+                const areasTop = (red.areasTop || []).join(', ');
+                resumen = `Red actual: ${red.total} egresados registrados. Promociones: ${promoRango}.${areasTop ? ` Áreas más frecuentes: ${areasTop}.` : ''}`;
+            } else {
+                // Todavía no hay resumen escrito (el admin no ha entrado desde que
+                // existe). Antes que mentir con un número parcial, se calcula leyendo
+                // la red entera, como se hacía hasta hoy.
+                if (hayMasDirectorio()) await loadAlumni();
+                resumen = `Red actual: ${state.data.alumni.length} egresados registrados.`;
+            }
 
-            // Resumen agregado de la red (da valor incluso sin rutas detalladas).
-            const total = alumni.length;
-            const areas = {};
-            const promos = [];
-            alumni.forEach(a => {
-                const area = a.area && a.area !== 'General' ? a.area : null;
-                if (area) areas[area] = (areas[area] || 0) + 1;
-                const y = parseInt(a.year, 10);
-                if (Number.isFinite(y)) promos.push(y);
-            });
-            const areasTop = Object.entries(areas)
-                .sort((x, y) => y[1] - x[1])
-                .slice(0, 8)
-                .map(([a, n]) => `${a} (${n})`)
-                .join(', ');
-            const promoRango = promos.length
-                ? `${Math.min(...promos)}–${Math.max(...promos)}`
-                : 'sin dato';
-            const resumen = `Red actual: ${total} egresados registrados. Promociones: ${promoRango}.${areasTop ? ` Áreas más frecuentes: ${areasTop}.` : ''}`;
-
-            // Rutas detalladas de los perfiles más completos.
-            const top = [...alumni]
-                .sort((a, b) => (b.profileCompleteness || 0) - (a.profileCompleteness || 0))
-                .slice(0, 18);
+            // Rutas detalladas: quien tiene hitos es quien tiene ruta que contar.
+            const top = await loadAlumniConRutas({ limite: 18 });
             const lines = await Promise.all(top.map(async (alum) => {
                 let hitos = alum.hitosCount > 0 ? await loadHitos(alum.id) : [];
                 if (!hitos.length) hitos = deriveLegacyHitos(alum);
