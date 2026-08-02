@@ -1481,6 +1481,31 @@ function _cacheEscribir(clave, valor, subclave) {
     D.prototype._invalidaAlumni = true;
 })();
 
+// El mapeo de un documento de `alumni` al objeto que usa toda la web. Estaba
+// escrito dentro de `_loadAlumniDeVerdad`; se sacó aquí porque ahora hay TRES
+// formas de leer la colección (entera, por bloques y solo los destacados) y un
+// mapeo copiado tres veces es un campo que mañana se añade en dos.
+function mapearAlumno(doc) {
+    const d = doc.data();
+    const user = {
+        id: doc.id,
+        name: `${d.firstName || ''} ${d.lastName || ''}`.trim() || 'Sin nombre',
+        firstName: (d.firstName || '').trim(), lastName: (d.lastName || '').trim(),
+        email: d.email || '', username: d.username || '', newsletterOptIn: Boolean(d.newsletterOptIn),
+        role: d.role || 'Sin rol', status: d.status || 'sin-definir', statusLabel: formatStatusLabel(d.status),
+        accountStatus: d.accountStatus || 'activo', company: d.studies || formatStatusLabel(d.status),
+        photoURL: d.photoURL || '', img: d.photoURL || buildAvatarUrl(`${d.firstName || 'Usuario'} ${d.lastName || ''}`.trim()),
+        tags: [d.school || '', d.area || 'General', formatStatusLabel(d.status)].filter(Boolean),
+        fullStudies: d.studies || 'No especificado', location: d.location || 'Ubicación no disponible',
+        bio: d.bio || 'Sin biografía disponible.', year: d.graduationYear || '---', area: d.area || 'General',
+        skills: Array.isArray(d.skills) ? d.skills : (d.skills ? String(d.skills).split(',') : []),
+        linkedin: d.linkedin || '', expectations: d.expectations || '', school: d.school || '',
+        hitosCount: Number(d.hitosCount) || 0, rutaDestacada: Boolean(d.rutaDestacada),
+        graduationYear: d.graduationYear || '', studies: d.studies || ''
+    };
+    return { ...user, profileCompleteness: getProfileCompletenessScore(user) };
+}
+
 async function loadAlumni({ forzar = false } = {}) {
     if (!forzar) {
         const cache = _alumniDesdeCache();
@@ -1491,6 +1516,80 @@ async function loadAlumni({ forzar = false } = {}) {
     return _alumniEnVuelo;
 }
 
+// ===== LECTURAS ACOTADAS DE `alumni` =====
+// El directorio entero son 68 documentos y crece con cada egresado. Casi nadie
+// los necesita todos: la portada pinta 4 historias y el directorio muestra 12
+// tarjetas por pantalla. Estas dos funciones lo piden ACOTADO; `loadAlumni()`
+// entero se reserva para quien de verdad necesita la red completa (el admin,
+// Karla, el generador de rutas) y para el momento en que alguien busca.
+//
+// El orden de la paginación es alfabético por `firstName`, y no por el ranking
+// de completitud que usa `rankAlumniForDirectory`: ese ranking es ALEATORIO y se
+// calcula en el navegador, y `profileCompleteness` ni siquiera existe como campo
+// en Firestore. Un cursor necesita un orden estable y del lado del servidor.
+let _cursorDirectorio = null;
+let _directorioCompleto = false;
+function reiniciarPaginacionDirectorio() { _cursorDirectorio = null; _directorioCompleto = false; }
+function hayMasDirectorio() { return !_directorioCompleto; }
+
+async function loadAlumniBloque({ limite = DIRECTORY_PAGE_SIZE } = {}) {
+    // Si la colección entera ya está en caché (la trajo el admin, o una búsqueda
+    // anterior), paginar contra Firestore sería pagar por lo que ya tenemos.
+    const cache = _alumniDesdeCache();
+    if (cache && !_cursorDirectorio) {
+        state.data.alumni = cache; _directorioCompleto = true;
+        state.directoryLoading = false; state.directoryError = null;
+        return cache;
+    }
+    if (_directorioCompleto) return state.data.alumni;
+    state.directoryLoading = true; state.directoryError = null;
+    try {
+        await asegurarSesionParaLeer();
+        let consulta = alumniCollection.orderBy('firstName').limit(limite);
+        if (_cursorDirectorio) consulta = consulta.startAfter(_cursorDirectorio);
+        const snap = await conReintento(() => consulta.get());
+        // Menos documentos que el límite = se acabó la colección. Se comprueba
+        // ANTES de filtrar por nombre válido: si no, un bloque entero de perfiles
+        // basura parecería el final del directorio.
+        if (snap.size < limite) _directorioCompleto = true;
+        if (snap.size) _cursorDirectorio = snap.docs[snap.size - 1];
+        const nuevos = snap.docs.map(mapearAlumno).filter(a => hasValidFirstName(a.firstName));
+        const vistos = new Set(state.data.alumni.map(a => a.id));
+        state.data.alumni = [...state.data.alumni, ...nuevos.filter(a => !vistos.has(a.id))];
+    } catch (e) {
+        state.directoryError = e?.code || e?.message || 'error-desconocido';
+        console.warn('[Sinapsis] No se pudo cargar el bloque del directorio:', state.directoryError);
+    } finally { state.directoryLoading = false; }
+    return state.data.alumni;
+}
+
+// La portada solo pinta historias: las curadas desde el admin (`rutaDestacada`)
+// y, si no llegan a dos, quien tenga al menos dos hitos. Son 4-10 documentos en
+// vez de 68, y no crece con cada egresado nuevo.
+async function loadAlumniDestacados({ limite = 8 } = {}) {
+    const cache = _alumniDesdeCache();
+    if (cache) { state.data.alumni = cache; return cache; }
+    try {
+        await asegurarSesionParaLeer();
+        const traer = async (consulta) => (await conReintento(() => consulta.get()))
+            .docs.map(mapearAlumno)
+            .filter(a => hasValidFirstName(a.firstName) && a.accountStatus !== 'suspendido');
+        let lista = await traer(alumniCollection.where('rutaDestacada', '==', true).limit(limite));
+        if (lista.length < 2) {
+            const conHitos = await traer(alumniCollection.where('hitosCount', '>=', 2).limit(limite + 2));
+            const vistos = new Set(lista.map(a => a.id));
+            lista = [...lista, ...conHitos.filter(a => !vistos.has(a.id))];
+        }
+        // OJO: esto NO se guarda en la caché de `alumni`. Es una lista parcial y
+        // el directorio la heredaría como si fuera la red entera.
+        state.data.alumni = lista;
+        return lista;
+    } catch (e) {
+        console.warn('[Sinapsis] No se pudieron cargar las historias destacadas:', e?.code || e?.message);
+        return state.data.alumni;
+    }
+}
+
 async function _loadAlumniDeVerdad() {
     state.directoryLoading=true;
     state.directoryError=null;
@@ -1498,7 +1597,9 @@ async function _loadAlumniDeVerdad() {
     await asegurarSesionParaLeer();
     try {
         const snap=await conReintento(()=>alumniCollection.get());
-        state.data.alumni=snap.docs.map(doc=>{const d=doc.data();const user={id:doc.id,name:`${d.firstName||''} ${d.lastName||''}`.trim()||'Sin nombre',firstName:(d.firstName||'').trim(),lastName:(d.lastName||'').trim(),email:d.email||'',username:d.username||'',newsletterOptIn:Boolean(d.newsletterOptIn),role:d.role||'Sin rol',status:d.status||'sin-definir',statusLabel:formatStatusLabel(d.status),accountStatus:d.accountStatus||'activo',company:d.studies||formatStatusLabel(d.status),photoURL:d.photoURL||'',img:d.photoURL||buildAvatarUrl(`${d.firstName||'Usuario'} ${d.lastName||''}`.trim()),tags:[d.school||'',d.area||'General',formatStatusLabel(d.status)].filter(Boolean),fullStudies:d.studies||'No especificado',location:d.location||'Ubicación no disponible',bio:d.bio||'Sin biografía disponible.',year:d.graduationYear||'---',area:d.area||'General',skills:Array.isArray(d.skills)?d.skills:(d.skills?String(d.skills).split(','):[]),linkedin:d.linkedin||'',expectations:d.expectations||'',school:d.school||'',hitosCount:Number(d.hitosCount)||0,rutaDestacada:Boolean(d.rutaDestacada),graduationYear:d.graduationYear||'',studies:d.studies||''};return{...user,profileCompleteness:getProfileCompletenessScore(user)};}).filter(a=>hasValidFirstName(a.firstName));
+        state.data.alumni=snap.docs.map(mapearAlumno).filter(a=>hasValidFirstName(a.firstName));
+        // Leída entera: quien pagine después ya no tiene nada que pedir.
+        _directorioCompleto = true;
     } catch(e){
         // Antes esto se tragaba el error y el directorio salia VACIO como si la
         // red no tuviera a nadie. Ahora queda constancia para que la pagina lo

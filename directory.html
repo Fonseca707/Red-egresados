@@ -157,22 +157,35 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore-compat.js"></script>
-    <script src="shared.js?v=30"></script>
+    <script src="shared.js?v=31"></script>
     <script src="orientadora.js?v=4"></script>
     <script>
         renderNav('directory');
 
         const directoryLogic = {
             _currentItems: [],
+            // `rankAlumniForDirectory` baraja con peso por completitud, así que cada
+            // llamada da un orden distinto. Con el directorio paginado eso se notaba
+            // feo: al llegar un bloque nuevo, las tarjetas YA VISTAS cambiaban de sitio
+            // bajo el dedo. Se conserva el orden de las que ya están pintadas y solo se
+            // barajan las que llegan nuevas.
             render: (items = state.data.alumni) => {
-                directoryLogic._currentItems = rankAlumniForDirectory(items);
+                const previos = directoryLogic._currentItems;
+                const enPantalla = new Set(items.map(u => String(u.id)));
+                const conservados = previos.filter(u => enPantalla.has(String(u.id)));
+                const yaOrdenados = new Set(conservados.map(u => String(u.id)));
+                const nuevos = items.filter(u => !yaOrdenados.has(String(u.id)));
+                directoryLogic._currentItems = conservados.length
+                    ? [...conservados, ...rankAlumniForDirectory(nuevos)]
+                    : rankAlumniForDirectory(items);
                 directoryLogic._renderPage(1);
             },
             reintentar: async () => {
                 state.directoryError = null;
                 state.directoryLoading = true;
                 directoryLogic.render();
-                await loadAlumni();
+                reiniciarPaginacionDirectorio();
+                await loadAlumniBloque();
                 directoryLogic.render();
             },
             _renderPage: (page) => {
@@ -250,13 +263,57 @@
                     </div>
                 `).join('');
 
+                // Hay más si quedan tarjetas sin pintar O si a Firestore todavía le
+                // queda gente por entregar (paginación real, no `slice`).
+                const quedaPorLeer = hayMasDirectorio() && !directoryLogic._filtrando;
+                const mostrarBoton = hasMore || quedaPorLeer;
                 if (loadMoreBtn) {
-                    loadMoreBtn.classList.toggle('hidden', !hasMore);
-                    loadMoreBtn.classList.toggle('flex', hasMore);
+                    loadMoreBtn.classList.toggle('hidden', !mostrarBoton);
+                    loadMoreBtn.classList.toggle('flex', mostrarBoton);
+                    directoryLogic._vigilarFinDeLista(mostrarBoton);
                 }
             },
-            loadMore: () => {
-                directoryLogic._renderPage(state.directoryPage + 1);
+            // Antes esto solo movía el `slice`: los 68 perfiles ya se habían leído
+            // enteros al abrir la página, así que "ver más" no ahorraba nada. Ahora
+            // pide el siguiente bloque a Firestore y solo repagina si ya está en
+            // memoria (porque alguien buscó, o porque el admin cargó la red entera).
+            loadMore: async () => {
+                const items = directoryLogic._currentItems;
+                const yaPintadas = state.directoryPage * DIRECTORY_PAGE_SIZE;
+                if (items.length > yaPintadas || directoryLogic._filtrando) {
+                    directoryLogic._renderPage(state.directoryPage + 1);
+                    return;
+                }
+                if (!hayMasDirectorio() || directoryLogic._cargandoBloque) return;
+                directoryLogic._cargandoBloque = true;
+                const boton = document.querySelector('#directory-load-more button');
+                if (boton) boton.innerHTML = '<i class="ph ph-circle-notch animate-spin"></i> Cargando…';
+                try {
+                    const antes = state.data.alumni.length;
+                    await loadAlumniBloque();
+                    const página = state.directoryPage;
+                    directoryLogic.render();
+                    // `render` vuelve a la página 1; se recupera lo que ya se veía y se
+                    // suma la nueva. Sin esto, "ver más" haría desaparecer tarjetas.
+                    directoryLogic._renderPage(state.data.alumni.length > antes ? página + 1 : página);
+                } finally {
+                    directoryLogic._cargandoBloque = false;
+                    const b = document.querySelector('#directory-load-more button');
+                    if (b) b.innerHTML = '<i class="ph ph-caret-down"></i> Ver más egresados';
+                }
+            },
+            // Scroll infinito: el mismo botón sigue ahí (y sigue funcionando con
+            // teclado), pero al asomarse por el borde de la pantalla se dispara solo.
+            _vigilarFinDeLista: (activo) => {
+                const zona = document.getElementById('directory-load-more');
+                if (!zona || typeof IntersectionObserver === 'undefined') return;
+                if (!directoryLogic._observador) {
+                    directoryLogic._observador = new IntersectionObserver((entradas) => {
+                        if (entradas.some(e => e.isIntersecting)) directoryLogic.loadMore();
+                    }, { rootMargin: '300px' });
+                }
+                if (activo) directoryLogic._observador.observe(zona);
+                else directoryLogic._observador.unobserve(zona);
             },
             openProfile: (id) => {
                 const user = state.data.alumni.find(u => String(u.id) === String(id));
@@ -337,10 +394,22 @@
                 cleanUrl.searchParams.delete('perfil');
                 history.replaceState(null, '', cleanUrl);
             },
-            filter: () => {
+            filter: async () => {
                 const term = document.getElementById('directory-search').value.toLowerCase().trim();
                 const yearTerm = (document.getElementById('directory-year')?.value || '').trim();
                 const selected = document.getElementById('directory-filter')?.value || 'all';
+                // ⚠️ Buscar es lo único que necesita la red ENTERA: con el directorio
+                // paginado, filtrar solo lo cargado diría "no se encontraron egresados"
+                // de alguien que sí está — el peor fallo posible en un buscador. Se trae
+                // todo UNA vez (y queda en caché para el resto de la sesión), así que el
+                // coste alto lo paga solo quien busca, y solo la primera vez.
+                directoryLogic._filtrando = Boolean(term || yearTerm || selected !== 'all');
+                if (directoryLogic._filtrando && hayMasDirectorio()) {
+                    state.directoryLoading = true;
+                    directoryLogic.render();
+                    await loadAlumni();
+                    state.directoryLoading = false;
+                }
                 const filtered = state.data.alumni.filter(u => {
                     const matchesTerm = u.name.toLowerCase().includes(term) ||
                         (u.role || '').toLowerCase().includes(term) ||
@@ -433,10 +502,17 @@
                     refreshHeaderIdentity();
                     updateAdminNavVisibility();
                 }
-                await loadAlumni();
+                // Primer bloque, no la colección entera: lo que cabe en la pantalla.
+                await loadAlumniBloque();
                 directoryLogic.render();
-                // Deep link: abrir el perfil pedido en la URL (?perfil=<id>)
+                // Deep link: abrir el perfil pedido en la URL (?perfil=<id>). Puede
+                // estar más allá del primer bloque, así que si no aparece se trae el
+                // resto: un enlace compartido tiene que abrir SIEMPRE.
                 const requestedProfile = new URLSearchParams(window.location.search).get('perfil');
+                if (requestedProfile && !state.data.alumni.some(u => String(u.id) === String(requestedProfile)) && hayMasDirectorio()) {
+                    await loadAlumni();
+                    directoryLogic.render();
+                }
                 if (requestedProfile && state.data.alumni.some(u => String(u.id) === String(requestedProfile))) {
                     directoryLogic.openProfile(requestedProfile);
                 }

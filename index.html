@@ -491,9 +491,9 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore-compat.js"></script>
-    <script src="shared.js?v=30"></script>
+    <script src="shared.js?v=31"></script>
     <script src="orientadora.js?v=4"></script>
-    <script src="historias.js?v=6"></script>
+    <script src="historias.js?v=7"></script>
     <script>
         // ── Estado global: base en shared.js. La nav (desktop + móvil) la
         // inyecta renderNav('home'), igual que en el resto de páginas del sitio.
@@ -719,7 +719,10 @@
                     goto('onboarding');
                     return;
                 }
-                await loadAlumni();
+                // Sin `loadAlumni()`: la portada no necesita la red entera. Lo único
+                // que usa de `alumni` son las historias, y `historiasLogic.init` (al
+                // final de este callback) las pide acotadas. El panel lateral solo se
+                // abre desde una historia, así que la persona ya está cargada.
                 await loadNews();
                 checkPulsoRuta();
             } else {

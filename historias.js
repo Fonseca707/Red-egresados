@@ -20,9 +20,14 @@ const historiasLogic = {
         const holder = document.getElementById('historias-section');
         if (!holder) return;
         try {
+            // `loadAlumniDestacados` y no `loadAlumni`: la portada pinta 4 historias
+            // y traía los 68 perfiles de la red para elegirlas. Pide solo los
+            // curados (`rutaDestacada`) y, si no llegan a dos, los que tienen al
+            // menos dos hitos. Si la colección entera ya está en caché la reusa,
+            // así que el admin y las búsquedas no leen dos veces.
             const stale = Date.now() - this._lastLoad > 30_000;
             if (!state.data.alumni.length || (force && stale)) {
-                await loadAlumni();
+                await loadAlumniDestacados();
                 this._lastLoad = Date.now();
             }
             const activos = state.data.alumni.filter(a => a.accountStatus !== 'suspendido');
