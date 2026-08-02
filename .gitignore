@@ -9,3 +9,8 @@ backups/
 
 # Cache local de Firebase Hosting
 .firebase/
+
+# Worktrees que crea Claude Code para trabajar aislado: son copias de ESTE
+# mismo repo (rama diseno-premium, etc.), no codigo nuevo. Subirlas duplicaria
+# el repo dentro de si mismo.
+.claude/
