@@ -2,7 +2,14 @@
 
 const firebaseConfig = {
     apiKey: "AIzaSyBoVTqroZ7zR-3a5QGy5CzK19a4422t0Rg",
-    authDomain: "red-egresados-65a1a.firebaseapp.com",
+    // authDomain = el dominio que aloja el handler de OAuth, y el que Google MUESTRA al
+    // pedir permiso. Hasta el 2026-08-02 era `red-egresados-65a1a.firebaseapp.com`: el
+    // egresado veía el nombre interno del proyecto y el popup era cross-origin (lo que
+    // peor trata Safari/iOS). Cambiarlo NO mueve usuarios ni datos — esos viven en el
+    // proyecto, no en el dominio— pero exige tener autorizado
+    // `https://sinapsisred.web.app/__/auth/handler` en el cliente OAuth de Google Cloud;
+    // ya está. Si algún día el login de Google devuelve `redirect_uri_mismatch`, es eso.
+    authDomain: "sinapsisred.web.app",
     projectId: "red-egresados-65a1a",
     storageBucket: "red-egresados-65a1a.firebasestorage.app",
     messagingSenderId: "874010522484",
