@@ -181,17 +181,41 @@
                 // la tarjeta entera mataría el escaparate comercial y no protegería
                 // nada — el aviso de que la corrección pide colegio lo da la propia
                 // calificadora, en el momento justo en que se intenta.
+                // Regla (Juan, 2026-08-02, corrigiendo la de esa misma mañana): si el
+                // colegio no lo activó, NO se accede. Punto. Antes se dejaba ver y
+                // practicar a todo el mundo como escaparate comercial, y quien no
+                // tenía el módulo solo se enteraba al pedir la corrección, después de
+                // escribir dos ensayos. Ahora la puerta está cerrada desde la tarjeta,
+                // que es donde se puede explicar y donde no se le hace perder el rato
+                // a nadie. La tarjeta bloqueada sigue diciendo que su institución
+                // puede activarlo: el escaparate es el mensaje, no el contenido.
+                //
+                // `disponibles === null` es "todavía no sé" (la consulta va después
+                // del perfil): no se abre por defecto, se espera — un módulo que
+                // parpadea abierto y luego se cierra es peor que uno que tarda.
                 const disponibles = state.modulosDisponibles || null;
+                const habilitado = (code) => !!disponibles && disponibles[code.toLowerCase()] === true;
                 const tieneColegio = typeof esMiembro === 'function' && esMiembro() && !!state.profile?.school;
-                const habilitado = (code) => !tieneColegio || !disponibles || disponibles[code.toLowerCase()] !== false;
                 grid.innerHTML = state.examModules.map((module) => {
+                    if (disponibles === null) {
+                        return `
+                        <article class="bg-white rounded-[2rem] border border-gray-100 shadow-sm overflow-hidden">
+                            <div class="p-8 text-center">
+                                <div class="w-16 h-16 bg-gray-50 text-gray-300 rounded-2xl border border-gray-100 flex items-center justify-center text-3xl mx-auto mb-4"><i class="ph ph-circle-notch animate-spin"></i></div>
+                                <h3 class="text-xl font-extrabold text-gray-900 mb-2">${sanitizeHTML(module.title)}</h3>
+                                <p class="text-sm text-gray-400">Comprobando disponibilidad…</p>
+                            </div>
+                        </article>`;
+                    }
                     if (!habilitado(module.code)) {
                         return `
                         <article class="bg-white rounded-[2rem] border border-gray-100 shadow-sm overflow-hidden opacity-90">
                             <div class="p-8 text-center">
                                 <div class="w-16 h-16 bg-gray-50 text-gray-300 rounded-2xl border border-gray-100 flex items-center justify-center text-3xl mx-auto mb-4"><i class="ph-duotone ph-lock-key"></i></div>
                                 <h3 class="text-xl font-extrabold text-gray-900 mb-2">${sanitizeHTML(module.title)}</h3>
-                                <p class="text-sm text-gray-500 max-w-sm mx-auto">Este módulo no está habilitado para tu colegio. Si te interesa, cuéntale a tu institución: es uno de los valores agregados que puede activar para su comunidad.</p>
+                                <p class="text-sm text-gray-500 max-w-sm mx-auto">${tieneColegio
+                                    ? 'Este módulo no está habilitado para tu colegio. Si te interesa, cuéntale a tu institución: es uno de los valores agregados que puede activar para su comunidad.'
+                                    : 'La preparación en idiomas la activa cada colegio para su comunidad. Si el tuyo hace parte de Sinapsis, entra con el enlace de invitación que te dieron; si no, cuéntales que existe.'}</p>
                             </div>
                         </article>`;
                     }
