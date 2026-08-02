@@ -1437,8 +1437,9 @@ function _guardarAlumniEnCache(datos) {
 const CONTACTO_CACHE = 'sinapsis_contacto_propio';
 const HITOS_CACHE = 'sinapsis_hitos_cache';
 const PERFIL_CACHE = 'sinapsis_perfil_propio';
+const DESTACADOS_CACHE = 'sinapsis_destacados_cache';
 function invalidarCacheAlumni() {
-    for (const k of [ALUMNI_CACHE, HITOS_CACHE, PERFIL_CACHE, CONTACTO_CACHE]) {
+    for (const k of [ALUMNI_CACHE, HITOS_CACHE, PERFIL_CACHE, CONTACTO_CACHE, DESTACADOS_CACHE]) {
         try { sessionStorage.removeItem(k); } catch {}
     }
 }
@@ -1566,9 +1567,21 @@ async function loadAlumniBloque({ limite = DIRECTORY_PAGE_SIZE } = {}) {
 // La portada solo pinta historias: las curadas desde el admin (`rutaDestacada`)
 // y, si no llegan a dos, quien tenga al menos dos hitos. Son 4-10 documentos en
 // vez de 68, y no crece con cada egresado nuevo.
+let _destacadosEnVuelo = null;
 async function loadAlumniDestacados({ limite = 8 } = {}) {
     const cache = _alumniDesdeCache();
     if (cache) { state.data.alumni = cache; return cache; }
+    // Medido: la portada la llamaba TRES veces por carga (el arranque autenticado,
+    // el `init(true)` de las historias y Karla al abrirse), y sin esto cada una era
+    // una lectura. Misma pareja que en `alumni`: caché corta + dedupe en vuelo.
+    const guardados = _cacheLeer(DESTACADOS_CACHE);
+    if (Array.isArray(guardados) && guardados.length) { state.data.alumni = guardados; return guardados; }
+    if (_destacadosEnVuelo) return _destacadosEnVuelo;
+    _destacadosEnVuelo = _leerDestacados(limite).finally(() => { _destacadosEnVuelo = null; });
+    return _destacadosEnVuelo;
+}
+
+async function _leerDestacados(limite) {
     try {
         await asegurarSesionParaLeer();
         const traer = async (consulta) => (await conReintento(() => consulta.get()))
@@ -1580,8 +1593,9 @@ async function loadAlumniDestacados({ limite = 8 } = {}) {
             const vistos = new Set(lista.map(a => a.id));
             lista = [...lista, ...conHitos.filter(a => !vistos.has(a.id))];
         }
-        // OJO: esto NO se guarda en la caché de `alumni`. Es una lista parcial y
-        // el directorio la heredaría como si fuera la red entera.
+        // OJO: se guarda en SU PROPIA caché, nunca en la de `alumni`. Es una lista
+        // parcial y el directorio la heredaría como si fuera la red entera.
+        if (lista.length) _cacheEscribir(DESTACADOS_CACHE, lista);
         state.data.alumni = lista;
         return lista;
     } catch (e) {
