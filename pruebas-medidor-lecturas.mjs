@@ -286,5 +286,10 @@ comprobar('el orden de las tarjetas ya pintadas no cambia al llegar un bloque nu
 comprobar('el scroll infinito reusa el mismo botón (que sigue existiendo para el teclado)',
     /IntersectionObserver/.test(dir) && /directoryLogic\.loadMore\(\)/.test(dir));
 
+const orient = fs.readFileSync('./orientadora.js', 'utf8');
+comprobar('⭐ Karla pide la red ENTERA: con la portada acotada, "no está vacía" dejó de significar "está completa"',
+    /if \(hayMasDirectorio\(\)\) await loadAlumni\(\);/.test(orient) &&
+    !/if \(!state\.data\.alumni\.length\) await loadAlumni\(\);/.test(orient));
+
 console.log(`\n${ok} ok · ${fallos} fallas`);
 process.exit(fallos ? 1 : 0);

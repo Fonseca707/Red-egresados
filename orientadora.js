@@ -138,7 +138,15 @@ const orientadoraLogic = {
     async buildContext() {
         if (this.context !== null) return this.context;
         try {
-            if (!state.data.alumni.length) await loadAlumni();
+            // ⚠️ NO vale con `if (!state.data.alumni.length)`. Desde que la portada
+            // pide solo sus 4 historias y el directorio pagina de a 12, esa lista
+            // casi nunca está vacía pero casi nunca es la red entera: Karla habría
+            // dicho «Red actual: 4 egresados registrados» con toda seriedad, y las
+            // rutas que cita saldrían de esos cuatro. Karla es de las pocas que sí
+            // necesita la colección completa —resume la red— y la pide explícita.
+            // `hayMasDirectorio()` es falso cuando ya se leyó entera (o está en
+            // caché), así que esto no repite la lectura.
+            if (hayMasDirectorio()) await loadAlumni();
             const alumni = state.data.alumni;
 
             // Resumen agregado de la red (da valor incluso sin rutas detalladas).
