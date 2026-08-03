@@ -11,6 +11,15 @@
 const HISTORIAS_UMBRAL_AGREGADOS = 35; // rutas completas para mostrar métricas
 const HISTORIAS_MAX = 4;
 
+// Iniciales de un nombre, para cuando no hay foto. Se usa en toda la portada:
+// el avatar por defecto (ui-avatars) pinta un color al azar segun el nombre y
+// una fila de caras naranja/morada/rosa junto al verde de la marca parece de
+// otra web. Aqui todas las iniciales van sobre el mismo tono.
+function hpIniciales(nombre) {
+    return String(nombre || '').trim().split(/\s+/).slice(0, 2)
+        .map(p => p[0] || '').join('').toUpperCase();
+}
+
 const historiasLogic = {
     _lastLoad: 0,
 
@@ -62,7 +71,9 @@ const historiasLogic = {
             const resumen = await loadResumenRed();
             this.renderStats(resumen);
             this.renderHeroSocial(activos, resumen);
-            this.renderHeroMosaico(activos);
+            // La ficha del hero necesita los HITOS, no solo la persona: por eso va
+            // aqui abajo y no junto al resto, que solo mira `activos`.
+            this.renderHeroFicha(historias);
 
             // Con menos de 2 historias no se muestra nada: una fila medio vacía
             // también delata una red que apenas comienza.
@@ -87,12 +98,7 @@ const historiasLogic = {
         const muestra = [...(conFoto.length >= 4 ? conFoto : activos)]
             .sort((a, b) => (b.profileCompleteness || 0) - (a.profileCompleteness || 0))
             .slice(0, 4);
-        // Quien tiene foto sale con su foto; el resto, con sus iniciales sobre un
-        // tono neutro. El avatar por defecto de ui-avatars pinta un color al azar
-        // segun el nombre y la fila salia naranja/morada/rosa junto al verde de la
-        // marca — parecia de otra web.
-        const iniciales = (nombre) => String(nombre || '').trim().split(/\s+/).slice(0, 2)
-            .map(p => p[0] || '').join('').toUpperCase();
+        const iniciales = hpIniciales;
         document.getElementById('hero-avatars').innerHTML = muestra.map(a => a.photoURL
             ? `<img class="w-10 h-10 rounded-full border-2 border-white object-cover" src="${sanitizeHTML(a.img)}" alt="Egresado ${sanitizeHTML(a.name)}" title="${sanitizeHTML(a.name)}">`
             : `<span class="hp-inicial" title="${sanitizeHTML(a.name)}" aria-label="Egresado ${sanitizeHTML(a.name)}">${sanitizeHTML(iniciales(a.name))}</span>`
@@ -106,48 +112,47 @@ const historiasLogic = {
         wrap.classList.remove('hidden');
     },
 
-    // Bloque visual del hero: en vez de una foto de banco, las cuatro personas
-    // destacadas de la red. Reusa los destacados que init() ya trajo, asi que no
-    // cuesta ni una lectura mas de Firestore.
+    // El lado visual del hero: la plataforma enseñando lo que sabe hacer, que es
+    // contar una trayectoria. Se dibuja en HTML con datos REALES —los mismos
+    // destacados que la portada ya publica— en vez de con una captura o una foto
+    // de banco: queda nitido en cualquier pantalla, no pesa y se actualiza solo.
+    // Cero lecturas nuevas de Firestore.
     //
-    // ⚠️ Quien tiene foto subida sale con su foto; quien no, con un retrato
-    // tipografico. NO se amplia el avatar de iniciales de ui-avatars: a 300 px es
-    // una inicial gigante sobre un bloque de color y delata que no hay foto. Hoy
-    // (2026-08-02) ninguno de los cuatro destacados tiene photoURL, o sea que el
-    // caso tipografico es el normal, no la excepcion. Las celdas que sobren se
-    // quedan como superficie: aqui no se rellena con gente inventada.
-    renderHeroMosaico(activos) {
-        const celdas = document.querySelectorAll('#hp-mosaico [data-hp-celda]');
-        if (!celdas.length) return;
-        const muestra = [...activos]
-            .sort((a, b) => (b.profileCompleteness || 0) - (a.profileCompleteness || 0))
-            .slice(0, celdas.length);
-        muestra.forEach((a, i) => {
-            const celda = celdas[i];
-            const promo = a.year && a.year !== '---' ? `Promoción ${a.year}` : 'Egresado';
-            const rol = [a.role, a.area && a.area !== 'General' ? a.area : '']
-                .filter(v => v && v !== 'Sin rol definido')[0] || '';
-            celda.classList.remove('hp-celda-vacia');
-            celda.classList.add('hp-celda-reveal');
-            celda.style.setProperty('--d', `${140 + i * 90}ms`);
-            celda.dataset.tono = String((i % 4) + 1);
-            const cuerpo = a.photoURL
-                ? `<img src="${sanitizeHTML(a.img)}" alt="${sanitizeHTML(a.name)}, egresada o egresado del Liceo Campestre de Pereira" loading="${i < 2 ? 'eager' : 'lazy'}" decoding="async">
-                   <figcaption>
-                       <p class="hp-celda-nombre">${sanitizeHTML(a.name)}</p>
-                       <p class="hp-celda-detalle">${sanitizeHTML([promo, rol].filter(Boolean).join(' · '))}</p>
-                   </figcaption>`
-                : `<div class="hp-tile">
-                       <p class="hp-tile-promo">${sanitizeHTML(promo)}</p>
-                       <div>
-                           <p class="hp-tile-nombre">${sanitizeHTML(a.name)}</p>
-                           ${rol ? `<p class="hp-tile-rol">${sanitizeHTML(rol)}</p>` : ''}
-                       </div>
-                   </div>`;
-            celda.innerHTML = `${cuerpo}
-                <button type="button" class="hp-celda-btn" aria-label="Ver la ruta de ${sanitizeHTML(a.name)}"
-                    onclick="historiasLogic.openHistoria('${sanitizeHTML(a.id)}')"></button>`;
-        });
+    // ⚠️ Con foto de perfil sale la foto; sin ella, las iniciales sobre el verde
+    // de la marca. Lo que NO se hace es ampliar el avatar de ui-avatars, que
+    // pinta un color al azar por nombre.
+    renderHeroFicha(historias) {
+        const ficha = document.getElementById('hp-ficha');
+        if (!ficha || !historias.length) return;
+        const { alum, hitos } = historias[0];
+        const iniciales = hpIniciales(alum.name);
+        // Cuatro pasos como mucho: la ventana tiene un alto y una ruta larga la
+        // desbordaba. Se conservan los extremos, que son los que cuentan la
+        // historia (de donde salio y donde esta hoy).
+        const pasos = hitos.length > 4
+            ? [hitos[0], hitos[1], hitos[hitos.length - 2], hitos[hitos.length - 1]]
+            : hitos;
+        const avatar = alum.photoURL
+            ? `<img class="hp-ficha-avatar" src="${sanitizeHTML(alum.img)}" alt="Foto de ${sanitizeHTML(alum.name)}">`
+            : `<span class="hp-ficha-avatar">${sanitizeHTML(iniciales)}</span>`;
+        ficha.innerHTML = `
+            <div class="hp-ficha-cab">
+                ${avatar}
+                <div>
+                    <p class="hp-ficha-nombre">${sanitizeHTML(alum.name)}</p>
+                    <p class="hp-ficha-promo">Promoción ${sanitizeHTML(alum.year || '—')}${alum.area && alum.area !== 'General' ? ` · ${sanitizeHTML(alum.area)}` : ''}</p>
+                </div>
+            </div>
+            <ol class="hp-ruta">
+                ${pasos.map((h, i) => {
+                    const anios = formatHitoYears(h);
+                    return `<li style="--d:${560 + i * 130}ms"${h.actual ? ' data-actual' : ''}>
+                        <p class="hp-ruta-rol">${sanitizeHTML(h.rol || h.titulo || 'Hito')}</p>
+                        ${h.organizacion ? `<p class="hp-ruta-org">${sanitizeHTML(h.organizacion)}</p>` : ''}
+                        ${anios ? `<p class="hp-ruta-anio">${sanitizeHTML(anios)}</p>` : ''}
+                    </li>`;
+                }).join('')}
+            </ol>`;
     },
 
     renderStats(resumen) {
@@ -176,20 +181,26 @@ const historiasLogic = {
     },
 
     renderHistorias(holder, historias) {
+        // Mismo sistema visual que el resto de la portada (clases .hp-): si esta
+        // seccion se queda con las tarjetas gordas de antes, la pagina se lee
+        // como dos webs pegadas.
         holder.innerHTML = `
-            <section class="py-12 md:py-16">
-                <div class="text-center mb-12">
-                    <h2 class="text-sm font-bold text-brand-600 uppercase tracking-widest mb-3">Historias que empezaron aquí</h2>
-                    <h3 class="text-3xl md:text-4xl font-extrabold text-gray-900">Del Liceo a donde están hoy</h3>
-                    <p class="text-gray-500 mt-3 max-w-2xl mx-auto">Rutas reales de egresados: cada una empezó en las mismas aulas donde estás tú.</p>
+            <section class="hp-seccion">
+                <div class="hp-cab" data-hp-sube>
+                    <p class="hp-kicker">Historias que empezaron aquí</p>
+                    <h3 class="hp-h2 mt-4">Del Liceo a donde están hoy</h3>
+                    <p class="hp-sub">Rutas reales de egresados: cada una empezó en las mismas aulas donde estás tú.</p>
                 </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    ${historias.map(h => this.cardHTML(h)).join('')}
+                <div class="hp-rejilla hp-rejilla-2">
+                    ${historias.map((h, i) => this.cardHTML(h, i)).join('')}
                 </div>
             </section>`;
+        // El observador ya recorrió el documento cuando esto llega de Firestore:
+        // hay que darle los bloques nuevos o se quedan invisibles para siempre.
+        if (typeof hpObservar === 'function') hpObservar(holder);
     },
 
-    cardHTML({ alum, hitos }) {
+    cardHTML({ alum, hitos }, indice = 0) {
         // Ruta compacta: máximo 3 tramos, del inicio (colegio) a "hoy".
         // loadHitos ya entrega orden cronológico ascendente (sortHitos).
         const tramos = [];
@@ -202,23 +213,25 @@ const historiasLogic = {
             if (etiqueta && !tramos.includes(etiqueta)) tramos.push(etiqueta);
         });
         const rutaHTML = tramos.map((t, i) => `
-            ${i > 0 ? '<i class="ph-bold ph-arrow-right text-brand-600 shrink-0"></i>' : ''}
-            <span class="px-2.5 py-1 rounded-lg bg-gray-50/70 border border-gray-100 text-xs font-semibold text-gray-700 whitespace-nowrap overflow-hidden text-ellipsis max-w-[12rem]">${sanitizeHTML(t)}</span>
+            ${i > 0 ? '<i class="ph-bold ph-arrow-right hp-tramo-flecha" aria-hidden="true"></i>' : ''}
+            <span class="hp-tramo">${sanitizeHTML(t)}</span>
         `).join('');
         const bio = alum.bio && alum.bio !== 'Sin biografía disponible.' ? alum.bio : '';
         return `
             <article onclick="historiasLogic.openHistoria('${sanitizeHTML(alum.id)}')"
-                class="bg-white rounded-3xl border border-gray-100 shadow-sm hover:shadow-xl transition p-6 cursor-pointer group">
-                <div class="flex items-center gap-4 mb-4">
-                    <img src="${sanitizeHTML(alum.img)}" alt="Foto de ${sanitizeHTML(alum.name)}" class="w-14 h-14 rounded-2xl object-cover shadow-sm group-hover:scale-105 transition shrink-0">
+                class="hp-card hp-historia" data-hp-sube style="--d:${indice * 90}ms">
+                <div class="hp-historia-cab">
+                    ${alum.photoURL
+                        ? `<img src="${sanitizeHTML(alum.img)}" alt="Foto de ${sanitizeHTML(alum.name)}" class="hp-historia-foto" loading="lazy" decoding="async">`
+                        : `<span class="hp-historia-foto hp-historia-iniciales" aria-hidden="true">${sanitizeHTML(hpIniciales(alum.name))}</span>`}
                     <div class="min-w-0">
-                        <h4 class="font-extrabold text-gray-900 leading-tight group-hover:text-brand-600 transition">${sanitizeHTML(alum.name)}</h4>
-                        <p class="text-xs font-bold text-brand-600 mt-0.5">Promoción ${sanitizeHTML(alum.year || '—')}${alum.area && alum.area !== 'General' ? ` · ${sanitizeHTML(alum.area)}` : ''}</p>
+                        <h4 class="hp-card-t">${sanitizeHTML(alum.name)}</h4>
+                        <p class="hp-historia-promo">Promoción ${sanitizeHTML(alum.year || '—')}${alum.area && alum.area !== 'General' ? ` · ${sanitizeHTML(alum.area)}` : ''}</p>
                     </div>
                 </div>
-                <div class="flex items-center gap-2 flex-wrap mb-4">${rutaHTML}</div>
-                ${bio ? `<p class="text-sm text-gray-500 leading-relaxed line-clamp-2 mb-4">“${sanitizeHTML(bio)}”</p>` : ''}
-                <span class="text-xs font-bold text-brand-600 flex items-center gap-1.5">Ver su ruta completa <i class="ph-bold ph-arrow-right group-hover:translate-x-1 transition"></i></span>
+                <div class="hp-tramos">${rutaHTML}</div>
+                ${bio ? `<p class="hp-card-p hp-historia-bio">“${sanitizeHTML(bio)}”</p>` : ''}
+                <span class="hp-enlace">Ver su ruta completa <i class="ph-bold ph-arrow-right" aria-hidden="true"></i></span>
             </article>`;
     },
 

@@ -74,43 +74,83 @@
 
         /* Mosaico de caras reales. El alto se reserva desde el CSS (aspect-ratio
            + fondo) para que llenarlo con datos de Firestore no mueva la página. */
-        /* El fondo del grid es el del hero: lo que se ve por el hueco de 2px son
-           líneas blancas, no una rejilla gris. El padding superior deja la franja
-           de la nav despejada — sin él, la primera fila de celdas queda debajo de
-           la barra y el texto de arriba se cruza con sus enlaces. */
-        .hp-mosaico { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; background: #fff; box-sizing: border-box; }
-        html.dark .hp-mosaico { background: #1c1917; }
-        .hp-celda { position: relative; aspect-ratio: 1 / 1; overflow: hidden; background: #e7e5e4; }
-        /* En escritorio el mosaico se estira al alto del hero en vez de crecer con
-           su ancho: con relacion de aspecto fija, media pantalla de ancho daba un
-           bloque mas alto que la ventana. */
+        /* ── El lado visual: el producto, en una ventana ─────────────────── */
+
+        .hp-visual { position: relative; display: flex; align-items: center; justify-content: flex-start;
+                     padding: 0 0 3.5rem 1.5rem; background: #f4f6f4; overflow: hidden; }
+        html.dark .hp-visual { background: #171413; }
+
         @media (min-width: 1024px) {
             /* La columna del texto pesa algo más que la visual: con 50/50 el
                título se partía en tres líneas. */
-            .hp-hero-grid { min-height: 86vh; grid-template-columns: 1.12fr 1fr; }
-            .hp-mosaico { height: 86vh; min-height: 620px; grid-template-rows: 1fr 1fr; padding-top: 5rem; }
-            .hp-celda { aspect-ratio: auto; }
+            .hp-hero-grid { min-height: 86vh; grid-template-columns: 1.05fr 1fr; }
+            /* Con la ventana pegada al borde, la rotación le comía el lado
+               derecho y cortaba los años de la trayectoria. Cabe entera y el
+               respiro de la derecha es el que deja que la perspectiva se lea. */
+            .hp-visual { height: 86vh; min-height: 620px; padding: 5rem 2.5rem 3rem 3.5rem; align-items: center; justify-content: center; }
         }
 
-        /* Celda sin foto: retrato tipográfico, no un avatar de iniciales ampliado.
-           Hoy NINGÚN egresado destacado tiene foto subida, así que este es el
-           estado normal, no el caso raro. En cuanto haya photoURL, la misma celda
-           pinta la foto sin tocar una línea. */
-        /* Todo el texto va abajo: arriba queda el aire de la nav. */
-        .hp-tile { display: flex; flex-direction: column; justify-content: flex-end; height: 100%; padding: 1.6rem 1.4rem; }
-        .hp-celda[data-tono="1"] .hp-tile { background: #14532d; color: #fff; }
-        .hp-celda[data-tono="2"] .hp-tile { background: #1c1917; color: #fff; }
-        /* Gris de verdad, no casi-blanco: con #f5f5f4 la celda se fundía con el
-           fondo del hero y parecía un hueco sin cargar. */
-        .hp-celda[data-tono="3"] .hp-tile { background: #e7e5e4; color: #1c1917; }
-        .hp-celda[data-tono="4"] .hp-tile { background: #16a34a; color: #fff; }
-        html.dark .hp-celda[data-tono="3"] .hp-tile { background: #292524; color: #fafaf9; }
-        .hp-tile-promo { font-size: .7rem; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; opacity: .72; margin-bottom: .7rem; }
-        .hp-tile-nombre { font-size: clamp(1.15rem, 1.5vw, 1.6rem); font-weight: 600; line-height: 1.15; letter-spacing: -.02em; }
-        /* Los cargos reales son largos ("Controller financiero para LATAM en SAP
-           y Profesor..."): a dos líneas y con corte, o desbordan la celda. */
-        .hp-tile-rol { font-size: .82rem; font-weight: 500; opacity: .8; margin-top: .4rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-        .hp-celda-detalle { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        /* El parallax lo lleva el contenedor: la ventana usa su transform para la
+           perspectiva y escribir ahí el desplazamiento se la comería. */
+        .hp-ventana-envoltura { width: 100%; display: flex; justify-content: center; transform: translateY(var(--py, 0px)); will-change: transform; }
+
+        .hp-ventana {
+            width: 100%; max-width: 32rem; border-radius: 14px; overflow: hidden; background: #fff;
+            /* Sombra en tres capas: contacto, difusa y una línea de 1px que hace
+               de borde. Una sola sombra grande es lo que da aspecto de plantilla. */
+            box-shadow: 0 1px 1px rgba(12,10,9,.04), 0 18px 36px -12px rgba(12,10,9,.16),
+                        0 48px 90px -30px rgba(12,10,9,.28), 0 0 0 1px rgba(12,10,9,.05);
+            transform: perspective(1800px) rotateY(-7deg) rotateX(1.2deg);
+            transform-origin: left center;
+        }
+        html.dark .hp-ventana { background: #221f1d; box-shadow: 0 18px 36px -12px rgba(0,0,0,.5), 0 48px 90px -30px rgba(0,0,0,.6), 0 0 0 1px rgba(250,250,249,.07); }
+        @media (max-width: 1023px) { .hp-ventana { transform: none; max-width: 28rem; margin: 0 auto; } }
+        @media (min-width: 1280px) { .hp-ventana { max-width: 36rem; } }
+
+        .hp-ventana-barra { display: flex; align-items: center; gap: .4rem; padding: .7rem .9rem; background: #f5f5f4; border-bottom: 1px solid #e7e5e4; }
+        html.dark .hp-ventana-barra { background: #1c1917; border-bottom-color: #332f2c; }
+        .hp-punto { width: .55rem; height: .55rem; border-radius: 999px; background: #d6d3d1; }
+        html.dark .hp-punto { background: #44403c; }
+        .hp-ventana-url { margin-left: auto; margin-right: auto; font-size: .68rem; font-weight: 500; color: #a8a29e; letter-spacing: .01em; }
+
+        .hp-ventana-cuerpo { padding: 1.6rem 1.5rem 1.7rem; }
+        @media (min-width: 1280px) { .hp-ventana-cuerpo { padding: 2rem 1.9rem 2.1rem; } }
+
+        /* Cabecera de la ficha */
+        .hp-ficha-cab { display: flex; align-items: center; gap: .85rem; padding-bottom: 1.25rem; border-bottom: 1px solid #f0efee; }
+        html.dark .hp-ficha-cab { border-bottom-color: #332f2c; }
+        .hp-ficha-avatar { width: 3rem; height: 3rem; border-radius: 999px; object-fit: cover; display: flex; align-items: center; justify-content: center;
+                           background: #14532d; color: #fff; font-size: .85rem; font-weight: 600; flex: none; }
+        .hp-ficha-nombre { font-size: 1.02rem; font-weight: 600; letter-spacing: -.015em; color: #1c1917; line-height: 1.2; }
+        html.dark .hp-ficha-nombre { color: #fafaf9; }
+        .hp-ficha-promo { font-size: .76rem; font-weight: 500; color: #78716c; margin-top: .18rem; }
+        html.dark .hp-ficha-promo { color: #a8a29e; }
+
+        /* La trayectoria: lo que de verdad vende la plataforma. */
+        .hp-ruta { list-style: none; margin: 1.25rem 0 0; padding: 0; position: relative; }
+        .hp-ruta li { position: relative; padding: 0 0 1.15rem 1.6rem; }
+        .hp-ruta li:last-child { padding-bottom: 0; }
+        /* La línea la dibuja cada paso salvo el último: así no sobra por abajo. */
+        .hp-ruta li:not(:last-child)::before { content: ''; position: absolute; left: .3rem; top: .95rem; bottom: -.1rem; width: 1px; background: #e7e5e4; }
+        html.dark .hp-ruta li:not(:last-child)::before { background: #3f3a36; }
+        .hp-ruta li::after { content: ''; position: absolute; left: 0; top: .32rem; width: .62rem; height: .62rem; border-radius: 999px;
+                             background: #fff; border: 2px solid #d6d3d1; box-sizing: border-box; }
+        html.dark .hp-ruta li::after { background: #221f1d; border-color: #57534e; }
+        .hp-ruta li[data-actual]::after { background: #16a34a; border-color: #16a34a; }
+        .hp-ruta-rol { font-size: .86rem; font-weight: 600; color: #1c1917; letter-spacing: -.01em; line-height: 1.35; }
+        html.dark .hp-ruta-rol { color: #fafaf9; }
+        .hp-ruta-org { font-size: .78rem; color: #78716c; margin-top: .1rem; line-height: 1.4; }
+        html.dark .hp-ruta-org { color: #a8a29e; }
+        .hp-ruta-anio { font-size: .68rem; font-weight: 600; color: #a8a29e; letter-spacing: .06em; text-transform: uppercase; margin-top: .25rem; }
+
+        /* Esqueleto mientras llegan los datos: la ventana nunca se ve vacía. */
+        .hp-ficha-esqueleto { display: flex; align-items: center; gap: .85rem; }
+        .hp-esq { display: block; background: #f0efee; border-radius: 6px; }
+        html.dark .hp-esq { background: #2c2724; }
+        .hp-esq-avatar { width: 3rem; height: 3rem; border-radius: 999px; flex: none; }
+        .hp-esq-linea { height: .7rem; width: 9rem; }
+        .hp-esq-corta { width: 5rem; }
+        .hp-ficha-esqueleto { min-height: 3rem; }
 
         /* Prueba social: iniciales sobre un tono neutro. Los avatares por defecto
            (ui-avatars) asignan un color aleatorio por nombre — naranja, morado,
@@ -119,37 +159,132 @@
         .hp-inicial-mas { background: #e7e5e4; color: #57534e; }
         html.dark .hp-inicial { border-color: #1c1917; background: #57534e; }
         html.dark .hp-inicial-mas { background: #292524; color: #d6d3d1; }
-        html.dark .hp-celda { background: #292524; }
-        .hp-celda img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .5s cubic-bezier(.16,1,.3,1); }
-        .hp-celda:hover img, .hp-celda:focus-within img { transform: scale(1.04); }
-        .hp-celda figcaption { position: absolute; inset-inline: 0; bottom: 0; padding: 1.4rem 1.1rem .95rem; color: #fff; background: linear-gradient(to top, rgba(12,10,9,.82) 0%, rgba(12,10,9,.45) 45%, transparent 100%); }
-        .hp-celda-nombre { font-weight: 600; font-size: .95rem; line-height: 1.25; letter-spacing: -.01em; }
-        .hp-celda-detalle { font-size: .76rem; font-weight: 500; color: rgba(255,255,255,.82); margin-top: .15rem; }
-        /* Celda sin persona: queda como superficie, nunca como hueco roto. */
-        .hp-celda-vacia { background: #f5f5f4; }
-        html.dark .hp-celda-vacia { background: #292524; }
-        /* Toda la celda abre el perfil, pero el objetivo pulsable es un boton de
-           verdad: asi tambien se llega con el tabulador. */
-        .hp-celda-btn { position: absolute; inset: 0; width: 100%; height: 100%; background: transparent; border: 0; padding: 0; cursor: pointer; }
-        .hp-celda-btn:focus-visible { outline: 2px solid #fff; outline-offset: -4px; }
-
         .hp-social-linea { font-size: .9rem; color: #78716c; }
         html.dark .hp-social-linea { color: #a8a29e; }
 
-        /* Entrada: solo opacity y transform (transicionar un color que sale de
-           una variable no vuelve a dispararse al cambiar de tema). */
+        /* ── Sistema del resto de la portada ─────────────────────────────────
+           El hero no puede ser lo único cuidado: si abajo siguen las tarjetas
+           gordas de siempre, la página se lee como dos webs pegadas. Mismo
+           peso (600, no 800), mismo radio, misma sombra y un ritmo vertical
+           único en vez de cinco paddings distintos. */
+
+        .hp-seccion { padding-block: clamp(3.5rem, 8vw, 7rem); }
+        .hp-cab { max-width: 44rem; margin: 0 auto clamp(2.25rem, 4vw, 3.75rem); text-align: center; }
+        .hp-h2 { font-size: clamp(1.85rem, 3.1vw, 2.6rem); font-weight: 600; letter-spacing: -.032em; line-height: 1.13; color: #1c1917; text-wrap: balance; }
+        html.dark .hp-h2 { color: #fafaf9; }
+        .hp-sub { margin-top: .95rem; font-size: 1.03rem; line-height: 1.62; color: #57534e; }
+        html.dark .hp-sub { color: #d6d3d1; }
+
+        .hp-rejilla { display: grid; gap: 1.15rem; }
+        @media (min-width: 640px) { .hp-rejilla-2 { grid-template-columns: repeat(2, 1fr); } }
+        @media (min-width: 768px) { .hp-rejilla-3 { grid-template-columns: repeat(3, 1fr); } }
+        @media (min-width: 1024px) { .hp-rejilla-4 { grid-template-columns: repeat(4, 1fr); } }
+
+        /* Radio de 12px y una sola sombra suave, que aparece al pasar el cursor.
+           Antes convivían seis radios distintos y sombras de color saturado. */
+        .hp-card { position: relative; background: #fff; border: 1px solid #ebeae8; border-radius: 12px; padding: 1.75rem 1.6rem;
+                   transition: transform .4s cubic-bezier(.16,1,.3,1), box-shadow .4s ease, border-color .4s ease; }
+        .hp-card:hover { transform: translateY(-3px); box-shadow: 0 14px 30px -14px rgba(12,10,9,.16); border-color: #ddd9d5; }
+        html.dark .hp-card { background: #221f1d; border-color: #332f2c; }
+        html.dark .hp-card:hover { border-color: #4a443f; box-shadow: 0 14px 30px -14px rgba(0,0,0,.55); }
+
+        /* Las tarjetas que son botones tienen que verse como el resto: <button>
+           trae su propio alineado, tipografía y fondo del navegador. */
+        .hp-card-boton { text-align: left; font: inherit; width: 100%; cursor: pointer; display: block; }
+        .hp-card-boton:focus-visible { outline: 2px solid #16a34a; outline-offset: 2px; }
+
+        .hp-enlace-texto { color: #16a34a; font-weight: 600; border-bottom: 1px solid currentColor; }
+        html.dark .hp-enlace-texto { color: #4ade80; }
+
+        .hp-card-icono { font-size: 1.45rem; color: #16a34a; line-height: 1; margin-bottom: 1.1rem; display: block; }
+        html.dark .hp-card-icono { color: #4ade80; }
+        .hp-card-t { font-size: 1.02rem; font-weight: 600; letter-spacing: -.018em; color: #1c1917; line-height: 1.3; }
+        html.dark .hp-card-t { color: #fafaf9; }
+        .hp-card-p { font-size: .92rem; line-height: 1.62; color: #57534e; margin-top: .55rem; }
+        html.dark .hp-card-p { color: #a8a29e; }
+
+        /* El número del paso, en la misma línea del título en vez de en una
+           pastilla flotante encima de la tarjeta. */
+        .hp-paso-n { font-size: .7rem; font-weight: 600; letter-spacing: .1em; color: #a8a29e; display: block; margin-bottom: .9rem; }
+
+        .hp-enlace { display: inline-flex; align-items: center; gap: .4rem; margin-top: 1.1rem; font-size: .88rem; font-weight: 600; color: #16a34a;
+                     border-bottom: 1px solid transparent; transition: border-color .25s ease, gap .25s ease; }
+        .hp-enlace:hover { border-bottom-color: currentColor; gap: .6rem; }
+        html.dark .hp-enlace { color: #4ade80; }
+        .hp-enlace i { transition: transform .25s cubic-bezier(.16,1,.3,1); }
+        .hp-enlace:hover i { transform: translateX(2px); }
+
+        /* Bloque oscuro (propósito y cierre): color plano, sin manchas borrosas
+           de color, que eran de lo que más delataba la página. */
+        .hp-bloque-oscuro { background: #14532d; border-radius: 16px; padding: clamp(2.25rem, 5vw, 4.5rem); color: #fff; }
+        .hp-bloque-texto { max-width: 48rem; }
+        .hp-kicker-claro { color: #86efac; }
+        html.dark .hp-kicker-claro { color: #86efac; }
+        .hp-frase { margin-top: 1.25rem; font-size: clamp(1.35rem, 2.4vw, 2rem); font-weight: 600; letter-spacing: -.025em; line-height: 1.32; color: #fff; }
+        .hp-frase-pie { margin-top: 1.5rem; font-size: 1.02rem; line-height: 1.68; color: #bbf7d0; }
+
+        /* Banda de cifras (oculta hasta cruzar el umbral de rutas completas). */
+        .hp-cifras { display: grid; grid-template-columns: repeat(2, 1fr); gap: 2rem 1.5rem; }
+        @media (min-width: 768px) { .hp-cifras { grid-template-columns: repeat(4, 1fr); } }
+        .hp-cifra { font-size: clamp(2rem, 3.4vw, 2.9rem); font-weight: 600; letter-spacing: -.03em; color: #fff; line-height: 1; }
+        .hp-cifra-etq { margin-top: .55rem; font-size: .72rem; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: #86efac; }
+        .hp-bloque-claro { background: #f5f5f4; border: 1px solid #ebeae8; border-radius: 16px; padding: clamp(2.25rem, 5vw, 4rem); text-align: center; }
+        html.dark .hp-bloque-claro { background: #221f1d; border-color: #332f2c; }
+
+        /* Tarjeta de historia destacada (la pinta historias.js). */
+        .hp-historia { cursor: pointer; }
+        .hp-historia-cab { display: flex; align-items: center; gap: .9rem; margin-bottom: 1.1rem; }
+        .hp-historia-foto { width: 3rem; height: 3rem; border-radius: 999px; object-fit: cover; flex: none; }
+        .hp-historia-iniciales { display: flex; align-items: center; justify-content: center; background: #14532d; color: #fff; font-size: .82rem; font-weight: 600; }
+        .hp-historia-promo { font-size: .78rem; font-weight: 500; color: #78716c; margin-top: .15rem; }
+        html.dark .hp-historia-promo { color: #a8a29e; }
+        .hp-tramos { display: flex; align-items: center; gap: .45rem; flex-wrap: wrap; }
+        .hp-tramo { font-size: .76rem; font-weight: 500; color: #44403c; background: #f5f5f4; border-radius: 6px; padding: .3rem .55rem;
+                    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 13rem; }
+        html.dark .hp-tramo { color: #d6d3d1; background: #2c2724; }
+        .hp-tramo-flecha { color: #a8a29e; font-size: .7rem; flex: none; }
+        .hp-historia-bio { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+        .hp-faq { border-bottom: 1px solid #ebeae8; }
+        html.dark .hp-faq { border-bottom-color: #332f2c; }
+        .hp-faq summary { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1.15rem 0; cursor: pointer;
+                          font-size: .98rem; font-weight: 600; color: #1c1917; letter-spacing: -.012em; list-style: none; }
+        html.dark .hp-faq summary { color: #fafaf9; }
+        .hp-faq summary::-webkit-details-marker { display: none; }
+        .hp-faq summary i { color: #a8a29e; transition: transform .3s cubic-bezier(.16,1,.3,1); flex: none; }
+        .hp-faq[open] summary i { transform: rotate(180deg); }
+        .hp-faq-cuerpo { padding-bottom: 1.25rem; font-size: .93rem; line-height: 1.68; color: #57534e; max-width: 52rem; }
+        html.dark .hp-faq-cuerpo { color: #a8a29e; }
+
+        /* ── Movimiento ──────────────────────────────────────────────────────
+           Solo opacity y transform: transicionar un color que sale de una
+           variable no vuelve a dispararse al cambiar de tema. */
+
+        /* Entrada del hero, al cargar. */
         .hp-reveal { opacity: 0; transform: translateY(14px); animation: hpReveal .7s cubic-bezier(.16,1,.3,1) forwards; animation-delay: var(--d, 0ms); }
         @keyframes hpReveal { to { opacity: 1; transform: none; } }
-        .hp-celda-reveal { opacity: 0; animation: hpCelda .8s cubic-bezier(.16,1,.3,1) forwards; animation-delay: var(--d, 0ms); }
-        @keyframes hpCelda { from { opacity: 0; transform: scale(1.05); } to { opacity: 1; transform: none; } }
+        .hp-ventana { opacity: 0; animation: hpVentana 1s cubic-bezier(.16,1,.3,1) .25s forwards; }
+        @keyframes hpVentana { from { opacity: 0; transform: perspective(1800px) rotateY(-7deg) rotateX(1.2deg) translateY(26px) scale(.985); }
+                                 to { opacity: 1; } }
+        /* Los pasos de la trayectoria se encadenan, que es lo que hace que la
+           ventana se lea como algo vivo y no como una captura pegada. */
+        .hp-ruta li { opacity: 0; animation: hpPaso .6s cubic-bezier(.16,1,.3,1) forwards; animation-delay: var(--d, 0ms); }
+        @keyframes hpPaso { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+        /* Aparición al bajar, para el resto de la página. El estado inicial solo
+           se aplica si hay JS: sin él (o si el observador no llega a correr) el
+           contenido tiene que verse igual, no quedarse invisible. */
+        html.hp-js [data-hp-sube] { opacity: 0; transform: translateY(22px); transition: opacity .75s cubic-bezier(.16,1,.3,1), transform .75s cubic-bezier(.16,1,.3,1); transition-delay: var(--d, 0ms); }
+        html.hp-js [data-hp-sube].hp-visto { opacity: 1; transform: none; }
 
         @media (prefers-reduced-motion: reduce) {
-            .hp-reveal, .hp-celda-reveal { animation: none; opacity: 1; transform: none; }
-            .hp-celda img, .hp-cta { transition: none; }
-            .hp-celda:hover img { transform: none; }
+            .hp-reveal, .hp-ventana, .hp-ruta li { animation: none; opacity: 1; transform: none; }
+            .hp-ventana { transform: perspective(1800px) rotateY(-7deg) rotateX(1.2deg); }
+            .hp-cta { transition: none; }
+            html.hp-js [data-hp-sube] { opacity: 1; transform: none; transition: none; }
         }
     </style>
-    <link rel="stylesheet" href="tailwind.css?v=10">
+    <link rel="stylesheet" href="tailwind.css?v=11">
 </head>
 <body class="text-stone-800 font-sans min-h-screen flex flex-col">
 
@@ -196,16 +331,29 @@
                     </div>
                 </div>
 
-                <!-- El "producto" de Sinapsis son los egresados: en vez de una foto
-                     de banco, el lado visual son sus caras reales. historias.js
-                     llena las celdas con los mismos destacados que ya trae para las
-                     historias (cero lecturas nuevas de Firestore). El hueco queda
-                     reservado por CSS, asi que llenarlo no mueve la pagina. -->
-                <div class="hp-mosaico" id="hp-mosaico" role="list" aria-label="Egresados de la red">
-                    <figure class="hp-celda hp-celda-vacia" data-hp-celda role="listitem"></figure>
-                    <figure class="hp-celda hp-celda-vacia" data-hp-celda role="listitem"></figure>
-                    <figure class="hp-celda hp-celda-vacia" data-hp-celda role="listitem"></figure>
-                    <figure class="hp-celda hp-celda-vacia" data-hp-celda role="listitem"></figure>
+                <!-- El lado visual es el PRODUCTO, no una foto de banco: una
+                     trayectoria de verdad tal y como la pinta la plataforma. Los
+                     datos son los mismos destacados que la portada ya publica hoy
+                     (cero lecturas nuevas de Firestore y nada que no fuera ya
+                     público). Se dibuja en HTML y no como captura: así queda
+                     nítido en cualquier pantalla, pesa lo que pesa el texto y se
+                     actualiza solo. El hueco está reservado por CSS. -->
+                <div class="hp-visual">
+                  <div class="hp-ventana-envoltura">
+                    <div class="hp-ventana" id="hp-ventana" aria-hidden="true">
+                        <div class="hp-ventana-barra">
+                            <span class="hp-punto"></span><span class="hp-punto"></span><span class="hp-punto"></span>
+                            <span class="hp-ventana-url">sinapsisred.web.app</span>
+                        </div>
+                        <div class="hp-ventana-cuerpo" id="hp-ficha">
+                            <div class="hp-ficha-esqueleto">
+                                <span class="hp-esq hp-esq-avatar"></span>
+                                <span class="hp-esq hp-esq-linea"></span>
+                                <span class="hp-esq hp-esq-linea hp-esq-corta"></span>
+                            </div>
+                        </div>
+                    </div>
+                  </div>
                 </div>
 
             </div>
@@ -216,27 +364,24 @@
             <!-- Agregados: ocultos hasta cruzar el umbral de rutas completas
                  (modo historias del plan: nunca delatar una red pequeña).
                  historias.js los llena y los muestra cuando corresponde. -->
-            <section id="home-stats-section" class="hidden py-12 mt-8 lg:mt-16">
-                <div class="bg-brand-900 rounded-3xl p-8 md:p-12 shadow-xl relative overflow-hidden">
-                    <div class="absolute top-0 right-0 -mr-20 -mt-20 w-72 h-72 rounded-full bg-brand-500 opacity-20 blur-3xl"></div>
-                    <div class="absolute bottom-0 left-0 -ml-20 -mb-20 w-72 h-72 rounded-full bg-brand-600 opacity-20 blur-3xl"></div>
-
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-8 text-center relative z-10">
+            <section id="home-stats-section" class="hidden hp-seccion">
+                <div class="hp-bloque-oscuro" data-hp-sube>
+                    <div class="hp-cifras">
                         <div data-stat>
-                            <div data-stat-value class="text-4xl md:text-5xl font-extrabold text-white mb-2">--</div>
-                            <div data-stat-label class="text-brand-200 text-xs md:text-sm font-bold uppercase tracking-widest">--</div>
+                            <div data-stat-value class="hp-cifra">--</div>
+                            <div data-stat-label class="hp-cifra-etq">--</div>
                         </div>
                         <div data-stat>
-                            <div data-stat-value class="text-4xl md:text-5xl font-extrabold text-white mb-2">--</div>
-                            <div data-stat-label class="text-brand-200 text-xs md:text-sm font-bold uppercase tracking-widest">--</div>
+                            <div data-stat-value class="hp-cifra">--</div>
+                            <div data-stat-label class="hp-cifra-etq">--</div>
                         </div>
                         <div data-stat>
-                            <div data-stat-value class="text-4xl md:text-5xl font-extrabold text-white mb-2">--</div>
-                            <div data-stat-label class="text-brand-200 text-xs md:text-sm font-bold uppercase tracking-widest">--</div>
+                            <div data-stat-value class="hp-cifra">--</div>
+                            <div data-stat-label class="hp-cifra-etq">--</div>
                         </div>
                         <div data-stat>
-                            <div data-stat-value class="text-4xl md:text-5xl font-extrabold text-white mb-2">--</div>
-                            <div data-stat-label class="text-brand-200 text-xs md:text-sm font-bold uppercase tracking-widest">--</div>
+                            <div data-stat-value class="hp-cifra">--</div>
+                            <div data-stat-label class="hp-cifra-etq">--</div>
                         </div>
                     </div>
                 </div>
@@ -246,112 +391,104 @@
             <div id="historias-section"></div>
 
             <!-- CÓMO FUNCIONA -->
-            <section class="py-16 md:py-24">
-                <div class="text-center mb-16">
-                    <h2 class="text-sm font-bold text-brand-600 uppercase tracking-widest mb-3">Cómo funciona</h2>
-                    <h3 class="text-3xl md:text-4xl font-extrabold text-gray-900">De un nombre a un camino que se sigue</h3>
-                    <p class="text-lg text-gray-500 mt-4 max-w-2xl mx-auto">En cuatro pasos, tu historia se vuelve el mapa que un estudiante del Liceo estaba buscando.</p>
+            <section class="hp-seccion">
+                <div class="hp-cab" data-hp-sube>
+                    <p class="hp-kicker">Cómo funciona</p>
+                    <h3 class="hp-h2 mt-4">De un nombre a un camino que se sigue</h3>
+                    <p class="hp-sub">En cuatro pasos, tu historia se vuelve el mapa que un estudiante del Liceo estaba buscando.</p>
                 </div>
 
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <div class="relative bg-white p-7 rounded-3xl border border-gray-100 shadow-sm">
-                        <span class="absolute -top-4 left-7 w-9 h-9 bg-brand-600 text-white rounded-xl flex items-center justify-center font-extrabold shadow-md shadow-brand-500/30">1</span>
-                        <div class="text-brand-600 text-3xl mb-4 mt-3"><i class="ph-duotone ph-user-plus"></i></div>
-                        <h4 class="font-bold text-gray-900 mb-2">Crea tu cuenta</h4>
-                        <p class="text-sm text-gray-500 leading-relaxed">Egresado o estudiante del Liceo Campestre. Toma menos de un minuto.</p>
+                <div class="hp-rejilla hp-rejilla-2 hp-rejilla-4">
+                    <div class="hp-card" data-hp-sube style="--d:0ms">
+                        <span class="hp-paso-n">PASO 1</span>
+                        <i class="ph ph-user-plus hp-card-icono" aria-hidden="true"></i>
+                        <h4 class="hp-card-t">Crea tu cuenta</h4>
+                        <p class="hp-card-p">Egresado o estudiante del Liceo Campestre. Toma menos de un minuto.</p>
                     </div>
-                    <div class="relative bg-white p-7 rounded-3xl border border-gray-100 shadow-sm">
-                        <span class="absolute -top-4 left-7 w-9 h-9 bg-brand-600 text-white rounded-xl flex items-center justify-center font-extrabold shadow-md shadow-brand-500/30">2</span>
-                        <div class="text-brand-600 text-3xl mb-4 mt-3"><i class="ph-duotone ph-path"></i></div>
-                        <h4 class="font-bold text-gray-900 mb-2">Cuenta tu ruta</h4>
-                        <p class="text-sm text-gray-500 leading-relaxed">Del Liceo a la universidad, a tu primer trabajo y a donde estás hoy: tu trayectoria paso a paso.</p>
+                    <div class="hp-card" data-hp-sube style="--d:80ms">
+                        <span class="hp-paso-n">PASO 2</span>
+                        <i class="ph ph-path hp-card-icono" aria-hidden="true"></i>
+                        <h4 class="hp-card-t">Cuenta tu ruta</h4>
+                        <p class="hp-card-p">Del Liceo a la universidad, a tu primer trabajo y a donde estás hoy: tu trayectoria paso a paso.</p>
                     </div>
-                    <div class="relative bg-white p-7 rounded-3xl border border-gray-100 shadow-sm">
-                        <span class="absolute -top-4 left-7 w-9 h-9 bg-brand-600 text-white rounded-xl flex items-center justify-center font-extrabold shadow-md shadow-brand-500/30">3</span>
-                        <div class="text-brand-600 text-3xl mb-4 mt-3"><i class="ph-duotone ph-magnifying-glass"></i></div>
-                        <h4 class="font-bold text-gray-900 mb-2">Explora y conecta</h4>
-                        <p class="text-sm text-gray-500 leading-relaxed">Busca por carrera o área, escríbele a quien ya recorrió tu camino y pregunta a Karla, la orientadora.</p>
+                    <div class="hp-card" data-hp-sube style="--d:160ms">
+                        <span class="hp-paso-n">PASO 3</span>
+                        <i class="ph ph-magnifying-glass hp-card-icono" aria-hidden="true"></i>
+                        <h4 class="hp-card-t">Explora y conecta</h4>
+                        <p class="hp-card-p">Busca por carrera o área, escríbele a quien ya recorrió tu camino y pregunta a Karla, la orientadora.</p>
                     </div>
-                    <div class="relative bg-white p-7 rounded-3xl border border-gray-100 shadow-sm">
-                        <span class="absolute -top-4 left-7 w-9 h-9 bg-brand-600 text-white rounded-xl flex items-center justify-center font-extrabold shadow-md shadow-brand-500/30">4</span>
-                        <div class="text-brand-600 text-3xl mb-4 mt-3"><i class="ph-duotone ph-plant"></i></div>
-                        <h4 class="font-bold text-gray-900 mb-2">La red crece contigo</h4>
-                        <p class="text-sm text-gray-500 leading-relaxed">Cada ruta nueva le abre una posibilidad a quien viene detrás. La red se cultiva entre todos.</p>
+                    <div class="hp-card" data-hp-sube style="--d:240ms">
+                        <span class="hp-paso-n">PASO 4</span>
+                        <i class="ph ph-plant hp-card-icono" aria-hidden="true"></i>
+                        <h4 class="hp-card-t">La red crece contigo</h4>
+                        <p class="hp-card-p">Cada ruta nueva le abre una posibilidad a quien viene detrás. La red se cultiva entre todos.</p>
                     </div>
                 </div>
             </section>
 
             <!-- PARA QUIÉN ES -->
-            <section class="py-12">
-                <div class="text-center mb-14">
-                    <h2 class="text-sm font-bold text-brand-600 uppercase tracking-widest mb-3">Para quién es</h2>
-                    <h3 class="text-3xl md:text-4xl font-extrabold text-gray-900">Un punto de encuentro para toda la comunidad</h3>
+            <section class="hp-seccion">
+                <div class="hp-cab" data-hp-sube>
+                    <p class="hp-kicker">Para quién es</p>
+                    <h3 class="hp-h2 mt-4">Un punto de encuentro para toda la comunidad</h3>
                 </div>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-                    <div class="bg-gradient-to-b from-brand-50 to-white p-8 rounded-3xl border border-brand-100 shadow-sm">
-                        <div class="w-14 h-14 bg-white text-brand-600 rounded-2xl flex items-center justify-center text-3xl mb-5 shadow-sm"><i class="ph-duotone ph-student"></i></div>
-                        <h4 class="text-xl font-bold text-gray-900 mb-3">Estudiantes</h4>
-                        <p class="text-gray-500 leading-relaxed mb-5">Descubre a dónde llevan las carreras que te interesan viendo trayectorias reales, no folletos. Prepárate para el TOEFL y el DELF y pregúntale a quien ya lo vivió.</p>
-                        <a href="directory.html" class="text-brand-600 font-bold text-sm hover:text-brand-800 transition inline-flex items-center gap-1">Explorar trayectorias <i class="ph-bold ph-arrow-right"></i></a>
+                <div class="hp-rejilla hp-rejilla-3">
+                    <div class="hp-card" data-hp-sube style="--d:0ms">
+                        <i class="ph ph-student hp-card-icono" aria-hidden="true"></i>
+                        <h4 class="hp-card-t">Estudiantes</h4>
+                        <p class="hp-card-p">Descubre a dónde llevan las carreras que te interesan viendo trayectorias reales, no folletos. Prepárate para el TOEFL y el DELF y pregúntale a quien ya lo vivió.</p>
+                        <a href="directory.html" class="hp-enlace">Explorar trayectorias <i class="ph-bold ph-arrow-right" aria-hidden="true"></i></a>
                     </div>
-                    <div class="bg-gradient-to-b from-brand-50 to-white p-8 rounded-3xl border border-brand-100 shadow-sm">
-                        <div class="w-14 h-14 bg-white text-brand-600 rounded-2xl flex items-center justify-center text-3xl mb-5 shadow-sm"><i class="ph-duotone ph-graduation-cap"></i></div>
-                        <h4 class="text-xl font-bold text-gray-900 mb-3">Egresados</h4>
-                        <p class="text-gray-500 leading-relaxed mb-5">Reencuéntrate con tu promoción, comparte tu camino y conviértete en el referente que a ti te habría servido tener. Tu experiencia orienta a quien viene detrás.</p>
-                        <a href="register.html" class="text-brand-600 font-bold text-sm hover:text-brand-800 transition inline-flex items-center gap-1">Sumar mi trayectoria <i class="ph-bold ph-arrow-right"></i></a>
+                    <div class="hp-card" data-hp-sube style="--d:90ms">
+                        <i class="ph ph-graduation-cap hp-card-icono" aria-hidden="true"></i>
+                        <h4 class="hp-card-t">Egresados</h4>
+                        <p class="hp-card-p">Reencuéntrate con tu promoción, comparte tu camino y conviértete en el referente que a ti te habría servido tener. Tu experiencia orienta a quien viene detrás.</p>
+                        <a href="register.html" class="hp-enlace">Sumar mi trayectoria <i class="ph-bold ph-arrow-right" aria-hidden="true"></i></a>
                     </div>
-                    <div class="bg-gradient-to-b from-sun-50 to-white p-8 rounded-3xl border border-sun-200 shadow-sm">
-                        <div class="w-14 h-14 bg-white text-sun-600 rounded-2xl flex items-center justify-center text-3xl mb-5 shadow-sm"><i class="ph-duotone ph-handshake"></i></div>
-                        <h4 class="text-xl font-bold text-gray-900 mb-3">Empresas y aliados</h4>
-                        <p class="text-gray-500 leading-relaxed mb-5">¿Buscas talento del Liceo, quieres ofrecer prácticas o mentorías, o proponer una alianza? Escríbele directamente a la red: leemos cada mensaje.</p>
-                        <button onclick="contactoLogic.open('empresa')" class="text-sun-600 font-bold text-sm hover:text-sun-700 transition inline-flex items-center gap-1">Contactar la red <i class="ph-bold ph-arrow-right"></i></button>
+                    <div class="hp-card" data-hp-sube style="--d:180ms">
+                        <i class="ph ph-handshake hp-card-icono" aria-hidden="true"></i>
+                        <h4 class="hp-card-t">Empresas y aliados</h4>
+                        <p class="hp-card-p">¿Buscas talento del Liceo, quieres ofrecer prácticas o mentorías, o proponer una alianza? Escríbele directamente a la red: leemos cada mensaje.</p>
+                        <button onclick="contactoLogic.open('empresa')" class="hp-enlace">Contactar la red <i class="ph-bold ph-arrow-right" aria-hidden="true"></i></button>
                     </div>
                 </div>
             </section>
 
             <!-- QUÉ ENCUENTRAS AQUÍ -->
-            <section class="py-16 md:py-24">
-                <div class="text-center mb-16">
-                    <h2 class="text-sm font-bold text-brand-600 uppercase tracking-widest mb-3">Qué encuentras aquí</h2>
-                    <h3 class="text-3xl md:text-4xl font-extrabold text-gray-900">Una red que se recorre</h3>
+            <section class="hp-seccion">
+                <div class="hp-cab" data-hp-sube>
+                    <p class="hp-kicker">Qué encuentras aquí</p>
+                    <h3 class="hp-h2 mt-4">Una red que se recorre</h3>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-                    <div class="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm hover:shadow-xl transition duration-300 group transform hover:-translate-y-1">
-                        <div class="w-16 h-16 bg-brand-50 text-brand-600 rounded-2xl flex items-center justify-center text-3xl mb-6 group-hover:bg-brand-600 group-hover:text-white transition duration-300">
-                            <i class="ph-duotone ph-address-book"></i>
-                        </div>
-                        <h4 class="text-xl font-bold text-gray-900 mb-3">Directorio de egresados</h4>
-                        <p class="text-gray-500 leading-relaxed">Busca por promoción, área o nombre, y conecta con quienes ya recorrieron el camino que te interesa.</p>
+                <div class="hp-rejilla hp-rejilla-3">
+                    <div class="hp-card" data-hp-sube style="--d:0ms">
+                        <i class="ph ph-address-book hp-card-icono" aria-hidden="true"></i>
+                        <h4 class="hp-card-t">Directorio de egresados</h4>
+                        <p class="hp-card-p">Busca por promoción, área o nombre, y conecta con quienes ya recorrieron el camino que te interesa.</p>
                     </div>
-                    <div class="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm hover:shadow-xl transition duration-300 group transform hover:-translate-y-1">
-                        <div class="w-16 h-16 bg-brand-50 text-brand-600 rounded-2xl flex items-center justify-center text-3xl mb-6 group-hover:bg-brand-600 group-hover:text-white transition duration-300">
-                            <i class="ph-duotone ph-path"></i>
-                        </div>
-                        <h4 class="text-xl font-bold text-gray-900 mb-3">Trayectorias reales</h4>
-                        <p class="text-gray-500 leading-relaxed">Cada egresado cuenta su ruta paso a paso: del Liceo a la universidad, a su primer trabajo y a donde está hoy.</p>
+                    <div class="hp-card" data-hp-sube style="--d:90ms">
+                        <i class="ph ph-path hp-card-icono" aria-hidden="true"></i>
+                        <h4 class="hp-card-t">Trayectorias reales</h4>
+                        <p class="hp-card-p">Cada egresado cuenta su ruta paso a paso: del Liceo a la universidad, a su primer trabajo y a donde está hoy.</p>
                     </div>
-                    <div class="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm hover:shadow-xl transition duration-300 group transform hover:-translate-y-1">
-                        <div class="w-16 h-16 bg-brand-50 text-brand-600 rounded-2xl flex items-center justify-center text-3xl mb-6 group-hover:bg-brand-600 group-hover:text-white transition duration-300">
-                            <i class="ph-duotone ph-chats-circle"></i>
-                        </div>
-                        <h4 class="text-xl font-bold text-gray-900 mb-3">Mensajes y orientación</h4>
-                        <p class="text-gray-500 leading-relaxed">Escríbele directamente a un egresado para preguntarle por su carrera, o consulta a la orientadora sobre tus opciones.</p>
+                    <div class="hp-card" data-hp-sube style="--d:180ms">
+                        <i class="ph ph-chats-circle hp-card-icono" aria-hidden="true"></i>
+                        <h4 class="hp-card-t">Mensajes y orientación</h4>
+                        <p class="hp-card-p">Escríbele directamente a un egresado para preguntarle por su carrera, o consulta a la orientadora sobre tus opciones.</p>
                     </div>
                 </div>
             </section>
 
             <!-- PROPÓSITO / MISIÓN -->
-            <section class="py-12">
-                <div class="bg-brand-900 rounded-3xl p-8 md:p-16 shadow-xl relative overflow-hidden">
-                    <div class="absolute top-0 right-0 -mr-24 -mt-24 w-80 h-80 rounded-full bg-brand-500 opacity-20 blur-3xl"></div>
-                    <div class="absolute bottom-0 left-0 -ml-24 -mb-24 w-80 h-80 rounded-full bg-brand-600 opacity-20 blur-3xl"></div>
-                    <div class="relative z-10 max-w-3xl">
-                        <h2 class="text-sm font-bold text-brand-300 uppercase tracking-widest mb-4">Por qué existe Sinapsis</h2>
-                        <p class="text-2xl md:text-3xl font-extrabold text-white leading-snug mb-6">
+            <section class="hp-seccion">
+                <div class="hp-bloque-oscuro" data-hp-sube>
+                    <div class="hp-bloque-texto">
+                        <p class="hp-kicker hp-kicker-claro">Por qué existe Sinapsis</p>
+                        <p class="hp-frase">
                             Al salir del Liceo, cada quien toma su rumbo y el hilo se pierde. Sinapsis vuelve a tejer ese hilo: convierte lo que hizo cada egresado en orientación viva para quien apenas empieza.
                         </p>
-                        <p class="text-brand-100 text-lg leading-relaxed">
+                        <p class="hp-frase-pie">
                             No es una lista de nombres, es una red de caminos. Un estudiante indeciso encuentra a alguien real que ya recorrió lo que él sueña; un egresado reencuentra a su comunidad; el Liceo mantiene vivo el vínculo con quienes formó.
                         </p>
                     </div>
@@ -359,83 +496,77 @@
             </section>
 
             <!-- CONTACTO DE TERCEROS -->
-            <section id="contacto" class="py-16 scroll-mt-24">
-                <div class="bg-white rounded-3xl border border-gray-200 shadow-sm overflow-hidden md:flex">
-                    <div class="md:w-2/5 bg-gradient-to-br from-brand-600 to-brand-800 p-8 md:p-12 text-white flex flex-col justify-center">
-                        <div class="w-14 h-14 bg-white/15 rounded-2xl flex items-center justify-center text-3xl mb-6 backdrop-blur"><i class="ph-duotone ph-paper-plane-tilt"></i></div>
-                        <h2 class="text-2xl md:text-3xl font-extrabold mb-4 leading-tight">¿Quieres contactar la red?</h2>
-                        <p class="text-brand-100 leading-relaxed">Empresas, universidades, otras instituciones o cualquier persona: escríbenos. Ofertas de empleo o prácticas, mentorías, alianzas o una simple consulta llegan directo al equipo de Sinapsis.</p>
-                    </div>
-                    <div class="md:w-3/5 p-8 md:p-12">
-                        <div class="grid sm:grid-cols-3 gap-4 mb-8">
-                            <button onclick="contactoLogic.open('empresa')" class="text-left p-5 rounded-2xl border border-gray-100 hover:border-brand-300 hover:bg-brand-50/50 transition group">
-                                <i class="ph-duotone ph-briefcase text-3xl text-brand-600 mb-3 block"></i>
-                                <p class="font-bold text-gray-900">Empresas</p>
-                                <p class="text-xs text-gray-500 mt-1">Empleo, prácticas, mentorías o talento del Liceo.</p>
-                            </button>
-                            <button onclick="contactoLogic.open('aliado')" class="text-left p-5 rounded-2xl border border-gray-100 hover:border-brand-300 hover:bg-brand-50/50 transition group">
-                                <i class="ph-duotone ph-handshake text-3xl text-brand-600 mb-3 block"></i>
-                                <p class="font-bold text-gray-900">Instituciones y aliados</p>
-                                <p class="text-xs text-gray-500 mt-1">Convenios, alianzas y proyectos conjuntos.</p>
-                            </button>
-                            <button onclick="contactoLogic.open('general')" class="text-left p-5 rounded-2xl border border-gray-100 hover:border-brand-300 hover:bg-brand-50/50 transition group">
-                                <i class="ph-duotone ph-chat-teardrop-text text-3xl text-brand-600 mb-3 block"></i>
-                                <p class="font-bold text-gray-900">Contacto general</p>
-                                <p class="text-xs text-gray-500 mt-1">Prensa, familias o cualquier otra consulta.</p>
-                            </button>
-                        </div>
-                        <button onclick="contactoLogic.open('empresa')" class="px-8 py-4 bg-brand-600 text-white font-bold rounded-xl shadow-lg shadow-brand-500/30 hover:bg-brand-700 transition inline-flex items-center gap-2">
-                            <i class="ph-bold ph-envelope-simple"></i> Escribir a la red
-                        </button>
-                    </div>
+            <section id="contacto" class="hp-seccion scroll-mt-24">
+                <div class="hp-cab" data-hp-sube>
+                    <p class="hp-kicker">Contacto</p>
+                    <h3 class="hp-h2 mt-4">¿Quieres contactar la red?</h3>
+                    <p class="hp-sub">Empresas, universidades, otras instituciones o cualquier persona: ofertas de empleo o prácticas, mentorías, alianzas o una simple consulta llegan directo al equipo de Sinapsis.</p>
+                </div>
+                <div class="hp-rejilla hp-rejilla-3">
+                    <button onclick="contactoLogic.open('empresa')" class="hp-card hp-card-boton" data-hp-sube style="--d:0ms">
+                        <i class="ph ph-briefcase hp-card-icono" aria-hidden="true"></i>
+                        <p class="hp-card-t">Empresas</p>
+                        <p class="hp-card-p">Empleo, prácticas, mentorías o talento del Liceo.</p>
+                        <span class="hp-enlace">Escribir <i class="ph-bold ph-arrow-right" aria-hidden="true"></i></span>
+                    </button>
+                    <button onclick="contactoLogic.open('aliado')" class="hp-card hp-card-boton" data-hp-sube style="--d:90ms">
+                        <i class="ph ph-handshake hp-card-icono" aria-hidden="true"></i>
+                        <p class="hp-card-t">Instituciones y aliados</p>
+                        <p class="hp-card-p">Convenios, alianzas y proyectos conjuntos.</p>
+                        <span class="hp-enlace">Escribir <i class="ph-bold ph-arrow-right" aria-hidden="true"></i></span>
+                    </button>
+                    <button onclick="contactoLogic.open('general')" class="hp-card hp-card-boton" data-hp-sube style="--d:180ms">
+                        <i class="ph ph-chat-teardrop-text hp-card-icono" aria-hidden="true"></i>
+                        <p class="hp-card-t">Contacto general</p>
+                        <p class="hp-card-p">Prensa, familias o cualquier otra consulta.</p>
+                        <span class="hp-enlace">Escribir <i class="ph-bold ph-arrow-right" aria-hidden="true"></i></span>
+                    </button>
                 </div>
             </section>
 
             <!-- PREGUNTAS FRECUENTES -->
-            <section class="py-16">
-                <div class="text-center mb-12">
-                    <h2 class="text-sm font-bold text-brand-600 uppercase tracking-widest mb-3">Preguntas frecuentes</h2>
-                    <h3 class="text-3xl md:text-4xl font-extrabold text-gray-900">Lo que suelen preguntarnos</h3>
+            <section class="hp-seccion">
+                <div class="hp-cab" data-hp-sube>
+                    <p class="hp-kicker">Preguntas frecuentes</p>
+                    <h3 class="hp-h2 mt-4">Lo que suelen preguntarnos</h3>
                 </div>
-                <div class="max-w-3xl mx-auto space-y-4">
-                    <details class="group bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-                        <summary class="flex items-center justify-between gap-4 p-6 cursor-pointer font-bold text-gray-900 list-none">
+                <div class="max-w-3xl mx-auto" data-hp-sube>
+                    <details class="hp-faq">
+                        <summary>
                             ¿Quién puede registrarse en Sinapsis?
-                            <i class="ph-bold ph-caret-down text-brand-600 transition group-open:rotate-180 shrink-0"></i>
+                            <i class="ph-bold ph-caret-down" aria-hidden="true"></i>
                         </summary>
-                        <p class="px-6 pb-6 text-gray-500 leading-relaxed">Egresados y estudiantes del Liceo Campestre de Pereira. El registro es gratuito y toma menos de un minuto.</p>
+                        <p class="hp-faq-cuerpo">Egresados y estudiantes del Liceo Campestre de Pereira. El registro es gratuito y toma menos de un minuto.</p>
                     </details>
-                    <details class="group bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-                        <summary class="flex items-center justify-between gap-4 p-6 cursor-pointer font-bold text-gray-900 list-none">
+                    <details class="hp-faq">
+                        <summary>
                             ¿Tiene algún costo?
-                            <i class="ph-bold ph-caret-down text-brand-600 transition group-open:rotate-180 shrink-0"></i>
+                            <i class="ph-bold ph-caret-down" aria-hidden="true"></i>
                         </summary>
-                        <p class="px-6 pb-6 text-gray-500 leading-relaxed">No. Sinapsis es gratuito para egresados y estudiantes. Es un proyecto de la comunidad del Liceo, no un producto comercial para ellos.</p>
+                        <p class="hp-faq-cuerpo">No. Sinapsis es gratuito para egresados y estudiantes. Es un proyecto de la comunidad del Liceo, no un producto comercial para ellos.</p>
                     </details>
-                    <details class="group bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-                        <summary class="flex items-center justify-between gap-4 p-6 cursor-pointer font-bold text-gray-900 list-none">
+                    <details class="hp-faq">
+                        <summary>
                             Soy una empresa o institución, ¿cómo llego a los egresados?
-                            <i class="ph-bold ph-caret-down text-brand-600 transition group-open:rotate-180 shrink-0"></i>
+                            <i class="ph-bold ph-caret-down" aria-hidden="true"></i>
                         </summary>
-                        <p class="px-6 pb-6 text-gray-500 leading-relaxed">Usa el formulario de <button onclick="contactoLogic.open('empresa')" class="text-brand-600 font-bold hover:underline">contacto de la red</button>. Cuéntanos qué buscas (talento, prácticas, mentorías o una alianza) y el equipo de Sinapsis te responde.</p>
+                        <p class="hp-faq-cuerpo">Usa el formulario de <button onclick="contactoLogic.open('empresa')" class="hp-enlace-texto">contacto de la red</button>. Cuéntanos qué buscas (talento, prácticas, mentorías o una alianza) y el equipo de Sinapsis te responde.</p>
                     </details>
-                    <details class="group bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-                        <summary class="flex items-center justify-between gap-4 p-6 cursor-pointer font-bold text-gray-900 list-none">
+                    <details class="hp-faq">
+                        <summary>
                             ¿Qué se hace con mis datos?
-                            <i class="ph-bold ph-caret-down text-brand-600 transition group-open:rotate-180 shrink-0"></i>
+                            <i class="ph-bold ph-caret-down" aria-hidden="true"></i>
                         </summary>
-                        <p class="px-6 pb-6 text-gray-500 leading-relaxed">Solo se muestran en el directorio los datos que tú decides compartir, y puedes editarlos cuando quieras. Tu correo y teléfono nunca aparecen públicos. Consulta los <a href="terms.html" class="text-brand-600 font-bold hover:underline">términos y la política de datos</a>.</p>
+                        <p class="hp-faq-cuerpo">Solo se muestran en el directorio los datos que tú decides compartir, y puedes editarlos cuando quieras. Tu correo y teléfono nunca aparecen públicos. Consulta los <a href="terms.html" class="hp-enlace-texto">términos y la política de datos</a>.</p>
                     </details>
                 </div>
             </section>
 
-            <section class="pb-16">
-                <div class="bg-gradient-to-b from-gray-50 to-gray-100 rounded-3xl p-10 md:p-16 text-center border border-gray-200 shadow-inner">
-                    <h2 class="text-3xl md:text-4xl font-extrabold text-gray-900 mb-4">Tu ruta también empezó en el Liceo</h2>
-                    <p class="text-lg text-gray-600 mb-8 max-w-2xl mx-auto">Cuenta por dónde has pasado y en qué andas hoy. Para un estudiante que viene detrás, tu camino es el mapa que no tiene.</p>
-                    <a href="register.html" class="inline-block px-10 py-4 bg-gray-900 text-white text-lg font-bold rounded-xl shadow-xl hover:bg-black transition transform hover:scale-105">
-                        Crear mi cuenta ahora
-                    </a>
+            <section class="hp-seccion">
+                <div class="hp-bloque-claro" data-hp-sube>
+                    <h3 class="hp-h2">Tu ruta también empezó en el Liceo</h3>
+                    <p class="hp-sub mx-auto">Cuenta por dónde has pasado y en qué andas hoy. Para un estudiante que viene detrás, tu camino es el mapa que no tiene.</p>
+                    <a href="register.html" class="hp-cta hp-cta-1 mt-8">Crear mi cuenta</a>
                 </div>
             </section>
 
@@ -584,7 +715,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore-compat.js"></script>
     <script src="shared.js?v=36"></script>
     <script src="orientadora.js?v=7"></script>
-    <script src="historias.js?v=11"></script>
+    <script src="historias.js?v=14"></script>
     <script>
         // ── Estado global: base en shared.js. La nav (desktop + móvil) la
         // inyecta renderNav('home'), igual que en el resto de páginas del sitio.
@@ -608,6 +739,51 @@
             main.addEventListener('scroll', sync, { passive: true });
             window.addEventListener('scroll', sync, { passive: true });
             sync();
+        })();
+
+        // ── Movimiento al bajar ────────────────────────────────────────────
+        // Dos cosas: cada bloque aparece cuando entra en pantalla, y el panel del
+        // hero se desplaza un poco más despacio que la página.
+        (() => {
+            const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+            // La clase que esconde los bloques se pone desde JS: si el guion no
+            // llega a correr, la página se ve entera en vez de quedarse en blanco.
+            if (!reduce && 'IntersectionObserver' in window) {
+                document.documentElement.classList.add('hp-js');
+                const obs = new IntersectionObserver((entradas) => {
+                    entradas.forEach(e => {
+                        if (!e.isIntersecting) return;
+                        e.target.classList.add('hp-visto');
+                        obs.unobserve(e.target);   // una vez visto, se deja en paz
+                    });
+                }, { rootMargin: '0px 0px -12% 0px', threshold: 0.08 });
+                // Global a propósito: las historias llegan de Firestore DESPUÉS de
+                // que esto corra, y sin registrarlas se quedarían invisibles para
+                // siempre (opacidad 0 sin nadie que se la quite).
+                window.hpObservar = (raiz = document) =>
+                    raiz.querySelectorAll('[data-hp-sube]').forEach(b => obs.observe(b));
+                hpObservar();
+            } else {
+                window.hpObservar = () => {};
+            }
+
+            // Parallax: va en el contenedor y no en la ventana, que tiene su
+            // propia rotación — escribir transform aquí se la comería.
+            const visual = document.querySelector('.hp-visual');
+            if (visual && !reduce && window.matchMedia('(min-width: 1024px)').matches) {
+                let pendiente = false;
+                const mover = () => {
+                    pendiente = false;
+                    const y = Math.max(document.querySelector('main').scrollTop, window.scrollY);
+                    if (y > window.innerHeight) return;      // fuera de pantalla, no se calcula
+                    visual.style.setProperty('--py', `${Math.round(y * -0.06)}px`);
+                };
+                const alScroll = () => { if (!pendiente) { pendiente = true; requestAnimationFrame(mover); } };
+                window.addEventListener('scroll', alScroll, { passive: true });
+                document.querySelector('main').addEventListener('scroll', alScroll, { passive: true });
+                mover();
+            }
         })();
 
         const directoryLogic = {
