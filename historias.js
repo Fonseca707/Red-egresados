@@ -171,6 +171,12 @@ const historiasLogic = {
                     </li>`;
                 }).join('')}
             </ol>`;
+        // Marca del momento en que el panel del hero queda pintado: es lo primero
+        // que se ve y lo que se percibe como «la web tarda en aparecer». Medir el
+        // ultimo viaje a Firestore engaña, porque ese es el resumen de la red, que
+        // llega despues y no pinta nada del hero. Se lee con:
+        //   performance.getEntriesByName('hp-ficha-pintada')[0].startTime
+        try { performance.mark('hp-ficha-pintada'); } catch (e) { /* no es critico */ }
     },
 
     renderStats(resumen) {
