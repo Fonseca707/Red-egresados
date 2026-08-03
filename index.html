@@ -199,8 +199,6 @@
            la página tiene gama y no un solo verde repetido nueve veces. */
         .hp-kicker[data-acento="ambar"] { color: #b45309; }
         html.dark .hp-kicker[data-acento="ambar"] { color: #fbbf24; }
-        .hp-kicker[data-acento="azul"] { color: #1d4ed8; }
-        html.dark .hp-kicker[data-acento="azul"] { color: #93c5fd; }
         .hp-kicker[data-acento="teal"] { color: #0f766e; }
         html.dark .hp-kicker[data-acento="teal"] { color: #5eead4; }
 
@@ -292,23 +290,6 @@
            No es un adorno: esta plataforma va precisamente de trayectorias, y
            es el mismo lenguaje del panel del hero. Da personalidad al bloque
            sin inventarse una forma que no signifique nada. */
-        /* La sección de los pasos se dibuja entera en azul: es el tramo de la
-           página que no tenía una gota de color y así se distingue del resto de
-           un vistazo, sin repetir el verde. */
-        .hp-azul .hp-ruta-pasos::before { background: linear-gradient(to right, #dbeafe, #2563eb, #dbeafe); }
-        html.dark .hp-azul .hp-ruta-pasos::before { background: linear-gradient(to right, #1e3a8a, #3b82f6, #1e3a8a); }
-        .hp-azul .hp-paso::before { border-color: #2563eb; box-shadow: 0 0 0 5px rgba(37,99,235,.14); }
-        .hp-azul .hp-paso:hover::before { background: #2563eb; box-shadow: 0 0 0 11px rgba(37,99,235,.22); }
-        .hp-azul .hp-paso:not(:last-child)::after { background: linear-gradient(to bottom, #2563eb, #dbeafe); }
-        html.dark .hp-azul .hp-paso:not(:last-child)::after { background: linear-gradient(to bottom, #3b82f6, #1e3a8a); }
-        .hp-azul .hp-paso-n { color: #1d4ed8; }
-        html.dark .hp-azul .hp-paso-n { color: #93c5fd; }
-        .hp-azul .hp-card-icono { color: #2563eb; }
-        .hp-azul .hp-rejilla > :nth-child(4n+2) .hp-card-icono { color: #1e40af; }
-        .hp-azul .hp-rejilla > :nth-child(4n+3) .hp-card-icono { color: #3b82f6; }
-        .hp-azul .hp-rejilla > :nth-child(4n+4) .hp-card-icono { color: #1d4ed8; }
-        html.dark .hp-azul .hp-card-icono, html.dark .hp-azul .hp-rejilla > :nth-child(n) .hp-card-icono { color: #93c5fd; }
-
         .hp-ruta-pasos { position: relative; }
         /* La línea que une los pasos. Va detrás de los nodos y no llega a los
            extremos, para que no se vea cortada. */
@@ -612,10 +593,8 @@
         /* Bandas: el blanco deja de flotar y pasa a ser el aire de una franja.
            Neutro y teal, colores que la paleta ya tiene — no se repite el verde
            del hero, que ya cansó cuando se puso en todas partes. */
-                /* Era gris neutro, o sea que parecia banda pero no aportaba una gota
-           de gama. Ahora es azul muy claro, la version suave del acento nuevo. */
-        .hp-banda { background: #eff6ff; }
-        html.dark .hp-banda { background: #111827; }
+        .hp-banda { background: #f5f5f4; }
+        html.dark .hp-banda { background: #1a1917; }
         .hp-banda-teal { background: #f0fdfa; }
         html.dark .hp-banda-teal { background: #0f1e1c; }
 
@@ -799,9 +778,9 @@
             <div id="historias-section"></div>
 
             <!-- CÓMO FUNCIONA -->
-            <section class="hp-seccion hp-azul"><div class="hp-interior">
+            <section class="hp-seccion"><div class="hp-interior">
                 <div class="hp-cab" data-hp-sube>
-                    <p class="hp-kicker" data-acento="azul">Cómo funciona</p>
+                    <p class="hp-kicker">Cómo funciona</p>
                     <h3 class="hp-h2 mt-4">De un nombre a un camino que se sigue</h3>
                     <p class="hp-sub">En cuatro pasos, tu historia se vuelve el mapa que un estudiante estaba buscando.</p>
                 </div>
