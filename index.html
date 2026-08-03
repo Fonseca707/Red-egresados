@@ -15,8 +15,16 @@
     <meta property="og:url" content="https://sinapsisred.web.app/">
     <meta property="og:image" content="https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=1200&q=80">
     <meta name="twitter:card" content="summary_large_image">
+    <!-- El apretón de manos con estos tres dominios se adelanta al parseo: son
+         los que sirven la tipografía, los iconos y los datos, y hacerlo aquí
+         ahorra el tiempo de conexión cuando de verdad se piden. -->
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin>
+    <link rel="preconnect" href="https://unpkg.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <!-- defer: sin él, este script frena el parseo del HTML y retrasa la primera
+         pintada. Los iconos son decorativos, pueden llegar un instante después. -->
+    <script src="https://unpkg.com/@phosphor-icons/web" defer></script>
     <style>
         body { background-color: #fafaf9; }
         .glass-nav { background: rgba(250,250,249,0.85); backdrop-filter: blur(16px); border-bottom: 1px solid rgba(231,229,228,0.6); }
@@ -50,8 +58,10 @@
         .hp-texto { padding-inline: max(1.5rem, calc((100vw - 80rem) / 2 + 1rem)); }
         @media (min-width: 1024px) { .hp-texto { padding-right: 3rem; } }
 
-        .hp-kicker { font-size: .78rem; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: #78716c; }
-        html.dark .hp-kicker { color: #a8a29e; }
+        /* Los rótulos iban en gris y era buena parte de lo «apagado»: son el
+           primer texto de cada sección y no aportaban una gota de color. */
+        .hp-kicker { font-size: .78rem; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: #15803d; }
+        html.dark .hp-kicker { color: #4ade80; }
 
         .hp-titulo { font-size: clamp(2.5rem, 4.6vw, 4rem); font-weight: 600; line-height: 1.05; letter-spacing: -.035em; color: #1c1917; text-wrap: balance; }
         html.dark .hp-titulo { color: #fafaf9; }
@@ -76,9 +86,18 @@
            + fondo) para que llenarlo con datos de Firestore no mueva la página. */
         /* ── El lado visual: el producto, en una ventana ─────────────────── */
 
+        /* Este fondo era un gris verdoso casi apagado y dejaba el hero sin una
+           gota de color. Ahora es verde de marca de verdad, plano: el color lo
+           pone un bloque, no un degradado ni un resplandor. */
         .hp-visual { position: relative; display: flex; align-items: center; justify-content: flex-start;
-                     padding: 0 0 3.5rem 1.5rem; background: #f4f6f4; overflow: hidden; }
-        html.dark .hp-visual { background: #171413; }
+                     padding: 0 0 3.5rem 1.5rem; background: #dcfce7; overflow: hidden; }
+        html.dark .hp-visual { background: #14261a; }
+        /* Un segundo plano de color, cortado en diagonal, para que el bloque no
+           sea una mancha lisa. Dos verdes de la misma familia, sin degradado. */
+        .hp-visual::after { content: ''; position: absolute; inset: 0; background: #bbf7d0;
+                            clip-path: polygon(0 62%, 100% 38%, 100% 100%, 0% 100%); pointer-events: none; }
+        html.dark .hp-visual::after { background: #172e1f; }
+        .hp-visual > * { position: relative; z-index: 1; }
 
         @media (min-width: 1024px) {
             /* La columna del texto pesa algo más que la visual: con 50/50 el
@@ -136,21 +155,34 @@
         .hp-ruta li::after { content: ''; position: absolute; left: 0; top: .32rem; width: .62rem; height: .62rem; border-radius: 999px;
                              background: #fff; border: 2px solid #d6d3d1; box-sizing: border-box; }
         html.dark .hp-ruta li::after { background: #221f1d; border-color: #57534e; }
-        .hp-ruta li[data-actual]::after { background: #16a34a; border-color: #16a34a; }
+        /* El paso de hoy: verde vivo con halo. Es el punto al que mira el ojo. */
+        .hp-ruta li[data-actual]::after { background: #22c55e; border-color: #22c55e; box-shadow: 0 0 0 4px rgba(34,197,94,.2); }
         .hp-ruta-rol { font-size: .86rem; font-weight: 600; color: #1c1917; letter-spacing: -.01em; line-height: 1.35; }
         html.dark .hp-ruta-rol { color: #fafaf9; }
         .hp-ruta-org { font-size: .78rem; color: #78716c; margin-top: .1rem; line-height: 1.4; }
         html.dark .hp-ruta-org { color: #a8a29e; }
         .hp-ruta-anio { font-size: .68rem; font-weight: 600; color: #a8a29e; letter-spacing: .06em; text-transform: uppercase; margin-top: .25rem; }
+        /* El «HOY» en ámbar: el segundo color de la marca, en un solo punto y en
+           el que más significa. Un acento vale cuando es escaso. */
+        .hp-ruta li[data-actual] .hp-ruta-anio { color: #b45309; background: #fef3c7; border-radius: 999px;
+                                                 padding: .12rem .5rem; display: inline-block; }
+        html.dark .hp-ruta li[data-actual] .hp-ruta-anio { color: #fde68a; background: #422f06; }
 
-        /* Esqueleto mientras llegan los datos: la ventana nunca se ve vacía. */
-        .hp-ficha-esqueleto { display: flex; align-items: center; gap: .85rem; }
-        .hp-esq { display: block; background: #f0efee; border-radius: 6px; }
+        /* Esqueleto mientras llegan los datos: la ventana nunca se ve vacía y,
+           sobre todo, ya ocupa el alto que ocupará la ficha. */
+        .hp-esq-cab { display: flex; align-items: center; gap: .85rem; padding-bottom: 1.25rem; border-bottom: 1px solid #f0efee; }
+        html.dark .hp-esq-cab { border-bottom-color: #332f2c; }
+        .hp-esq { display: block; background: #f0efee; border-radius: 6px; animation: hpLatido 1.6s ease-in-out infinite; }
         html.dark .hp-esq { background: #2c2724; }
         .hp-esq-avatar { width: 3rem; height: 3rem; border-radius: 999px; flex: none; }
         .hp-esq-linea { height: .7rem; width: 9rem; }
-        .hp-esq-corta { width: 5rem; }
-        .hp-ficha-esqueleto { min-height: 3rem; }
+        .hp-esq-corta { width: 5rem; margin-top: .45rem; }
+        .hp-esq-pasos { margin-top: 1.35rem; display: flex; flex-direction: column; gap: 1.15rem; }
+        .hp-esq-paso { height: 2.1rem; width: 100%; }
+        .hp-esq-pasos .hp-esq-paso:nth-child(2) { width: 82%; }
+        .hp-esq-pasos .hp-esq-paso:nth-child(3) { width: 64%; }
+        @keyframes hpLatido { 0%, 100% { opacity: 1; } 50% { opacity: .55; } }
+        @media (prefers-reduced-motion: reduce) { .hp-esq { animation: none; } }
 
         /* Prueba social: iniciales sobre un tono neutro. Los avatares por defecto
            (ui-avatars) asignan un color aleatorio por nombre — naranja, morado,
@@ -184,9 +216,11 @@
            Antes convivían seis radios distintos y sombras de color saturado. */
         .hp-card { position: relative; background: #fff; border: 1px solid #ebeae8; border-radius: 12px; padding: 1.75rem 1.6rem;
                    transition: transform .4s cubic-bezier(.16,1,.3,1), box-shadow .4s ease, border-color .4s ease; }
-        .hp-card:hover { transform: translateY(-3px); box-shadow: 0 14px 30px -14px rgba(12,10,9,.16); border-color: #ddd9d5; }
+        /* Al pasar el cursor el borde se tiñe de marca: el color aparece cuando
+           interactúas, en vez de estar siempre encendido. */
+        .hp-card:hover { transform: translateY(-3px); box-shadow: 0 14px 30px -14px rgba(20,83,45,.22); border-color: #86efac; }
         html.dark .hp-card { background: #221f1d; border-color: #332f2c; }
-        html.dark .hp-card:hover { border-color: #4a443f; box-shadow: 0 14px 30px -14px rgba(0,0,0,.55); }
+        html.dark .hp-card:hover { border-color: #15803d; box-shadow: 0 14px 30px -14px rgba(0,0,0,.55); }
 
         /* Las tarjetas que son botones tienen que verse como el resto: <button>
            trae su propio alineado, tipografía y fondo del navegador. */
@@ -196,8 +230,17 @@
         .hp-enlace-texto { color: #16a34a; font-weight: 600; border-bottom: 1px solid currentColor; }
         html.dark .hp-enlace-texto { color: #4ade80; }
 
-        .hp-card-icono { font-size: 1.45rem; color: #16a34a; line-height: 1; margin-bottom: 1.1rem; display: block; }
+        .hp-card-icono { font-size: 1.6rem; color: #16a34a; line-height: 1; margin-bottom: 1.1rem; display: block; }
         html.dark .hp-card-icono { color: #4ade80; }
+        /* Los iconos no van todos del mismo verde: rotan por la paleta de la
+           marca y le dan a cada rejilla algo de vida. Se hace por posición, así
+           que ningún HTML tiene que saber de colores. */
+        .hp-rejilla > :nth-child(4n+2) .hp-card-icono { color: #d97706; }
+        .hp-rejilla > :nth-child(4n+3) .hp-card-icono { color: #15803d; }
+        .hp-rejilla > :nth-child(4n+4) .hp-card-icono { color: #22c55e; }
+        html.dark .hp-rejilla > :nth-child(4n+2) .hp-card-icono { color: #fbbf24; }
+        html.dark .hp-rejilla > :nth-child(4n+3) .hp-card-icono { color: #86efac; }
+        html.dark .hp-rejilla > :nth-child(4n+4) .hp-card-icono { color: #4ade80; }
         .hp-card-t { font-size: 1.02rem; font-weight: 600; letter-spacing: -.018em; color: #1c1917; line-height: 1.3; }
         html.dark .hp-card-t { color: #fafaf9; }
         .hp-card-p { font-size: .92rem; line-height: 1.62; color: #57534e; margin-top: .55rem; }
@@ -284,7 +327,7 @@
             html.hp-js [data-hp-sube] { opacity: 1; transform: none; transition: none; }
         }
     </style>
-    <link rel="stylesheet" href="tailwind.css?v=11">
+    <link rel="stylesheet" href="tailwind.css?v=12">
 </head>
 <body class="text-stone-800 font-sans min-h-screen flex flex-col">
 
@@ -345,11 +388,23 @@
                             <span class="hp-punto"></span><span class="hp-punto"></span><span class="hp-punto"></span>
                             <span class="hp-ventana-url">sinapsisred.web.app</span>
                         </div>
+                        <!-- El esqueleto tiene la MISMA forma que la ficha (cabecera
+                             + tres pasos): así, cuando llegan los datos, el bloque
+                             no da un salto ni cambia de alto. -->
                         <div class="hp-ventana-cuerpo" id="hp-ficha">
                             <div class="hp-ficha-esqueleto">
-                                <span class="hp-esq hp-esq-avatar"></span>
-                                <span class="hp-esq hp-esq-linea"></span>
-                                <span class="hp-esq hp-esq-linea hp-esq-corta"></span>
+                                <div class="hp-esq-cab">
+                                    <span class="hp-esq hp-esq-avatar"></span>
+                                    <div>
+                                        <span class="hp-esq hp-esq-linea"></span>
+                                        <span class="hp-esq hp-esq-linea hp-esq-corta"></span>
+                                    </div>
+                                </div>
+                                <div class="hp-esq-pasos">
+                                    <span class="hp-esq hp-esq-paso"></span>
+                                    <span class="hp-esq hp-esq-paso"></span>
+                                    <span class="hp-esq hp-esq-paso"></span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -715,7 +770,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore-compat.js"></script>
     <script src="shared.js?v=36"></script>
     <script src="orientadora.js?v=7"></script>
-    <script src="historias.js?v=14"></script>
+    <script src="historias.js?v=15"></script>
     <script>
         // ── Estado global: base en shared.js. La nav (desktop + móvil) la
         // inyecta renderNav('home'), igual que en el resto de páginas del sitio.

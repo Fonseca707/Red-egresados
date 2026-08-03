@@ -51,16 +51,37 @@ const historiasLogic = {
                     .filter(a => !a.rutaDestacada)
                     .sort((a, b) => (b.profileCompleteness || 0) - (a.profileCompleteness || 0))
                   ].slice(0, 10);
+            // ⚠️ RENDIMIENTO — esto se pedía EN CADENA y por eso la portada tardaba
+            // ~6 s en pintar su panel: cada ruta esperaba a que terminara la
+            // anterior, y con la ida y vuelta a Firestore en 150-200 ms eso son
+            // segundos de esqueleto en pantalla. Ahora van en paralelo, en tandas
+            // del tamaño de lo que se pinta.
+            //
+            // La tanda importa: pedir los 10 candidatos de golpe seria mas rapido
+            // todavia, pero gastaria lecturas de gente que no se va a mostrar
+            // —justo lo que se corrigio en su dia—. Con curaduria (el caso normal)
+            // basta la primera tanda: 4 lecturas en UNA ida y vuelta en vez de
+            // cuatro seguidas.
             const historias = [];
-            for (const alum of candidatos) {
-                // >= 2 y no > 0: abajo se exige que la ruta tenga al menos dos
-                // hitos, así que pedir los de quien solo tiene uno era pagar una
-                // lectura para descartarla. Eran 9 llamadas para pintar 4 rutas.
-                let hitos = alum.hitosCount >= 2 ? await loadHitos(alum.id) : [];
-                if (!hitos.length) hitos = deriveLegacyHitos(alum);
-                if (hitos.length >= 2) historias.push({ alum, hitos });
-                if (historias.length === HISTORIAS_MAX) break;
+            for (let i = 0; i < candidatos.length && historias.length < HISTORIAS_MAX; i += HISTORIAS_MAX) {
+                const tanda = candidatos.slice(i, i + HISTORIAS_MAX);
+                const rutas = await Promise.all(tanda.map(async (alum) => {
+                    // >= 2 y no > 0: abajo se exige que la ruta tenga al menos dos
+                    // hitos, así que pedir los de quien solo tiene uno era pagar una
+                    // lectura para descartarla. Eran 9 llamadas para pintar 4 rutas.
+                    let hitos = alum.hitosCount >= 2 ? await loadHitos(alum.id) : [];
+                    if (!hitos.length) hitos = deriveLegacyHitos(alum);
+                    return { alum, hitos };
+                }));
+                for (const r of rutas) {
+                    if (r.hitos.length >= 2) historias.push(r);
+                    if (historias.length === HISTORIAS_MAX) break;
+                }
             }
+
+            // El panel del hero se pinta AQUI, en cuanto hay rutas, sin esperar al
+            // resumen de la red: es lo primero que se ve y no depende de él.
+            this.renderHeroFicha(historias);
 
             // ⚠️ Los agregados NO salen de `activos`: desde que la portada pide solo
             // sus historias, esa lista son 4 personas, no la red. Contar ahí decía
@@ -71,9 +92,6 @@ const historiasLogic = {
             const resumen = await loadResumenRed();
             this.renderStats(resumen);
             this.renderHeroSocial(activos, resumen);
-            // La ficha del hero necesita los HITOS, no solo la persona: por eso va
-            // aqui abajo y no junto al resto, que solo mira `activos`.
-            this.renderHeroFicha(historias);
 
             // Con menos de 2 historias no se muestra nada: una fila medio vacía
             // también delata una red que apenas comienza.
