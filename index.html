@@ -746,42 +746,78 @@
         // hero se desplaza un poco más despacio que la página.
         (() => {
             const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            // Propio de este bloque: el `main` del apartado de la nav vive en otro
+            // ámbito y usarlo aquí lanzaba un ReferenceError que dejaba la página
+            // entera invisible (todo escondido y nadie que lo revelara).
+            const main = document.querySelector('main');
 
             // La clase que esconde los bloques se pone desde JS: si el guion no
             // llega a correr, la página se ve entera en vez de quedarse en blanco.
-            if (!reduce && 'IntersectionObserver' in window) {
-                document.documentElement.classList.add('hp-js');
-                const obs = new IntersectionObserver((entradas) => {
-                    entradas.forEach(e => {
-                        if (!e.isIntersecting) return;
-                        e.target.classList.add('hp-visto');
-                        obs.unobserve(e.target);   // una vez visto, se deja en paz
-                    });
-                }, { rootMargin: '0px 0px -12% 0px', threshold: 0.08 });
-                // Global a propósito: las historias llegan de Firestore DESPUÉS de
-                // que esto corra, y sin registrarlas se quedarían invisibles para
-                // siempre (opacidad 0 sin nadie que se la quite).
-                window.hpObservar = (raiz = document) =>
-                    raiz.querySelectorAll('[data-hp-sube]').forEach(b => obs.observe(b));
-                hpObservar();
-            } else {
+            if (reduce) {
                 window.hpObservar = () => {};
+            } else {
+                document.documentElement.classList.add('hp-js');
+
+                // ⚠️ Esto NO usa IntersectionObserver a propósito. El observador
+                // solo avisa cuando CAMBIA la intersección, así que un salto de
+                // scroll —arrastrar la barra, un enlace de ancla, recargar a media
+                // página— se salta bloques enteros que nunca disparan y se quedan
+                // invisibles PARA SIEMPRE. Pasó de verdad: con la página a 1450 px
+                // no había un solo bloque revelado. Un barrido de los pendientes
+                // no tiene ese punto ciego: mire donde mire, lo que está en pantalla
+                // o ya quedó por encima se revela.
+                let pendientes = [];
+                let enCola = false;
+
+                const revisar = () => {
+                    enCola = false;
+                    const limite = window.innerHeight * 0.88;
+                    pendientes = pendientes.filter(el => {
+                        if (el.getBoundingClientRect().top >= limite) return true;
+                        el.classList.add('hp-visto');
+                        return false;
+                    });
+                    if (!pendientes.length) quitar();
+                };
+                const alScroll = () => { if (!enCola) { enCola = true; requestAnimationFrame(revisar); } };
+                const quitar = () => {
+                    window.removeEventListener('scroll', alScroll);
+                    main.removeEventListener('scroll', alScroll);
+                    window.removeEventListener('resize', alScroll);
+                };
+                const poner = () => {
+                    window.addEventListener('scroll', alScroll, { passive: true });
+                    main.addEventListener('scroll', alScroll, { passive: true });
+                    window.addEventListener('resize', alScroll, { passive: true });
+                };
+
+                // Global a propósito: las historias llegan de Firestore DESPUÉS de
+                // que esto corra, y sin registrarlas se quedarían invisibles.
+                window.hpObservar = (raiz = document) => {
+                    const nuevos = [...raiz.querySelectorAll('[data-hp-sube]')]
+                        .filter(el => !el.classList.contains('hp-visto') && !pendientes.includes(el));
+                    if (!nuevos.length) return;
+                    if (!pendientes.length) poner();
+                    pendientes.push(...nuevos);
+                    alScroll();
+                };
+                hpObservar();
             }
 
             // Parallax: va en el contenedor y no en la ventana, que tiene su
             // propia rotación — escribir transform aquí se la comería.
             const visual = document.querySelector('.hp-visual');
-            if (visual && !reduce && window.matchMedia('(min-width: 1024px)').matches) {
+            if (visual && main && !reduce && window.matchMedia('(min-width: 1024px)').matches) {
                 let pendiente = false;
                 const mover = () => {
                     pendiente = false;
-                    const y = Math.max(document.querySelector('main').scrollTop, window.scrollY);
+                    const y = Math.max(main.scrollTop, window.scrollY);
                     if (y > window.innerHeight) return;      // fuera de pantalla, no se calcula
                     visual.style.setProperty('--py', `${Math.round(y * -0.06)}px`);
                 };
-                const alScroll = () => { if (!pendiente) { pendiente = true; requestAnimationFrame(mover); } };
-                window.addEventListener('scroll', alScroll, { passive: true });
-                document.querySelector('main').addEventListener('scroll', alScroll, { passive: true });
+                const alParallax = () => { if (!pendiente) { pendiente = true; requestAnimationFrame(mover); } };
+                window.addEventListener('scroll', alParallax, { passive: true });
+                main.addEventListener('scroll', alParallax, { passive: true });
                 mover();
             }
         })();
