@@ -217,19 +217,19 @@ const historiasLogic = {
         // Mismo sistema visual que el resto de la portada (clases .hp-): si esta
         // seccion se queda con las tarjetas gordas de antes, la pagina se lee
         // como dos webs pegadas.
-        // Misma firma que el hero, que es lo que a Juan le funcionó: lienzo verde
-        // con su corte diagonal y las trayectorias flotando encima como paneles.
+        // Sin lienzo verde: el hero y el bloque de propósito ya lo llevan y
+        // repetirlo en todas las secciones cansaba. Aquí la caja SÍ tiene
+        // función —cada trayectoria se pulsa y abre el perfil—, así que se queda,
+        // pero flotando sobre fondo claro en vez de sobre color.
         holder.innerHTML = `
             <section class="hp-seccion">
-                <div class="hp-lienzo hp-lienzo-ancho" data-hp-sube>
-                    <div class="hp-cab">
-                        <p class="hp-kicker hp-kicker-claro">Historias que empezaron aquí</p>
-                        <h3 class="hp-h2 mt-4">Del Liceo a donde están hoy</h3>
-                        <p class="hp-sub">Rutas reales de egresados: cada una empezó en las mismas aulas donde estás tú.</p>
-                    </div>
-                    <div class="hp-rejilla hp-rejilla-2">
-                        ${historias.map((h, i) => this.cardHTML(h, i)).join('')}
-                    </div>
+                <div class="hp-cab" data-hp-sube>
+                    <p class="hp-kicker">Historias que empezaron aquí</p>
+                    <h3 class="hp-h2 mt-4">Del Liceo a donde están hoy</h3>
+                    <p class="hp-sub">Rutas reales de egresados: cada una empezó en las mismas aulas donde estás tú.</p>
+                </div>
+                <div class="hp-rejilla hp-rejilla-2">
+                    ${historias.map((h, i) => this.cardHTML(h, i)).join('')}
                 </div>
             </section>`;
         // El observador ya recorrió el documento cuando esto llega de Firestore:
