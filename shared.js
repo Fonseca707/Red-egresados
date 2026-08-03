@@ -639,11 +639,29 @@ function fillOrgDatalist(datalistId, orgs) {
     if (!dl) return;
     dl.innerHTML = orgs.map(o => `<option value="${sanitizeHTML(o.nombre)}"></option>`).join('');
 }
+// ⚠️ Un hito SIN anioInicio no vale 0: valía, y eso lo colocaba delante del
+// colegio, así que la trayectoria se contaba al revés («Medicina» antes que
+// «Bachiller · LCP, 2020»). Se veía en la portada, en el perfil y en el
+// directorio. El caso no es raro: `deriveLegacyHitos` crea el hito de colegio
+// con anioInicio null y solo anioFin, y el de empleo actual sin ninguna fecha;
+// entre dos ceros, el orden lo decidía Firestore.
+//
+// La clave temporal es, por orden: el año de inicio, si no el de fin, y si no
+// hay ninguno el hito se va al FINAL (lo sin fechar en una trayectoria suele
+// ser lo de ahora), con el marcado `actual` todavía más al final.
+const ORDEN_TIPO = { colegio: 0, educacion: 1, emprendimiento: 2, empleo: 2, logro: 3 };
 function sortHitos(hitos = []) {
+    const clave = h => Number(h.anioInicio) || Number(h.anioFin) || (h.actual ? 9999 : 9998);
     return [...hitos].sort((a, b) => {
-        const ay = Number(a.anioInicio) || 0, by = Number(b.anioInicio) || 0;
+        const ay = clave(a), by = clave(b);
         if (ay !== by) return ay - by;
-        return (a.actual ? 1 : 0) - (b.actual ? 1 : 0);
+        // Mismo año: lo que sigue en curso va después…
+        const aa = (a.actual ? 1 : 0) - (b.actual ? 1 : 0);
+        if (aa !== 0) return aa;
+        // …y a igualdad, manda la secuencia de una vida: colegio → estudios →
+        // trabajo. Sin esto, dos hitos del mismo año salían en el orden
+        // arbitrario en que Firestore los devolviera.
+        return (ORDEN_TIPO[a.tipo] ?? 2) - (ORDEN_TIPO[b.tipo] ?? 2);
     });
 }
 // La portada gastaba 27 documentos en 9 llamadas pintando las rutas destacadas,
