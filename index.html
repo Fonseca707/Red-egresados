@@ -466,9 +466,19 @@
             html.dark .hp-opcion + .hp-opcion { border-top-color: #332f2c; }
         }
 
-        /* Propósito: una cita a gran tamaño sobre el lienzo, sin panel encima. */
-        .hp-lienzo-cita { padding: clamp(2.25rem, 4.5vw, 3.75rem) clamp(1.75rem, 5vw, 4.5rem); }
+        /* Propósito: una cita a gran tamaño sobre la ilustración. */
+        .hp-lienzo-cita { padding: clamp(2.75rem, 5vw, 4.5rem) clamp(1.75rem, 5vw, 4.5rem); background: #fbfdfb; }
+        html.dark .hp-lienzo-cita { background: #14261a; }
         .hp-lienzo-cita .hp-frase { font-size: clamp(1.5rem, 3vw, 2.5rem); }
+        /* La ilustración sustituye al corte diagonal en este bloque. */
+        .hp-lienzo-cita::after { display: none; }
+        .hp-cita-fondo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center;
+                         opacity: .55; pointer-events: none; }
+        /* Bajando la opacidad basta para que el texto negro se lea encima: sin
+           velos ni degradados por delante, que era justo el recurso que hacía
+           que la página anterior pareciera de plantilla. */
+        html.dark .hp-cita-fondo { opacity: .16; }
+        @media (min-width: 768px) { .hp-cita-fondo { opacity: .7; } }
 
         /* Cierre: color pleno. El único bloque donde el verde de marca ocupa
            toda la superficie — por eso cierra. */
@@ -824,6 +834,13 @@
             <!-- PROPÓSITO / MISIÓN -->
             <section class="hp-seccion hp-seccion-plana">
                 <div class="hp-lienzo hp-lienzo-cita hp-a-sangre" data-hp-sube>
+                  <!-- Ilustración generada para este bloque: rutas que salen de
+                       un punto y se abren. Es lo que dice el texto, dibujado.
+                       Va como <img> y no como fondo CSS para poder reservarle el
+                       hueco (width/height) y que no mueva la página al cargar,
+                       y con lazy porque queda muy por debajo del pliegue. -->
+                  <img class="hp-cita-fondo" src="img/rutas.webp" alt="" aria-hidden="true"
+                       width="2000" height="1000" loading="lazy" decoding="async">
                   <div class="hp-interior">
                     <div class="hp-bloque-texto">
                         <p class="hp-kicker hp-kicker-claro">Por qué existe Sinapsis</p>
@@ -1181,7 +1198,19 @@
             const zona = document.querySelector('.hp-hero');
             if (ventana && zona && !reduce && window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
                 const BASE_Y = -7, BASE_X = 1.2;   // la inclinación en reposo
-                let ultimoAplicado = 0;
+                const GIRO_Y = 13, GIRO_X = 9;     // cuánto llega a girar como máximo
+                const MARGEN_ARRIBA = 120, MARGEN_ABAJO = 320;  // el campo se estira
+                let ultimoAplicado = 0, activo = false;
+
+                const limitar = (v) => v < -1 ? -1 : v > 1 ? 1 : v;
+
+                const reposo = () => {
+                    activo = false;
+                    ventana.classList.remove('hp-siguiendo');
+                    ventana.style.setProperty('--ry', `${BASE_Y}deg`);
+                    ventana.style.setProperty('--rx', `${BASE_X}deg`);
+                    ventana.style.setProperty('--tz', '0px');
+                };
 
                 // Freno por tiempo y no con requestAnimationFrame: rAF no corre
                 // en pestañas ocultas y ya dejó un fallo en esta misma página.
@@ -1189,25 +1218,37 @@
                 // resuelve al pintar sin recalcular la maquetación.
                 const aplicar = (e) => {
                     ultimoAplicado = performance.now();
-                    const r = zona.getBoundingClientRect();
-                    // -0.5 … 0.5 desde el centro de la zona
-                    const dx = (e.clientX - r.left) / r.width - .5;
-                    const dy = (e.clientY - r.top) / r.height - .5;
-                    ventana.style.setProperty('--ry', `${(BASE_Y - dx * 18).toFixed(2)}deg`);
-                    ventana.style.setProperty('--rx', `${(BASE_X + dy * 12).toFixed(2)}deg`);
-                    ventana.style.setProperty('--tz', `${(-Math.abs(dy) * 6 - 4).toFixed(1)}px`);
+                    const z = zona.getBoundingClientRect();
+
+                    // El campo sensible se estira por arriba y sobre todo por
+                    // abajo: con el borde justo en el hero, el efecto se cortaba
+                    // de golpe al bajar el cursor y se sentía a tirones.
+                    const dentro = e.clientY > z.top - MARGEN_ARRIBA && e.clientY < z.bottom + MARGEN_ABAJO;
+                    if (!dentro) { if (activo) reposo(); return; }
+                    if (!activo) { activo = true; ventana.classList.add('hp-siguiendo'); }
+
+                    // ⚠️ El punto neutro es el centro de LA VENTANA, no el del
+                    // hero. Midiéndolo desde el hero, el «cero» caía entre el
+                    // texto y la ventana, así que la inclinación no apuntaba a
+                    // donde estaba el cursor: eso era lo que se veía raro.
+                    const v = ventana.getBoundingClientRect();
+                    const cx = v.left + v.width / 2;
+                    const cy = v.top + v.height / 2;
+                    // Se normaliza con una distancia fija, no con el tamaño del
+                    // elemento: así el giro depende de cuánto se aleja el cursor
+                    // y no de lo grande que sea la ventana.
+                    const dx = limitar((e.clientX - cx) / (window.innerWidth * .55));
+                    const dy = limitar((e.clientY - cy) / (window.innerHeight * .75));
+
+                    ventana.style.setProperty('--ry', `${(BASE_Y - dx * GIRO_Y).toFixed(2)}deg`);
+                    ventana.style.setProperty('--rx', `${(BASE_X + dy * GIRO_X).toFixed(2)}deg`);
+                    ventana.style.setProperty('--tz', `${(-4 - Math.abs(dy) * 4).toFixed(1)}px`);
                 };
 
-                zona.addEventListener('mouseenter', () => ventana.classList.add('hp-siguiendo'));
-                zona.addEventListener('mousemove', (e) => {
+                window.addEventListener('mousemove', (e) => {
                     if (performance.now() - ultimoAplicado >= 12) aplicar(e);   // ~80 veces por segundo como mucho
                 }, { passive: true });
-                zona.addEventListener('mouseleave', () => {
-                    ventana.classList.remove('hp-siguiendo');
-                    ventana.style.setProperty('--ry', `${BASE_Y}deg`);
-                    ventana.style.setProperty('--rx', `${BASE_X}deg`);
-                    ventana.style.setProperty('--tz', '0px');
-                });
+                document.addEventListener('mouseleave', reposo);
             }
 
             const visual = document.querySelector('.hp-visual');
