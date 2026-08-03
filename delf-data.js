@@ -70,16 +70,24 @@ const DELF_TEST_B1_1 = {
     },
 
     // ── Compréhension de l'oral ──────────────────────────────────────────────
-    // Los TRANSCRIPTS son los literales del sujet démo B1TP_02 (nouveau format,
-    // France Éducation International) — los mismos que carga el botón «transcript
-    // oficial de referencia» del estudio de audio. Por eso el examen encuentra
-    // su audio solo: el clip que se genera desde ese botón queda emparejado por
-    // transcript con el documento que le corresponde aquí.
+    // TRANSCRIPTS Y PREGUNTAS SON DE ELABORACIÓN PROPIA (2026-08-02). Antes eran
+    // los literales del sujet démo B1TP_02; se reemplazaron porque Sinapsis se
+    // vende a colegios y republicar el sujet oficial en un producto de pago no es
+    // lo mismo que descargarlo para practicar. Del examen real se replica lo que
+    // es estructura, no contenido:
+    //   · 3 documentos de dificultad creciente: diálogo cotidiano → radio sobre
+    //     un tema profesional/educativo → radio sobre un tema de sociedad.
+    //   · 7 + 9 + 9 = 25 puntos, 19 ítems, 100% QCM (nouveau format).
+    //   · Puntuación NO uniforme dentro de cada ejercicio: conviven ítems de 1 y
+    //     de 1,5 puntos, como en el baremo oficial.
+    //   · Longitud calibrada contra el sujet (324-388 palabras por documento,
+    //     ~2 min a 150 wpm) y por debajo del tope de 2000 caracteres del endpoint
+    //     de diálogo de ElevenLabs, para que cada clip salga de UNA sola tirada.
     //
-    // Las PREGUNTAS son de elaboración propia sobre esos documentos (el sujet
-    // publica los guiones, no el cuestionario). Respetan lo que sí es oficial:
-    // 3 documentos de 7 + 9 + 9 = 25 puntos y puntuación NO uniforme dentro de
-    // cada ejercicio (conviven ítems de 1 y de 1,5).
+    // Los mismos textos están en `admin-audio.js` (ESTILOS[...].referencia): es
+    // lo que carga el botón del estudio de audio, y por eso el examen encuentra
+    // su clip solo, emparejado por transcript. Si se edita un transcript aquí,
+    // hay que editarlo allí — si no, el documento se queda sin audio.
     co: {
         totalPoints: 25,
         // Pausas del nouveau format, medidas en la pista del surveillant. Son la
@@ -94,53 +102,56 @@ const DELF_TEST_B1_1 = {
                 consigne: 'Vous écoutez une conversation entre deux amis.',
                 points: 7,
                 maxPlays: 2,
-                transcript: `Célia: Salut Lilian !
-Lilian: Salut Célia ! Ça va ?
-Célia: Génial ! Tu sais quoi ? Pour mes trente ans, je vais organiser un week-end à la montagne. Un week-end... sans enfants !
-Lilian: C'est une super idée ! Tu sais déjà où ?
-Célia: Mes parents ont une maison dans les Alpes. Ils nous la prêtent avec plaisir ! Et moi, je leur offre le restaurant pour leur dire merci !
-Lilian: Génial ! Et tu vas inviter beaucoup de monde ?
-Célia: Non, seulement mes meilleurs amis. On sera une dizaine. Je préfère quand il n'y a pas trop de gens, pour pouvoir parler avec tout le monde. Tu vas venir ?
-Lilian: J'aimerais bien ! C'est quand ?
-Célia: Les 20 et 21 janvier.
-Lilian: Malheureusement, je travaille le samedi, mais je peux prendre le train après et passer la moitié du week-end avec vous ! Ça me ferait plaisir de partager ce moment avec toi, depuis tout le temps qu'on se connaît !
-Célia: Oui, c'est parfait, tu arriveras juste à temps pour le grand repas d'anniversaire !
-Lilian: Ça ne va pas te faire trop de choses à préparer ?
-Célia: Non, je vais demander à chaque personne d'apporter quelque chose à manger, et moi, je m'occupe des boissons.
-Lilian: C'est une bonne solution ! Et le dimanche, qu'est-ce qu'on va faire ?
-Célia: J'espère qu'il va y avoir de la neige. Comme ça, on pourra faire du ski.
-Lilian: J'aime beaucoup ce programme ! Et au fait... qu'est-ce que tu aimerais comme cadeau pour ton anniversaire ?
-Célia: Hmm, j'ai réfléchi mais je ne veux pas de cadeau. En fait, ce qui est le plus important pour moi, c'est que vous soyez tous présents ce week-end-là !
-Lilian: D'accord. Alors compte sur moi !`,
+                transcript: `Sophie: Karim ! Tu tombes bien, j'allais justement t'appeler.
+Karim: Ah bon ? Il y a un problème ?
+Sophie: Au contraire ! Ça y est, j'ai signé : je déménage à Nantes le mois prochain.
+Karim: À Nantes ? Mais c'est loin ! Et ton travail ici, alors ?
+Sophie: Justement, c'est pour le travail. On m'a proposé un poste de responsable dans une agence là-bas. J'ai longtemps hésité à cause de la distance, mais l'appartement est beaucoup plus grand et le loyer est presque le même qu'ici.
+Karim: Alors là, bravo ! Et tu pars quand, exactement ?
+Sophie: Le samedi 12. Et c'est un peu pour ça que je voulais te parler... Tu serais libre ce week-end-là ?
+Karim: Pour porter des cartons, tu veux dire ?
+Sophie: Voilà. J'ai déjà réservé une camionnette, mais toute seule, je n'y arriverai jamais.
+Karim: Le samedi matin, j'accompagne mon fils au football, mais je peux passer à partir de midi. Ça t'irait ?
+Sophie: Parfait ! De toute façon, le matin, je dois encore vider la cave.
+Karim: Et les meubles ? Tu emportes tout ?
+Sophie: Non, je laisse le canapé et la vieille armoire. Je préfère les donner à une association plutôt que de les jeter.
+Karim: Tu as raison, ils serviront à quelqu'un. Et pour le déjeuner, ne t'inquiète pas : je passe à la boulangerie avant de venir.
+Sophie: C'est gentil, merci ! Ah, et j'allais oublier le plus important : est-ce que tu pourrais garder le chat une semaine, le temps que je m'installe ?
+Karim: Sans problème, les enfants vont être ravis. Mais à une condition : tu nous invites à Nantes cet été !
+Sophie: Ça, c'est promis. Et je vous ferai visiter, il paraît que la mer est à moins d'une heure.`,
                 questions: [
-                    { q: 'Célia organise ce week-end pour…', options: ['son mariage', 'ses trente ans', 'la fin de l’année scolaire'], answer: 1, points: 1 },
-                    { q: 'Où le week-end va-t-il se passer ?', options: ['Dans une maison de ses parents', 'Dans un hôtel à la montagne', 'Chez Lilian'], answer: 0, points: 1 },
-                    { q: 'Combien de personnes sont invitées ?', options: ['Une dizaine', 'Une trentaine', 'Toute la famille'], answer: 0, points: 1 },
-                    { q: 'Pourquoi Célia préfère-t-elle un petit groupe ?', options: ['Parce que la maison est petite', 'Pour pouvoir parler avec tout le monde', 'Parce que c’est moins cher'], answer: 1, points: 1.5 },
-                    { q: 'Lilian arrivera…', options: ['le vendredi soir', 'le samedi après son travail', 'le dimanche matin'], answer: 1, points: 1.5 },
-                    { q: 'Qu’est-ce que Célia veut comme cadeau ?', options: ['Rien : que ses amis soient présents', 'Une journée de ski', 'Un repas au restaurant'], answer: 0, points: 1 }
+                    { q: 'Sophie annonce à Karim qu’elle va…', options: ['changer d’appartement dans la même ville', 'déménager à Nantes', 'partir en vacances au bord de la mer'], answer: 1, points: 1 },
+                    { q: 'Quelle est la raison principale de ce changement ?', options: ['Un nouveau poste de responsable', 'Un loyer beaucoup moins cher', 'Se rapprocher de sa famille'], answer: 0, points: 1 },
+                    { q: 'Qu’est-ce que Sophie a déjà fait ?', options: ['Elle a réservé une camionnette', 'Elle a vidé la cave', 'Elle a vendu ses meubles'], answer: 0, points: 1 },
+                    { q: 'Pourquoi Karim ne peut-il pas venir le samedi matin ?', options: ['Parce qu’il travaille', 'Parce qu’il accompagne son fils au football', 'Parce qu’il doit aller à la boulangerie'], answer: 1, points: 1.5 },
+                    { q: 'Que va faire Sophie du canapé et de l’armoire ?', options: ['Les emporter à Nantes', 'Les jeter', 'Les donner à une association'], answer: 2, points: 1.5 },
+                    { q: 'Qu’est-ce que Karim demande en échange de son aide ?', options: ['Être invité à Nantes cet été', 'Garder la camionnette un jour de plus', 'Récupérer la vieille armoire'], answer: 0, points: 1 }
                 ]
             },
             {
                 id: 'co2',
                 clipTipo: 'delf-radio-pro',
                 title: 'Exercice 2 — Émission de radio',
-                consigne: 'Vous écoutez la radio. Il s’agit d’une interview sur le monde associatif.',
+                consigne: 'Vous écoutez la radio. Il s’agit d’une interview sur l’orientation des jeunes.',
                 points: 9,
                 maxPlays: 2,
-                transcript: `Journaliste: Aujourd'hui, je vous présente l'association Un regard pour toi, qui propose à des personnes malvoyantes de faire leur shopping avec des bénévoles qui, eux, voient et les aident. Je suis avec Hayette Louail, 29 ans, qui a créé l'association. Bonjour Hayette, est-ce que vous pouvez nous expliquer pourquoi vous avez lancé Un regard pour toi ?
-Hayette: Bonjour. Moi, je suis malvoyante. Quand je vais dans les magasins pour acheter des vêtements, je ne sais jamais si je vais trouver un vendeur disponible. Et même si un vendeur est là, ce n'est pas toujours facile : est-ce qu'il a bien compris ce que je cherche ? Les vendeurs vont vite, ils n'ont pas le temps... Moi, j'ai besoin de prendre mon temps... Alors j'ai pensé que des gens qui aiment faire du shopping pourraient m'aider en venant avec moi et en m'expliquant ce qu'ils voient !
-Journaliste: Qu'est-ce que ça a changé dans votre expérience du shopping ?
-Hayette: J'adore quand un bénévole me suggère une façon différente de m'habiller. Il me décrit un vêtement, et je pense, oh la la, non, ce n'est pas du tout pour moi ! mais j'essaie, et parfois, c'est vraiment super ! Grâce aux bénévoles, j'apprends à porter d'autres choses. Après, au travail, mes collègues me demandent où j'ai acheté mes vêtements.
-Journaliste: Et si je veux aider l'association, comment est-ce que je fais ?
-Hayette: Aujourd'hui, on a une cinquantaine de bénévoles, mais on est toujours à la recherche de nouvelles personnes, donc vous êtes le bienvenu. D'abord, vous aurez une réunion d'information pour rencontrer les autres bénévoles et préparer votre premier rendez-vous. Puis, c'est vous qui décidez à quel rythme vous faites des sorties shopping, et quand.`,
+                transcript: `Journaliste: Chaque année, des milliers de collégiens doivent choisir une orientation sans avoir jamais vu de près le métier qui les attire. L'association Un métier, une journée leur propose de passer une journée entière avec un professionnel. Je reçois sa coordinatrice, Claire Berthier. Bonjour Claire. Comment est née cette idée ?
+Claire: Bonjour. Elle est née d'un constat très simple. En troisième, les élèves font un stage d'observation d'une semaine ; mais la plupart le font chez un parent ou chez un voisin, parce qu'ils n'ont pas d'autre contact. Résultat : ils découvrent toujours les mêmes métiers, ceux de leur famille.
+Journaliste: Et concrètement, comment se passe cette journée ?
+Claire: L'élève suit un professionnel qui a accepté de l'accueillir : une vétérinaire, un architecte, une cuisinière... Il ne visite pas, il l'accompagne du matin au soir, il assiste aux réunions, il pose ses questions. C'est très différent d'une visite d'entreprise en groupe, où l'on regarde tout de loin.
+Journaliste: Combien de professionnels participent aujourd'hui ?
+Claire: Un peu plus de trois cents dans la région, et l'année dernière, mille deux cents élèves ont fait leur journée. Ce qui nous manque, ce ne sont pas les jeunes : ce sont les métiers manuels, où il y a pourtant énormément de travail.
+Journaliste: Et si un professionnel nous écoute et veut participer ?
+Claire: La première étape, c'est de remplir le formulaire sur notre site. Ensuite, nous l'appelons : un entretien d'une vingtaine de minutes, pour préparer la journée ensemble. Et c'est lui qui choisit ses dates.
+Journaliste: Un dernier mot ?
+Claire: Ce qui me frappe le plus, c'est qu'un élève sur trois change d'avis après sa journée. Parfois il abandonne une idée qu'il avait depuis des années, parfois il découvre un métier dont il ignorait l'existence. Dans les deux cas, il choisit en connaissance de cause.`,
                 questions: [
-                    { q: 'L’association Un regard pour toi accompagne des personnes…', options: ['malvoyantes', 'âgées', 'sans emploi'], answer: 0, points: 1.5 },
-                    { q: 'Hayette a créé l’association parce que, dans les magasins…', options: ['les prix sont trop élevés', 'elle ne trouve pas toujours un vendeur disponible', 'il n’y a pas de vêtements à sa taille'], answer: 1, points: 1.5 },
-                    { q: 'Selon Hayette, le problème avec les vendeurs est aussi que…', options: ['ils vont vite et n’ont pas le temps', 'ils refusent de l’aider', 'ils ne parlent pas assez fort'], answer: 0, points: 1.5 },
-                    { q: 'Ce qu’elle apprécie le plus chez les bénévoles, c’est qu’ils…', options: ['portent ses sacs', 'lui suggèrent une façon différente de s’habiller', 'lui font des réductions'], answer: 1, points: 1.5 },
-                    { q: 'Aujourd’hui, l’association compte environ…', options: ['une quinzaine de bénévoles', 'une cinquantaine de bénévoles', 'deux cents bénévoles'], answer: 1, points: 1.5 },
-                    { q: 'Pour devenir bénévole, la première étape est…', options: ['une réunion d’information', 'une formation de deux ans', 'un entretien avec un vendeur'], answer: 0, points: 1.5 }
+                    { q: 'Que propose l’association aux élèves ?', options: ['Une journée complète auprès d’un professionnel', 'Des cours du soir pour préparer l’orientation', 'Une visite d’entreprise en groupe'], answer: 0, points: 1.5 },
+                    { q: 'Selon Claire, quel est le problème des stages de troisième ?', options: ['Ils durent trop peu de temps', 'Les élèves les font chez un parent ou un voisin', 'Les entreprises refusent d’accueillir les élèves'], answer: 1, points: 1.5 },
+                    { q: 'Pendant la journée, l’élève…', options: ['observe l’entreprise de loin', 'accompagne le professionnel du matin au soir', 'travaille à la place du professionnel'], answer: 1, points: 1.5 },
+                    { q: 'Combien d’élèves ont participé l’année dernière ?', options: ['Trois cents', 'Mille deux cents', 'Une vingtaine'], answer: 1, points: 1.5 },
+                    { q: 'Qu’est-ce qui manque le plus à l’association ?', options: ['Des jeunes intéressés', 'Des professionnels des métiers manuels', 'De l’argent pour les transports'], answer: 1, points: 1.5 },
+                    { q: 'Après leur journée, un élève sur trois…', options: ['change d’avis sur son orientation', 'demande à revenir une deuxième fois', 'abandonne ses études'], answer: 0, points: 1.5 }
                 ]
             },
             {
@@ -150,16 +161,24 @@ Hayette: Aujourd'hui, on a une cinquantaine de bénévoles, mais on est toujours
                 consigne: 'Vous écoutez la radio. Il s’agit d’une interview sur un sujet de société.',
                 points: 9,
                 maxPlays: 2,
-                transcript: `Journaliste: Aujourd'hui, je reçois François Dechy qui va nous parler de Baluchon. C'est une entreprise qu'il a créée à Romainville, en région parisienne.
-François: Alors, Baluchon, c'est une petite entreprise qui existe depuis deux ans. On prépare des repas qu'on livre dans les entreprises, pour les salariés qui n'ont pas le temps de cuisiner eux-mêmes et qui en ont assez de manger des sandwichs en cinq minutes devant leur ordinateur... Je me suis rendu compte que les employés prenaient de moins en moins de temps pour déjeuner. Mais on sait que s'arrêter un bon moment et prendre un vrai repas permet d'être plus productif l'après-midi ! Je voulais donc créer un projet qui redonnait de l'importance au moment du déjeuner. Je voulais aussi que cette entreprise mette en valeur des produits locaux, cultivés naturellement et sans produits chimiques. Et puis, ce qui m'intéresse surtout, c'est l'humain. J'avais envie d'aider des gens qui ont du mal à trouver du travail, des personnes qui sont au chômage depuis longtemps ou des jeunes qui ont arrêté l'école. À Baluchon, ces personnes sont formées pendant deux ans pour apprendre un métier dans la restauration. Pour accéder à nos cours, on leur demande seulement de savoir parler français, écrire, et compter jusqu'à cent. Quand j'ai présenté le projet à ma ville, ils ont décidé de m'aider, et le maire nous a prêté une cuisine qui n'était pas utilisée depuis plusieurs années. On prépare tous les repas là-bas, et c'est vraiment pratique pour nous, parce que c'est très central ! Tous les jours, on a 30 cuisiniers qui préparent entre 400 et 1 000 repas. Par exemple, aujourd'hui, notre équipe prépare une crème de courgette à la menthe. Vous pouvez regarder les menus sur notre site internet. Pour commander, téléphonez au moins 48 heures à l'avance, surtout pour un grand groupe.`,
+                transcript: `Journaliste: Aujourd'hui, je reçois Martine Delaunay, maire de Villeneuve-le-Haut. C'est un village de sept cents habitants qui, il y a dix ans, perdait sa population, et qui accueille aujourd'hui de nouvelles familles.
+Martine: Bonjour. Il faut se souvenir d'où l'on vient. Il y a dix ans, nous perdions une vingtaine d'habitants par an, la dernière épicerie avait fermé, et surtout, nous étions passés sous les trente élèves : l'école du village allait fermer. Et quand l'école ferme, plus aucune famille ne s'installe.
+Journaliste: Par quoi avez-vous commencé ?
+Martine: Pas par des travaux, contrairement à ce qu'on croit toujours. Nous avons commencé par la fibre : dans une commune comme la nôtre, une connexion lente, c'est une porte fermée. Ensuite, nous avons transformé l'ancienne école en un lieu partagé, avec des bureaux que l'on peut louer soixante euros par mois. Des gens qui travaillent à distance sont venus s'installer, d'abord deux familles, puis d'autres, parce qu'elles se sont parlé entre elles.
+Journaliste: Avec quels résultats ?
+Martine: Une quarantaine de familles en cinq ans, et l'école a rouvert une deuxième classe l'an dernier. Ça, c'est le signe qui ne trompe pas.
+Journaliste: Et les difficultés ?
+Martine: Il y en a, bien sûr. On me parle toujours du transport, et c'est vrai qu'ici il faut deux voitures par foyer. Mais le vrai obstacle aujourd'hui, ce n'est pas le transport, c'est le logement : nous avons des maisons vides dont les propriétaires ne veulent pas louer, parce qu'elles demanderaient trop de travaux.
+Journaliste: Que conseilleriez-vous à quelqu'un qui nous écoute et qui rêve de s'installer à la campagne ?
+Martine: De venir passer une semaine ici en hiver, pas au mois d'août. Un tiers des familles qui arrivent uniquement pour le prix des maisons repartent au bout de deux ans. Celles qui restent, ce sont celles qui savaient exactement où elles venaient.`,
                 questions: [
-                    { q: 'Baluchon livre des repas…', options: ['dans les écoles', 'dans les entreprises', 'à domicile le week-end'], answer: 1, points: 1 },
-                    { q: 'L’entreprise existe depuis…', options: ['deux ans', 'cinq ans', 'dix ans'], answer: 0, points: 1 },
-                    { q: 'François a constaté que les employés…', options: ['prenaient de moins en moins de temps pour déjeuner', 'mangeaient trop', 'cuisinaient chez eux le soir'], answer: 0, points: 1 },
-                    { q: 'Selon lui, prendre un vrai repas permet…', options: ['de faire des économies', 'd’être plus productif l’après-midi', 'de mieux dormir'], answer: 1, points: 1.5 },
-                    { q: 'Les personnes recrutées sont formées pendant…', options: ['six mois', 'un an', 'deux ans'], answer: 2, points: 1.5 },
-                    { q: 'La mairie a aidé le projet en…', options: ['prêtant une cuisine inutilisée', 'donnant de l’argent', 'trouvant des clients'], answer: 0, points: 1.5 },
-                    { q: 'Pour commander, il faut téléphoner au moins…', options: ['24 heures à l’avance', '48 heures à l’avance', 'une semaine à l’avance'], answer: 1, points: 1.5 }
+                    { q: 'Combien d’habitants compte le village aujourd’hui ?', options: ['Trois cents', 'Sept cents', 'Deux mille'], answer: 1, points: 1 },
+                    { q: 'Il y a dix ans, le village risquait surtout…', options: ['la fermeture de son école', 'la fermeture de sa mairie', 'de perdre sa gare'], answer: 0, points: 1 },
+                    { q: 'Par quoi la commune a-t-elle commencé ?', options: ['Par installer la fibre', 'Par construire des logements neufs', 'Par rouvrir une épicerie'], answer: 0, points: 1 },
+                    { q: 'Le lieu partagé a été aménagé dans…', options: ['l’ancienne épicerie', 'l’ancienne école', 'la mairie'], answer: 1, points: 1.5 },
+                    { q: 'Combien de familles se sont installées en cinq ans ?', options: ['Une dizaine', 'Une quarantaine', 'Une centaine'], answer: 1, points: 1.5 },
+                    { q: 'Selon la maire, le principal obstacle aujourd’hui, c’est…', options: ['le transport', 'le logement', 'le manque de travail'], answer: 1, points: 1.5 },
+                    { q: 'Que conseille-t-elle aux personnes intéressées ?', options: ['De venir passer une semaine en hiver', 'De visiter le village au mois d’août', 'D’acheter une maison le plus vite possible'], answer: 0, points: 1.5 }
                 ]
             }
         ]

@@ -53,15 +53,41 @@ for (const d of test.co.documents) {
         !!delEstudio && L.normalizarTranscript(delEstudio) === L.normalizarTranscript(d.transcript),
         delEstudio ? '(los textos difieren)' : '(no existe ese preset en el estudio)');
 }
+// La comparación de arriba es la del motor, y el motor solo mira los primeros
+// 300 caracteres normalizados: con ella, dos textos que se separan al final
+// emparejan igual (pasó el 2026-08-02 — el doc 3 difería en la última pregunta
+// del periodista y el test daba verde). El clip sonaría distinto del transcript
+// que el alumno lee en pantalla, así que aquí se exige texto IDÉNTICO.
+for (const d of test.co.documents) {
+    const a = (refs[d.clipTipo] || '').replace(/\r/g, '');
+    const b = d.transcript.replace(/\r/g, '');
+    const i = [...b].findIndex((c, k) => c !== a[k]);
+    comprobar(`${d.id}: texto literalmente idéntico al del estudio`, a === b,
+        i >= 0 ? `→ se separan en el carácter ${i}: «${b.slice(i, i + 40)}»` : '→ longitudes distintas');
+}
 
 console.log('\n3) El emparejamiento resiste diferencias que no importan');
 const base = test.co.documents[0].transcript;
 comprobar('mismo texto con otros nombres de hablante → empareja',
-    L.normalizarTranscript(base) === L.normalizarTranscript(base.replace(/^Célia:/gm, 'Marie:').replace(/^Lilian:/gm, 'Paul:')));
+    L.normalizarTranscript(base) === L.normalizarTranscript(base.replace(/^Sophie:/gm, 'Marie:').replace(/^Karim:/gm, 'Paul:')));
 comprobar('mismo texto sin acentos → empareja',
     L.normalizarTranscript(base) === L.normalizarTranscript(base.normalize('NFD').replace(/[\u0300-\u036f]/g, '')));
 comprobar('un texto distinto NO empareja',
     L.normalizarTranscript(base) !== L.normalizarTranscript(test.co.documents[1].transcript));
+
+console.log('\n3-bis) Cada documento cabe en UNA sola tirada del generador');
+// El troceo está descartado (con él, las partes no suenan a la misma grabación),
+// así que un transcript que se pase del límite del proveedor sale partido o no
+// sale. El endpoint de diálogo de ElevenLabs —el generador del DELF— corta en
+// 2000 caracteres. El sujet oficial medía 1633/1716/1842: ese es el rango sano.
+for (const d of test.co.documents) {
+    const n = d.transcript.length;
+    comprobar(`${d.id}: ${n} caracteres (< 2000, margen ${2000 - n})`, n < 2000, `→ se partiría en dos`);
+}
+// Ritmo: a 150 wpm los tres juntos no deben pasar del tope oficial de ~6 min.
+const palabras = t => t.split('\n').map(l => l.replace(/^[^:]{2,20}:\s*/, '')).join(' ').trim().split(/\s+/).length;
+const segundos = test.co.documents.reduce((n, d) => n + palabras(d.transcript) / 150 * 60, 0);
+comprobar(`los 3 documentos duran ${Math.round(segundos)} s a 150 wpm (tope oficial ≈ 360 s)`, segundos <= 380);
 
 console.log('\n4) La máquina de fases: 2 escuchas y ni una más');
 const clip = { audioUrl: 'https://ejemplo/a.mp3', transcript: base, tipo: 'delf-dialogo' };
