@@ -76,9 +76,9 @@
         .hp-cta { display: inline-flex; align-items: center; justify-content: center; gap: .55rem; padding: .95rem 1.9rem; border-radius: 999px; font-weight: 600; font-size: 1rem; letter-spacing: -.01em; transition: transform .2s cubic-bezier(.16,1,.3,1), background-color .2s ease, border-color .2s ease; }
         .hp-cta:focus-visible { outline: 2px solid #16a34a; outline-offset: 3px; }
         .hp-cta-1 { background: #16a34a; color: #fff; }
-        .hp-cta-1:hover { background: #15803d; transform: translateY(-2px); }
+        .hp-cta-1:hover { background: #15803d; transform: translateY(-3px) scale(1.03); }
         .hp-cta-2 { background: transparent; color: #1c1917; border: 1px solid #d6d3d1; }
-        .hp-cta-2:hover { border-color: #1c1917; transform: translateY(-2px); }
+        .hp-cta-2:hover { border-color: #1c1917; background: #f5f5f4; transform: translateY(-3px) scale(1.03); }
         html.dark .hp-cta-2 { color: #fafaf9; border-color: #57534e; }
         html.dark .hp-cta-2:hover { border-color: #fafaf9; }
 
@@ -102,11 +102,11 @@
         @media (min-width: 1024px) {
             /* La columna del texto pesa algo más que la visual: con 50/50 el
                título se partía en tres líneas. */
-            .hp-hero-grid { min-height: 86vh; grid-template-columns: 1.05fr 1fr; }
+            .hp-hero-grid { min-height: min(86vh, 46rem); grid-template-columns: 1.05fr 1fr; }
             /* Con la ventana pegada al borde, la rotación le comía el lado
                derecho y cortaba los años de la trayectoria. Cabe entera y el
                respiro de la derecha es el que deja que la perspectiva se lea. */
-            .hp-visual { height: 86vh; min-height: 620px; padding: 5rem 2.5rem 3rem 3.5rem; align-items: center; justify-content: center; }
+            .hp-visual { height: min(86vh, 46rem); min-height: 560px; padding: 5rem 2.5rem 3rem 3.5rem; align-items: center; justify-content: center; }
         }
 
         /* El parallax lo lleva el contenedor: la ventana usa su transform para la
@@ -119,8 +119,12 @@
                de borde. Una sola sombra grande es lo que da aspecto de plantilla. */
             box-shadow: 0 1px 1px rgba(12,10,9,.04), 0 18px 36px -12px rgba(12,10,9,.16),
                         0 48px 90px -30px rgba(12,10,9,.28), 0 0 0 1px rgba(12,10,9,.05);
-            transform: perspective(1800px) rotateY(-7deg) rotateX(1.2deg);
-            transform-origin: left center;
+            /* La inclinación sale de dos variables para que el guion del ratón
+               pueda moverlas sin pisar la animación de entrada ni la
+               perspectiva: escribir `transform` entero desde JS se cargaría
+               las dos cosas. */
+            transform: perspective(1800px) rotateY(var(--ry, -7deg)) rotateX(var(--rx, 1.2deg)) translateY(var(--tz, 0));
+            transform-origin: center center;
         }
         html.dark .hp-ventana { background: #221f1d; box-shadow: 0 18px 36px -12px rgba(0,0,0,.5), 0 48px 90px -30px rgba(0,0,0,.6), 0 0 0 1px rgba(250,250,249,.07); }
         @media (max-width: 1023px) { .hp-ventana { transform: none; max-width: 28rem; margin: 0 auto; } }
@@ -203,7 +207,7 @@
         /* El límite de ancho vive en cada sección, no en el contenedor: así las
            que llevan color pueden llegar al borde de la pantalla y el resto
            sigue alineado con el hero. */
-        .hp-seccion { padding-block: clamp(3.5rem, 8vw, 7rem); }
+        .hp-seccion { padding-block: clamp(2.5rem, 4.5vw, 4rem); }
         .hp-interior { max-width: 80rem; margin-inline: auto; width: 100%; }
 
         /* A sangre: el -1rem anula el padding del <main>, que es de 1rem. Con
@@ -213,7 +217,7 @@
         /* Dentro del bloque de color, el texto vuelve a alinearse con el resto
            de la página en vez de pegarse al borde de la pantalla. */
         .hp-a-sangre > .hp-interior { padding-inline: clamp(1.25rem, 4vw, 3rem); }
-        .hp-cab { max-width: 44rem; margin: 0 auto clamp(2.25rem, 4vw, 3.75rem); text-align: center; }
+        .hp-cab { max-width: 44rem; margin: 0 auto clamp(1.75rem, 3vw, 2.75rem); text-align: center; }
         .hp-h2 { font-size: clamp(1.85rem, 3.1vw, 2.6rem); font-weight: 600; letter-spacing: -.032em; line-height: 1.13; color: #1c1917; text-wrap: balance; }
         html.dark .hp-h2 { color: #fafaf9; }
         .hp-sub { margin-top: .95rem; font-size: 1.03rem; line-height: 1.62; color: #57534e; }
@@ -230,7 +234,7 @@
                    transition: transform .4s cubic-bezier(.16,1,.3,1), box-shadow .4s ease, border-color .4s ease; }
         /* Al pasar el cursor el borde se tiñe de marca: el color aparece cuando
            interactúas, en vez de estar siempre encendido. */
-        .hp-card:hover { transform: translateY(-3px); box-shadow: 0 14px 30px -14px rgba(20,83,45,.22); border-color: #86efac; }
+        .hp-card:hover { transform: translateY(-6px); box-shadow: 0 20px 40px -16px rgba(20,83,45,.28); border-color: #86efac; }
         html.dark .hp-card { background: #221f1d; border-color: #332f2c; }
         html.dark .hp-card:hover { border-color: #15803d; box-shadow: 0 14px 30px -14px rgba(0,0,0,.55); }
 
@@ -284,10 +288,10 @@
 
         .hp-enlace { display: inline-flex; align-items: center; gap: .4rem; margin-top: 1.1rem; font-size: .88rem; font-weight: 600; color: #16a34a;
                      border-bottom: 1px solid transparent; transition: border-color .25s ease, gap .25s ease; }
-        .hp-enlace:hover { border-bottom-color: currentColor; gap: .6rem; }
+        .hp-enlace:hover { border-bottom-color: currentColor; gap: .75rem; }
         html.dark .hp-enlace { color: #4ade80; }
         .hp-enlace i { transition: transform .25s cubic-bezier(.16,1,.3,1); }
-        .hp-enlace:hover i { transform: translateX(2px); }
+        .hp-enlace:hover i { transform: translateX(4px); }
 
         /* ── La firma de la portada ──────────────────────────────────────────
            Lo que funciona del hero —fondo verde claro con un corte diagonal y
@@ -301,7 +305,7 @@
         /* El margen lateral lo pone SOLO el interior: si lo ponen los dos, el
            texto queda más adentro que el del resto de la página. */
         .hp-lienzo.hp-a-sangre, .hp-cierre.hp-a-sangre { border-radius: 0; padding-inline: 0; }
-        .hp-seccion-plana { padding-block: 0; margin-block: clamp(3.5rem, 8vw, 7rem); }
+        .hp-seccion-plana { padding-block: 0; margin-block: clamp(2.5rem, 4.5vw, 4rem); }
         html.dark .hp-lienzo { background: #14261a; }
         .hp-lienzo::after { content: ''; position: absolute; inset: 0; background: #bbf7d0;
                             clip-path: polygon(0 58%, 100% 30%, 100% 100%, 0% 100%); pointer-events: none; }
@@ -367,39 +371,45 @@
            Todo lo que reacciona lo hace con transform y color, nunca moviendo
            la maquetación: un elemento que empuja a los de al lado al pasar por
            encima se siente roto, no vivo. */
-        .hp-fila { transition: background-color .3s ease; margin-inline: -1rem; padding-inline: 1rem; }
-        .hp-fila:hover { background: #f6fdf8; }
+        .hp-fila { transition: background-color .3s ease, transform .35s cubic-bezier(.16,1,.3,1), border-color .3s ease; margin-inline: -1rem; padding-inline: 1rem; }
+        .hp-fila:hover { background: #ecfdf3; transform: translateX(4px); }
         html.dark .hp-fila:hover { background: #1a201c; }
         .hp-fila-n, .hp-fila-icono { transition: transform .35s cubic-bezier(.16,1,.3,1), color .3s ease; }
-        .hp-fila:hover .hp-fila-n { transform: translateX(3px); color: #16a34a; }
-        .hp-fila:hover .hp-fila-icono { transform: scale(1.12); }
+        .hp-fila:hover .hp-fila-n { transform: translateX(7px) scale(1.15); color: #16a34a; }
+        .hp-fila:hover .hp-fila-icono { transform: scale(1.3) rotate(-6deg); }
 
         .hp-columna .hp-card-icono, .hp-opcion .hp-card-icono { transition: transform .35s cubic-bezier(.16,1,.3,1); }
-        .hp-columna:hover .hp-card-icono, .hp-opcion:hover .hp-card-icono { transform: translateY(-3px) scale(1.06); }
+        .hp-columna:hover .hp-card-icono, .hp-opcion:hover .hp-card-icono { transform: translateY(-7px) scale(1.18); }
+        .hp-columna .hp-card-t, .hp-opcion .hp-card-t { transition: color .25s ease; }
+        .hp-columna:hover .hp-card-t, .hp-opcion:hover .hp-card-t { color: #16a34a; }
+        html.dark .hp-columna:hover .hp-card-t, html.dark .hp-opcion:hover .hp-card-t { color: #4ade80; }
+        .hp-columna:hover .hp-enlace, .hp-opcion:hover .hp-enlace { gap: .7rem; }
 
         /* Los pasos: el nodo se enciende cuando el cursor está en su columna. */
         .hp-paso::before { transition: transform .35s cubic-bezier(.16,1,.3,1), box-shadow .35s ease, background-color .3s ease; }
-        .hp-paso:hover::before { transform: scale(1.25); box-shadow: 0 0 0 8px rgba(34,197,94,.16); background: #22c55e; }
-        @media (min-width: 1024px) { .hp-paso:hover::before { transform: translateX(-50%) scale(1.25); } }
+        .hp-paso:hover::before { transform: scale(1.55); box-shadow: 0 0 0 11px rgba(34,197,94,.22); background: #22c55e; }
+        @media (min-width: 1024px) { .hp-paso:hover::before { transform: translateX(-50%) scale(1.55); } }
         .hp-paso .hp-card-icono { transition: transform .35s cubic-bezier(.16,1,.3,1); }
-        .hp-paso:hover .hp-card-icono { transform: translateY(-3px); }
+        .hp-paso:hover .hp-card-icono { transform: translateY(-6px) scale(1.15); }
 
-        /* La ventana del hero también responde: se levanta un poco. */
-        .hp-ventana { transition: transform .5s cubic-bezier(.16,1,.3,1), box-shadow .5s ease; }
+        /* La ventana sigue al cursor (ver el guion). La transición es corta: si
+           es larga, la inclinación va por detrás del ratón y se siente pegajosa;
+           al salir, una más lenta la devuelve a su sitio. */
+        .hp-ventana { transition: transform .25s cubic-bezier(.16,1,.3,1), box-shadow .4s ease; }
+        .hp-ventana.hp-siguiendo { transition: transform .12s linear, box-shadow .4s ease; }
         @media (min-width: 1024px) {
-            .hp-ventana:hover { transform: perspective(1800px) rotateY(-4deg) rotateX(.6deg) translateY(-6px);
-                                box-shadow: 0 1px 1px rgba(12,10,9,.04), 0 24px 46px -14px rgba(20,83,45,.2),
-                                            0 60px 110px -34px rgba(20,83,45,.34), 0 0 0 1px rgba(12,10,9,.05); }
+            .hp-visual:hover .hp-ventana { box-shadow: 0 1px 1px rgba(12,10,9,.04), 0 28px 52px -14px rgba(20,83,45,.24),
+                                                       0 70px 120px -34px rgba(20,83,45,.38), 0 0 0 1px rgba(12,10,9,.05); }
         }
         /* Cada hito de la trayectoria se ilumina por separado. */
         .hp-ruta li { transition: transform .3s cubic-bezier(.16,1,.3,1); }
-        .hp-ruta li:hover { transform: translateX(3px); }
+        .hp-ruta li:hover { transform: translateX(6px); }
         .hp-ruta li::after { transition: transform .3s cubic-bezier(.16,1,.3,1), border-color .3s ease; }
-        .hp-ruta li:hover::after { transform: scale(1.2); border-color: #22c55e; }
+        .hp-ruta li:hover::after { transform: scale(1.45); border-color: #22c55e; }
 
         /* Enlaces del pie: hoy solo cambiaban de color. */
         footer a, footer button { transition: color .25s ease, transform .25s cubic-bezier(.16,1,.3,1); display: inline-block; }
-        footer a:hover, footer button:hover { transform: translateX(2px); }
+        footer a:hover, footer button:hover { transform: translateX(4px); }
 
         @media (prefers-reduced-motion: reduce) {
             .hp-fila:hover .hp-fila-n, .hp-fila:hover .hp-fila-icono,
@@ -413,7 +423,7 @@
            columna con línea — otro recurso, para que la página no repita
            siempre el mismo gesto. */
         .hp-examen { display: block; padding-top: 1.35rem; transition: transform .35s cubic-bezier(.16,1,.3,1); }
-        .hp-examen:hover { transform: translateY(-4px); }
+        .hp-examen:hover { transform: translateY(-8px); }
         .hp-examen:focus-visible { outline: 2px solid #16a34a; outline-offset: 6px; }
         .hp-examen-barra { display: block; height: 4px; width: 3.5rem; border-radius: 999px; margin-bottom: 1.35rem;
                            transition: width .4s cubic-bezier(.16,1,.3,1); }
@@ -443,12 +453,12 @@
         }
 
         /* Propósito: una cita a gran tamaño sobre el lienzo, sin panel encima. */
-        .hp-lienzo-cita { padding: clamp(2.5rem, 6vw, 5rem) clamp(1.75rem, 5vw, 4.5rem); }
+        .hp-lienzo-cita { padding: clamp(2.25rem, 4.5vw, 3.75rem) clamp(1.75rem, 5vw, 4.5rem); }
         .hp-lienzo-cita .hp-frase { font-size: clamp(1.5rem, 3vw, 2.5rem); }
 
         /* Cierre: color pleno. El único bloque donde el verde de marca ocupa
            toda la superficie — por eso cierra. */
-        .hp-cierre { background: #16a34a; border-radius: 20px; padding: clamp(2.75rem, 6vw, 5rem) clamp(1.5rem, 4vw, 3rem);
+        .hp-cierre { background: #16a34a; border-radius: 20px; padding: clamp(2.5rem, 4.5vw, 3.75rem) clamp(1.5rem, 4vw, 3rem);
                      text-align: center; position: relative; overflow: hidden; }
         .hp-cierre::after { content: ''; position: absolute; inset: 0; background: #15803d;
                             clip-path: polygon(0 68%, 100% 42%, 100% 100%, 0% 100%); pointer-events: none; }
@@ -456,7 +466,7 @@
         .hp-cierre-t { font-size: clamp(1.75rem, 3.2vw, 2.6rem); font-weight: 600; letter-spacing: -.03em; line-height: 1.15; color: #fff; }
         .hp-cierre-p { margin: 1rem auto 0; max-width: 38rem; font-size: 1.03rem; line-height: 1.6; color: #dcfce7; }
         .hp-cta-blanco { background: #fff; color: #14532d; }
-        .hp-cta-blanco:hover { background: #f0fdf4; transform: translateY(-2px); }
+        .hp-cta-blanco:hover { background: #f0fdf4; transform: translateY(-3px) scale(1.03); }
         /* Tarjeta que flota sobre el lienzo: hereda la sombra del panel del hero,
            que es lo que hace que se lea como objeto y no como recuadro. */
         .hp-card-flotante { border-color: transparent;
@@ -1142,6 +1152,42 @@
 
             // Parallax: va en el contenedor y no en la ventana, que tiene su
             // propia rotación — escribir transform aquí se la comería.
+            // ── La ventana del hero sigue al cursor ─────────────────────────
+            // Solo donde hay ratón de verdad: en una pantalla táctil el puntero
+            // «grueso» dispararía inclinaciones al tocar, que se ven a saltos.
+            const ventana = document.querySelector('.hp-ventana');
+            const zona = document.querySelector('.hp-visual');
+            if (ventana && zona && !reduce && window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
+                const BASE_Y = -7, BASE_X = 1.2;   // la inclinación en reposo
+                let ultimoAplicado = 0;
+
+                // Freno por tiempo y no con requestAnimationFrame: rAF no corre
+                // en pestañas ocultas y ya dejó un fallo en esta misma página.
+                // Aquí solo se escriben tres variables CSS, que el navegador
+                // resuelve al pintar sin recalcular la maquetación.
+                const aplicar = (e) => {
+                    ultimoAplicado = performance.now();
+                    const r = zona.getBoundingClientRect();
+                    // -0.5 … 0.5 desde el centro de la zona
+                    const dx = (e.clientX - r.left) / r.width - .5;
+                    const dy = (e.clientY - r.top) / r.height - .5;
+                    ventana.style.setProperty('--ry', `${(BASE_Y - dx * 18).toFixed(2)}deg`);
+                    ventana.style.setProperty('--rx', `${(BASE_X + dy * 12).toFixed(2)}deg`);
+                    ventana.style.setProperty('--tz', `${(-Math.abs(dy) * 6 - 4).toFixed(1)}px`);
+                };
+
+                zona.addEventListener('mouseenter', () => ventana.classList.add('hp-siguiendo'));
+                zona.addEventListener('mousemove', (e) => {
+                    if (performance.now() - ultimoAplicado >= 12) aplicar(e);   // ~80 veces por segundo como mucho
+                }, { passive: true });
+                zona.addEventListener('mouseleave', () => {
+                    ventana.classList.remove('hp-siguiendo');
+                    ventana.style.setProperty('--ry', `${BASE_Y}deg`);
+                    ventana.style.setProperty('--rx', `${BASE_X}deg`);
+                    ventana.style.setProperty('--tz', '0px');
+                });
+            }
+
             const visual = document.querySelector('.hp-visual');
             if (visual && main && !reduce && window.matchMedia('(min-width: 1024px)').matches) {
                 // Mismo cuidado que arriba: el freno va por tiempo y no por un
