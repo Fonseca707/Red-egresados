@@ -231,6 +231,26 @@
         .hp-sub { margin-top: .95rem; font-size: 1.03rem; line-height: 1.62; color: #57534e; }
         html.dark .hp-sub { color: #d6d3d1; }
 
+        /* ── Composición ─────────────────────────────────────────────────
+           Seis de ocho secciones tenían el MISMO esqueleto: rótulo, título y
+           subtítulo centrados, contenido debajo. Bajando sin leer, la página
+           entera parecía el mismo bloque repetido. Estas variantes existen
+           para que cada sección se lea distinta de un vistazo. */
+
+        /* A la izquierda, a lo ancho: el título ancla la sección al margen. */
+        .hp-cab-izq { max-width: 46rem; margin-inline: 0; text-align: left; }
+        .hp-cab-junta { margin-bottom: 1.5rem; }
+        .hp-cab-izq .hp-sub { margin-inline: 0; }
+
+        /* Partida: el título se queda a un lado mientras el contenido pasa. */
+        .hp-partida { display: grid; gap: clamp(1.75rem, 3.5vw, 3.5rem); align-items: start; }
+        @media (min-width: 900px) {
+            .hp-partida { grid-template-columns: minmax(0, .82fr) minmax(0, 1.18fr); gap: clamp(2.5rem, 5vw, 5rem); }
+            .hp-partida > .hp-cab { position: sticky; top: 6.5rem; margin-bottom: 0; }
+        }
+        .hp-partida > .hp-cab { max-width: 30rem; margin-inline: 0; text-align: left; }
+        .hp-partida > .hp-cab .hp-sub { margin-inline: 0; }
+
         .hp-rejilla { display: grid; gap: 1.15rem; }
         @media (min-width: 640px) { .hp-rejilla-2 { grid-template-columns: repeat(2, 1fr); } }
         @media (min-width: 768px) { .hp-rejilla-3 { grid-template-columns: repeat(3, 1fr); } }
@@ -345,6 +365,12 @@
 
         /* Columnas separadas por una línea, sin recuadro. */
         .hp-columnas { gap: 0; }
+        /* Apiladas: al ir al lado del título, las tres se leen como una lista
+           de públicos, no como tres tarjetas en fila. */
+        .hp-apiladas > * + * { border-top: 1px solid #ebeae8; padding-top: 1.6rem; margin-top: 1.6rem; }
+        html.dark .hp-apiladas > * + * { border-top-color: #332f2c; }
+        .hp-apiladas .hp-columna { padding: .75rem 0 .25rem; border-left: 0; }
+        .hp-apiladas .hp-card-icono { font-size: 1.6rem; }
         .hp-columna { padding: .75rem 0 .25rem; }
         @media (min-width: 768px) {
             .hp-columna { padding: .75rem 2rem .25rem; border-left: 1px solid #ebeae8; }
@@ -359,7 +385,7 @@
         .hp-columna .hp-card-icono { font-size: 1.9rem; line-height: 1.25; }
 
         /* Lista numerada: el número hace de ancla visual y sustituye a la caja. */
-        .hp-lista { max-width: 64rem; margin: 0 auto; }
+        .hp-lista { max-width: 68rem; margin: 0; }
         .hp-fila { display: flex; align-items: flex-start; gap: 1.5rem; padding: 1.75rem 0; border-top: 1px solid #ebeae8; }
         .hp-fila:last-child { border-bottom: 1px solid #ebeae8; }
         html.dark .hp-fila { border-top-color: #332f2c; }
@@ -756,7 +782,7 @@
                 <div class="hp-cab" data-hp-sube>
                     <p class="hp-kicker">Cómo funciona</p>
                     <h3 class="hp-h2 mt-4">De un nombre a un camino que se sigue</h3>
-                    <p class="hp-sub">En cuatro pasos, tu historia se vuelve el mapa que un estudiante del Liceo estaba buscando.</p>
+                    <p class="hp-sub">En cuatro pasos, tu historia se vuelve el mapa que un estudiante estaba buscando.</p>
                 </div>
 
                 <div class="hp-rejilla hp-rejilla-2 hp-rejilla-4 hp-ruta-pasos">
@@ -764,13 +790,13 @@
                         <span class="hp-paso-n">PASO 1</span>
                         <i class="ph ph-user-plus hp-card-icono" aria-hidden="true"></i>
                         <h4 class="hp-card-t">Crea tu cuenta</h4>
-                        <p class="hp-card-p">Egresado o estudiante del Liceo Campestre. Toma menos de un minuto.</p>
+                        <p class="hp-card-p">Egresado o estudiante de un colegio de la red. Toma menos de un minuto.</p>
                     </div>
                     <div class="hp-paso" data-hp-sube style="--d:80ms">
                         <span class="hp-paso-n">PASO 2</span>
                         <i class="ph ph-path hp-card-icono" aria-hidden="true"></i>
                         <h4 class="hp-card-t">Cuenta tu ruta</h4>
-                        <p class="hp-card-p">Del Liceo a la universidad, a tu primer trabajo y a donde estás hoy: tu trayectoria paso a paso.</p>
+                        <p class="hp-card-p">Del colegio a la universidad, a tu primer trabajo y a donde estás hoy: tu trayectoria paso a paso.</p>
                     </div>
                     <div class="hp-paso" data-hp-sube style="--d:160ms">
                         <span class="hp-paso-n">PASO 3</span>
@@ -789,14 +815,13 @@
             </section>
 
             <!-- PARA QUIÉN ES -->
-            <section class="hp-seccion hp-banda hp-a-sangre"><div class="hp-interior">
-              <div data-hp-sube>
-                <div class="hp-cab">
+            <section class="hp-seccion hp-banda hp-a-sangre"><div class="hp-interior hp-partida">
+                <div class="hp-cab" data-hp-sube>
                     <p class="hp-kicker">Para quién es</p>
                     <h3 class="hp-h2 mt-4">Un punto de encuentro para toda la comunidad</h3>
                     <p class="hp-sub">Cada quien entra por una puerta distinta, pero todos terminan en la misma red.</p>
                 </div>
-                <div class="hp-rejilla hp-rejilla-3 hp-columnas">
+                <div class="hp-apiladas">
                     <div class="hp-columna" data-hp-sube style="--d:0ms">
                         <i class="ph ph-student hp-card-icono" aria-hidden="true"></i>
                         <h4 class="hp-card-t">Estudiantes</h4>
@@ -812,17 +837,16 @@
                     <div class="hp-columna" data-hp-sube style="--d:180ms">
                         <i class="ph ph-handshake hp-card-icono" aria-hidden="true"></i>
                         <h4 class="hp-card-t">Empresas y aliados</h4>
-                        <p class="hp-card-p">¿Buscas talento del Liceo, quieres ofrecer prácticas o mentorías, o proponer una alianza? Escríbele directamente a la red: leemos cada mensaje.</p>
+                        <p class="hp-card-p">¿Buscas talento joven, quieres ofrecer prácticas o mentorías, o proponer una alianza? Escríbele directamente a la red: leemos cada mensaje.</p>
                         <button onclick="contactoLogic.open('empresa')" class="hp-enlace">Contactar la red <i class="ph-bold ph-arrow-right" aria-hidden="true"></i></button>
                     </div>
                 </div>
-              </div>
               </div>
             </section>
 
             <!-- QUÉ ENCUENTRAS AQUÍ -->
             <section class="hp-seccion"><div class="hp-interior">
-                <div class="hp-cab" data-hp-sube>
+                <div class="hp-cab hp-cab-izq" data-hp-sube>
                     <p class="hp-kicker" data-acento="teal">Qué encuentras aquí</p>
                     <h3 class="hp-h2 mt-4">Una red que se recorre</h3>
                     <p class="hp-sub">Tres formas de usarla, y ninguna necesita que conozcas a nadie de antemano.</p>
@@ -842,7 +866,7 @@
                         <span class="hp-fila-n">02</span>
                         <div class="hp-fila-txt">
                             <h4 class="hp-fila-t">Trayectorias reales</h4>
-                            <p class="hp-fila-p">Cada egresado cuenta su ruta paso a paso: del Liceo a la universidad, a su primer trabajo y a donde está hoy.</p>
+                            <p class="hp-fila-p">Cada egresado cuenta su ruta paso a paso: del colegio a la universidad, a su primer trabajo y a donde está hoy.</p>
                         </div>
                         <i class="ph ph-path hp-fila-icono" aria-hidden="true"></i>
                         <a href="directory.html" class="hp-fila-ir">Ver una ruta <i class="ph-bold ph-arrow-right" aria-hidden="true"></i></a>
@@ -864,7 +888,7 @@
                  mencionaba. Los textos salen de preparacion.html, sin adornar:
                  el listening sigue en construccion y por eso no aparece aqui. -->
             <section class="hp-seccion hp-banda-teal hp-a-sangre"><div class="hp-interior">
-                <div class="hp-cab" data-hp-sube>
+                <div class="hp-cab hp-cab-izq" data-hp-sube>
                     <p class="hp-kicker" data-acento="ambar">Preparación</p>
                     <h3 class="hp-h2 mt-4">Los exámenes que te abren la puerta</h3>
                     <p class="hp-sub">Simulacros con el formato oficial vigente, dentro de la misma plataforma donde está la red.</p>
@@ -913,7 +937,7 @@
                     <div class="hp-bloque-texto">
                         <p class="hp-kicker hp-kicker-claro">Por qué existe Sinapsis</p>
                         <p class="hp-frase">
-                            Al salir del Liceo, cada quien toma su rumbo y el hilo se pierde. Sinapsis vuelve a tejer ese hilo: convierte lo que hizo cada egresado en orientación viva para quien apenas empieza.
+                            Al salir del colegio, cada quien toma su rumbo y el hilo se pierde. Sinapsis vuelve a tejer ese hilo: convierte lo que hizo cada egresado en orientación viva para quien apenas empieza.
                         </p>
                         <p class="hp-frase-pie">
                             No es una lista de nombres, es una red de caminos. Un estudiante indeciso encuentra a alguien real que ya recorrió lo que él sueña; un egresado reencuentra a su comunidad; el colegio mantiene vivo el vínculo con quienes formó.
@@ -937,14 +961,12 @@
                  separado eran dos bloques finos, cada uno rodeado de blanco.
                  Se conserva el id y el scroll-mt del ancla #contacto. -->
             <section id="contacto" class="hp-seccion scroll-mt-24"><div class="hp-interior">
-                <div class="hp-cab" data-hp-sube>
-                    <p class="hp-kicker">Antes de entrar</p>
-                    <h3 class="hp-h2 mt-4">Lo que suelen preguntarnos</h3>
-                    <p class="hp-sub">Y por dónde escribirnos si eres una empresa, una institución o simplemente tienes una duda.</p>
-                </div>
-
                 <div class="hp-dos-columnas">
                     <div data-hp-sube>
+                        <div class="hp-cab hp-cab-izq hp-cab-junta">
+                            <p class="hp-kicker">Antes de entrar</p>
+                            <h3 class="hp-h2 mt-4">Lo que suelen preguntarnos</h3>
+                        </div>
                         <details class="hp-faq">
                             <summary>
                                 ¿Quién puede registrarse en Sinapsis?
@@ -979,7 +1001,7 @@
                         <p class="hp-kicker hp-kicker-claro">Escribir a la red</p>
                         <button onclick="contactoLogic.open('empresa')" class="hp-via">
                             <i class="ph ph-briefcase hp-via-icono" aria-hidden="true"></i>
-                            <span><span class="hp-via-t">Empresas</span><span class="hp-via-p">Empleo, prácticas, mentorías o talento.</span></span>
+                            <span><span class="hp-via-t">Empresas</span><span class="hp-via-p">Empleo, prácticas, mentorías o talento joven.</span></span>
                             <i class="ph-bold ph-arrow-right hp-via-flecha" aria-hidden="true"></i>
                         </button>
                         <button onclick="contactoLogic.open('aliado')" class="hp-via">
@@ -1000,7 +1022,7 @@
             <section class="hp-seccion hp-seccion-plana">
                 <div class="hp-cierre hp-a-sangre" data-hp-sube>
                   <div class="hp-interior">
-                    <h3 class="hp-cierre-t">Tu ruta también empezó en el Liceo</h3>
+                    <h3 class="hp-cierre-t">Tu ruta también empezó en un salón de clase</h3>
                     <p class="hp-cierre-p">Cuenta por dónde has pasado y en qué andas hoy. Para un estudiante que viene detrás, tu camino es el mapa que no tiene.</p>
                     <a href="register.html" class="hp-cta hp-cta-blanco mt-8">Crear mi cuenta</a>
                   </div>
@@ -1152,7 +1174,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore-compat.js"></script>
     <script src="shared.js?v=36"></script>
     <script src="orientadora.js?v=7"></script>
-    <script src="historias.js?v=20"></script>
+    <script src="historias.js?v=21"></script>
     <script>
         // ── Estado global: base en shared.js. La nav (desktop + móvil) la
         // inyecta renderNav('home'), igual que en el resto de páginas del sitio.

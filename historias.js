@@ -229,9 +229,9 @@ const historiasLogic = {
         // tres columnas; con dos o cuatro, dos.
         holder.innerHTML = `
             <section class="hp-seccion">
-                <div class="hp-cab" data-hp-sube>
+                <div class="hp-cab hp-cab-izq" data-hp-sube>
                     <p class="hp-kicker">Historias que empezaron aquí</p>
-                    <h3 class="hp-h2 mt-4">Del Liceo a donde están hoy</h3>
+                    <h3 class="hp-h2 mt-4">Del colegio a donde están hoy</h3>
                     <p class="hp-sub">Rutas reales de egresados: cada una empezó en las mismas aulas donde estás tú.</p>
                 </div>
                 <div class="hp-rejilla ${historias.length === 3 ? 'hp-rejilla-3 hp-historias-3' : 'hp-rejilla-2'}">
