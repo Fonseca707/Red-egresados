@@ -200,7 +200,19 @@
            peso (600, no 800), mismo radio, misma sombra y un ritmo vertical
            único en vez de cinco paddings distintos. */
 
+        /* El límite de ancho vive en cada sección, no en el contenedor: así las
+           que llevan color pueden llegar al borde de la pantalla y el resto
+           sigue alineado con el hero. */
         .hp-seccion { padding-block: clamp(3.5rem, 8vw, 7rem); }
+        .hp-interior { max-width: 80rem; margin-inline: auto; width: 100%; }
+
+        /* A sangre: el -1rem anula el padding del <main>, que es de 1rem. Con
+           márgenes en vw la barra de desplazamiento se cuenta de más y aparece
+           scroll horizontal; con este, no puede pasar. */
+        .hp-a-sangre { margin-inline: -1rem; }
+        /* Dentro del bloque de color, el texto vuelve a alinearse con el resto
+           de la página en vez de pegarse al borde de la pantalla. */
+        .hp-a-sangre > .hp-interior { padding-inline: clamp(1.25rem, 4vw, 3rem); }
         .hp-cab { max-width: 44rem; margin: 0 auto clamp(2.25rem, 4vw, 3.75rem); text-align: center; }
         .hp-h2 { font-size: clamp(1.85rem, 3.1vw, 2.6rem); font-weight: 600; letter-spacing: -.032em; line-height: 1.13; color: #1c1917; text-wrap: balance; }
         html.dark .hp-h2 { color: #fafaf9; }
@@ -283,6 +295,13 @@
            negro: era lo que apagaba las secciones de abajo. */
         .hp-lienzo { position: relative; overflow: hidden; border-radius: 20px; background: #dcfce7;
                      padding: clamp(2rem, 4.5vw, 3.5rem); }
+        /* De lado a lado: sin esquinas redondeadas ni bordes laterales, solo el
+           corte horizontal arriba y abajo. Es lo que hace que el color se lea
+           como una franja de la página y no como una caja de color. */
+        /* El margen lateral lo pone SOLO el interior: si lo ponen los dos, el
+           texto queda más adentro que el del resto de la página. */
+        .hp-lienzo.hp-a-sangre, .hp-cierre.hp-a-sangre { border-radius: 0; padding-inline: 0; }
+        .hp-seccion-plana { padding-block: 0; margin-block: clamp(3.5rem, 8vw, 7rem); }
         html.dark .hp-lienzo { background: #14261a; }
         .hp-lienzo::after { content: ''; position: absolute; inset: 0; background: #bbf7d0;
                             clip-path: polygon(0 58%, 100% 30%, 100% 100%, 0% 100%); pointer-events: none; }
@@ -343,6 +362,70 @@
         .hp-fila-icono { font-size: 1.6rem; color: #16a34a; flex: none; display: none; }
         @media (min-width: 640px) { .hp-fila-icono { display: block; } }
         html.dark .hp-fila-icono { color: #4ade80; }
+
+        /* ── Al pasar el cursor ──────────────────────────────────────────────
+           Todo lo que reacciona lo hace con transform y color, nunca moviendo
+           la maquetación: un elemento que empuja a los de al lado al pasar por
+           encima se siente roto, no vivo. */
+        .hp-fila { transition: background-color .3s ease; margin-inline: -1rem; padding-inline: 1rem; }
+        .hp-fila:hover { background: #f6fdf8; }
+        html.dark .hp-fila:hover { background: #1a201c; }
+        .hp-fila-n, .hp-fila-icono { transition: transform .35s cubic-bezier(.16,1,.3,1), color .3s ease; }
+        .hp-fila:hover .hp-fila-n { transform: translateX(3px); color: #16a34a; }
+        .hp-fila:hover .hp-fila-icono { transform: scale(1.12); }
+
+        .hp-columna .hp-card-icono, .hp-opcion .hp-card-icono { transition: transform .35s cubic-bezier(.16,1,.3,1); }
+        .hp-columna:hover .hp-card-icono, .hp-opcion:hover .hp-card-icono { transform: translateY(-3px) scale(1.06); }
+
+        /* Los pasos: el nodo se enciende cuando el cursor está en su columna. */
+        .hp-paso::before { transition: transform .35s cubic-bezier(.16,1,.3,1), box-shadow .35s ease, background-color .3s ease; }
+        .hp-paso:hover::before { transform: scale(1.25); box-shadow: 0 0 0 8px rgba(34,197,94,.16); background: #22c55e; }
+        @media (min-width: 1024px) { .hp-paso:hover::before { transform: translateX(-50%) scale(1.25); } }
+        .hp-paso .hp-card-icono { transition: transform .35s cubic-bezier(.16,1,.3,1); }
+        .hp-paso:hover .hp-card-icono { transform: translateY(-3px); }
+
+        /* La ventana del hero también responde: se levanta un poco. */
+        .hp-ventana { transition: transform .5s cubic-bezier(.16,1,.3,1), box-shadow .5s ease; }
+        @media (min-width: 1024px) {
+            .hp-ventana:hover { transform: perspective(1800px) rotateY(-4deg) rotateX(.6deg) translateY(-6px);
+                                box-shadow: 0 1px 1px rgba(12,10,9,.04), 0 24px 46px -14px rgba(20,83,45,.2),
+                                            0 60px 110px -34px rgba(20,83,45,.34), 0 0 0 1px rgba(12,10,9,.05); }
+        }
+        /* Cada hito de la trayectoria se ilumina por separado. */
+        .hp-ruta li { transition: transform .3s cubic-bezier(.16,1,.3,1); }
+        .hp-ruta li:hover { transform: translateX(3px); }
+        .hp-ruta li::after { transition: transform .3s cubic-bezier(.16,1,.3,1), border-color .3s ease; }
+        .hp-ruta li:hover::after { transform: scale(1.2); border-color: #22c55e; }
+
+        /* Enlaces del pie: hoy solo cambiaban de color. */
+        footer a, footer button { transition: color .25s ease, transform .25s cubic-bezier(.16,1,.3,1); display: inline-block; }
+        footer a:hover, footer button:hover { transform: translateX(2px); }
+
+        @media (prefers-reduced-motion: reduce) {
+            .hp-fila:hover .hp-fila-n, .hp-fila:hover .hp-fila-icono,
+            .hp-columna:hover .hp-card-icono, .hp-opcion:hover .hp-card-icono,
+            .hp-paso:hover::before, .hp-paso:hover .hp-card-icono,
+            .hp-ventana:hover, .hp-ruta li:hover, .hp-ruta li:hover::after,
+            footer a:hover, footer button:hover { transform: none; }
+        }
+
+        /* Exámenes: una barra de color arriba y tipografía debajo. Ni caja ni
+           columna con línea — otro recurso, para que la página no repita
+           siempre el mismo gesto. */
+        .hp-examen { display: block; padding-top: 1.35rem; transition: transform .35s cubic-bezier(.16,1,.3,1); }
+        .hp-examen:hover { transform: translateY(-4px); }
+        .hp-examen:focus-visible { outline: 2px solid #16a34a; outline-offset: 6px; }
+        .hp-examen-barra { display: block; height: 4px; width: 3.5rem; border-radius: 999px; margin-bottom: 1.35rem;
+                           transition: width .4s cubic-bezier(.16,1,.3,1); }
+        .hp-examen:hover .hp-examen-barra { width: 100%; }
+        .hp-examen-barra[data-tono="1"] { background: #22c55e; }
+        .hp-examen-barra[data-tono="2"] { background: #16a34a; }
+        .hp-examen-barra[data-tono="3"] { background: #d97706; }
+        .hp-examen-n { font-size: clamp(1.35rem, 2vw, 1.75rem); font-weight: 600; letter-spacing: -.028em; color: #1c1917; line-height: 1.1; }
+        html.dark .hp-examen-n { color: #fafaf9; }
+        .hp-examen-nivel { font-size: .74rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: #a8a29e; margin-top: .5rem; }
+        .hp-examen-p { font-size: .93rem; line-height: 1.62; color: #57534e; margin-top: .85rem; }
+        html.dark .hp-examen-p { color: #a8a29e; }
 
         /* Opciones de contacto: una fila de enlaces con separador, no tres cajas. */
         .hp-opcion { text-align: left; font: inherit; width: 100%; cursor: pointer; background: none; border: 0;
@@ -538,14 +621,14 @@
             </script>
         </section>
 
-        <div id="view-home" class="animate-fade-in w-full max-w-7xl mx-auto">
+        <div id="view-home" class="animate-fade-in w-full">
 
             <!-- Agregados: ocultos hasta cruzar el umbral de rutas completas
                  (modo historias del plan: nunca delatar una red pequeña).
                  historias.js los llena y los muestra cuando corresponde. -->
-            <section id="home-stats-section" class="hidden hp-seccion">
-                <div class="hp-lienzo" data-hp-sube>
-                    <div class="hp-cifras">
+            <section id="home-stats-section" class="hidden hp-seccion hp-seccion-plana">
+                <div class="hp-lienzo hp-a-sangre" data-hp-sube>
+                  <div class="hp-interior hp-cifras">
                         <div data-stat>
                             <div data-stat-value class="hp-cifra">--</div>
                             <div data-stat-label class="hp-cifra-etq">--</div>
@@ -562,7 +645,7 @@
                             <div data-stat-value class="hp-cifra">--</div>
                             <div data-stat-label class="hp-cifra-etq">--</div>
                         </div>
-                    </div>
+                  </div>
                 </div>
             </section>
 
@@ -570,7 +653,7 @@
             <div id="historias-section"></div>
 
             <!-- CÓMO FUNCIONA -->
-            <section class="hp-seccion">
+            <section class="hp-seccion"><div class="hp-interior">
                 <div class="hp-cab" data-hp-sube>
                     <p class="hp-kicker">Cómo funciona</p>
                     <h3 class="hp-h2 mt-4">De un nombre a un camino que se sigue</h3>
@@ -603,10 +686,11 @@
                         <p class="hp-card-p">Cada ruta nueva le abre una posibilidad a quien viene detrás. La red se cultiva entre todos.</p>
                     </div>
                 </div>
+              </div>
             </section>
 
             <!-- PARA QUIÉN ES -->
-            <section class="hp-seccion">
+            <section class="hp-seccion"><div class="hp-interior">
               <div data-hp-sube>
                 <div class="hp-cab">
                     <p class="hp-kicker">Para quién es</p>
@@ -633,10 +717,11 @@
                     </div>
                 </div>
               </div>
+              </div>
             </section>
 
             <!-- QUÉ ENCUENTRAS AQUÍ -->
-            <section class="hp-seccion">
+            <section class="hp-seccion"><div class="hp-interior">
                 <div class="hp-cab" data-hp-sube>
                     <p class="hp-kicker">Qué encuentras aquí</p>
                     <h3 class="hp-h2 mt-4">Una red que se recorre</h3>
@@ -668,11 +753,49 @@
                         <i class="ph ph-chats-circle hp-fila-icono" aria-hidden="true"></i>
                     </div>
                 </div>
+              </div>
+            </section>
+
+            <!-- PREPARACIÓN — modulo real de la plataforma que la portada nunca
+                 mencionaba. Los textos salen de preparacion.html, sin adornar:
+                 el listening sigue en construccion y por eso no aparece aqui. -->
+            <section class="hp-seccion"><div class="hp-interior">
+                <div class="hp-cab" data-hp-sube>
+                    <p class="hp-kicker">Preparación</p>
+                    <h3 class="hp-h2 mt-4">Los exámenes que te abren la puerta</h3>
+                    <p class="hp-sub">Simulacros con el formato oficial vigente, dentro de la misma plataforma donde está la red.</p>
+                </div>
+
+                <div class="hp-rejilla hp-rejilla-3">
+                    <a href="preparacion.html" class="hp-examen" data-hp-sube style="--d:0ms">
+                        <span class="hp-examen-barra" data-tono="1"></span>
+                        <p class="hp-examen-n">TOEFL iBT</p>
+                        <p class="hp-examen-nivel">Formato oficial de enero 2026</p>
+                        <p class="hp-examen-p">Reading adaptativo en dos módulos y Writing con tres tareas cronometradas.</p>
+                        <span class="hp-enlace">Ver el módulo <i class="ph-bold ph-arrow-right" aria-hidden="true"></i></span>
+                    </a>
+                    <a href="preparacion.html" class="hp-examen" data-hp-sube style="--d:90ms">
+                        <span class="hp-examen-barra" data-tono="2"></span>
+                        <p class="hp-examen-n">DELF B1</p>
+                        <p class="hp-examen-nivel">Nouveau format</p>
+                        <p class="hp-examen-p">Comprensión con preguntas cerradas y producción escrita con la grilla de 25 puntos.</p>
+                        <span class="hp-enlace">Ver el módulo <i class="ph-bold ph-arrow-right" aria-hidden="true"></i></span>
+                    </a>
+                    <a href="preparacion.html" class="hp-examen" data-hp-sube style="--d:180ms">
+                        <span class="hp-examen-barra" data-tono="3"></span>
+                        <p class="hp-examen-n">Saber 11</p>
+                        <p class="hp-examen-nivel">Entrenamiento por competencia</p>
+                        <p class="hp-examen-p">Sesiones cortas con la estructura oficial y retroalimentación que explica cada opción.</p>
+                        <span class="hp-enlace">Ver el módulo <i class="ph-bold ph-arrow-right" aria-hidden="true"></i></span>
+                    </a>
+                </div>
+              </div>
             </section>
 
             <!-- PROPÓSITO / MISIÓN -->
-            <section class="hp-seccion">
-                <div class="hp-lienzo hp-lienzo-cita" data-hp-sube>
+            <section class="hp-seccion hp-seccion-plana">
+                <div class="hp-lienzo hp-lienzo-cita hp-a-sangre" data-hp-sube>
+                  <div class="hp-interior">
                     <div class="hp-bloque-texto">
                         <p class="hp-kicker hp-kicker-claro">Por qué existe Sinapsis</p>
                         <p class="hp-frase">
@@ -682,11 +805,12 @@
                             No es una lista de nombres, es una red de caminos. Un estudiante indeciso encuentra a alguien real que ya recorrió lo que él sueña; un egresado reencuentra a su comunidad; el Liceo mantiene vivo el vínculo con quienes formó.
                         </p>
                     </div>
+                  </div>
                 </div>
             </section>
 
             <!-- CONTACTO DE TERCEROS -->
-            <section id="contacto" class="hp-seccion scroll-mt-24">
+            <section id="contacto" class="hp-seccion scroll-mt-24"><div class="hp-interior">
                 <div class="hp-cab" data-hp-sube>
                     <p class="hp-kicker">Contacto</p>
                     <h3 class="hp-h2 mt-4">¿Quieres contactar la red?</h3>
@@ -712,10 +836,11 @@
                         <span class="hp-enlace">Escribir <i class="ph-bold ph-arrow-right" aria-hidden="true"></i></span>
                     </button>
                 </div>
+              </div>
             </section>
 
             <!-- PREGUNTAS FRECUENTES -->
-            <section class="hp-seccion">
+            <section class="hp-seccion"><div class="hp-interior">
                 <div class="hp-cab" data-hp-sube>
                     <p class="hp-kicker">Preguntas frecuentes</p>
                     <h3 class="hp-h2 mt-4">Lo que suelen preguntarnos</h3>
@@ -750,15 +875,18 @@
                         <p class="hp-faq-cuerpo">Solo se muestran en el directorio los datos que tú decides compartir, y puedes editarlos cuando quieras. Tu correo y teléfono nunca aparecen públicos. Consulta los <a href="terms.html" class="hp-enlace-texto">términos y la política de datos</a>.</p>
                     </details>
                 </div>
+              </div>
             </section>
 
             <!-- Cierre: bloque de color pleno. Es el único sitio donde el verde
                  de marca ocupa toda la superficie, y por eso resalta. -->
-            <section class="hp-seccion">
-                <div class="hp-cierre" data-hp-sube>
+            <section class="hp-seccion hp-seccion-plana">
+                <div class="hp-cierre hp-a-sangre" data-hp-sube>
+                  <div class="hp-interior">
                     <h3 class="hp-cierre-t">Tu ruta también empezó en el Liceo</h3>
                     <p class="hp-cierre-p">Cuenta por dónde has pasado y en qué andas hoy. Para un estudiante que viene detrás, tu camino es el mapa que no tiene.</p>
                     <a href="register.html" class="hp-cta hp-cta-blanco mt-8">Crear mi cuenta</a>
+                  </div>
                 </div>
             </section>
 
