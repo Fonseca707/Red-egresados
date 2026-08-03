@@ -221,6 +221,12 @@ const historiasLogic = {
         // repetirlo en todas las secciones cansaba. Aquí la caja SÍ tiene
         // función —cada trayectoria se pulsa y abre el perfil—, así que se queda,
         // pero flotando sobre fondo claro en vez de sobre color.
+        //
+        // ⚠️ La rejilla se elige segun CUANTAS historias hay de verdad. Estaba
+        // fija a dos columnas con cuatro posiciones: hoy hay exactamente cuatro
+        // egresados con ruta, asi que el dia que uno se suspenda o pierda un
+        // hito, la cuarta celda queda como un hueco blanco de 220 px. Con tres,
+        // tres columnas; con dos o cuatro, dos.
         holder.innerHTML = `
             <section class="hp-seccion">
                 <div class="hp-cab" data-hp-sube>
@@ -228,7 +234,7 @@ const historiasLogic = {
                     <h3 class="hp-h2 mt-4">Del Liceo a donde están hoy</h3>
                     <p class="hp-sub">Rutas reales de egresados: cada una empezó en las mismas aulas donde estás tú.</p>
                 </div>
-                <div class="hp-rejilla hp-rejilla-2">
+                <div class="hp-rejilla ${historias.length === 3 ? 'hp-rejilla-3 hp-historias-3' : 'hp-rejilla-2'}">
                     ${historias.map((h, i) => this.cardHTML(h, i)).join('')}
                 </div>
             </section>`;

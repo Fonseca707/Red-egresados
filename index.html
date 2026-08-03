@@ -224,6 +224,7 @@
         /* Dentro del bloque de color, el texto vuelve a alinearse con el resto
            de la página en vez de pegarse al borde de la pantalla. */
         .hp-a-sangre > .hp-interior { padding-inline: clamp(1.25rem, 4vw, 3rem); }
+        .hp-seccion.hp-a-sangre > .hp-interior { padding-inline: 1rem; }
         .hp-cab { max-width: 44rem; margin: 0 auto clamp(1.75rem, 3vw, 2.75rem); text-align: center; }
         .hp-h2 { font-size: clamp(1.85rem, 3.1vw, 2.6rem); font-weight: 600; letter-spacing: -.032em; line-height: 1.13; color: #1c1917; text-wrap: balance; }
         html.dark .hp-h2 { color: #fafaf9; }
@@ -312,7 +313,7 @@
         /* El margen lateral lo pone SOLO el interior: si lo ponen los dos, el
            texto queda más adentro que el del resto de la página. */
         .hp-lienzo.hp-a-sangre, .hp-cierre.hp-a-sangre { border-radius: 0; padding-inline: 0; }
-        .hp-seccion-plana { padding-block: 0; margin-block: clamp(2.5rem, 4.5vw, 4rem); }
+        .hp-seccion-plana { padding-block: 0; margin-block: clamp(1.25rem, 2.5vw, 2rem); }
         html.dark .hp-lienzo { background: #14261a; }
         .hp-lienzo::after { content: ''; position: absolute; inset: 0; background: #bbf7d0;
                             clip-path: polygon(0 58%, 100% 30%, 100% 100%, 0% 100%); pointer-events: none; }
@@ -320,7 +321,6 @@
         .hp-lienzo > * { position: relative; z-index: 1; }
 
 
-        .hp-bloque-texto { max-width: 48rem; }
         .hp-kicker-claro { color: #16a34a; }
         html.dark .hp-kicker-claro { color: #4ade80; }
         .hp-frase { margin-top: 1.25rem; font-size: clamp(1.35rem, 2.4vw, 2rem); font-weight: 600; letter-spacing: -.025em; line-height: 1.32; color: #1c1917; }
@@ -359,7 +359,7 @@
         .hp-columna .hp-card-icono { font-size: 1.9rem; line-height: 1.25; }
 
         /* Lista numerada: el número hace de ancla visual y sustituye a la caja. */
-        .hp-lista { max-width: 56rem; margin: 0 auto; }
+        .hp-lista { max-width: 64rem; margin: 0 auto; }
         .hp-fila { display: flex; align-items: flex-start; gap: 1.5rem; padding: 1.75rem 0; border-top: 1px solid #ebeae8; }
         .hp-fila:last-child { border-bottom: 1px solid #ebeae8; }
         html.dark .hp-fila { border-top-color: #332f2c; }
@@ -373,10 +373,19 @@
         .hp-fila-txt { flex: 1; min-width: 0; }
         .hp-fila-t { font-size: 1.08rem; font-weight: 600; letter-spacing: -.018em; color: #1c1917; }
         html.dark .hp-fila-t { color: #fafaf9; }
-        .hp-fila-p { font-size: .94rem; line-height: 1.62; color: #57534e; margin-top: .4rem; max-width: 42rem; }
+        .hp-fila-p { font-size: .94rem; line-height: 1.62; color: #57534e; margin-top: .4rem; }
         html.dark .hp-fila-p { color: #a8a29e; }
         .hp-fila-icono { font-size: 1.6rem; color: #16a34a; flex: none; display: none; }
         @media (min-width: 640px) { .hp-fila-icono { display: block; } }
+        /* La columna derecha era un icono suelto con 200 px de aire a su
+           izquierda. Ahora es el destino al que lleva la fila. */
+        .hp-fila-ir { display: none; align-items: center; gap: .45rem; flex: none; font-size: .85rem; font-weight: 600;
+                      color: #16a34a; white-space: nowrap; transition: gap .25s ease; }
+        @media (min-width: 900px) { .hp-fila-ir { display: inline-flex; } }
+        .hp-fila:hover .hp-fila-ir { gap: .7rem; }
+        html.dark .hp-fila-ir { color: #4ade80; }
+        .hp-fila-ir i { transition: transform .25s cubic-bezier(.16,1,.3,1); }
+        .hp-fila:hover .hp-fila-ir i { transform: translateX(3px); }
         html.dark .hp-fila-icono { color: #4ade80; }
 
         /* ── Al pasar el cursor ──────────────────────────────────────────────
@@ -449,6 +458,11 @@
         html.dark .hp-examen-n { color: #fafaf9; }
         .hp-examen-nivel { font-size: .74rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: #a8a29e; margin-top: .5rem; }
         .hp-examen-p { font-size: .93rem; line-height: 1.62; color: #57534e; margin-top: .85rem; }
+        /* La estructura OFICIAL del examen, que no cambia. Deliberadamente no se
+           publica cuántas preguntas tiene nuestro banco: eso sí cambia y la
+           portada quedaría desactualizada sin que nadie se entere. */
+        .hp-examen-dato { font-size: .8rem; font-weight: 600; color: #16a34a; margin-top: .7rem; }
+        html.dark .hp-examen-dato { color: #4ade80; }
         html.dark .hp-examen-p { color: #a8a29e; }
 
         /* Opciones de contacto: una fila de enlaces con separador, no tres cajas. */
@@ -472,6 +486,16 @@
         .hp-lienzo-cita .hp-frase { font-size: clamp(1.5rem, 3vw, 2.5rem); }
         /* La ilustración sustituye al corte diagonal en este bloque. */
         .hp-lienzo-cita::after { display: none; }
+        .hp-cita-grid { display: grid; gap: clamp(2rem, 4vw, 4rem); align-items: center; }
+        @media (min-width: 900px) { .hp-cita-grid { grid-template-columns: minmax(0,1.15fr) minmax(0,.85fr); } }
+        .hp-bloque-texto { max-width: 34rem; }
+        /* La ruta de ejemplo se apoya en una superficie clara para leerse sobre
+           la ilustración, sin taparla del todo. */
+        .hp-ruta-tipo { background: rgba(255,255,255,.82); backdrop-filter: blur(2px); border-radius: 14px;
+                        padding: 1.6rem 1.5rem 1.4rem; margin-top: 0; }
+        html.dark .hp-ruta-tipo { background: rgba(34,31,29,.86); }
+        .hp-ruta-tipo li { padding-left: 1.6rem; }
+
         .hp-cita-fondo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center;
                          opacity: .55; pointer-events: none; }
         /* Bajando la opacidad basta para que el texto negro se lea encima: sin
@@ -499,7 +523,12 @@
         html.dark .hp-card-flotante, html.dark .hp-card-flotante:hover { border-color: transparent; }
 
         /* Tarjeta de historia destacada (la pinta historias.js). */
-        .hp-historia { cursor: pointer; }
+        .hp-historia { cursor: pointer; display: flex; flex-direction: column; }
+        /* El enlace baja al pie de la tarjeta: la rejilla estira todas al alto
+           de la mas larga y la que no tiene biografia dejaba el hueco debajo. */
+        .hp-historia .hp-enlace { margin-top: auto; padding-top: 1.1rem; }
+        /* Con tres historias la ruta va en columnas mas estrechas. */
+        .hp-historias-3 .hp-tramo { max-width: 10rem; }
         .hp-historia-cab { display: flex; align-items: center; gap: .9rem; margin-bottom: 1.1rem; }
         .hp-historia-foto { width: 3rem; height: 3rem; border-radius: 999px; object-fit: cover; flex: none; }
         .hp-historia-iniciales { display: flex; align-items: center; justify-content: center; background: #16a34a; color: #fff; font-size: .82rem; font-weight: 600; }
@@ -511,6 +540,37 @@
         html.dark .hp-tramo { color: #d6d3d1; background: #2c2724; }
         .hp-tramo-flecha { color: #a8a29e; font-size: .7rem; flex: none; }
         .hp-historia-bio { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+        /* Dos columnas: preguntas a la izquierda, vías de contacto a la derecha. */
+        .hp-dos-columnas { display: grid; gap: clamp(2rem, 4vw, 3.5rem); align-items: start; }
+        @media (min-width: 900px) { .hp-dos-columnas { grid-template-columns: minmax(0,1.25fr) minmax(0,.75fr); } }
+
+        .hp-contacto-panel { background: #f6f7f6; border: 1px solid #ebeae8; border-radius: 14px; padding: 1.5rem 1.35rem; }
+        html.dark .hp-contacto-panel { background: #221f1d; border-color: #332f2c; }
+        .hp-via { display: flex; align-items: flex-start; gap: .85rem; width: 100%; text-align: left; font: inherit;
+                  background: none; border: 0; cursor: pointer; padding: .95rem .25rem; border-top: 1px solid #e7e5e4;
+                  transition: transform .3s cubic-bezier(.16,1,.3,1); }
+        .hp-via:first-of-type { border-top: 0; }
+        html.dark .hp-via { border-top-color: #332f2c; }
+        .hp-via:hover { transform: translateX(4px); }
+        .hp-via:focus-visible { outline: 2px solid #16a34a; outline-offset: 2px; }
+        .hp-via-icono { font-size: 1.3rem; color: #16a34a; flex: none; line-height: 1.2; transition: transform .3s cubic-bezier(.16,1,.3,1); }
+        .hp-via:hover .hp-via-icono { transform: scale(1.15); }
+        html.dark .hp-via-icono { color: #4ade80; }
+        .hp-via-t { display: block; font-size: .95rem; font-weight: 600; color: #1c1917; letter-spacing: -.015em; }
+        html.dark .hp-via-t { color: #fafaf9; }
+        .hp-via-p { display: block; font-size: .82rem; color: #78716c; margin-top: .2rem; line-height: 1.5; }
+        html.dark .hp-via-p { color: #a8a29e; }
+        .hp-via-flecha { margin-left: auto; color: #a8a29e; font-size: .9rem; flex: none; transition: transform .3s cubic-bezier(.16,1,.3,1), color .25s ease; }
+        .hp-via:hover .hp-via-flecha { transform: translateX(3px); color: #16a34a; }
+
+        /* Bandas: el blanco deja de flotar y pasa a ser el aire de una franja.
+           Neutro y teal, colores que la paleta ya tiene — no se repite el verde
+           del hero, que ya cansó cuando se puso en todas partes. */
+        .hp-banda { background: #f5f5f4; }
+        html.dark .hp-banda { background: #1a1917; }
+        .hp-banda-teal { background: #f0fdfa; }
+        html.dark .hp-banda-teal { background: #0f1e1c; }
 
         .hp-faq { border-bottom: 1px solid #ebeae8; }
         html.dark .hp-faq { border-bottom-color: #332f2c; }
@@ -556,7 +616,7 @@
             html.hp-js [data-hp-sube] { opacity: 1; transform: none; transition: none; }
         }
     </style>
-    <link rel="stylesheet" href="tailwind.css?v=12">
+    <link rel="stylesheet" href="tailwind.css?v=13">
 </head>
 <body class="text-stone-800 font-sans min-h-screen flex flex-col">
 
@@ -729,11 +789,12 @@
             </section>
 
             <!-- PARA QUIÉN ES -->
-            <section class="hp-seccion"><div class="hp-interior">
+            <section class="hp-seccion hp-banda hp-a-sangre"><div class="hp-interior">
               <div data-hp-sube>
                 <div class="hp-cab">
                     <p class="hp-kicker">Para quién es</p>
                     <h3 class="hp-h2 mt-4">Un punto de encuentro para toda la comunidad</h3>
+                    <p class="hp-sub">Cada quien entra por una puerta distinta, pero todos terminan en la misma red.</p>
                 </div>
                 <div class="hp-rejilla hp-rejilla-3 hp-columnas">
                     <div class="hp-columna" data-hp-sube style="--d:0ms">
@@ -764,6 +825,7 @@
                 <div class="hp-cab" data-hp-sube>
                     <p class="hp-kicker" data-acento="teal">Qué encuentras aquí</p>
                     <h3 class="hp-h2 mt-4">Una red que se recorre</h3>
+                    <p class="hp-sub">Tres formas de usarla, y ninguna necesita que conozcas a nadie de antemano.</p>
                 </div>
 
                 <div class="hp-lista">
@@ -774,6 +836,7 @@
                             <p class="hp-fila-p">Busca por promoción, área o nombre, y conecta con quienes ya recorrieron el camino que te interesa.</p>
                         </div>
                         <i class="ph ph-address-book hp-fila-icono" aria-hidden="true"></i>
+                        <a href="directory.html" class="hp-fila-ir">Abrir el directorio <i class="ph-bold ph-arrow-right" aria-hidden="true"></i></a>
                     </div>
                     <div class="hp-fila" data-hp-sube style="--d:90ms">
                         <span class="hp-fila-n">02</span>
@@ -782,6 +845,7 @@
                             <p class="hp-fila-p">Cada egresado cuenta su ruta paso a paso: del Liceo a la universidad, a su primer trabajo y a donde está hoy.</p>
                         </div>
                         <i class="ph ph-path hp-fila-icono" aria-hidden="true"></i>
+                        <a href="directory.html" class="hp-fila-ir">Ver una ruta <i class="ph-bold ph-arrow-right" aria-hidden="true"></i></a>
                     </div>
                     <div class="hp-fila" data-hp-sube style="--d:180ms">
                         <span class="hp-fila-n">03</span>
@@ -790,6 +854,7 @@
                             <p class="hp-fila-p">Escríbele directamente a un egresado para preguntarle por su carrera, o consulta a la orientadora sobre tus opciones.</p>
                         </div>
                         <i class="ph ph-chats-circle hp-fila-icono" aria-hidden="true"></i>
+                        <a href="messages.html" class="hp-fila-ir">Escribir a la red <i class="ph-bold ph-arrow-right" aria-hidden="true"></i></a>
                     </div>
                 </div>
               </div>
@@ -798,7 +863,7 @@
             <!-- PREPARACIÓN — modulo real de la plataforma que la portada nunca
                  mencionaba. Los textos salen de preparacion.html, sin adornar:
                  el listening sigue en construccion y por eso no aparece aqui. -->
-            <section class="hp-seccion"><div class="hp-interior">
+            <section class="hp-seccion hp-banda-teal hp-a-sangre"><div class="hp-interior">
                 <div class="hp-cab" data-hp-sube>
                     <p class="hp-kicker" data-acento="ambar">Preparación</p>
                     <h3 class="hp-h2 mt-4">Los exámenes que te abren la puerta</h3>
@@ -811,6 +876,7 @@
                         <p class="hp-examen-n">TOEFL iBT</p>
                         <p class="hp-examen-nivel">Formato oficial de enero 2026</p>
                         <p class="hp-examen-p">Reading adaptativo en dos módulos y Writing con tres tareas cronometradas.</p>
+                        <p class="hp-examen-dato">2 módulos · 3 tareas</p>
                         <span class="hp-enlace">Ver el módulo <i class="ph-bold ph-arrow-right" aria-hidden="true"></i></span>
                     </a>
                     <a href="preparacion.html" class="hp-examen" data-hp-sube style="--d:90ms">
@@ -818,6 +884,7 @@
                         <p class="hp-examen-n">DELF B1</p>
                         <p class="hp-examen-nivel">Nouveau format</p>
                         <p class="hp-examen-p">Comprensión con preguntas cerradas y producción escrita con la grilla de 25 puntos.</p>
+                        <p class="hp-examen-dato">4 épreuves · 25 puntos</p>
                         <span class="hp-enlace">Ver el módulo <i class="ph-bold ph-arrow-right" aria-hidden="true"></i></span>
                     </a>
                     <a href="preparacion.html" class="hp-examen" data-hp-sube style="--d:180ms">
@@ -825,6 +892,7 @@
                         <p class="hp-examen-n">Saber 11</p>
                         <p class="hp-examen-nivel">Entrenamiento por competencia</p>
                         <p class="hp-examen-p">Sesiones cortas con la estructura oficial y retroalimentación que explica cada opción.</p>
+                        <p class="hp-examen-dato">Sesiones de 10 preguntas</p>
                         <span class="hp-enlace">Ver el módulo <i class="ph-bold ph-arrow-right" aria-hidden="true"></i></span>
                     </a>
                 </div>
@@ -841,91 +909,94 @@
                        y con lazy porque queda muy por debajo del pliegue. -->
                   <img class="hp-cita-fondo" src="img/rutas.webp" alt="" aria-hidden="true"
                        width="2000" height="1000" loading="lazy" decoding="async">
-                  <div class="hp-interior">
+                  <div class="hp-interior hp-cita-grid">
                     <div class="hp-bloque-texto">
                         <p class="hp-kicker hp-kicker-claro">Por qué existe Sinapsis</p>
                         <p class="hp-frase">
                             Al salir del Liceo, cada quien toma su rumbo y el hilo se pierde. Sinapsis vuelve a tejer ese hilo: convierte lo que hizo cada egresado en orientación viva para quien apenas empieza.
                         </p>
                         <p class="hp-frase-pie">
-                            No es una lista de nombres, es una red de caminos. Un estudiante indeciso encuentra a alguien real que ya recorrió lo que él sueña; un egresado reencuentra a su comunidad; el Liceo mantiene vivo el vínculo con quienes formó.
+                            No es una lista de nombres, es una red de caminos. Un estudiante indeciso encuentra a alguien real que ya recorrió lo que él sueña; un egresado reencuentra a su comunidad; el colegio mantiene vivo el vínculo con quienes formó.
                         </p>
                     </div>
+
+                    <!-- La forma de una trayectoria, sin nombres ni datos: es el
+                         concepto dibujado, no el perfil de nadie. Ocupaba media
+                         franja de color vacia. -->
+                    <ol class="hp-ruta hp-ruta-tipo" aria-label="Las etapas de una trayectoria">
+                        <li><p class="hp-ruta-rol">Colegio</p><p class="hp-ruta-org">Donde empieza todo</p></li>
+                        <li><p class="hp-ruta-rol">Universidad o técnico</p><p class="hp-ruta-org">La decisión más difícil</p></li>
+                        <li><p class="hp-ruta-rol">Primer trabajo</p><p class="hp-ruta-org">Lo que nadie te contó</p></li>
+                        <li data-actual><p class="hp-ruta-rol">Hoy</p><p class="hp-ruta-org">Y a quién le sirve tu camino</p></li>
+                    </ol>
                   </div>
                 </div>
             </section>
 
-            <!-- CONTACTO DE TERCEROS -->
+            <!-- CONTACTO + PREGUNTAS FRECUENTES en una sola franja: por
+                 separado eran dos bloques finos, cada uno rodeado de blanco.
+                 Se conserva el id y el scroll-mt del ancla #contacto. -->
             <section id="contacto" class="hp-seccion scroll-mt-24"><div class="hp-interior">
                 <div class="hp-cab" data-hp-sube>
-                    <p class="hp-kicker">Contacto</p>
-                    <h3 class="hp-h2 mt-4">¿Quieres contactar la red?</h3>
-                    <p class="hp-sub">Empresas, universidades, otras instituciones o cualquier persona: ofertas de empleo o prácticas, mentorías, alianzas o una simple consulta llegan directo al equipo de Sinapsis.</p>
-                </div>
-                <div class="hp-rejilla hp-rejilla-3 hp-columnas">
-                    <button onclick="contactoLogic.open('empresa')" class="hp-opcion" data-hp-sube style="--d:0ms">
-                        <i class="ph ph-briefcase hp-card-icono" aria-hidden="true"></i>
-                        <p class="hp-card-t">Empresas</p>
-                        <p class="hp-card-p">Empleo, prácticas, mentorías o talento del Liceo.</p>
-                        <span class="hp-enlace">Escribir <i class="ph-bold ph-arrow-right" aria-hidden="true"></i></span>
-                    </button>
-                    <button onclick="contactoLogic.open('aliado')" class="hp-opcion" data-hp-sube style="--d:90ms">
-                        <i class="ph ph-handshake hp-card-icono" aria-hidden="true"></i>
-                        <p class="hp-card-t">Instituciones y aliados</p>
-                        <p class="hp-card-p">Convenios, alianzas y proyectos conjuntos.</p>
-                        <span class="hp-enlace">Escribir <i class="ph-bold ph-arrow-right" aria-hidden="true"></i></span>
-                    </button>
-                    <button onclick="contactoLogic.open('general')" class="hp-opcion" data-hp-sube style="--d:180ms">
-                        <i class="ph ph-chat-teardrop-text hp-card-icono" aria-hidden="true"></i>
-                        <p class="hp-card-t">Contacto general</p>
-                        <p class="hp-card-p">Prensa, familias o cualquier otra consulta.</p>
-                        <span class="hp-enlace">Escribir <i class="ph-bold ph-arrow-right" aria-hidden="true"></i></span>
-                    </button>
-                </div>
-              </div>
-            </section>
-
-            <!-- PREGUNTAS FRECUENTES -->
-            <section class="hp-seccion"><div class="hp-interior">
-                <div class="hp-cab" data-hp-sube>
-                    <p class="hp-kicker">Preguntas frecuentes</p>
+                    <p class="hp-kicker">Antes de entrar</p>
                     <h3 class="hp-h2 mt-4">Lo que suelen preguntarnos</h3>
+                    <p class="hp-sub">Y por dónde escribirnos si eres una empresa, una institución o simplemente tienes una duda.</p>
                 </div>
-                <div class="max-w-3xl mx-auto" data-hp-sube>
-                    <details class="hp-faq">
-                        <summary>
-                            ¿Quién puede registrarse en Sinapsis?
-                            <i class="ph-bold ph-caret-down" aria-hidden="true"></i>
-                        </summary>
-                        <p class="hp-faq-cuerpo">Egresados y estudiantes del Liceo Campestre de Pereira. El registro es gratuito y toma menos de un minuto.</p>
-                    </details>
-                    <details class="hp-faq">
-                        <summary>
-                            ¿Tiene algún costo?
-                            <i class="ph-bold ph-caret-down" aria-hidden="true"></i>
-                        </summary>
-                        <p class="hp-faq-cuerpo">No. Sinapsis es gratuito para egresados y estudiantes. Es un proyecto de la comunidad del Liceo, no un producto comercial para ellos.</p>
-                    </details>
-                    <details class="hp-faq">
-                        <summary>
-                            Soy una empresa o institución, ¿cómo llego a los egresados?
-                            <i class="ph-bold ph-caret-down" aria-hidden="true"></i>
-                        </summary>
-                        <p class="hp-faq-cuerpo">Usa el formulario de <button onclick="contactoLogic.open('empresa')" class="hp-enlace-texto">contacto de la red</button>. Cuéntanos qué buscas (talento, prácticas, mentorías o una alianza) y el equipo de Sinapsis te responde.</p>
-                    </details>
-                    <details class="hp-faq">
-                        <summary>
-                            ¿Qué se hace con mis datos?
-                            <i class="ph-bold ph-caret-down" aria-hidden="true"></i>
-                        </summary>
-                        <p class="hp-faq-cuerpo">Solo se muestran en el directorio los datos que tú decides compartir, y puedes editarlos cuando quieras. Tu correo y teléfono nunca aparecen públicos. Consulta los <a href="terms.html" class="hp-enlace-texto">términos y la política de datos</a>.</p>
-                    </details>
+
+                <div class="hp-dos-columnas">
+                    <div data-hp-sube>
+                        <details class="hp-faq">
+                            <summary>
+                                ¿Quién puede registrarse en Sinapsis?
+                                <i class="ph-bold ph-caret-down" aria-hidden="true"></i>
+                            </summary>
+                            <p class="hp-faq-cuerpo">Egresados y estudiantes de los colegios que forman parte de la red. El registro es gratuito y toma menos de un minuto.</p>
+                        </details>
+                        <details class="hp-faq">
+                            <summary>
+                                ¿Tiene algún costo?
+                                <i class="ph-bold ph-caret-down" aria-hidden="true"></i>
+                            </summary>
+                            <p class="hp-faq-cuerpo">No. Sinapsis es gratuito para egresados y estudiantes. Es un proyecto de la comunidad del colegio, no un producto comercial para ellos.</p>
+                        </details>
+                        <details class="hp-faq">
+                            <summary>
+                                Soy una empresa o institución, ¿cómo llego a los egresados?
+                                <i class="ph-bold ph-caret-down" aria-hidden="true"></i>
+                            </summary>
+                            <p class="hp-faq-cuerpo">Usa el formulario de contacto de la derecha. Cuéntanos qué buscas (talento, prácticas, mentorías o una alianza) y el equipo de Sinapsis te responde.</p>
+                        </details>
+                        <details class="hp-faq">
+                            <summary>
+                                ¿Qué se hace con mis datos?
+                                <i class="ph-bold ph-caret-down" aria-hidden="true"></i>
+                            </summary>
+                            <p class="hp-faq-cuerpo">Solo se muestran en el directorio los datos que tú decides compartir, y puedes editarlos cuando quieras. Tu correo y teléfono nunca aparecen públicos. Consulta los <a href="terms.html" class="hp-enlace-texto">términos y la política de datos</a>.</p>
+                        </details>
+                    </div>
+
+                    <div class="hp-contacto-panel" data-hp-sube>
+                        <p class="hp-kicker hp-kicker-claro">Escribir a la red</p>
+                        <button onclick="contactoLogic.open('empresa')" class="hp-via">
+                            <i class="ph ph-briefcase hp-via-icono" aria-hidden="true"></i>
+                            <span><span class="hp-via-t">Empresas</span><span class="hp-via-p">Empleo, prácticas, mentorías o talento.</span></span>
+                            <i class="ph-bold ph-arrow-right hp-via-flecha" aria-hidden="true"></i>
+                        </button>
+                        <button onclick="contactoLogic.open('aliado')" class="hp-via">
+                            <i class="ph ph-handshake hp-via-icono" aria-hidden="true"></i>
+                            <span><span class="hp-via-t">Instituciones y aliados</span><span class="hp-via-p">Convenios, alianzas y proyectos conjuntos.</span></span>
+                            <i class="ph-bold ph-arrow-right hp-via-flecha" aria-hidden="true"></i>
+                        </button>
+                        <button onclick="contactoLogic.open('general')" class="hp-via">
+                            <i class="ph ph-chat-teardrop-text hp-via-icono" aria-hidden="true"></i>
+                            <span><span class="hp-via-t">Contacto general</span><span class="hp-via-p">Prensa, familias o cualquier otra consulta.</span></span>
+                            <i class="ph-bold ph-arrow-right hp-via-flecha" aria-hidden="true"></i>
+                        </button>
+                    </div>
                 </div>
               </div>
             </section>
 
-            <!-- Cierre: bloque de color pleno. Es el único sitio donde el verde
-                 de marca ocupa toda la superficie, y por eso resalta. -->
             <section class="hp-seccion hp-seccion-plana">
                 <div class="hp-cierre hp-a-sangre" data-hp-sube>
                   <div class="hp-interior">
@@ -937,7 +1008,7 @@
             </section>
 
             <footer class="border-t border-gray-200 pt-10 pb-4 text-gray-500 text-sm mt-auto">
-                <div class="flex flex-col md:flex-row md:items-start justify-between gap-8 max-w-5xl mx-auto mb-8 text-center md:text-left">
+                <div class="flex flex-col md:flex-row md:items-start gap-12 md:gap-20 max-w-5xl mx-auto mb-8 text-center md:text-left">
                     <div>
                         <div class="flex justify-center md:justify-start items-center gap-2 mb-3">
                             <svg viewBox="0 0 32 32" role="img" aria-label="Sinapsis" class="w-8 h-8 shrink-0"><defs><linearGradient id="neuro-pie" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#22c55e"/><stop offset="1" stop-color="#15803d"/></linearGradient></defs><g fill="none" stroke="#16a34a" stroke-width="1.5" stroke-linecap="round" opacity=".85"><path d="M13.6 12.6 L9.4 5.6 M11 15 L3.6 12.2 M12.4 19.6 L6.6 25.4 M17.6 19.8 L21.4 26.4 M19.4 14.6 L27.4 11.4 M18.2 12.2 L22.6 6.2"/></g><g fill="none" stroke="#86efac" stroke-width="1.1" stroke-linecap="round" opacity=".7"><path d="M9.4 5.6 L3.6 12.2 M21.4 26.4 L27.4 11.4 M3.6 12.2 L6.6 25.4"/></g><circle cx="15.6" cy="16.2" r="5" fill="url(#neuro-pie)"/><circle cx="15.6" cy="16.2" r="2" fill="#dcfce7"/><g fill="#16a34a"><circle cx="9" cy="4.6" r="2"/><circle cx="2.8" cy="11.8" r="2"/><circle cx="6" cy="26.2" r="2"/><circle cx="21.9" cy="27.4" r="2"/><circle cx="28.4" cy="11" r="2"/><circle cx="23.2" cy="5.4" r="2"/></g></svg>
@@ -945,7 +1016,7 @@
                         </div>
                         <p class="max-w-xs mx-auto md:mx-0">La red de egresados del Liceo Campestre de Pereira. Trayectorias reales, mentores y oportunidades.</p>
                     </div>
-                    <div class="flex flex-col sm:flex-row gap-8 justify-center">
+                    <div class="flex flex-col sm:flex-row gap-12 justify-start">
                         <div>
                             <p class="font-bold text-gray-900 mb-3">Explorar</p>
                             <ul class="space-y-2">
@@ -1081,7 +1152,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore-compat.js"></script>
     <script src="shared.js?v=36"></script>
     <script src="orientadora.js?v=7"></script>
-    <script src="historias.js?v=19"></script>
+    <script src="historias.js?v=20"></script>
     <script>
         // ── Estado global: base en shared.js. La nav (desktop + móvil) la
         // inyecta renderNav('home'), igual que en el resto de páginas del sitio.
