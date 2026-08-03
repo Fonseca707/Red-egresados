@@ -412,6 +412,23 @@
                 </div>
 
             </div>
+            <script>
+                // Pinta el panel de la visita anterior AHORA MISMO, mientras
+                // Firestore responde (~2 s aun con las lecturas en paralelo). Va
+                // aqui, en medio del HTML, para que ocurra durante el parseo y no
+                // haya un instante de esqueleto para quien ya estuvo. Los datos
+                // frescos lo reemplazan al llegar.
+                (() => {
+                    try {
+                        const guardado = JSON.parse(localStorage.getItem('hp_ficha_cache') || 'null');
+                        // Una semana: pasado ese tiempo es mejor el esqueleto que
+                        // enseñar una trayectoria que quiza ya cambio.
+                        if (!guardado || !guardado.html || Date.now() - guardado.t > 604800000) return;
+                        const ficha = document.getElementById('hp-ficha');
+                        if (ficha) ficha.innerHTML = guardado.html;
+                    } catch (e) { /* si algo falla, se queda el esqueleto */ }
+                })();
+            </script>
         </section>
 
         <div id="view-home" class="animate-fade-in w-full max-w-7xl mx-auto">
@@ -770,7 +787,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore-compat.js"></script>
     <script src="shared.js?v=36"></script>
     <script src="orientadora.js?v=7"></script>
-    <script src="historias.js?v=16"></script>
+    <script src="historias.js?v=17"></script>
     <script>
         // ── Estado global: base en shared.js. La nav (desktop + móvil) la
         // inyecta renderNav('home'), igual que en el resto de páginas del sitio.

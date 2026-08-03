@@ -177,6 +177,15 @@ const historiasLogic = {
         // llega despues y no pinta nada del hero. Se lee con:
         //   performance.getEntriesByName('hp-ficha-pintada')[0].startTime
         try { performance.mark('hp-ficha-pintada'); } catch (e) { /* no es critico */ }
+
+        // Se guarda para la proxima visita: el panel es lo primero que se mira y
+        // aun con las lecturas en paralelo tarda ~2 s en llegar de Firestore. Con
+        // esto, quien ya estuvo aqui lo ve al instante y los datos frescos lo
+        // reemplazan sin que se note. Son los mismos datos que la portada ya
+        // publica, guardados en el equipo del propio visitante.
+        try {
+            localStorage.setItem('hp_ficha_cache', JSON.stringify({ t: Date.now(), html: ficha.innerHTML }));
+        } catch (e) { /* sin espacio o en modo privado: no pasa nada */ }
     },
 
     renderStats(resumen) {
