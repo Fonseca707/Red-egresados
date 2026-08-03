@@ -195,6 +195,13 @@
         .hp-inicial-mas { background: #e7e5e4; color: #57534e; }
         html.dark .hp-inicial { border-color: #1c1917; background: #57534e; }
         html.dark .hp-inicial-mas { background: #292524; color: #d6d3d1; }
+        /* Un acento por sección: el rótulo cambia de color según el bloque, así
+           la página tiene gama y no un solo verde repetido nueve veces. */
+        .hp-kicker[data-acento="ambar"] { color: #b45309; }
+        html.dark .hp-kicker[data-acento="ambar"] { color: #fbbf24; }
+        .hp-kicker[data-acento="teal"] { color: #0f766e; }
+        html.dark .hp-kicker[data-acento="teal"] { color: #5eead4; }
+
         .hp-social-linea { font-size: .9rem; color: #78716c; }
         html.dark .hp-social-linea { color: #a8a29e; }
 
@@ -338,9 +345,9 @@
 
         /* Columnas separadas por una línea, sin recuadro. */
         .hp-columnas { gap: 0; }
-        .hp-columna { padding: .25rem 0; }
+        .hp-columna { padding: .75rem 0 .25rem; }
         @media (min-width: 768px) {
-            .hp-columna { padding: .25rem 2rem; border-left: 1px solid #ebeae8; }
+            .hp-columna { padding: .75rem 2rem .25rem; border-left: 1px solid #ebeae8; }
             .hp-columna:first-child { padding-left: 0; border-left: 0; }
             .hp-columna:last-child { padding-right: 0; }
             html.dark .hp-columna { border-left-color: #332f2c; }
@@ -349,7 +356,7 @@
             .hp-columna + .hp-columna { border-top: 1px solid #ebeae8; padding-top: 1.75rem; margin-top: 1.75rem; }
             html.dark .hp-columna + .hp-columna { border-top-color: #332f2c; }
         }
-        .hp-columna .hp-card-icono { font-size: 1.9rem; }
+        .hp-columna .hp-card-icono { font-size: 1.9rem; line-height: 1.25; }
 
         /* Lista numerada: el número hace de ancla visual y sustituye a la caja. */
         .hp-lista { max-width: 56rem; margin: 0 auto; }
@@ -357,7 +364,12 @@
         .hp-fila:last-child { border-bottom: 1px solid #ebeae8; }
         html.dark .hp-fila { border-top-color: #332f2c; }
         html.dark .hp-fila:last-child { border-bottom-color: #332f2c; }
-        .hp-fila-n { font-size: .82rem; font-weight: 600; color: #22c55e; letter-spacing: .06em; padding-top: .2rem; flex: none; width: 2rem; }
+        .hp-fila-n { font-size: .95rem; font-weight: 600; color: #22c55e; letter-spacing: .06em; padding-top: .15rem; flex: none; width: 2.2rem; }
+        .hp-fila:nth-child(2) .hp-fila-n { color: #d97706; }
+        .hp-fila:nth-child(3) .hp-fila-n { color: #0d9488; }
+        .hp-fila:nth-child(2):hover .hp-fila-icono { color: #d97706; }
+        .hp-fila:nth-child(3):hover .hp-fila-icono { color: #0d9488; }
+        .hp-fila-icono { transition: transform .35s cubic-bezier(.16,1,.3,1), color .3s ease; }
         .hp-fila-txt { flex: 1; min-width: 0; }
         .hp-fila-t { font-size: 1.08rem; font-weight: 600; letter-spacing: -.018em; color: #1c1917; }
         html.dark .hp-fila-t { color: #fafaf9; }
@@ -396,10 +408,12 @@
            es larga, la inclinación va por detrás del ratón y se siente pegajosa;
            al salir, una más lenta la devuelve a su sitio. */
         .hp-ventana { transition: transform .25s cubic-bezier(.16,1,.3,1), box-shadow .4s ease; }
-        .hp-ventana.hp-siguiendo { transition: transform .12s linear, box-shadow .4s ease; }
+        /* Al seguir al cursor la transición es corta y lineal: con una curva
+           larga la inclinación va por detrás del ratón y se siente pegajosa. */
+        .hp-ventana.hp-siguiendo { transition: transform .1s linear, box-shadow .4s ease; }
         @media (min-width: 1024px) {
-            .hp-visual:hover .hp-ventana { box-shadow: 0 1px 1px rgba(12,10,9,.04), 0 28px 52px -14px rgba(20,83,45,.24),
-                                                       0 70px 120px -34px rgba(20,83,45,.38), 0 0 0 1px rgba(12,10,9,.05); }
+            .hp-hero:hover .hp-ventana { box-shadow: 0 1px 1px rgba(12,10,9,.04), 0 28px 52px -14px rgba(20,83,45,.24),
+                                                     0 70px 120px -34px rgba(20,83,45,.38), 0 0 0 1px rgba(12,10,9,.05); }
         }
         /* Cada hito de la trayectoria se ilumina por separado. */
         .hp-ruta li { transition: transform .3s cubic-bezier(.16,1,.3,1); }
@@ -439,11 +453,11 @@
 
         /* Opciones de contacto: una fila de enlaces con separador, no tres cajas. */
         .hp-opcion { text-align: left; font: inherit; width: 100%; cursor: pointer; background: none; border: 0;
-                     padding: .25rem 0; transition: transform .3s cubic-bezier(.16,1,.3,1); }
+                     padding: .75rem 0 .25rem; transition: transform .3s cubic-bezier(.16,1,.3,1); }
         .hp-opcion:hover { transform: translateY(-2px); }
         .hp-opcion:focus-visible { outline: 2px solid #16a34a; outline-offset: 4px; }
         @media (min-width: 768px) {
-            .hp-opcion { padding: .25rem 2rem; border-left: 1px solid #ebeae8; }
+            .hp-opcion { padding: .75rem 2rem .25rem; border-left: 1px solid #ebeae8; }
             .hp-opcion:first-child { padding-left: 0; border-left: 0; }
             html.dark .hp-opcion { border-left-color: #332f2c; }
         }
@@ -494,7 +508,12 @@
                           font-size: .98rem; font-weight: 600; color: #1c1917; letter-spacing: -.012em; list-style: none; }
         html.dark .hp-faq summary { color: #fafaf9; }
         .hp-faq summary::-webkit-details-marker { display: none; }
-        .hp-faq summary i { color: #a8a29e; transition: transform .3s cubic-bezier(.16,1,.3,1); flex: none; }
+        .hp-faq summary i { color: #16a34a; transition: transform .3s cubic-bezier(.16,1,.3,1), color .25s ease; flex: none; }
+        .hp-faq summary { transition: color .25s ease; }
+        .hp-faq summary:hover { color: #16a34a; }
+        html.dark .hp-faq summary:hover { color: #4ade80; }
+        .hp-faq[open] summary { color: #15803d; }
+        html.dark .hp-faq[open] summary { color: #4ade80; }
         .hp-faq[open] summary i { transform: rotate(180deg); }
         .hp-faq-cuerpo { padding-bottom: 1.25rem; font-size: .93rem; line-height: 1.68; color: #57534e; max-width: 52rem; }
         html.dark .hp-faq-cuerpo { color: #a8a29e; }
@@ -733,7 +752,7 @@
             <!-- QUÉ ENCUENTRAS AQUÍ -->
             <section class="hp-seccion"><div class="hp-interior">
                 <div class="hp-cab" data-hp-sube>
-                    <p class="hp-kicker">Qué encuentras aquí</p>
+                    <p class="hp-kicker" data-acento="teal">Qué encuentras aquí</p>
                     <h3 class="hp-h2 mt-4">Una red que se recorre</h3>
                 </div>
 
@@ -771,7 +790,7 @@
                  el listening sigue en construccion y por eso no aparece aqui. -->
             <section class="hp-seccion"><div class="hp-interior">
                 <div class="hp-cab" data-hp-sube>
-                    <p class="hp-kicker">Preparación</p>
+                    <p class="hp-kicker" data-acento="ambar">Preparación</p>
                     <h3 class="hp-h2 mt-4">Los exámenes que te abren la puerta</h3>
                     <p class="hp-sub">Simulacros con el formato oficial vigente, dentro de la misma plataforma donde está la red.</p>
                 </div>
@@ -1156,7 +1175,10 @@
             // Solo donde hay ratón de verdad: en una pantalla táctil el puntero
             // «grueso» dispararía inclinaciones al tocar, que se ven a saltos.
             const ventana = document.querySelector('.hp-ventana');
-            const zona = document.querySelector('.hp-visual');
+            // La zona sensible es el HERO ENTERO, no solo el bloque verde: la
+            // ventana tiene que reaccionar también cuando el cursor está sobre
+            // el título o los botones, que es la mitad de la primera pantalla.
+            const zona = document.querySelector('.hp-hero');
             if (ventana && zona && !reduce && window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
                 const BASE_Y = -7, BASE_X = 1.2;   // la inclinación en reposo
                 let ultimoAplicado = 0;
