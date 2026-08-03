@@ -225,6 +225,9 @@
            de la página en vez de pegarse al borde de la pantalla. */
         .hp-a-sangre > .hp-interior { padding-inline: clamp(1.25rem, 4vw, 3rem); }
         .hp-seccion.hp-a-sangre > .hp-interior { padding-inline: 1rem; }
+        /* El bloque de historias lo pinta historias.js: su sección interior
+           necesita el mismo margen lateral que las demás franjas de color. */
+        #historias-section.hp-a-sangre > .hp-seccion > .hp-interior { padding-inline: 1rem; }
         .hp-cab { max-width: 44rem; margin: 0 auto clamp(1.75rem, 3vw, 2.75rem); text-align: center; }
         .hp-h2 { font-size: clamp(1.85rem, 3.1vw, 2.6rem); font-weight: 600; letter-spacing: -.032em; line-height: 1.13; color: #1c1917; text-wrap: balance; }
         html.dark .hp-h2 { color: #fafaf9; }
@@ -593,8 +596,17 @@
         /* Bandas: el blanco deja de flotar y pasa a ser el aire de una franja.
            Neutro y teal, colores que la paleta ya tiene — no se repite el verde
            del hero, que ya cansó cuando se puso en todas partes. */
-        .hp-banda { background: #f5f5f4; }
-        html.dark .hp-banda { background: #1a1917; }
+        /* Era gris neutro: parecía banda pero no aportaba una gota de gama.
+           Ahora es el verde de la marca en su versión más suave. */
+        .hp-banda { background: #f0fdf4; }
+        html.dark .hp-banda { background: #10201a; }
+        /* Crema: el ámbar de la paleta llevado a fondo. Rompe el tramo largo sin
+           añadir ninguna familia nueva. */
+        .hp-banda-crema { background: #fffbeb; }
+        html.dark .hp-banda-crema { background: #1c1710; }
+        /* El bloque de historias lo pinta historias.js: su interior necesita el
+           mismo margen lateral que el resto de franjas de color. */
+        #historias-section.hp-a-sangre .hp-interior { padding-inline: 1rem; }
         .hp-banda-teal { background: #f0fdfa; }
         html.dark .hp-banda-teal { background: #0f1e1c; }
 
@@ -775,7 +787,7 @@
             </section>
 
             <!-- Modo historias: rutas destacadas narrativas (renderiza historias.js) -->
-            <div id="historias-section"></div>
+            <div id="historias-section" class="hp-banda-crema hp-a-sangre"></div>
 
             <!-- CÓMO FUNCIONA -->
             <section class="hp-seccion"><div class="hp-interior">
@@ -1174,7 +1186,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore-compat.js"></script>
     <script src="shared.js?v=36"></script>
     <script src="orientadora.js?v=7"></script>
-    <script src="historias.js?v=21"></script>
+    <script src="historias.js?v=22"></script>
     <script>
         // ── Estado global: base en shared.js. La nav (desktop + móvil) la
         // inyecta renderNav('home'), igual que en el resto de páginas del sitio.

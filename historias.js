@@ -228,7 +228,7 @@ const historiasLogic = {
         // hito, la cuarta celda queda como un hueco blanco de 220 px. Con tres,
         // tres columnas; con dos o cuatro, dos.
         holder.innerHTML = `
-            <section class="hp-seccion">
+            <section class="hp-seccion"><div class="hp-interior">
                 <div class="hp-cab hp-cab-izq" data-hp-sube>
                     <p class="hp-kicker">Historias que empezaron aquí</p>
                     <h3 class="hp-h2 mt-4">Del colegio a donde están hoy</h3>
@@ -237,6 +237,7 @@ const historiasLogic = {
                 <div class="hp-rejilla ${historias.length === 3 ? 'hp-rejilla-3 hp-historias-3' : 'hp-rejilla-2'}">
                     ${historias.map((h, i) => this.cardHTML(h, i)).join('')}
                 </div>
+              </div>
             </section>`;
         // El observador ya recorrió el documento cuando esto llega de Firestore:
         // hay que darle los bloques nuevos o se quedan invisibles para siempre.
