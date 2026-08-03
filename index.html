@@ -22,8 +22,134 @@
         .glass-nav { background: rgba(250,250,249,0.85); backdrop-filter: blur(16px); border-bottom: 1px solid rgba(231,229,228,0.6); }
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* ─────────────────────────────────────────────────────────────────
+           PORTADA — hero a sangre. Estilos locales a propósito: las otras 10
+           páginas comparten tailwind.css y renderNav(), así que todo lo de
+           aquí vive en este <style> y no puede afectarlas. Prefijo .hp-.
+           ───────────────────────────────────────────────────────────────── */
+
+        /* La nav sobre el hero: transparente arriba, glass al desplazarse. Solo se
+           aplica cuando la portada le pone la clase (ver el script) y solo de
+           1024 px para arriba: en móvil el hero le pasa las celdas oscuras por
+           debajo y el logo se cruzaba con los nombres. Ahí la barra se queda con
+           su fondo de siempre. */
+        @media (min-width: 1024px) {
+            .glass-nav.hp-nav { background: transparent; backdrop-filter: none; border-bottom-color: transparent; box-shadow: none; transition: background .25s ease, backdrop-filter .25s ease, border-color .25s ease; }
+            .glass-nav.hp-nav.hp-nav-scrolled { background: rgba(255,255,255,.88); backdrop-filter: blur(16px); border-bottom-color: rgba(231,229,228,.7); }
+            html.dark .glass-nav.hp-nav.hp-nav-scrolled { background: rgba(28,25,23,.88); border-bottom-color: rgba(68,64,60,.7); }
+        }
+
+        .hp-hero { background: #fff; }
+        html.dark .hp-hero { background: #1c1917; }
+
+        /* El texto arranca donde arranca el contenido del resto de la página
+           (el max-w-7xl centrado). Aquí sí se puede usar vw porque solo alimenta
+           un padding: no fija el ancho de nada, así que aunque la barra de
+           desplazamiento se cuente de más no aparece scroll horizontal. */
+        .hp-texto { padding-inline: max(1.5rem, calc((100vw - 80rem) / 2 + 1rem)); }
+        @media (min-width: 1024px) { .hp-texto { padding-right: 3rem; } }
+
+        .hp-kicker { font-size: .78rem; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: #78716c; }
+        html.dark .hp-kicker { color: #a8a29e; }
+
+        .hp-titulo { font-size: clamp(2.5rem, 4.6vw, 4rem); font-weight: 600; line-height: 1.05; letter-spacing: -.035em; color: #1c1917; text-wrap: balance; }
+        html.dark .hp-titulo { color: #fafaf9; }
+        .hp-titulo em { font-style: normal; color: #16a34a; }
+        html.dark .hp-titulo em { color: #4ade80; }
+
+        .hp-entrada { font-size: clamp(1.02rem, 1.15vw, 1.2rem); line-height: 1.65; color: #57534e; font-weight: 400; max-width: 34rem; }
+        html.dark .hp-entrada { color: #d6d3d1; }
+
+        /* Botones tipo píldora. La sombra es neutra y corta: el verde saturado
+           bajo el botón era parte de lo que delataba la portada anterior. */
+        .hp-cta { display: inline-flex; align-items: center; justify-content: center; gap: .55rem; padding: .95rem 1.9rem; border-radius: 999px; font-weight: 600; font-size: 1rem; letter-spacing: -.01em; transition: transform .2s cubic-bezier(.16,1,.3,1), background-color .2s ease, border-color .2s ease; }
+        .hp-cta:focus-visible { outline: 2px solid #16a34a; outline-offset: 3px; }
+        .hp-cta-1 { background: #16a34a; color: #fff; }
+        .hp-cta-1:hover { background: #15803d; transform: translateY(-2px); }
+        .hp-cta-2 { background: transparent; color: #1c1917; border: 1px solid #d6d3d1; }
+        .hp-cta-2:hover { border-color: #1c1917; transform: translateY(-2px); }
+        html.dark .hp-cta-2 { color: #fafaf9; border-color: #57534e; }
+        html.dark .hp-cta-2:hover { border-color: #fafaf9; }
+
+        /* Mosaico de caras reales. El alto se reserva desde el CSS (aspect-ratio
+           + fondo) para que llenarlo con datos de Firestore no mueva la página. */
+        /* El fondo del grid es el del hero: lo que se ve por el hueco de 2px son
+           líneas blancas, no una rejilla gris. El padding superior deja la franja
+           de la nav despejada — sin él, la primera fila de celdas queda debajo de
+           la barra y el texto de arriba se cruza con sus enlaces. */
+        .hp-mosaico { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; background: #fff; box-sizing: border-box; }
+        html.dark .hp-mosaico { background: #1c1917; }
+        .hp-celda { position: relative; aspect-ratio: 1 / 1; overflow: hidden; background: #e7e5e4; }
+        /* En escritorio el mosaico se estira al alto del hero en vez de crecer con
+           su ancho: con relacion de aspecto fija, media pantalla de ancho daba un
+           bloque mas alto que la ventana. */
+        @media (min-width: 1024px) {
+            /* La columna del texto pesa algo más que la visual: con 50/50 el
+               título se partía en tres líneas. */
+            .hp-hero-grid { min-height: 86vh; grid-template-columns: 1.12fr 1fr; }
+            .hp-mosaico { height: 86vh; min-height: 620px; grid-template-rows: 1fr 1fr; padding-top: 5rem; }
+            .hp-celda { aspect-ratio: auto; }
+        }
+
+        /* Celda sin foto: retrato tipográfico, no un avatar de iniciales ampliado.
+           Hoy NINGÚN egresado destacado tiene foto subida, así que este es el
+           estado normal, no el caso raro. En cuanto haya photoURL, la misma celda
+           pinta la foto sin tocar una línea. */
+        /* Todo el texto va abajo: arriba queda el aire de la nav. */
+        .hp-tile { display: flex; flex-direction: column; justify-content: flex-end; height: 100%; padding: 1.6rem 1.4rem; }
+        .hp-celda[data-tono="1"] .hp-tile { background: #14532d; color: #fff; }
+        .hp-celda[data-tono="2"] .hp-tile { background: #1c1917; color: #fff; }
+        /* Gris de verdad, no casi-blanco: con #f5f5f4 la celda se fundía con el
+           fondo del hero y parecía un hueco sin cargar. */
+        .hp-celda[data-tono="3"] .hp-tile { background: #e7e5e4; color: #1c1917; }
+        .hp-celda[data-tono="4"] .hp-tile { background: #16a34a; color: #fff; }
+        html.dark .hp-celda[data-tono="3"] .hp-tile { background: #292524; color: #fafaf9; }
+        .hp-tile-promo { font-size: .7rem; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; opacity: .72; margin-bottom: .7rem; }
+        .hp-tile-nombre { font-size: clamp(1.15rem, 1.5vw, 1.6rem); font-weight: 600; line-height: 1.15; letter-spacing: -.02em; }
+        /* Los cargos reales son largos ("Controller financiero para LATAM en SAP
+           y Profesor..."): a dos líneas y con corte, o desbordan la celda. */
+        .hp-tile-rol { font-size: .82rem; font-weight: 500; opacity: .8; margin-top: .4rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .hp-celda-detalle { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+        /* Prueba social: iniciales sobre un tono neutro. Los avatares por defecto
+           (ui-avatars) asignan un color aleatorio por nombre — naranja, morado,
+           rosa — y en fila, junto al verde de la marca, parecen de otra web. */
+        .hp-inicial { width: 2.5rem; height: 2.5rem; border-radius: 999px; display: flex; align-items: center; justify-content: center; font-size: .72rem; font-weight: 600; letter-spacing: .02em; background: #292524; color: #fff; border: 2px solid #fff; }
+        .hp-inicial-mas { background: #e7e5e4; color: #57534e; }
+        html.dark .hp-inicial { border-color: #1c1917; background: #57534e; }
+        html.dark .hp-inicial-mas { background: #292524; color: #d6d3d1; }
+        html.dark .hp-celda { background: #292524; }
+        .hp-celda img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .5s cubic-bezier(.16,1,.3,1); }
+        .hp-celda:hover img, .hp-celda:focus-within img { transform: scale(1.04); }
+        .hp-celda figcaption { position: absolute; inset-inline: 0; bottom: 0; padding: 1.4rem 1.1rem .95rem; color: #fff; background: linear-gradient(to top, rgba(12,10,9,.82) 0%, rgba(12,10,9,.45) 45%, transparent 100%); }
+        .hp-celda-nombre { font-weight: 600; font-size: .95rem; line-height: 1.25; letter-spacing: -.01em; }
+        .hp-celda-detalle { font-size: .76rem; font-weight: 500; color: rgba(255,255,255,.82); margin-top: .15rem; }
+        /* Celda sin persona: queda como superficie, nunca como hueco roto. */
+        .hp-celda-vacia { background: #f5f5f4; }
+        html.dark .hp-celda-vacia { background: #292524; }
+        /* Toda la celda abre el perfil, pero el objetivo pulsable es un boton de
+           verdad: asi tambien se llega con el tabulador. */
+        .hp-celda-btn { position: absolute; inset: 0; width: 100%; height: 100%; background: transparent; border: 0; padding: 0; cursor: pointer; }
+        .hp-celda-btn:focus-visible { outline: 2px solid #fff; outline-offset: -4px; }
+
+        .hp-social-linea { font-size: .9rem; color: #78716c; }
+        html.dark .hp-social-linea { color: #a8a29e; }
+
+        /* Entrada: solo opacity y transform (transicionar un color que sale de
+           una variable no vuelve a dispararse al cambiar de tema). */
+        .hp-reveal { opacity: 0; transform: translateY(14px); animation: hpReveal .7s cubic-bezier(.16,1,.3,1) forwards; animation-delay: var(--d, 0ms); }
+        @keyframes hpReveal { to { opacity: 1; transform: none; } }
+        .hp-celda-reveal { opacity: 0; animation: hpCelda .8s cubic-bezier(.16,1,.3,1) forwards; animation-delay: var(--d, 0ms); }
+        @keyframes hpCelda { from { opacity: 0; transform: scale(1.05); } to { opacity: 1; transform: none; } }
+
+        @media (prefers-reduced-motion: reduce) {
+            .hp-reveal, .hp-celda-reveal { animation: none; opacity: 1; transform: none; }
+            .hp-celda img, .hp-cta { transition: none; }
+            .hp-celda:hover img { transform: none; }
+        }
     </style>
-    <link rel="stylesheet" href="tailwind.css?v=9">
+    <link rel="stylesheet" href="tailwind.css?v=10">
 </head>
 <body class="text-stone-800 font-sans min-h-screen flex flex-col">
 
@@ -33,60 +159,59 @@
     <!-- MAIN CONTENT -->
     <main class="flex-1 pt-20 pb-24 md:pb-8 px-4 overflow-y-auto scroll-smooth bg-stone-50/60">
 
-        <div id="view-home" class="animate-fade-in w-full max-w-7xl mx-auto">
+        <!-- HERO — a sangre: se sale del contenedor del main (-mx-4 anula su px-4,
+             -mt-20 lo mete debajo de la nav fija). Los margenes negativos usan la
+             medida del propio main y no 100vw, que contaria la barra de scroll de
+             mas y sacaria desplazamiento horizontal. -->
+        <section class="hp-hero -mx-4 -mt-20" aria-labelledby="hp-titulo">
+            <div class="hp-hero-grid grid lg:grid-cols-2 items-center">
 
-            <!-- HERO SECTION -->
-            <section class="flex flex-col lg:flex-row items-center justify-between gap-12 py-10 lg:py-20">
-                <div class="flex-1 text-center lg:text-left">
-                    <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-brand-50 text-brand-700 text-sm font-bold mb-6 border border-brand-100 shadow-sm">
-                        <span class="relative flex h-2 w-2">
-                          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-400 opacity-75"></span>
-                          <span class="relative inline-flex rounded-full h-2 w-2 bg-brand-500"></span>
-                        </span>
-                        Plataforma de Egresados
-                    </div>
-                    <h1 class="text-4xl md:text-5xl lg:text-6xl font-extrabold text-gray-900 mb-6 tracking-tight leading-tight">
-                        Cultiva tu red <br class="hidden lg:block"><span class="text-brand-600">Cosecha tu futuro</span>
+                <div class="hp-texto pt-28 pb-14 lg:py-20">
+                    <p class="hp-kicker hp-reveal" style="--d:60ms">Liceo Campestre de Pereira</p>
+
+                    <h1 id="hp-titulo" class="hp-titulo mt-5 hp-reveal" style="--d:130ms">
+                        Cultiva tu red<br><em>Cosecha tu futuro</em>
                     </h1>
-                    <p class="text-lg md:text-xl text-gray-500 mb-10 max-w-2xl mx-auto lg:mx-0 leading-relaxed">
+
+                    <p class="hp-entrada mt-6 hp-reveal" style="--d:210ms">
                         La red de egresados del Liceo Campestre de Pereira. Descubre las trayectorias reales de quienes salieron de tus mismas aulas, conecta con ellos y encuentra el camino que quieres recorrer.
                     </p>
-                    <div class="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-                        <a href="register.html" class="px-8 py-4 bg-brand-600 text-white font-bold rounded-xl shadow-lg shadow-brand-500/30 hover:bg-brand-700 hover:-translate-y-1 transition transform flex items-center justify-center gap-2 text-lg">
-                            Crear cuenta <i class="ph-bold ph-arrow-right"></i>
+
+                    <div class="mt-9 flex flex-col sm:flex-row gap-3 hp-reveal" style="--d:290ms">
+                        <a href="register.html" class="hp-cta hp-cta-1">
+                            Crear cuenta <i class="ph-bold ph-arrow-right" aria-hidden="true"></i>
                         </a>
-                        <a href="directory.html" class="px-8 py-4 bg-white text-gray-700 font-bold rounded-xl border border-gray-200 hover:bg-gray-50 hover:shadow-sm transition flex items-center justify-center gap-2 text-lg">
-                            <i class="ph-bold ph-magnifying-glass"></i> Explorar el directorio
+                        <a href="directory.html" class="hp-cta hp-cta-2">
+                            Explorar el directorio
                         </a>
                     </div>
 
                     <!-- Prueba social: caras REALES de la red (historias.js la llena;
                          oculta mientras no haya egresados con foto/perfil). -->
-                    <div id="hero-social" class="hidden mt-10 flex items-center justify-center lg:justify-start gap-4">
+                    <div id="hero-social" class="hidden mt-10 flex items-center gap-4 hp-reveal" style="--d:370ms">
                         <div id="hero-avatars" class="flex -space-x-3"></div>
-                        <div class="text-sm text-gray-500">
-                            <span id="hero-social-text" class="font-bold text-gray-900"></span>
+                        <div class="hp-social-linea">
+                            <span id="hero-social-text" class="font-semibold"></span>
                         </div>
                     </div>
                 </div>
 
-                <div class="flex-1 relative w-full max-w-lg lg:max-w-none mx-auto">
-                    <div class="absolute inset-0 bg-gradient-to-tr from-brand-200 to-brand-50 rounded-[3rem] transform rotate-3 scale-105 -z-10"></div>
-                    <div class="absolute -top-6 -right-6 w-24 h-24 bg-yellow-100 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-pulse"></div>
-
-                    <img src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=800&q=80" alt="Networking Egresados" class="rounded-[3rem] shadow-2xl object-cover w-full h-[400px] lg:h-[550px] border-4 border-white">
-
-                    <div class="absolute -bottom-6 -left-4 lg:-left-12 bg-white p-5 rounded-2xl shadow-xl border border-gray-100 flex items-center gap-4 animate-slide-up" style="animation-delay: 300ms;">
-                        <div class="w-12 h-12 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-2xl shrink-0">
-                            <i class="ph-fill ph-briefcase"></i>
-                        </div>
-                        <div>
-                            <p class="text-sm text-gray-500 font-semibold">Nuevas oportunidades</p>
-                            <p class="text-lg font-bold text-gray-900">Cada semana</p>
-                        </div>
-                    </div>
+                <!-- El "producto" de Sinapsis son los egresados: en vez de una foto
+                     de banco, el lado visual son sus caras reales. historias.js
+                     llena las celdas con los mismos destacados que ya trae para las
+                     historias (cero lecturas nuevas de Firestore). El hueco queda
+                     reservado por CSS, asi que llenarlo no mueve la pagina. -->
+                <div class="hp-mosaico" id="hp-mosaico" role="list" aria-label="Egresados de la red">
+                    <figure class="hp-celda hp-celda-vacia" data-hp-celda role="listitem"></figure>
+                    <figure class="hp-celda hp-celda-vacia" data-hp-celda role="listitem"></figure>
+                    <figure class="hp-celda hp-celda-vacia" data-hp-celda role="listitem"></figure>
+                    <figure class="hp-celda hp-celda-vacia" data-hp-celda role="listitem"></figure>
                 </div>
-            </section>
+
+            </div>
+        </section>
+
+        <div id="view-home" class="animate-fade-in w-full max-w-7xl mx-auto">
 
             <!-- Agregados: ocultos hasta cruzar el umbral de rutas completas
                  (modo historias del plan: nunca delatar una red pequeña).
@@ -459,11 +584,31 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore-compat.js"></script>
     <script src="shared.js?v=36"></script>
     <script src="orientadora.js?v=7"></script>
-    <script src="historias.js?v=8"></script>
+    <script src="historias.js?v=11"></script>
     <script>
         // ── Estado global: base en shared.js. La nav (desktop + móvil) la
         // inyecta renderNav('home'), igual que en el resto de páginas del sitio.
         renderNav('home');
+
+        // La misma nav de siempre, con una variante SOLO de portada: encima del
+        // hero va transparente y toma su fondo al desplazarse. Es una clase que
+        // se añade aquí — shared.js no se toca, así que las otras 10 páginas
+        // siguen con su barra de siempre.
+        (() => {
+            const nav = document.querySelector('nav.glass-nav');
+            const main = document.querySelector('main');
+            if (!nav || !main) return;
+            nav.classList.add('hp-nav');
+            // Ojo: según el ancho, el que se desplaza es <main> (tiene
+            // overflow-y-auto) o la ventana. Se escucha en los dos y se toma el
+            // que se haya movido; con uno solo, la barra se quedaba transparente
+            // sobre el contenido en la mitad de los casos.
+            const sync = () => nav.classList.toggle(
+                'hp-nav-scrolled', Math.max(main.scrollTop, window.scrollY) > 24);
+            main.addEventListener('scroll', sync, { passive: true });
+            window.addEventListener('scroll', sync, { passive: true });
+            sync();
+        })();
 
         const directoryLogic = {
             _spHitos: [],

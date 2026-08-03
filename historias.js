@@ -62,6 +62,7 @@ const historiasLogic = {
             const resumen = await loadResumenRed();
             this.renderStats(resumen);
             this.renderHeroSocial(activos, resumen);
+            this.renderHeroMosaico(activos);
 
             // Con menos de 2 historias no se muestra nada: una fila medio vacía
             // también delata una red que apenas comienza.
@@ -86,15 +87,67 @@ const historiasLogic = {
         const muestra = [...(conFoto.length >= 4 ? conFoto : activos)]
             .sort((a, b) => (b.profileCompleteness || 0) - (a.profileCompleteness || 0))
             .slice(0, 4);
-        document.getElementById('hero-avatars').innerHTML = muestra.map(a => `
-            <img class="w-10 h-10 rounded-full border-2 border-white object-cover" src="${sanitizeHTML(a.img)}" alt="Egresado ${sanitizeHTML(a.name)}" title="${sanitizeHTML(a.name)}">`).join('') +
-            `<div class="w-10 h-10 rounded-full border-2 border-white bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-500">+</div>`;
+        // Quien tiene foto sale con su foto; el resto, con sus iniciales sobre un
+        // tono neutro. El avatar por defecto de ui-avatars pinta un color al azar
+        // segun el nombre y la fila salia naranja/morada/rosa junto al verde de la
+        // marca — parecia de otra web.
+        const iniciales = (nombre) => String(nombre || '').trim().split(/\s+/).slice(0, 2)
+            .map(p => p[0] || '').join('').toUpperCase();
+        document.getElementById('hero-avatars').innerHTML = muestra.map(a => a.photoURL
+            ? `<img class="w-10 h-10 rounded-full border-2 border-white object-cover" src="${sanitizeHTML(a.img)}" alt="Egresado ${sanitizeHTML(a.name)}" title="${sanitizeHTML(a.name)}">`
+            : `<span class="hp-inicial" title="${sanitizeHTML(a.name)}" aria-label="Egresado ${sanitizeHTML(a.name)}">${sanitizeHTML(iniciales(a.name))}</span>`
+        ).join('') +
+            `<span class="hp-inicial hp-inicial-mas" aria-hidden="true">+</span>`;
         const promos = Number(resumen?.promociones) ||
             new Set(activos.map(a => String(a.year)).filter(y => y && y !== '---')).size;
         document.getElementById('hero-social-text').innerHTML = promos >= 3
             ? `Egresados de ${promos} promociones <span class="font-normal text-gray-500">ya están en la red.</span>`
             : `Egresados del Liceo <span class="font-normal text-gray-500">ya están en la red.</span>`;
         wrap.classList.remove('hidden');
+    },
+
+    // Bloque visual del hero: en vez de una foto de banco, las cuatro personas
+    // destacadas de la red. Reusa los destacados que init() ya trajo, asi que no
+    // cuesta ni una lectura mas de Firestore.
+    //
+    // ⚠️ Quien tiene foto subida sale con su foto; quien no, con un retrato
+    // tipografico. NO se amplia el avatar de iniciales de ui-avatars: a 300 px es
+    // una inicial gigante sobre un bloque de color y delata que no hay foto. Hoy
+    // (2026-08-02) ninguno de los cuatro destacados tiene photoURL, o sea que el
+    // caso tipografico es el normal, no la excepcion. Las celdas que sobren se
+    // quedan como superficie: aqui no se rellena con gente inventada.
+    renderHeroMosaico(activos) {
+        const celdas = document.querySelectorAll('#hp-mosaico [data-hp-celda]');
+        if (!celdas.length) return;
+        const muestra = [...activos]
+            .sort((a, b) => (b.profileCompleteness || 0) - (a.profileCompleteness || 0))
+            .slice(0, celdas.length);
+        muestra.forEach((a, i) => {
+            const celda = celdas[i];
+            const promo = a.year && a.year !== '---' ? `Promoción ${a.year}` : 'Egresado';
+            const rol = [a.role, a.area && a.area !== 'General' ? a.area : '']
+                .filter(v => v && v !== 'Sin rol definido')[0] || '';
+            celda.classList.remove('hp-celda-vacia');
+            celda.classList.add('hp-celda-reveal');
+            celda.style.setProperty('--d', `${140 + i * 90}ms`);
+            celda.dataset.tono = String((i % 4) + 1);
+            const cuerpo = a.photoURL
+                ? `<img src="${sanitizeHTML(a.img)}" alt="${sanitizeHTML(a.name)}, egresada o egresado del Liceo Campestre de Pereira" loading="${i < 2 ? 'eager' : 'lazy'}" decoding="async">
+                   <figcaption>
+                       <p class="hp-celda-nombre">${sanitizeHTML(a.name)}</p>
+                       <p class="hp-celda-detalle">${sanitizeHTML([promo, rol].filter(Boolean).join(' · '))}</p>
+                   </figcaption>`
+                : `<div class="hp-tile">
+                       <p class="hp-tile-promo">${sanitizeHTML(promo)}</p>
+                       <div>
+                           <p class="hp-tile-nombre">${sanitizeHTML(a.name)}</p>
+                           ${rol ? `<p class="hp-tile-rol">${sanitizeHTML(rol)}</p>` : ''}
+                       </div>
+                   </div>`;
+            celda.innerHTML = `${cuerpo}
+                <button type="button" class="hp-celda-btn" aria-label="Ver la ruta de ${sanitizeHTML(a.name)}"
+                    onclick="historiasLogic.openHistoria('${sanitizeHTML(a.id)}')"></button>`;
+        });
     },
 
     renderStats(resumen) {
