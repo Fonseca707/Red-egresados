@@ -217,15 +217,19 @@ const historiasLogic = {
         // Mismo sistema visual que el resto de la portada (clases .hp-): si esta
         // seccion se queda con las tarjetas gordas de antes, la pagina se lee
         // como dos webs pegadas.
+        // Misma firma que el hero, que es lo que a Juan le funcionó: lienzo verde
+        // con su corte diagonal y las trayectorias flotando encima como paneles.
         holder.innerHTML = `
             <section class="hp-seccion">
-                <div class="hp-cab" data-hp-sube>
-                    <p class="hp-kicker">Historias que empezaron aquí</p>
-                    <h3 class="hp-h2 mt-4">Del Liceo a donde están hoy</h3>
-                    <p class="hp-sub">Rutas reales de egresados: cada una empezó en las mismas aulas donde estás tú.</p>
-                </div>
-                <div class="hp-rejilla hp-rejilla-2">
-                    ${historias.map((h, i) => this.cardHTML(h, i)).join('')}
+                <div class="hp-lienzo hp-lienzo-ancho" data-hp-sube>
+                    <div class="hp-cab">
+                        <p class="hp-kicker hp-kicker-claro">Historias que empezaron aquí</p>
+                        <h3 class="hp-h2 mt-4">Del Liceo a donde están hoy</h3>
+                        <p class="hp-sub">Rutas reales de egresados: cada una empezó en las mismas aulas donde estás tú.</p>
+                    </div>
+                    <div class="hp-rejilla hp-rejilla-2">
+                        ${historias.map((h, i) => this.cardHTML(h, i)).join('')}
+                    </div>
                 </div>
             </section>`;
         // El observador ya recorrió el documento cuando esto llega de Firestore:
@@ -252,7 +256,7 @@ const historiasLogic = {
         const bio = alum.bio && alum.bio !== 'Sin biografía disponible.' ? alum.bio : '';
         return `
             <article onclick="historiasLogic.openHistoria('${sanitizeHTML(alum.id)}')"
-                class="hp-card hp-historia" data-hp-sube style="--d:${indice * 90}ms">
+                class="hp-card hp-historia hp-card-flotante" data-hp-sube style="--d:${indice * 90}ms">
                 <div class="hp-historia-cab">
                     ${alum.photoURL
                         ? `<img src="${sanitizeHTML(alum.img)}" alt="Foto de ${sanitizeHTML(alum.name)}" class="hp-historia-foto" loading="lazy" decoding="async">`

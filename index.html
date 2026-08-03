@@ -60,7 +60,7 @@
 
         /* Los rótulos iban en gris y era buena parte de lo «apagado»: son el
            primer texto de cada sección y no aportaban una gota de color. */
-        .hp-kicker { font-size: .78rem; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: #15803d; }
+        .hp-kicker { font-size: .78rem; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: #16a34a; }
         html.dark .hp-kicker { color: #4ade80; }
 
         .hp-titulo { font-size: clamp(2.5rem, 4.6vw, 4rem); font-weight: 600; line-height: 1.05; letter-spacing: -.035em; color: #1c1917; text-wrap: balance; }
@@ -139,7 +139,7 @@
         .hp-ficha-cab { display: flex; align-items: center; gap: .85rem; padding-bottom: 1.25rem; border-bottom: 1px solid #f0efee; }
         html.dark .hp-ficha-cab { border-bottom-color: #332f2c; }
         .hp-ficha-avatar { width: 3rem; height: 3rem; border-radius: 999px; object-fit: cover; display: flex; align-items: center; justify-content: center;
-                           background: #14532d; color: #fff; font-size: .85rem; font-weight: 600; flex: none; }
+                           background: #16a34a; color: #fff; font-size: .85rem; font-weight: 600; flex: none; }
         .hp-ficha-nombre { font-size: 1.02rem; font-weight: 600; letter-spacing: -.015em; color: #1c1917; line-height: 1.2; }
         html.dark .hp-ficha-nombre { color: #fafaf9; }
         .hp-ficha-promo { font-size: .76rem; font-weight: 500; color: #78716c; margin-top: .18rem; }
@@ -187,7 +187,7 @@
         /* Prueba social: iniciales sobre un tono neutro. Los avatares por defecto
            (ui-avatars) asignan un color aleatorio por nombre — naranja, morado,
            rosa — y en fila, junto al verde de la marca, parecen de otra web. */
-        .hp-inicial { width: 2.5rem; height: 2.5rem; border-radius: 999px; display: flex; align-items: center; justify-content: center; font-size: .72rem; font-weight: 600; letter-spacing: .02em; background: #292524; color: #fff; border: 2px solid #fff; }
+        .hp-inicial { width: 2.5rem; height: 2.5rem; border-radius: 999px; display: flex; align-items: center; justify-content: center; font-size: .72rem; font-weight: 600; letter-spacing: .02em; background: #16a34a; color: #fff; border: 2px solid #fff; }
         .hp-inicial-mas { background: #e7e5e4; color: #57534e; }
         html.dark .hp-inicial { border-color: #1c1917; background: #57534e; }
         html.dark .hp-inicial-mas { background: #292524; color: #d6d3d1; }
@@ -236,7 +236,7 @@
            marca y le dan a cada rejilla algo de vida. Se hace por posición, así
            que ningún HTML tiene que saber de colores. */
         .hp-rejilla > :nth-child(4n+2) .hp-card-icono { color: #d97706; }
-        .hp-rejilla > :nth-child(4n+3) .hp-card-icono { color: #15803d; }
+        .hp-rejilla > :nth-child(4n+3) .hp-card-icono { color: #0d9488; }
         .hp-rejilla > :nth-child(4n+4) .hp-card-icono { color: #22c55e; }
         html.dark .hp-rejilla > :nth-child(4n+2) .hp-card-icono { color: #fbbf24; }
         html.dark .hp-rejilla > :nth-child(4n+3) .hp-card-icono { color: #86efac; }
@@ -246,9 +246,27 @@
         .hp-card-p { font-size: .92rem; line-height: 1.62; color: #57534e; margin-top: .55rem; }
         html.dark .hp-card-p { color: #a8a29e; }
 
-        /* El número del paso, en la misma línea del título en vez de en una
-           pastilla flotante encima de la tarjeta. */
-        .hp-paso-n { font-size: .7rem; font-weight: 600; letter-spacing: .1em; color: #a8a29e; display: block; margin-bottom: .9rem; }
+        /* ── Los cuatro pasos, dibujados como una trayectoria ────────────────
+           No es un adorno: esta plataforma va precisamente de trayectorias, y
+           es el mismo lenguaje del panel del hero. Da personalidad al bloque
+           sin inventarse una forma que no signifique nada. */
+        .hp-ruta-pasos { position: relative; }
+        /* La línea que une los pasos. Va detrás de los nodos y no llega a los
+           extremos, para que no se vea cortada. */
+        .hp-ruta-pasos::before { content: ''; position: absolute; left: 12%; right: 12%; top: 1.1rem; height: 2px;
+                                 background: linear-gradient(to right, #bbf7d0, #22c55e, #bbf7d0); display: none; }
+        @media (min-width: 1024px) { .hp-ruta-pasos::before { display: block; } }
+        html.dark .hp-ruta-pasos::before { background: linear-gradient(to right, #14532d, #22c55e, #14532d); }
+
+        .hp-paso { position: relative; padding-top: 3.2rem; }
+        /* El nodo: mismo círculo que marca cada hito en la ficha del hero. */
+        .hp-paso::before { content: ''; position: absolute; top: .55rem; left: 0; width: 1.15rem; height: 1.15rem; border-radius: 999px;
+                           background: #fff; border: 3px solid #22c55e; box-sizing: border-box; box-shadow: 0 0 0 5px rgba(34,197,94,.14); }
+        @media (min-width: 1024px) { .hp-paso::before { left: 50%; transform: translateX(-50%); } }
+        html.dark .hp-paso::before { background: #1c1917; }
+
+        .hp-paso-n { font-size: .7rem; font-weight: 600; letter-spacing: .1em; color: #16a34a; display: block; margin-bottom: .55rem; }
+        @media (min-width: 1024px) { .hp-paso { text-align: center; } .hp-paso .hp-card-icono { margin-inline: auto; } }
 
         .hp-enlace { display: inline-flex; align-items: center; gap: .4rem; margin-top: 1.1rem; font-size: .88rem; font-weight: 600; color: #16a34a;
                      border-bottom: 1px solid transparent; transition: border-color .25s ease, gap .25s ease; }
@@ -257,28 +275,56 @@
         .hp-enlace i { transition: transform .25s cubic-bezier(.16,1,.3,1); }
         .hp-enlace:hover i { transform: translateX(2px); }
 
-        /* Bloque oscuro (propósito y cierre): color plano, sin manchas borrosas
-           de color, que eran de lo que más delataba la página. */
-        .hp-bloque-oscuro { background: #14532d; border-radius: 16px; padding: clamp(2.25rem, 5vw, 4.5rem); color: #fff; }
+        /* ── La firma de la portada ──────────────────────────────────────────
+           Lo que funciona del hero —fondo verde claro con un corte diagonal y
+           un panel blanco flotando encima— se repite aquí. Fuera el verde casi
+           negro: era lo que apagaba las secciones de abajo. */
+        .hp-lienzo { position: relative; overflow: hidden; border-radius: 20px; background: #dcfce7;
+                     padding: clamp(2rem, 4.5vw, 3.5rem); }
+        html.dark .hp-lienzo { background: #14261a; }
+        .hp-lienzo::after { content: ''; position: absolute; inset: 0; background: #bbf7d0;
+                            clip-path: polygon(0 58%, 100% 30%, 100% 100%, 0% 100%); pointer-events: none; }
+        html.dark .hp-lienzo::after { background: #172e1f; }
+        .hp-lienzo > * { position: relative; z-index: 1; }
+
+        /* El panel blanco: la misma sombra en tres capas de la ventana del hero,
+           que es lo que le da el aire de objeto y no de caja. */
+        .hp-panel { background: #fff; border-radius: 14px; padding: clamp(1.75rem, 3.5vw, 3rem);
+                    box-shadow: 0 1px 1px rgba(12,10,9,.04), 0 18px 36px -12px rgba(20,83,45,.14),
+                                0 48px 90px -30px rgba(20,83,45,.22), 0 0 0 1px rgba(12,10,9,.04); }
+        html.dark .hp-panel { background: #221f1d; box-shadow: 0 18px 36px -12px rgba(0,0,0,.5), 0 0 0 1px rgba(250,250,249,.07); }
+
         .hp-bloque-texto { max-width: 48rem; }
-        .hp-kicker-claro { color: #86efac; }
-        html.dark .hp-kicker-claro { color: #86efac; }
-        .hp-frase { margin-top: 1.25rem; font-size: clamp(1.35rem, 2.4vw, 2rem); font-weight: 600; letter-spacing: -.025em; line-height: 1.32; color: #fff; }
-        .hp-frase-pie { margin-top: 1.5rem; font-size: 1.02rem; line-height: 1.68; color: #bbf7d0; }
+        .hp-kicker-claro { color: #16a34a; }
+        html.dark .hp-kicker-claro { color: #4ade80; }
+        .hp-frase { margin-top: 1.25rem; font-size: clamp(1.35rem, 2.4vw, 2rem); font-weight: 600; letter-spacing: -.025em; line-height: 1.32; color: #1c1917; }
+        html.dark .hp-frase { color: #fafaf9; }
+        .hp-frase-pie { margin-top: 1.5rem; font-size: 1.02rem; line-height: 1.68; color: #57534e; }
+        html.dark .hp-frase-pie { color: #a8a29e; }
 
         /* Banda de cifras (oculta hasta cruzar el umbral de rutas completas). */
         .hp-cifras { display: grid; grid-template-columns: repeat(2, 1fr); gap: 2rem 1.5rem; }
         @media (min-width: 768px) { .hp-cifras { grid-template-columns: repeat(4, 1fr); } }
-        .hp-cifra { font-size: clamp(2rem, 3.4vw, 2.9rem); font-weight: 600; letter-spacing: -.03em; color: #fff; line-height: 1; }
-        .hp-cifra-etq { margin-top: .55rem; font-size: .72rem; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: #86efac; }
-        .hp-bloque-claro { background: #f5f5f4; border: 1px solid #ebeae8; border-radius: 16px; padding: clamp(2.25rem, 5vw, 4rem); text-align: center; }
-        html.dark .hp-bloque-claro { background: #221f1d; border-color: #332f2c; }
+        .hp-cifra { font-size: clamp(2rem, 3.4vw, 2.9rem); font-weight: 600; letter-spacing: -.03em; color: #14532d; line-height: 1; }
+        html.dark .hp-cifra { color: #fafaf9; }
+        .hp-cifra-etq { margin-top: .55rem; font-size: .72rem; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: #16a34a; }
+        html.dark .hp-cifra-etq { color: #4ade80; }
+        .hp-panel-centrado { text-align: center; }
+        /* Sobre el lienzo verde el aire se estira un poco: si no, las tarjetas
+           quedan pegadas al borde de color. */
+        .hp-lienzo-ancho { padding: clamp(2.25rem, 5vw, 4rem) clamp(1.5rem, 3.5vw, 3rem); }
+        /* Tarjeta que flota sobre el lienzo: hereda la sombra del panel del hero,
+           que es lo que hace que se lea como objeto y no como recuadro. */
+        .hp-card-flotante { border-color: transparent;
+                            box-shadow: 0 1px 1px rgba(12,10,9,.04), 0 14px 28px -12px rgba(20,83,45,.18), 0 0 0 1px rgba(12,10,9,.04); }
+        .hp-card-flotante:hover { box-shadow: 0 1px 1px rgba(12,10,9,.05), 0 22px 42px -16px rgba(20,83,45,.26), 0 0 0 1px rgba(12,10,9,.05); border-color: transparent; }
+        html.dark .hp-card-flotante, html.dark .hp-card-flotante:hover { border-color: transparent; }
 
         /* Tarjeta de historia destacada (la pinta historias.js). */
         .hp-historia { cursor: pointer; }
         .hp-historia-cab { display: flex; align-items: center; gap: .9rem; margin-bottom: 1.1rem; }
         .hp-historia-foto { width: 3rem; height: 3rem; border-radius: 999px; object-fit: cover; flex: none; }
-        .hp-historia-iniciales { display: flex; align-items: center; justify-content: center; background: #14532d; color: #fff; font-size: .82rem; font-weight: 600; }
+        .hp-historia-iniciales { display: flex; align-items: center; justify-content: center; background: #16a34a; color: #fff; font-size: .82rem; font-weight: 600; }
         .hp-historia-promo { font-size: .78rem; font-weight: 500; color: #78716c; margin-top: .15rem; }
         html.dark .hp-historia-promo { color: #a8a29e; }
         .hp-tramos { display: flex; align-items: center; gap: .45rem; flex-wrap: wrap; }
@@ -437,7 +483,7 @@
                  (modo historias del plan: nunca delatar una red pequeña).
                  historias.js los llena y los muestra cuando corresponde. -->
             <section id="home-stats-section" class="hidden hp-seccion">
-                <div class="hp-bloque-oscuro" data-hp-sube>
+                <div class="hp-lienzo" data-hp-sube>
                     <div class="hp-cifras">
                         <div data-stat>
                             <div data-stat-value class="hp-cifra">--</div>
@@ -470,26 +516,26 @@
                     <p class="hp-sub">En cuatro pasos, tu historia se vuelve el mapa que un estudiante del Liceo estaba buscando.</p>
                 </div>
 
-                <div class="hp-rejilla hp-rejilla-2 hp-rejilla-4">
-                    <div class="hp-card" data-hp-sube style="--d:0ms">
+                <div class="hp-rejilla hp-rejilla-2 hp-rejilla-4 hp-ruta-pasos">
+                    <div class="hp-paso" data-hp-sube style="--d:0ms">
                         <span class="hp-paso-n">PASO 1</span>
                         <i class="ph ph-user-plus hp-card-icono" aria-hidden="true"></i>
                         <h4 class="hp-card-t">Crea tu cuenta</h4>
                         <p class="hp-card-p">Egresado o estudiante del Liceo Campestre. Toma menos de un minuto.</p>
                     </div>
-                    <div class="hp-card" data-hp-sube style="--d:80ms">
+                    <div class="hp-paso" data-hp-sube style="--d:80ms">
                         <span class="hp-paso-n">PASO 2</span>
                         <i class="ph ph-path hp-card-icono" aria-hidden="true"></i>
                         <h4 class="hp-card-t">Cuenta tu ruta</h4>
                         <p class="hp-card-p">Del Liceo a la universidad, a tu primer trabajo y a donde estás hoy: tu trayectoria paso a paso.</p>
                     </div>
-                    <div class="hp-card" data-hp-sube style="--d:160ms">
+                    <div class="hp-paso" data-hp-sube style="--d:160ms">
                         <span class="hp-paso-n">PASO 3</span>
                         <i class="ph ph-magnifying-glass hp-card-icono" aria-hidden="true"></i>
                         <h4 class="hp-card-t">Explora y conecta</h4>
                         <p class="hp-card-p">Busca por carrera o área, escríbele a quien ya recorrió tu camino y pregunta a Karla, la orientadora.</p>
                     </div>
-                    <div class="hp-card" data-hp-sube style="--d:240ms">
+                    <div class="hp-paso" data-hp-sube style="--d:240ms">
                         <span class="hp-paso-n">PASO 4</span>
                         <i class="ph ph-plant hp-card-icono" aria-hidden="true"></i>
                         <h4 class="hp-card-t">La red crece contigo</h4>
@@ -500,30 +546,32 @@
 
             <!-- PARA QUIÉN ES -->
             <section class="hp-seccion">
-                <div class="hp-cab" data-hp-sube>
-                    <p class="hp-kicker">Para quién es</p>
+              <div class="hp-lienzo hp-lienzo-ancho" data-hp-sube>
+                <div class="hp-cab">
+                    <p class="hp-kicker hp-kicker-claro">Para quién es</p>
                     <h3 class="hp-h2 mt-4">Un punto de encuentro para toda la comunidad</h3>
                 </div>
                 <div class="hp-rejilla hp-rejilla-3">
-                    <div class="hp-card" data-hp-sube style="--d:0ms">
+                    <div class="hp-card hp-card-flotante" data-hp-sube style="--d:0ms">
                         <i class="ph ph-student hp-card-icono" aria-hidden="true"></i>
                         <h4 class="hp-card-t">Estudiantes</h4>
                         <p class="hp-card-p">Descubre a dónde llevan las carreras que te interesan viendo trayectorias reales, no folletos. Prepárate para el TOEFL y el DELF y pregúntale a quien ya lo vivió.</p>
                         <a href="directory.html" class="hp-enlace">Explorar trayectorias <i class="ph-bold ph-arrow-right" aria-hidden="true"></i></a>
                     </div>
-                    <div class="hp-card" data-hp-sube style="--d:90ms">
+                    <div class="hp-card hp-card-flotante" data-hp-sube style="--d:90ms">
                         <i class="ph ph-graduation-cap hp-card-icono" aria-hidden="true"></i>
                         <h4 class="hp-card-t">Egresados</h4>
                         <p class="hp-card-p">Reencuéntrate con tu promoción, comparte tu camino y conviértete en el referente que a ti te habría servido tener. Tu experiencia orienta a quien viene detrás.</p>
                         <a href="register.html" class="hp-enlace">Sumar mi trayectoria <i class="ph-bold ph-arrow-right" aria-hidden="true"></i></a>
                     </div>
-                    <div class="hp-card" data-hp-sube style="--d:180ms">
+                    <div class="hp-card hp-card-flotante" data-hp-sube style="--d:180ms">
                         <i class="ph ph-handshake hp-card-icono" aria-hidden="true"></i>
                         <h4 class="hp-card-t">Empresas y aliados</h4>
                         <p class="hp-card-p">¿Buscas talento del Liceo, quieres ofrecer prácticas o mentorías, o proponer una alianza? Escríbele directamente a la red: leemos cada mensaje.</p>
                         <button onclick="contactoLogic.open('empresa')" class="hp-enlace">Contactar la red <i class="ph-bold ph-arrow-right" aria-hidden="true"></i></button>
                     </div>
                 </div>
+              </div>
             </section>
 
             <!-- QUÉ ENCUENTRAS AQUÍ -->
@@ -554,7 +602,8 @@
 
             <!-- PROPÓSITO / MISIÓN -->
             <section class="hp-seccion">
-                <div class="hp-bloque-oscuro" data-hp-sube>
+                <div class="hp-lienzo" data-hp-sube>
+                  <div class="hp-panel">
                     <div class="hp-bloque-texto">
                         <p class="hp-kicker hp-kicker-claro">Por qué existe Sinapsis</p>
                         <p class="hp-frase">
@@ -564,6 +613,7 @@
                             No es una lista de nombres, es una red de caminos. Un estudiante indeciso encuentra a alguien real que ya recorrió lo que él sueña; un egresado reencuentra a su comunidad; el Liceo mantiene vivo el vínculo con quienes formó.
                         </p>
                     </div>
+                  </div>
                 </div>
             </section>
 
@@ -635,10 +685,12 @@
             </section>
 
             <section class="hp-seccion">
-                <div class="hp-bloque-claro" data-hp-sube>
+                <div class="hp-lienzo" data-hp-sube>
+                  <div class="hp-panel hp-panel-centrado">
                     <h3 class="hp-h2">Tu ruta también empezó en el Liceo</h3>
                     <p class="hp-sub mx-auto">Cuenta por dónde has pasado y en qué andas hoy. Para un estudiante que viene detrás, tu camino es el mapa que no tiene.</p>
                     <a href="register.html" class="hp-cta hp-cta-1 mt-8">Crear mi cuenta</a>
+                  </div>
                 </div>
             </section>
 
@@ -787,7 +839,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore-compat.js"></script>
     <script src="shared.js?v=36"></script>
     <script src="orientadora.js?v=7"></script>
-    <script src="historias.js?v=17"></script>
+    <script src="historias.js?v=18"></script>
     <script>
         // ── Estado global: base en shared.js. La nav (desktop + móvil) la
         // inyecta renderNav('home'), igual que en el resto de páginas del sitio.
