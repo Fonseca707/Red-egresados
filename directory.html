@@ -28,34 +28,11 @@
         .input-label { font-size:0.75rem; font-weight:700; color:#78716c; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:0.5rem; display:block; }
         .input-field { width:100%; padding:0.85rem 1rem; background:rgba(250,250,249,0.9); border:1px solid #e7e5e4; border-radius:0.75rem; outline:none; transition:all 0.2s ease; font-size:0.9rem; font-weight:500; color:#292524; }
         .input-field:focus { border-color:#16a34a; box-shadow:0 0 0 4px rgb(34 197 94/0.15); background:#fff; }
-        /* ── Directorio: piezas propias sobre el sistema .sx- ─────────────
-           Lo compartido (tarjeta, avatar, etiqueta, campo, enlace) vive en
-           tailwind.src.css; aqui solo lo que es de esta pantalla. */
-        .dir-card { display: flex; flex-direction: column; height: 100%; padding: 1.4rem; }
-        .dir-cab { display: flex; align-items: center; gap: .9rem; }
-        .dir-foto { width: 3rem; height: 3rem; font-size: .85rem; }
-        .dir-nombre { font-size: 1.02rem; font-weight: 600; letter-spacing: -.018em; color: #1c1917; line-height: 1.25; }
-        html.dark .dir-nombre { color: #fafaf9; }
-        .dir-promo { font-size: .82rem; color: #78716c; margin-top: .15rem; }
-        html.dark .dir-promo { color: #a8a29e; }
-        /* El cargo iba en MAYUSCULAS y verde, compitiendo con el nombre. Es un
-           dato de apoyo: peso normal y color de texto. */
-        .dir-rol { font-size: .95rem; color: #44403c; margin-top: 1rem; line-height: 1.45;
-                   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-        html.dark .dir-rol { color: #d6d3d1; }
-        .dir-donde { font-size: .85rem; color: #78716c; margin-top: .3rem;
-                     display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
-        html.dark .dir-donde { color: #a8a29e; }
-        .dir-etiquetas { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: 1rem; }
-        /* El enlace se pega abajo: la rejilla estira todas las fichas al alto de
-           la mas larga y si no, quedaba flotando a media altura. */
-        .dir-ver { margin-top: auto; padding-top: 1.2rem; }
-
         .detail-row { display:flex; align-items:flex-start; gap:0.75rem; padding:0.75rem 0; border-bottom:1px solid #f5f5f4; }
         .detail-row:last-child { border-bottom:0; }
         .detail-icon { width:2.5rem; height:2.5rem; border-radius:0.75rem; background:#f0fdf4; color:#16a34a; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:1.25rem; }
     </style>
-    <link rel="stylesheet" href="tailwind.css?v=14">
+    <link rel="stylesheet" href="tailwind.css?v=13">
 </head>
 <body class="text-stone-800 font-sans min-h-screen flex flex-col">
 
@@ -63,9 +40,8 @@
         <div class="max-w-7xl mx-auto animate-slide-up pb-10">
             <div class="flex flex-col md:flex-row justify-between items-end mb-8 gap-4 px-2">
                 <div>
-                    <p class="sx-kicker">La comunidad</p>
-                    <h2 class="sx-h2 mt-3">Directorio</h2>
-                    <p class="sx-sub mt-2">Busca por promoción, área o nombre, y conecta con quien ya recorrió el camino que te interesa.</p>
+                    <h2 class="text-3xl font-bold text-gray-900 tracking-tight">Directorio</h2>
+                    <p class="text-gray-500 mt-1 text-sm">Conecta con compañeros de tu generación.</p>
                 </div>
                 <!-- En movil los tres controles NO caben en una fila de 390px: el
                      buscador quedaba reducido a la lupa y el select se salia de la
@@ -74,10 +50,10 @@
                 <div class="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
                     <div class="relative w-full sm:flex-1 md:w-72">
                         <i class="ph ph-magnifying-glass absolute left-3 top-3.5 text-gray-400"></i>
-                        <input type="text" id="directory-search" placeholder="Buscar por nombre, cargo, empresa..." class="sx-campo pl-10" oninput="directoryLogic.debouncedFilter()" aria-label="Buscar egresados">
+                        <input type="text" id="directory-search" placeholder="Buscar por nombre, cargo, empresa..." class="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100 transition shadow-sm" oninput="directoryLogic.debouncedFilter()" aria-label="Buscar egresados">
                     </div>
                     <div class="flex gap-3 w-full sm:w-auto">
-                    <input type="number" id="directory-year" placeholder="Promoción" class="sx-campo flex-1 min-w-0 sm:flex-none sm:w-32" oninput="directoryLogic.debouncedFilter()" aria-label="Filtrar por año de promoción">
+                    <input type="number" id="directory-year" placeholder="Promoción" class="flex-1 min-w-0 sm:flex-none sm:w-32 bg-white px-3 py-3 border border-gray-200 rounded-xl hover:bg-gray-50 text-gray-600 shadow-sm transition text-sm font-medium" oninput="directoryLogic.debouncedFilter()" aria-label="Filtrar por año de promoción">
                     <select id="directory-filter" class="flex-1 min-w-0 sm:flex-none bg-white px-3 py-3 border border-gray-200 rounded-xl hover:bg-gray-50 text-gray-600 shadow-sm transition text-sm font-medium" onchange="directoryLogic.filter()">
                         <option value="all">Todos</option>
                         <option value="trabajando">Trabajando</option>
@@ -269,35 +245,27 @@
                     return;
                 }
 
-                grid.innerHTML = shown.map(alum => {
-                    // Iniciales sobre el verde de la marca cuando no hay foto: el
-                    // avatar por defecto asigna un color al azar segun el nombre y
-                    // el directorio se llenaba de naranjas, rosas y morados.
-                    const iniciales = String(alum.name || '').trim().split(/\s+/).slice(0, 2)
-                        .map(x => x[0] || '').join('').toUpperCase();
-                    const foto = alum.photoURL
-                        ? `<img src="${sanitizeHTML(alum.img)}" alt="Foto de ${sanitizeHTML(alum.name)}" class="sx-avatar dir-foto" loading="lazy" decoding="async">`
-                        : `<span class="sx-avatar dir-foto" aria-hidden="true">${sanitizeHTML(iniciales)}</span>`;
-                    // Lo que no existe NO se imprime: antes salia "Sin rol" como si
-                    // fuera un dato.
-                    const rol = alum.role && alum.role !== 'Sin rol definido' && alum.role !== 'Sin rol' ? alum.role : '';
-                    const donde = alum.company && alum.company !== '---' ? alum.company : '';
-                    const etiquetas = (alum.tags || []).filter(t => t && String(t).trim()).slice(0, 3);
-                    return `
-                    <article class="sx-card sx-card-pulsable dir-card" role="button" tabindex="0" aria-label="Ver perfil de ${sanitizeHTML(alum.name)}" onclick="directoryLogic.openProfile('${sanitizeHTML(alum.id)}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();directoryLogic.openProfile('${sanitizeHTML(alum.id)}')}">
-                        <div class="dir-cab">
-                            ${foto}
-                            <div class="min-w-0">
-                                <h3 class="dir-nombre">${sanitizeHTML(alum.name)}</h3>
-                                <p class="dir-promo">Promoción ${sanitizeHTML(alum.year || '—')}</p>
+                grid.innerHTML = shown.map(alum => `
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition group cursor-pointer h-full flex flex-col" role="button" tabindex="0" aria-label="Ver perfil de ${sanitizeHTML(alum.name)}" onclick="directoryLogic.openProfile('${sanitizeHTML(alum.id)}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();directoryLogic.openProfile('${sanitizeHTML(alum.id)}')}">
+                        <div class="flex items-start justify-between">
+                            <div class="flex gap-4">
+                                <img src="${sanitizeHTML(alum.img)}" alt="Foto de ${sanitizeHTML(alum.name)}" class="w-14 h-14 rounded-xl object-cover shadow-sm group-hover:scale-105 transition shrink-0">
+                                <div class="min-w-0 pt-0.5">
+                                    <h3 class="font-bold text-gray-900 group-hover:text-brand-600 transition leading-tight break-words">${sanitizeHTML(alum.name)}</h3>
+                                    <p class="text-xs text-brand-600 font-semibold uppercase tracking-wide mt-1 leading-tight break-words">${sanitizeHTML(alum.company)}</p>
+                                    <p class="text-[11px] font-bold text-brand-600 mt-1 leading-tight">Promoción ${sanitizeHTML(alum.year || '---')}</p>
+                                    <p class="text-sm text-gray-500 mt-1 line-clamp-1">${sanitizeHTML(alum.role)}</p>
+                                </div>
                             </div>
                         </div>
-                        ${rol ? `<p class="dir-rol">${sanitizeHTML(rol)}</p>` : ''}
-                        ${donde ? `<p class="dir-donde">${sanitizeHTML(donde)}</p>` : ''}
-                        ${etiquetas.length ? `<div class="dir-etiquetas">${etiquetas.map(t => `<span class="sx-etiqueta">${sanitizeHTML(t)}</span>`).join('')}</div>` : ''}
-                        <span class="sx-enlace dir-ver">Ver perfil <i class="ph-bold ph-arrow-right" aria-hidden="true"></i></span>
-                    </article>`;
-                }).join('');
+                        <div class="mt-4 flex gap-2 flex-wrap mb-4 flex-1 content-start">
+                            ${(alum.tags || []).slice(0, 3).map(t => `<span class="px-2 py-1 bg-gray-50 text-gray-600 text-xs rounded-md font-medium border border-gray-100">${sanitizeHTML(t)}</span>`).join('')}
+                        </div>
+                        <div class="pt-4 border-t border-gray-50">
+                            <span class="w-full px-4 py-2 bg-gray-50 text-gray-600 text-xs font-bold rounded-lg hover:bg-brand-50 hover:text-brand-600 transition flex justify-center items-center gap-2"><i class="ph-bold ph-user-list"></i> Ver Perfil Completo</span>
+                        </div>
+                    </div>
+                `).join('');
 
                 // Hay más si quedan tarjetas sin pintar O si a Firestore todavía le
                 // queda gente por entregar (paginación real, no `slice`).
