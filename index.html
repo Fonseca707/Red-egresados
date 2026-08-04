@@ -60,7 +60,7 @@
 
         /* Los rótulos iban en gris y era buena parte de lo «apagado»: son el
            primer texto de cada sección y no aportaban una gota de color. */
-        .hp-kicker { font-size: .78rem; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: #16a34a; }
+        .hp-kicker { font-size: .78rem; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: #15803d; }
         html.dark .hp-kicker { color: #4ade80; }
 
         .hp-titulo { font-size: clamp(2.5rem, 4.6vw, 4rem); font-weight: 600; line-height: 1.05; letter-spacing: -.035em; color: #1c1917; text-wrap: balance; }
@@ -73,12 +73,12 @@
 
         /* Botones tipo píldora. La sombra es neutra y corta: el verde saturado
            bajo el botón era parte de lo que delataba la portada anterior. */
-        .hp-cta { display: inline-flex; align-items: center; justify-content: center; gap: .55rem; padding: .95rem 1.9rem; border-radius: 999px; font-weight: 600; font-size: 1rem; letter-spacing: -.01em; transition: transform .2s cubic-bezier(.16,1,.3,1), background-color .2s ease, border-color .2s ease; }
-        .hp-cta:focus-visible { outline: 2px solid #16a34a; outline-offset: 3px; }
-        .hp-cta-1 { background: #16a34a; color: #fff; }
-        .hp-cta-1:hover { background: #15803d; transform: translateY(-3px) scale(1.03); }
+        .hp-cta { display: inline-flex; align-items: center; justify-content: center; gap: .55rem; padding: .95rem 1.9rem; min-height: 44px; border-radius: 999px; font-weight: 600; font-size: 1rem; letter-spacing: -.01em; transition: transform .2s cubic-bezier(.16,1,.3,1), background-color .2s ease, border-color .2s ease; }
+        .hp-cta:focus-visible { outline: 3px solid #15803d; outline-offset: 3px; }
+        .hp-cta-1 { background: #15803d; color: #fff; }
+        .hp-cta-1:hover { background: #166534; transform: translateY(-2px); }
         .hp-cta-2 { background: transparent; color: #1c1917; border: 1px solid #d6d3d1; }
-        .hp-cta-2:hover { border-color: #1c1917; background: #f5f5f4; transform: translateY(-3px) scale(1.03); }
+        .hp-cta-2:hover { border-color: #1c1917; background: #f5f5f4; transform: translateY(-2px); }
         html.dark .hp-cta-2 { color: #fafaf9; border-color: #57534e; }
         html.dark .hp-cta-2:hover { border-color: #fafaf9; }
 
@@ -102,11 +102,11 @@
         @media (min-width: 1024px) {
             /* La columna del texto pesa algo más que la visual: con 50/50 el
                título se partía en tres líneas. */
-            .hp-hero-grid { min-height: min(86vh, 46rem); grid-template-columns: 1.05fr 1fr; }
+            .hp-hero-grid { min-height: min(780px, calc(100dvh - 4rem)); grid-template-columns: 1.05fr 1fr; }
             /* Con la ventana pegada al borde, la rotación le comía el lado
                derecho y cortaba los años de la trayectoria. Cabe entera y el
                respiro de la derecha es el que deja que la perspectiva se lea. */
-            .hp-visual { height: min(86vh, 46rem); min-height: 560px; padding: 5rem 2.5rem 3rem 3.5rem; align-items: center; justify-content: center; }
+            .hp-visual { height: 100%; min-height: 520px; padding: 5rem 2.5rem 3rem 3.5rem; align-items: center; justify-content: center; }
         }
 
         /* El parallax lo lleva el contenedor: la ventana usa su transform para la
@@ -114,16 +114,16 @@
         .hp-ventana-envoltura { width: 100%; display: flex; justify-content: center; transform: translateY(var(--py, 0px)); will-change: transform; }
 
         .hp-ventana {
-            width: 100%; max-width: 32rem; border-radius: 14px; overflow: hidden; background: #fff;
+            width: 100%; max-width: 32rem; border-radius: 16px; overflow: hidden; background: #fff;
             /* Sombra en tres capas: contacto, difusa y una línea de 1px que hace
                de borde. Una sola sombra grande es lo que da aspecto de plantilla. */
-            box-shadow: 0 1px 1px rgba(12,10,9,.04), 0 18px 36px -12px rgba(12,10,9,.16),
-                        0 48px 90px -30px rgba(12,10,9,.28), 0 0 0 1px rgba(12,10,9,.05);
+            box-shadow: 0 1px 1px rgba(12,10,9,.04), 0 18px 36px -12px rgba(12,10,9,.14),
+                        0 42px 80px -30px rgba(12,10,9,.22), 0 0 0 1px rgba(12,10,9,.05);
             /* La inclinación sale de dos variables para que el guion del ratón
                pueda moverlas sin pisar la animación de entrada ni la
                perspectiva: escribir `transform` entero desde JS se cargaría
                las dos cosas. */
-            transform: perspective(1800px) rotateY(var(--ry, -7deg)) rotateX(var(--rx, 1.2deg)) translateY(var(--tz, 0));
+            transform: perspective(2000px) rotateY(var(--ry, -4deg)) rotateX(var(--rx, 1deg)) translateY(var(--tz, 0));
             transform-origin: center center;
         }
         html.dark .hp-ventana { background: #221f1d; box-shadow: 0 18px 36px -12px rgba(0,0,0,.5), 0 48px 90px -30px rgba(0,0,0,.6), 0 0 0 1px rgba(250,250,249,.07); }
@@ -165,7 +165,7 @@
         html.dark .hp-ruta-rol { color: #fafaf9; }
         .hp-ruta-org { font-size: .78rem; color: #78716c; margin-top: .1rem; line-height: 1.4; }
         html.dark .hp-ruta-org { color: #a8a29e; }
-        .hp-ruta-anio { font-size: .68rem; font-weight: 600; color: #a8a29e; letter-spacing: .06em; text-transform: uppercase; margin-top: .25rem; }
+        .hp-ruta-anio { font-size: .72rem; font-weight: 600; color: #78716c; letter-spacing: .06em; text-transform: uppercase; margin-top: .25rem; }
         /* El «HOY» en ámbar: el segundo color de la marca, en un solo punto y en
            el que más significa. Un acento vale cuando es escaso. */
         .hp-ruta li[data-actual] .hp-ruta-anio { color: #b45309; background: #fef3c7; border-radius: 999px;
@@ -214,7 +214,7 @@
         /* El límite de ancho vive en cada sección, no en el contenedor: así las
            que llevan color pueden llegar al borde de la pantalla y el resto
            sigue alineado con el hero. */
-        .hp-seccion { padding-block: clamp(2.5rem, 4.5vw, 4rem); }
+        .hp-seccion { padding-block: clamp(3rem, 5.5vw, 5rem); }
         .hp-interior { max-width: 80rem; margin-inline: auto; width: 100%; }
 
         /* A sangre: el -1rem anula el padding del <main>, que es de 1rem. Con
@@ -265,15 +265,15 @@
                    transition: transform .4s cubic-bezier(.16,1,.3,1), box-shadow .4s ease, border-color .4s ease; }
         /* Al pasar el cursor el borde se tiñe de marca: el color aparece cuando
            interactúas, en vez de estar siempre encendido. */
-        .hp-card:hover { transform: translateY(-6px); box-shadow: 0 20px 40px -16px rgba(20,83,45,.28); border-color: #86efac; }
+        .hp-card:hover { transform: translateY(-4px); box-shadow: 0 1px 2px rgba(12,10,9,.04), 0 14px 30px -18px rgba(12,10,9,.22), 0 0 0 1px rgba(12,10,9,.06); border-color: #d6d3d1; }
         html.dark .hp-card { background: #221f1d; border-color: #332f2c; }
         html.dark .hp-card:hover { border-color: #15803d; box-shadow: 0 14px 30px -14px rgba(0,0,0,.55); }
 
 
-        .hp-enlace-texto { color: #16a34a; font-weight: 600; border-bottom: 1px solid currentColor; }
+        .hp-enlace-texto { color: #15803d; font-weight: 600; border-bottom: 1px solid currentColor; }
         html.dark .hp-enlace-texto { color: #4ade80; }
 
-        .hp-card-icono { font-size: 1.6rem; color: #16a34a; line-height: 1; margin-bottom: 1.1rem; display: block; }
+        .hp-card-icono { font-size: 1.6rem; color: #15803d; line-height: 1; margin-bottom: 1.1rem; display: block; }
         html.dark .hp-card-icono { color: #4ade80; }
         /* Los iconos no van todos del mismo verde: rotan por la paleta de la
            marca y le dan a cada rejilla algo de vida. Se hace por posición, así
@@ -286,7 +286,7 @@
         html.dark .hp-rejilla > :nth-child(4n+4) .hp-card-icono { color: #4ade80; }
         .hp-card-t { font-size: 1.02rem; font-weight: 600; letter-spacing: -.018em; color: #1c1917; line-height: 1.3; }
         html.dark .hp-card-t { color: #fafaf9; }
-        .hp-card-p { font-size: .92rem; line-height: 1.62; color: #57534e; margin-top: .55rem; }
+        .hp-card-p { font-size: 1rem; line-height: 1.6; color: #57534e; margin-top: .55rem; }
         html.dark .hp-card-p { color: #a8a29e; }
 
         /* ── Los cuatro pasos, dibujados como una trayectoria ────────────────
@@ -317,7 +317,7 @@
         .hp-paso-n { font-size: .7rem; font-weight: 600; letter-spacing: .1em; color: #16a34a; display: block; margin-bottom: .55rem; }
         @media (min-width: 1024px) { .hp-paso { text-align: center; } .hp-paso .hp-card-icono { margin-inline: auto; } }
 
-        .hp-enlace { display: inline-flex; align-items: center; gap: .4rem; margin-top: 1.1rem; font-size: .88rem; font-weight: 600; color: #16a34a;
+        .hp-enlace { display: inline-flex; align-items: center; gap: .4rem; margin-top: 1.1rem; font-size: .95rem; font-weight: 600; color: #15803d;
                      border-bottom: 1px solid transparent; transition: border-color .25s ease, gap .25s ease; }
         .hp-enlace:hover { border-bottom-color: currentColor; gap: .75rem; }
         html.dark .hp-enlace { color: #4ade80; }
@@ -328,7 +328,7 @@
            Lo que funciona del hero —fondo verde claro con un corte diagonal y
            un panel blanco flotando encima— se repite aquí. Fuera el verde casi
            negro: era lo que apagaba las secciones de abajo. */
-        .hp-lienzo { position: relative; overflow: hidden; border-radius: 20px; background: #dcfce7;
+        .hp-lienzo { position: relative; overflow: hidden; border-radius: 16px; background: #dcfce7;
                      padding: clamp(2rem, 4.5vw, 3.5rem); }
         /* De lado a lado: sin esquinas redondeadas ni bordes laterales, solo el
            corte horizontal arriba y abajo. Es lo que hace que el color se lea
@@ -336,7 +336,7 @@
         /* El margen lateral lo pone SOLO el interior: si lo ponen los dos, el
            texto queda más adentro que el del resto de la página. */
         .hp-lienzo.hp-a-sangre, .hp-cierre.hp-a-sangre { border-radius: 0; padding-inline: 0; }
-        .hp-seccion-plana { padding-block: 0; margin-block: clamp(1.25rem, 2.5vw, 2rem); }
+        .hp-seccion-plana { padding-block: 0; margin-block: clamp(1.5rem, 3vw, 2.5rem); }
         html.dark .hp-lienzo { background: #14261a; }
         .hp-lienzo::after { content: ''; position: absolute; inset: 0; background: #bbf7d0;
                             clip-path: polygon(0 58%, 100% 30%, 100% 100%, 0% 100%); pointer-events: none; }
@@ -344,7 +344,7 @@
         .hp-lienzo > * { position: relative; z-index: 1; }
 
 
-        .hp-kicker-claro { color: #16a34a; }
+        .hp-kicker-claro { color: #15803d; }
         html.dark .hp-kicker-claro { color: #4ade80; }
         .hp-frase { margin-top: 1.25rem; font-size: clamp(1.35rem, 2.4vw, 2rem); font-weight: 600; letter-spacing: -.025em; line-height: 1.32; color: #1c1917; }
         html.dark .hp-frase { color: #fafaf9; }
@@ -356,7 +356,7 @@
         @media (min-width: 768px) { .hp-cifras { grid-template-columns: repeat(4, 1fr); } }
         .hp-cifra { font-size: clamp(2rem, 3.4vw, 2.9rem); font-weight: 600; letter-spacing: -.03em; color: #14532d; line-height: 1; }
         html.dark .hp-cifra { color: #fafaf9; }
-        .hp-cifra-etq { margin-top: .55rem; font-size: .72rem; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: #16a34a; }
+        .hp-cifra-etq { margin-top: .55rem; font-size: .78rem; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: #15803d; }
         html.dark .hp-cifra-etq { color: #4ade80; }
 
         /* ── Cada sección con su propio tratamiento ──────────────────────────
@@ -402,14 +402,14 @@
         .hp-fila-txt { flex: 1; min-width: 0; }
         .hp-fila-t { font-size: 1.08rem; font-weight: 600; letter-spacing: -.018em; color: #1c1917; }
         html.dark .hp-fila-t { color: #fafaf9; }
-        .hp-fila-p { font-size: .94rem; line-height: 1.62; color: #57534e; margin-top: .4rem; }
+        .hp-fila-p { font-size: 1rem; line-height: 1.6; color: #57534e; margin-top: .4rem; }
         html.dark .hp-fila-p { color: #a8a29e; }
-        .hp-fila-icono { font-size: 1.6rem; color: #16a34a; flex: none; display: none; }
+        .hp-fila-icono { font-size: 1.6rem; color: #15803d; flex: none; display: none; }
         @media (min-width: 640px) { .hp-fila-icono { display: block; } }
         /* La columna derecha era un icono suelto con 200 px de aire a su
            izquierda. Ahora es el destino al que lleva la fila. */
-        .hp-fila-ir { display: none; align-items: center; gap: .45rem; flex: none; font-size: .85rem; font-weight: 600;
-                      color: #16a34a; white-space: nowrap; transition: gap .25s ease; }
+        .hp-fila-ir { display: none; align-items: center; gap: .45rem; flex: none; font-size: .9rem; font-weight: 600;
+                      color: #15803d; white-space: nowrap; transition: gap .25s ease; }
         @media (min-width: 900px) { .hp-fila-ir { display: inline-flex; } }
         .hp-fila:hover .hp-fila-ir { gap: .7rem; }
         html.dark .hp-fila-ir { color: #4ade80; }
@@ -422,30 +422,30 @@
            la maquetación: un elemento que empuja a los de al lado al pasar por
            encima se siente roto, no vivo. */
         .hp-fila { transition: background-color .3s ease, transform .35s cubic-bezier(.16,1,.3,1), border-color .3s ease; margin-inline: -1rem; padding-inline: 1rem; }
-        .hp-fila:hover { background: #ecfdf3; transform: translateX(4px); }
+        .hp-fila:hover { background: #f4faf6; }
         html.dark .hp-fila:hover { background: #1a201c; }
         .hp-fila-n, .hp-fila-icono { transition: transform .35s cubic-bezier(.16,1,.3,1), color .3s ease; }
-        .hp-fila:hover .hp-fila-n { transform: translateX(7px) scale(1.15); color: #16a34a; }
-        .hp-fila:hover .hp-fila-icono { transform: scale(1.3) rotate(-6deg); }
+        .hp-fila:hover .hp-fila-n { transform: translateX(4px); color: #15803d; }
+        .hp-fila:hover .hp-fila-icono { transform: scale(1.12); }
 
         .hp-columna .hp-card-icono, .hp-opcion .hp-card-icono { transition: transform .35s cubic-bezier(.16,1,.3,1); }
-        .hp-columna:hover .hp-card-icono, .hp-opcion:hover .hp-card-icono { transform: translateY(-7px) scale(1.18); }
+        .hp-columna:hover .hp-card-icono, .hp-opcion:hover .hp-card-icono { transform: translateY(-2px); }
         .hp-columna .hp-card-t, .hp-opcion .hp-card-t { transition: color .25s ease; }
-        .hp-columna:hover .hp-card-t, .hp-opcion:hover .hp-card-t { color: #16a34a; }
+        .hp-columna:hover .hp-card-t, .hp-opcion:hover .hp-card-t { color: #15803d; }
         html.dark .hp-columna:hover .hp-card-t, html.dark .hp-opcion:hover .hp-card-t { color: #4ade80; }
         .hp-columna:hover .hp-enlace, .hp-opcion:hover .hp-enlace { gap: .7rem; }
 
         /* Los pasos: el nodo se enciende cuando el cursor está en su columna. */
         .hp-paso::before { transition: transform .35s cubic-bezier(.16,1,.3,1), box-shadow .35s ease, background-color .3s ease; }
-        .hp-paso:hover::before { transform: scale(1.55); box-shadow: 0 0 0 11px rgba(34,197,94,.22); background: #22c55e; }
-        @media (min-width: 1024px) { .hp-paso:hover::before { transform: translateX(-50%) scale(1.55); } }
+        .hp-paso:hover::before { transform: scale(1.2); background: #22c55e; }
+        @media (min-width: 1024px) { .hp-paso:hover::before { transform: translateX(-50%) scale(1.2); } }
         .hp-paso .hp-card-icono { transition: transform .35s cubic-bezier(.16,1,.3,1); }
-        .hp-paso:hover .hp-card-icono { transform: translateY(-6px) scale(1.15); }
+        .hp-paso:hover .hp-card-icono { transform: translateY(-2px); }
 
         /* La ventana sigue al cursor (ver el guion). La transición es corta: si
            es larga, la inclinación va por detrás del ratón y se siente pegajosa;
            al salir, una más lenta la devuelve a su sitio. */
-        .hp-ventana { transition: transform .25s cubic-bezier(.16,1,.3,1), box-shadow .4s ease; }
+        .hp-ventana { transition: transform .55s cubic-bezier(.16,1,.3,1), box-shadow .4s ease; }
         /* Al seguir al cursor la transición es corta y lineal: con una curva
            larga la inclinación va por detrás del ratón y se siente pegajosa. */
         .hp-ventana.hp-siguiendo { transition: transform .1s linear, box-shadow .4s ease; }
@@ -455,9 +455,9 @@
         }
         /* Cada hito de la trayectoria se ilumina por separado. */
         .hp-ruta li { transition: transform .3s cubic-bezier(.16,1,.3,1); }
-        .hp-ruta li:hover { transform: translateX(6px); }
+        .hp-ruta li:hover { transform: translateX(4px); }
         .hp-ruta li::after { transition: transform .3s cubic-bezier(.16,1,.3,1), border-color .3s ease; }
-        .hp-ruta li:hover::after { transform: scale(1.45); border-color: #22c55e; }
+        .hp-ruta li:hover::after { transform: scale(1.2); border-color: #22c55e; }
 
         /* Enlaces del pie: hoy solo cambiaban de color. */
         footer a, footer button { transition: color .25s ease, transform .25s cubic-bezier(.16,1,.3,1); display: inline-block; }
@@ -475,7 +475,7 @@
            columna con línea — otro recurso, para que la página no repita
            siempre el mismo gesto. */
         .hp-examen { display: block; padding-top: 1.35rem; transition: transform .35s cubic-bezier(.16,1,.3,1); }
-        .hp-examen:hover { transform: translateY(-8px); }
+        .hp-examen:hover { transform: translateY(-4px); }
         .hp-examen:focus-visible { outline: 2px solid #16a34a; outline-offset: 6px; }
         .hp-examen-barra { display: block; height: 4px; width: 3.5rem; border-radius: 999px; margin-bottom: 1.35rem;
                            transition: width .4s cubic-bezier(.16,1,.3,1); }
@@ -485,12 +485,12 @@
         .hp-examen-barra[data-tono="3"] { background: #d97706; }
         .hp-examen-n { font-size: clamp(1.35rem, 2vw, 1.75rem); font-weight: 600; letter-spacing: -.028em; color: #1c1917; line-height: 1.1; }
         html.dark .hp-examen-n { color: #fafaf9; }
-        .hp-examen-nivel { font-size: .74rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: #a8a29e; margin-top: .5rem; }
-        .hp-examen-p { font-size: .93rem; line-height: 1.62; color: #57534e; margin-top: .85rem; }
+        .hp-examen-nivel { font-size: .78rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: #78716c; margin-top: .5rem; }
+        .hp-examen-p { font-size: 1rem; line-height: 1.6; color: #57534e; margin-top: .85rem; }
         /* La estructura OFICIAL del examen, que no cambia. Deliberadamente no se
            publica cuántas preguntas tiene nuestro banco: eso sí cambia y la
            portada quedaría desactualizada sin que nadie se entere. */
-        .hp-examen-dato { font-size: .8rem; font-weight: 600; color: #16a34a; margin-top: .7rem; }
+        .hp-examen-dato { font-size: .82rem; font-weight: 600; color: #15803d; margin-top: .7rem; }
         html.dark .hp-examen-dato { color: #4ade80; }
         html.dark .hp-examen-p { color: #a8a29e; }
 
@@ -520,7 +520,7 @@
         .hp-bloque-texto { max-width: 34rem; }
         /* La ruta de ejemplo se apoya en una superficie clara para leerse sobre
            la ilustración, sin taparla del todo. */
-        .hp-ruta-tipo { background: rgba(255,255,255,.82); backdrop-filter: blur(2px); border-radius: 14px;
+        .hp-ruta-tipo { background: rgba(255,255,255,.82); backdrop-filter: blur(2px); border-radius: 12px;
                         padding: 1.6rem 1.5rem 1.4rem; margin-top: 0; }
         html.dark .hp-ruta-tipo { background: rgba(34,31,29,.86); }
         .hp-ruta-tipo li { padding-left: 1.6rem; }
@@ -535,20 +535,20 @@
 
         /* Cierre: color pleno. El único bloque donde el verde de marca ocupa
            toda la superficie — por eso cierra. */
-        .hp-cierre { background: #16a34a; border-radius: 20px; padding: clamp(2.5rem, 4.5vw, 3.75rem) clamp(1.5rem, 4vw, 3rem);
+        .hp-cierre { background: #15803d; border-radius: 16px; padding: clamp(2.5rem, 4.5vw, 3.75rem) clamp(1.5rem, 4vw, 3rem);
                      text-align: center; position: relative; overflow: hidden; }
-        .hp-cierre::after { content: ''; position: absolute; inset: 0; background: #15803d;
+        .hp-cierre::after { content: ''; position: absolute; inset: 0; background: #14532d;
                             clip-path: polygon(0 68%, 100% 42%, 100% 100%, 0% 100%); pointer-events: none; }
         .hp-cierre > * { position: relative; z-index: 1; }
         .hp-cierre-t { font-size: clamp(1.75rem, 3.2vw, 2.6rem); font-weight: 600; letter-spacing: -.03em; line-height: 1.15; color: #fff; }
         .hp-cierre-p { margin: 1rem auto 0; max-width: 38rem; font-size: 1.03rem; line-height: 1.6; color: #dcfce7; }
         .hp-cta-blanco { background: #fff; color: #14532d; }
-        .hp-cta-blanco:hover { background: #f0fdf4; transform: translateY(-3px) scale(1.03); }
+        .hp-cta-blanco:hover { background: #f0fdf4; transform: translateY(-2px); }
         /* Tarjeta que flota sobre el lienzo: hereda la sombra del panel del hero,
            que es lo que hace que se lea como objeto y no como recuadro. */
         .hp-card-flotante { border-color: transparent;
-                            box-shadow: 0 1px 1px rgba(12,10,9,.04), 0 14px 28px -12px rgba(20,83,45,.18), 0 0 0 1px rgba(12,10,9,.04); }
-        .hp-card-flotante:hover { box-shadow: 0 1px 1px rgba(12,10,9,.05), 0 22px 42px -16px rgba(20,83,45,.26), 0 0 0 1px rgba(12,10,9,.05); border-color: transparent; }
+                            box-shadow: 0 1px 2px rgba(12,10,9,.04), 0 10px 24px -18px rgba(12,10,9,.18), 0 0 0 1px rgba(12,10,9,.05); }
+        .hp-card-flotante:hover { box-shadow: 0 1px 2px rgba(12,10,9,.05), 0 16px 32px -20px rgba(12,10,9,.24), 0 0 0 1px rgba(12,10,9,.06); border-color: transparent; }
         html.dark .hp-card-flotante, html.dark .hp-card-flotante:hover { border-color: transparent; }
 
         /* Tarjeta de historia destacada (la pinta historias.js). */
@@ -574,7 +574,7 @@
         .hp-dos-columnas { display: grid; gap: clamp(2rem, 4vw, 3.5rem); align-items: start; }
         @media (min-width: 900px) { .hp-dos-columnas { grid-template-columns: minmax(0,1.25fr) minmax(0,.75fr); } }
 
-        .hp-contacto-panel { background: #f6f7f6; border: 1px solid #ebeae8; border-radius: 14px; padding: 1.5rem 1.35rem; }
+        .hp-contacto-panel { background: #f6f7f6; border: 1px solid #ebeae8; border-radius: 12px; padding: 1.5rem 1.35rem; }
         html.dark .hp-contacto-panel { background: #221f1d; border-color: #332f2c; }
         .hp-via { display: flex; align-items: flex-start; gap: .85rem; width: 100%; text-align: left; font: inherit;
                   background: none; border: 0; cursor: pointer; padding: .95rem .25rem; border-top: 1px solid #e7e5e4;
@@ -583,15 +583,15 @@
         html.dark .hp-via { border-top-color: #332f2c; }
         .hp-via:hover { transform: translateX(4px); }
         .hp-via:focus-visible { outline: 2px solid #16a34a; outline-offset: 2px; }
-        .hp-via-icono { font-size: 1.3rem; color: #16a34a; flex: none; line-height: 1.2; transition: transform .3s cubic-bezier(.16,1,.3,1); }
+        .hp-via-icono { font-size: 1.3rem; color: #15803d; flex: none; line-height: 1.2; transition: transform .3s cubic-bezier(.16,1,.3,1); }
         .hp-via:hover .hp-via-icono { transform: scale(1.15); }
         html.dark .hp-via-icono { color: #4ade80; }
         .hp-via-t { display: block; font-size: .95rem; font-weight: 600; color: #1c1917; letter-spacing: -.015em; }
         html.dark .hp-via-t { color: #fafaf9; }
-        .hp-via-p { display: block; font-size: .82rem; color: #78716c; margin-top: .2rem; line-height: 1.5; }
+        .hp-via-p { display: block; font-size: .9rem; color: #78716c; margin-top: .2rem; line-height: 1.5; }
         html.dark .hp-via-p { color: #a8a29e; }
-        .hp-via-flecha { margin-left: auto; color: #a8a29e; font-size: .9rem; flex: none; transition: transform .3s cubic-bezier(.16,1,.3,1), color .25s ease; }
-        .hp-via:hover .hp-via-flecha { transform: translateX(3px); color: #16a34a; }
+        .hp-via-flecha { margin-left: auto; color: #78716c; font-size: .9rem; flex: none; transition: transform .3s cubic-bezier(.16,1,.3,1), color .25s ease; }
+        .hp-via:hover .hp-via-flecha { transform: translateX(3px); color: #15803d; }
 
         /* Bandas: el blanco deja de flotar y pasa a ser el aire de una franja.
            Neutro y teal, colores que la paleta ya tiene — no se repite el verde
@@ -618,14 +618,14 @@
                           font-size: .98rem; font-weight: 600; color: #1c1917; letter-spacing: -.012em; list-style: none; }
         html.dark .hp-faq summary { color: #fafaf9; }
         .hp-faq summary::-webkit-details-marker { display: none; }
-        .hp-faq summary i { color: #16a34a; transition: transform .3s cubic-bezier(.16,1,.3,1), color .25s ease; flex: none; }
+        .hp-faq summary i { color: #15803d; transition: transform .3s cubic-bezier(.16,1,.3,1), color .25s ease; flex: none; }
         .hp-faq summary { transition: color .25s ease; }
-        .hp-faq summary:hover { color: #16a34a; }
+        .hp-faq summary:hover { color: #15803d; }
         html.dark .hp-faq summary:hover { color: #4ade80; }
         .hp-faq[open] summary { color: #15803d; }
         html.dark .hp-faq[open] summary { color: #4ade80; }
         .hp-faq[open] summary i { transform: rotate(180deg); }
-        .hp-faq-cuerpo { padding-bottom: 1.25rem; font-size: .93rem; line-height: 1.68; color: #57534e; max-width: 52rem; }
+        .hp-faq-cuerpo { padding-bottom: 1.25rem; font-size: 1rem; line-height: 1.68; color: #57534e; max-width: 52rem; }
         html.dark .hp-faq-cuerpo { color: #a8a29e; }
 
         /* ── Movimiento ──────────────────────────────────────────────────────
@@ -636,7 +636,7 @@
         .hp-reveal { opacity: 0; transform: translateY(14px); animation: hpReveal .7s cubic-bezier(.16,1,.3,1) forwards; animation-delay: var(--d, 0ms); }
         @keyframes hpReveal { to { opacity: 1; transform: none; } }
         .hp-ventana { opacity: 0; animation: hpVentana 1s cubic-bezier(.16,1,.3,1) .25s forwards; }
-        @keyframes hpVentana { from { opacity: 0; transform: perspective(1800px) rotateY(-7deg) rotateX(1.2deg) translateY(26px) scale(.985); }
+        @keyframes hpVentana { from { opacity: 0; transform: perspective(2000px) rotateY(-4deg) rotateX(1deg) translateY(26px) scale(.985); }
                                  to { opacity: 1; } }
         /* Los pasos de la trayectoria se encadenan, que es lo que hace que la
            ventana se lea como algo vivo y no como una captura pegada. */
@@ -651,7 +651,7 @@
 
         @media (prefers-reduced-motion: reduce) {
             .hp-reveal, .hp-ventana, .hp-ruta li { animation: none; opacity: 1; transform: none; }
-            .hp-ventana { transform: perspective(1800px) rotateY(-7deg) rotateX(1.2deg); }
+            .hp-ventana { transform: perspective(2000px) rotateY(-4deg) rotateX(1deg); }
             .hp-cta { transition: none; }
             html.hp-js [data-hp-sube] { opacity: 1; transform: none; transition: none; }
         }
@@ -1304,8 +1304,8 @@
             // el título o los botones, que es la mitad de la primera pantalla.
             const zona = document.querySelector('.hp-hero');
             if (ventana && zona && !reduce && window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
-                const BASE_Y = -7, BASE_X = 1.2;   // la inclinación en reposo
-                const GIRO_Y = 13, GIRO_X = 9;     // cuánto llega a girar como máximo
+                const BASE_Y = -4, BASE_X = 1;     // la inclinación en reposo
+                const GIRO_Y = 7, GIRO_X = 5;      // cuánto llega a girar como máximo
                 const MARGEN_ARRIBA = 120, MARGEN_ABAJO = 320;  // el campo se estira
                 let ultimoAplicado = 0, activo = false;
 
