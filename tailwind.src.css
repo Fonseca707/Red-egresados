@@ -65,34 +65,33 @@
      morados que no son de aquí. */
   .sx-avatar { border-radius: 999px; object-fit: cover; flex: none; display: flex; align-items: center; justify-content: center;
                background: #15803d; color: #fff; font-weight: 600; letter-spacing: .01em; }
-  /* CADA PERSONA, SU COLOR — claro, no oscuro.
-     Primero fueron los tonos oscuros de la marca y pesaban demasiado: doce
-     circulos oscuros en cuadricula ensombrecen la pantalla. Ahora es al revés:
-     fondo pastel y las iniciales en el MISMO matiz pero profundo. Se lee mejor
-     (todos por encima de 6:1), pesa menos y tiene el aire pop que pedía Juan.
-     El brillo sale de un degradado de un solo matiz —claro arriba, un punto más
-     saturado abajo— y una línea interior blanca: es el truco del acabado
-     perlado, no un degradado decorativo de dos colores ajenos. */
-  .sx-avatar[data-tono] { box-shadow: inset 0 1px 0 rgba(255,255,255,.85), inset 0 0 0 1px rgba(12,10,9,.05); }
-  .sx-avatar[data-tono="0"] { background: linear-gradient(160deg, #eafdf0, #bbf7d0); color: #14532d; }
-  .sx-avatar[data-tono="1"] { background: linear-gradient(160deg, #e2fbf6, #99f6e4); color: #115e59; }
-  .sx-avatar[data-tono="2"] { background: linear-gradient(160deg, #fffaeb, #fde68a); color: #92400e; }
-  .sx-avatar[data-tono="3"] { background: linear-gradient(160deg, #eff8ff, #bae6fd); color: #075985; }
-  .sx-avatar[data-tono="4"] { background: linear-gradient(160deg, #f5fde8, #d9f99d); color: #3f6212; }
-  .sx-avatar[data-tono="5"] { background: linear-gradient(160deg, #fff1f2, #fecdd3); color: #9f1239; }
-  html.dark .sx-avatar[data-tono] { box-shadow: inset 0 0 0 1px rgba(250,250,249,.08); }
+  /* CADA PERSONA, SU COLOR — pero dentro de la paleta.
+     El avatar por defecto de ui-avatars daba variedad, y esa variedad es la que
+     hace que una cuadrícula de doce perfiles se vea viva; el problema era que
+     sus colores (naranja, rosa, morado) no son de aquí. Poner el mismo verde a
+     todos lo arregló y lo mató: quedó un cementerio.
+     Estos seis tonos son de la marca o vecinos suyos, TODOS con más de 5:1
+     sobre blanco, y se asignan por una cuenta estable del nombre: la misma
+     persona sale siempre del mismo color. */
+  .sx-avatar[data-tono="0"] { background: #15803d; }  /* verde de marca  5,02 */
+  .sx-avatar[data-tono="1"] { background: #0f766e; }  /* teal            5,47 */
+  .sx-avatar[data-tono="2"] { background: #b45309; }  /* ámbar oscuro    5,02 */
+  .sx-avatar[data-tono="3"] { background: #14532d; }  /* verde profundo  9,11 */
+  .sx-avatar[data-tono="4"] { background: #155e75; }  /* azul petróleo   7,27 */
+  .sx-avatar[data-tono="5"] { background: #3f6212; }  /* oliva           7,08 */
 
-  /* Estado: un punto de color, no una pastilla. Ocupaba su propio renglón y
-     sumaba a la sensación de datos regados uno tras otro. */
-  .sx-estado { display: inline-flex; align-items: center; gap: .4rem; font-size: .82rem; color: #57534e; }
-  .sx-estado::before { content: ''; width: .45rem; height: .45rem; border-radius: 999px; background: currentColor; flex: none; }
-  .sx-estado[data-estado="trabajando"] { color: #15803d; }
-  .sx-estado[data-estado="estudiando"] { color: #0369a1; }
-  .sx-estado[data-estado="ambos"] { color: #b45309; }
-  html.dark .sx-estado[data-estado="trabajando"] { color: #4ade80; }
-  html.dark .sx-estado[data-estado="estudiando"] { color: #7dd3fc; }
-  html.dark .sx-estado[data-estado="ambos"] { color: #fbbf24; }
-
+  /* Estado del egresado: se leía de un vistazo en el diseño viejo y lo quité de
+     más. Vuelve, pero como etiqueta con su color en vez de mayúsculas verdes
+     compitiendo con el nombre. */
+  .sx-estado { display: inline-flex; align-items: center; gap: .35rem; font-size: .74rem; font-weight: 600;
+               letter-spacing: .04em; text-transform: uppercase; border-radius: 999px; padding: .2rem .6rem; }
+  .sx-estado::before { content: ''; width: .4rem; height: .4rem; border-radius: 999px; background: currentColor; }
+  .sx-estado[data-estado="trabajando"] { color: #15803d; background: #dcfce7; }
+  .sx-estado[data-estado="estudiando"] { color: #155e75; background: #e0f2fe; }
+  .sx-estado[data-estado="ambos"] { color: #b45309; background: #fef3c7; }
+  html.dark .sx-estado[data-estado="trabajando"] { color: #4ade80; background: #14261a; }
+  html.dark .sx-estado[data-estado="estudiando"] { color: #7dd3fc; background: #0c1f2b; }
+  html.dark .sx-estado[data-estado="ambos"] { color: #fde68a; background: #422f06; }
   .sx-etiqueta { display: inline-block; font-size: .78rem; font-weight: 500; color: #44403c; background: #f5f5f4;
                  border-radius: 6px; padding: .3rem .6rem; }
   /* El dato de «hoy»: el único ámbar de la interfaz, y por eso significa algo. */
