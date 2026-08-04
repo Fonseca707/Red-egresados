@@ -234,14 +234,53 @@ const historiasLogic = {
                     <h3 class="hp-h2 mt-4">Del colegio a donde están hoy</h3>
                     <p class="hp-sub">Rutas reales de egresados: cada una empezó en las mismas aulas donde estás tú.</p>
                 </div>
-                <div class="hp-rejilla ${historias.length === 3 ? 'hp-rejilla-3 hp-historias-3' : 'hp-rejilla-2'}">
-                    ${historias.map((h, i) => this.cardHTML(h, i)).join('')}
+                <div class="hp-historias-comp${historias.length < 3 ? ' hp-historias-par' : ''}">
+                    ${this.cardDestacadaHTML(historias[0])}
+                    <div class="hp-historias-lado">
+                        ${historias.slice(1).map((h, i) => this.cardHTML(h, i + 1)).join('')}
+                    </div>
                 </div>
               </div>
             </section>`;
         // El observador ya recorrió el documento cuando esto llega de Firestore:
         // hay que darle los bloques nuevos o se quedan invisibles para siempre.
         if (typeof hpObservar === 'function') hpObservar(holder);
+    },
+
+    // Historia PRINCIPAL: la sección era una cuadrícula de cuatro iguales y
+    // ninguna destacaba. Esta ocupa ~62% del ancho y muestra la ruta ENTERA con
+    // sus nodos, no tres etiquetas comprimidas.
+    cardDestacadaHTML({ alum, hitos }) {
+        const promo = alum.year && alum.year !== '---' ? `Promoción ${alum.year}` : 'Egresado';
+        const area = alum.area && alum.area !== 'General' ? ` · ${alum.area}` : '';
+        const bio = alum.bio && alum.bio !== 'Sin biografía disponible.' ? alum.bio : '';
+        const pasos = hitos.length > 4 ? [hitos[0], hitos[1], hitos[hitos.length - 2], hitos[hitos.length - 1]] : hitos;
+        const avatar = alum.photoURL
+            ? `<img src="${sanitizeHTML(alum.img)}" alt="Foto de ${sanitizeHTML(alum.name)}" class="hp-dest-foto" loading="lazy" decoding="async">`
+            : `<span class="hp-dest-foto hp-dest-iniciales" aria-hidden="true">${sanitizeHTML(hpIniciales(alum.name))}</span>`;
+        return `
+            <article onclick="historiasLogic.openHistoria('${sanitizeHTML(alum.id)}')"
+                class="hp-destacada" data-hp-sube>
+                <div class="hp-dest-cab">
+                    ${avatar}
+                    <div class="min-w-0">
+                        <h4 class="hp-dest-nombre">${sanitizeHTML(alum.name)}</h4>
+                        <p class="hp-dest-promo">${sanitizeHTML(promo)}${sanitizeHTML(area)}</p>
+                    </div>
+                </div>
+                ${bio ? `<p class="hp-dest-cita">“${sanitizeHTML(bio)}”</p>` : ''}
+                <ol class="hp-ruta hp-dest-ruta">
+                    ${pasos.map(h => {
+                        const anios = formatHitoYears(h);
+                        return `<li${h.actual ? ' data-actual' : ''}>
+                            <p class="hp-ruta-rol">${sanitizeHTML(h.rol || h.titulo || 'Hito')}</p>
+                            ${h.organizacion ? `<p class="hp-ruta-org">${sanitizeHTML(h.organizacion)}</p>` : ''}
+                            ${anios ? `<p class="hp-ruta-anio">${sanitizeHTML(anios)}</p>` : ''}
+                        </li>`;
+                    }).join('')}
+                </ol>
+                <span class="hp-enlace">Ver su ruta completa <i class="ph-bold ph-arrow-right" aria-hidden="true"></i></span>
+            </article>`;
     },
 
     cardHTML({ alum, hitos }, indice = 0) {

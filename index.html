@@ -48,22 +48,36 @@
             html.dark .glass-nav.hp-nav.hp-nav-scrolled { background: rgba(28,25,23,.88); border-bottom-color: rgba(68,64,60,.7); }
         }
 
-        .hp-hero { background: #fff; }
+        .hp-hero { background: #fff; position: relative; overflow: hidden; }
+        .hp-hero-grid { display: grid; position: relative; }
         html.dark .hp-hero { background: #1c1917; }
 
         /* El texto arranca donde arranca el contenido del resto de la página
            (el max-w-7xl centrado). Aquí sí se puede usar vw porque solo alimenta
            un padding: no fija el ancho de nada, así que aunque la barra de
            desplazamiento se cuente de más no aparece scroll horizontal. */
-        .hp-texto { padding-inline: max(1.5rem, calc((100vw - 80rem) / 2 + 1rem)); }
-        @media (min-width: 1024px) { .hp-texto { padding-right: 3rem; } }
+        .hp-texto { padding-inline: max(1.5rem, calc((100vw - 80rem) / 2 + 1rem)); padding-block: 6.5rem 2.5rem; position: relative; z-index: 2; }
+        @media (min-width: 1024px) { .hp-texto { padding-right: 2rem; padding-block: 2rem; } }
+        .hp-titulo { margin-top: 1.1rem; }
+        .hp-entrada { margin-top: 1.6rem; }
+        .hp-acciones { margin-top: 2.2rem; display: flex; flex-wrap: wrap; gap: .75rem; }
+        .hp-social { margin-top: 2.4rem; display: flex; align-items: center; gap: 1rem; }
 
         /* Los rótulos iban en gris y era buena parte de lo «apagado»: son el
            primer texto de cada sección y no aportaban una gota de color. */
         .hp-kicker { font-size: .78rem; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: #15803d; }
         html.dark .hp-kicker { color: #4ade80; }
 
-        .hp-titulo { font-size: clamp(2.5rem, 4.6vw, 4rem); font-weight: 600; line-height: 1.05; letter-spacing: -.035em; color: #1c1917; text-wrap: balance; }
+        /* El H1 domina de lejos: era clamp(2.5-4rem) y competía con los títulos
+           de sección (2.6rem). Ahora hay una diferencia evidente de escala, que
+           es lo que crea el punto focal al abrir la página. */
+        .hp-titulo { font-size: clamp(2.15rem, 6.4vw, 6rem); font-weight: 600; line-height: .98; letter-spacing: -.05em; color: #1c1917; text-wrap: balance; }
+        /* Una línea gráfica bajo la palabra clave: destaca sin degradado ni
+           segundo color en el texto. */
+        .hp-subrayado { position: relative; }
+        @media (min-width: 640px) { .hp-subrayado { white-space: nowrap; } }
+        .hp-subrayado::after { content: ''; position: absolute; left: .06em; right: .06em; bottom: .06em; height: .09em;
+                               background: #bbf7d0; border-radius: 999px; z-index: -1; }
         html.dark .hp-titulo { color: #fafaf9; }
         .hp-titulo em { font-style: normal; color: #16a34a; }
         html.dark .hp-titulo em { color: #4ade80; }
@@ -89,32 +103,53 @@
         /* Este fondo era un gris verdoso casi apagado y dejaba el hero sin una
            gota de color. Ahora es verde de marca de verdad, plano: el color lo
            pone un bloque, no un degradado ni un resplandor. */
-        .hp-visual { position: relative; display: flex; align-items: center; justify-content: flex-start;
-                     padding: 0 0 3.5rem 1.5rem; background: #dcfce7; overflow: hidden; }
-        html.dark .hp-visual { background: #14261a; }
-        /* Un segundo plano de color, cortado en diagonal, para que el bloque no
-           sea una mancha lisa. Dos verdes de la misma familia, sin degradado. */
-        .hp-visual::after { content: ''; position: absolute; inset: 0; background: #bbf7d0;
-                            clip-path: polygon(0 62%, 100% 38%, 100% 100%, 0% 100%); pointer-events: none; }
-        html.dark .hp-visual::after { background: #172e1f; }
-        .hp-visual > * { position: relative; z-index: 1; }
+        /* PLANO 0 — el color no es una columna: es una forma diagonal de gran
+           escala que cruza el hero por detrás de todo.
+           ⚠️ Solo de 1024px para arriba. En móvil no hay dos columnas y el corte
+           caía sobre el título, dejándolo ilegible; ahí el color va debajo,
+           detrás de la ventana. */
+        .hp-hero::before, .hp-hero::after { content: ''; position: absolute; inset: 0; pointer-events: none; }
+        .hp-hero::before { background: #dcfce7; clip-path: polygon(0 46%, 100% 34%, 100% 100%, 0 100%); }
+        .hp-hero::after  { background: #bbf7d0; clip-path: polygon(0 66%, 100% 56%, 100% 100%, 0 100%); }
+        html.dark .hp-hero::before { background: #14261a; }
+        html.dark .hp-hero::after { background: #172e1f; }
+        @media (min-width: 1024px) {
+            .hp-hero::before { clip-path: polygon(38% 0, 100% 0, 100% 100%, 14% 100%); }
+            .hp-hero::after  { clip-path: polygon(62% 0, 100% 0, 100% 100%, 40% 100%); }
+        }
+
+        .hp-visual { position: relative; display: flex; align-items: center; justify-content: center; padding: 0 1.25rem 3.5rem; }
 
         @media (min-width: 1024px) {
             /* La columna del texto pesa algo más que la visual: con 50/50 el
                título se partía en tres líneas. */
-            .hp-hero-grid { min-height: min(780px, calc(100dvh - 4rem)); grid-template-columns: 1.05fr 1fr; }
-            /* Con la ventana pegada al borde, la rotación le comía el lado
-               derecho y cortaba los años de la trayectoria. Cabe entera y el
-               respiro de la derecha es el que deja que la perspectiva se lea. */
-            .hp-visual { height: 100%; min-height: 520px; padding: 5rem 2.5rem 3rem 3.5rem; align-items: center; justify-content: center; }
+            .hp-hero-grid { min-height: min(820px, calc(100dvh - 4rem)); grid-template-columns: repeat(12, 1fr); align-items: center; }
+            /* Texto y ventana COMPARTEN las columnas 7 y 8: ahí es donde se
+               cruzan y donde la composición deja de ser dos mitades. */
+            .hp-hero-grid > .hp-texto { grid-column: 1 / 9; grid-row: 1; z-index: 2; }
+            .hp-hero-grid > .hp-visual { grid-column: 7 / -1; grid-row: 1; z-index: 1; }
+            /* La ventana baja un poco respecto al centro óptico y sangra por la
+               derecha: se ve que hay más producto del que cabe en pantalla. */
+            .hp-visual { height: 100%; padding: 6rem 0 3rem 0; align-items: center; justify-content: flex-end;
+                         transform: translateY(3%); }
         }
 
         /* El parallax lo lleva el contenedor: la ventana usa su transform para la
            perspectiva y escribir ahí el desplazamiento se la comería. */
-        .hp-ventana-envoltura { width: 100%; display: flex; justify-content: center; transform: translateY(var(--py, 0px)); will-change: transform; }
+        .hp-ventana-envoltura { width: 100%; display: flex; justify-content: center; position: relative;
+                                transform: translateY(var(--py, 0px)); will-change: transform; }
+        /* Nodos sueltos: cosen la ventana con el fondo. Decorativos, sin foco ni
+           lectura por parte de un lector de pantalla. */
+        .hp-nodo-suelto { position: absolute; border-radius: 999px; background: #fff; border: 3px solid #22c55e;
+                          box-sizing: border-box; pointer-events: none; display: none; }
+        @media (min-width: 1024px) { .hp-nodo-suelto { display: block; } }
+        .hp-nodo-suelto[data-n="1"] { width: 1.1rem; height: 1.1rem; top: 8%; left: -1.6rem; box-shadow: 0 0 0 6px rgba(34,197,94,.12); }
+        .hp-nodo-suelto[data-n="2"] { width: .7rem; height: .7rem; bottom: 16%; left: -3.2rem; border-width: 2px; opacity: .75; }
+        .hp-nodo-suelto[data-n="3"] { width: .5rem; height: .5rem; bottom: 4%; left: -1rem; border-width: 2px; opacity: .5; }
+        html.dark .hp-nodo-suelto { background: #1c1917; }
 
         .hp-ventana {
-            width: 100%; max-width: 32rem; border-radius: 16px; overflow: hidden; background: #fff;
+            width: 100%; max-width: 30rem; border-radius: 16px; overflow: hidden; background: #fff;
             /* Sombra en tres capas: contacto, difusa y una línea de 1px que hace
                de borde. Una sola sombra grande es lo que da aspecto de plantilla. */
             box-shadow: 0 1px 1px rgba(12,10,9,.04), 0 18px 36px -12px rgba(12,10,9,.14),
@@ -128,7 +163,11 @@
         }
         html.dark .hp-ventana { background: #221f1d; box-shadow: 0 18px 36px -12px rgba(0,0,0,.5), 0 48px 90px -30px rgba(0,0,0,.6), 0 0 0 1px rgba(250,250,249,.07); }
         @media (max-width: 1023px) { .hp-ventana { transform: none; max-width: 28rem; margin: 0 auto; } }
-        @media (min-width: 1280px) { .hp-ventana { max-width: 36rem; } }
+        @media (min-width: 1024px) { .hp-ventana { max-width: 34rem; } }
+        @media (min-width: 1280px) { .hp-ventana { max-width: 38rem; } }
+        /* Sangra por la derecha: se ve que el producto sigue fuera del encuadre. */
+        @media (min-width: 1024px) { .hp-ventana-envoltura { justify-content: flex-end; margin-right: -3.5rem; } }
+        @media (min-width: 1440px) { .hp-ventana-envoltura { margin-right: -1rem; } }
 
         .hp-ventana-barra { display: flex; align-items: center; gap: .4rem; padding: .7rem .9rem; background: #f5f5f4; border-bottom: 1px solid #e7e5e4; }
         html.dark .hp-ventana-barra { background: #1c1917; border-bottom-color: #332f2c; }
@@ -136,7 +175,14 @@
         html.dark .hp-punto { background: #44403c; }
         .hp-ventana-url { margin-left: auto; margin-right: auto; font-size: .68rem; font-weight: 500; color: #a8a29e; letter-spacing: .01em; }
 
-        .hp-ventana-cuerpo { padding: 1.6rem 1.5rem 1.7rem; }
+                /* Retícula mínima dentro del panel: da superficie de objeto sin
+           competir con el contenido. */
+        .hp-ventana-cuerpo { padding: 1.6rem 1.5rem 1.7rem; position: relative;
+                             background-image: linear-gradient(to right, rgba(12,10,9,.028) 1px, transparent 1px),
+                                               linear-gradient(to bottom, rgba(12,10,9,.028) 1px, transparent 1px);
+                             background-size: 22px 22px; }
+        html.dark .hp-ventana-cuerpo { background-image: linear-gradient(to right, rgba(250,250,249,.04) 1px, transparent 1px),
+                                                         linear-gradient(to bottom, rgba(250,250,249,.04) 1px, transparent 1px); }
         @media (min-width: 1280px) { .hp-ventana-cuerpo { padding: 2rem 1.9rem 2.1rem; } }
 
         /* Cabecera de la ficha */
@@ -160,7 +206,11 @@
                              background: #fff; border: 2px solid #d6d3d1; box-sizing: border-box; }
         html.dark .hp-ruta li::after { background: #221f1d; border-color: #57534e; }
         /* El paso de hoy: verde vivo con halo. Es el punto al que mira el ojo. */
-        .hp-ruta li[data-actual]::after { background: #22c55e; border-color: #22c55e; box-shadow: 0 0 0 4px rgba(34,197,94,.2); }
+                /* El hito actual manda sobre los demás: es el dato que cuenta la
+           historia («llegó hasta aquí»). */
+        .hp-ruta li[data-actual]::after { background: #22c55e; border-color: #22c55e; box-shadow: 0 0 0 5px rgba(34,197,94,.22);
+                                          width: .8rem; height: .8rem; top: .26rem; left: -.09rem; }
+        .hp-ruta li[data-actual] .hp-ruta-rol { font-size: 1.02rem; }
         .hp-ruta-rol { font-size: .86rem; font-weight: 600; color: #1c1917; letter-spacing: -.01em; line-height: 1.35; }
         html.dark .hp-ruta-rol { color: #fafaf9; }
         .hp-ruta-org { font-size: .78rem; color: #78716c; margin-top: .1rem; line-height: 1.4; }
@@ -551,6 +601,37 @@
         .hp-card-flotante:hover { box-shadow: 0 1px 2px rgba(12,10,9,.05), 0 16px 32px -20px rgba(12,10,9,.24), 0 0 0 1px rgba(12,10,9,.06); border-color: transparent; }
         html.dark .hp-card-flotante, html.dark .hp-card-flotante:hover { border-color: transparent; }
 
+        /* ── Historias: una principal y las demás de apoyo ────────────────
+           Eran cuatro tarjetas idénticas en cuadrícula y ninguna destacaba.
+           La principal ocupa ~62% y muestra la ruta entera; las de al lado son
+           compactas. Es la jerarquía que faltaba dentro de la sección. */
+        .hp-historias-comp { display: grid; gap: 1.15rem; }
+        @media (min-width: 1024px) { .hp-historias-comp { grid-template-columns: 1.62fr 1fr; align-items: start; } }
+        .hp-historias-lado { display: grid; gap: 1.15rem; align-content: start; }
+        @media (min-width: 640px) and (max-width: 1023px) { .hp-historias-lado { grid-template-columns: 1fr 1fr; } }
+
+        .hp-destacada { position: relative; background: #fff; border-radius: 16px; padding: clamp(1.6rem, 2.6vw, 2.4rem);
+                        cursor: pointer; display: flex; flex-direction: column;
+                        box-shadow: 0 1px 2px rgba(12,10,9,.04), 0 18px 40px -22px rgba(12,10,9,.24), 0 0 0 1px rgba(12,10,9,.05);
+                        transition: transform .4s cubic-bezier(.16,1,.3,1), box-shadow .4s ease; }
+        .hp-destacada:hover { transform: translateY(-4px); box-shadow: 0 1px 2px rgba(12,10,9,.05), 0 26px 54px -26px rgba(12,10,9,.3), 0 0 0 1px rgba(12,10,9,.06); }
+        html.dark .hp-destacada { background: #221f1d; box-shadow: 0 18px 40px -22px rgba(0,0,0,.6), 0 0 0 1px rgba(250,250,249,.07); }
+
+        .hp-dest-cab { display: flex; align-items: center; gap: 1.1rem; }
+        .hp-dest-foto { width: 4rem; height: 4rem; border-radius: 999px; object-fit: cover; flex: none; }
+        .hp-dest-iniciales { display: flex; align-items: center; justify-content: center; background: #15803d; color: #fff; font-size: 1.05rem; font-weight: 600; }
+        .hp-dest-nombre { font-size: clamp(1.2rem, 1.8vw, 1.5rem); font-weight: 600; letter-spacing: -.022em; color: #1c1917; line-height: 1.2; }
+        html.dark .hp-dest-nombre { color: #fafaf9; }
+        .hp-dest-promo { font-size: .9rem; color: #57534e; margin-top: .25rem; }
+        html.dark .hp-dest-promo { color: #a8a29e; }
+        /* La cita, en escala editorial: es la voz del egresado y merece tamaño. */
+        .hp-dest-cita { margin-top: 1.4rem; font-size: clamp(1.05rem, 1.5vw, 1.3rem); line-height: 1.5; color: #1c1917;
+                        letter-spacing: -.012em; }
+        html.dark .hp-dest-cita { color: #e7e5e4; }
+        .hp-dest-ruta { margin-top: 1.6rem; }
+        .hp-dest-ruta .hp-ruta-rol { font-size: .95rem; }
+        .hp-destacada .hp-enlace { margin-top: auto; padding-top: 1.5rem; }
+
         /* Tarjeta de historia destacada (la pinta historias.js). */
         .hp-historia { cursor: pointer; display: flex; flex-direction: column; }
         /* El enlace baja al pie de la tarjeta: la rejilla estira todas al alto
@@ -666,25 +747,26 @@
     <!-- MAIN CONTENT -->
     <main class="flex-1 pt-20 pb-24 md:pb-8 px-4 overflow-y-auto scroll-smooth bg-stone-50/60">
 
-        <!-- HERO — a sangre: se sale del contenedor del main (-mx-4 anula su px-4,
-             -mt-20 lo mete debajo de la nav fija). Los margenes negativos usan la
-             medida del propio main y no 100vw, que contaria la barra de scroll de
-             mas y sacaria desplazamiento horizontal. -->
+        <!-- HERO — composición editorial asimétrica. La ventana NO va en una
+             columna aparte: entra sobre el área del título y lo cruza, que es
+             lo que hace que se lea como una pieza y no como dos mitades.
+             A sangre con márgenes negativos contra el padding del main (nunca
+             100vw, que cuenta la barra de desplazamiento de más). -->
         <section class="hp-hero -mx-4 -mt-20" aria-labelledby="hp-titulo">
-            <div class="hp-hero-grid grid lg:grid-cols-2 items-center">
+            <div class="hp-hero-grid">
 
-                <div class="hp-texto pt-28 pb-14 lg:py-20">
+                <div class="hp-texto">
                     <p class="hp-kicker hp-reveal" style="--d:60ms">Liceo Campestre de Pereira</p>
 
-                    <h1 id="hp-titulo" class="hp-titulo mt-5 hp-reveal" style="--d:130ms">
-                        Cultiva tu red<br><em>Cosecha tu futuro</em>
+                    <h1 id="hp-titulo" class="hp-titulo hp-reveal" style="--d:130ms">
+                        Cultiva tu red<br><em>Cosecha<span class="hp-subrayado"> tu futuro</span></em>
                     </h1>
 
-                    <p class="hp-entrada mt-6 hp-reveal" style="--d:210ms">
-                        La red de egresados del Liceo Campestre de Pereira. Descubre las trayectorias reales de quienes salieron de tus mismas aulas, conecta con ellos y encuentra el camino que quieres recorrer.
+                    <p class="hp-entrada hp-reveal" style="--d:210ms">
+                        Descubre las trayectorias reales de quienes salieron de tus mismas aulas, conecta con ellos y encuentra el camino que quieres recorrer.
                     </p>
 
-                    <div class="mt-9 flex flex-col sm:flex-row gap-3 hp-reveal" style="--d:290ms">
+                    <div class="hp-acciones hp-reveal" style="--d:290ms">
                         <a href="register.html" class="hp-cta hp-cta-1">
                             Crear cuenta <i class="ph-bold ph-arrow-right" aria-hidden="true"></i>
                         </a>
@@ -695,7 +777,7 @@
 
                     <!-- Prueba social: caras REALES de la red (historias.js la llena;
                          oculta mientras no haya egresados con foto/perfil). -->
-                    <div id="hero-social" class="hidden mt-10 flex items-center gap-4 hp-reveal" style="--d:370ms">
+                    <div id="hero-social" class="hidden hp-social hp-reveal" style="--d:370ms">
                         <div id="hero-avatars" class="flex -space-x-3"></div>
                         <div class="hp-social-linea">
                             <span id="hero-social-text" class="font-semibold"></span>
@@ -703,23 +785,17 @@
                     </div>
                 </div>
 
-                <!-- El lado visual es el PRODUCTO, no una foto de banco: una
-                     trayectoria de verdad tal y como la pinta la plataforma. Los
-                     datos son los mismos destacados que la portada ya publica hoy
-                     (cero lecturas nuevas de Firestore y nada que no fuera ya
-                     público). Se dibuja en HTML y no como captura: así queda
-                     nítido en cualquier pantalla, pesa lo que pesa el texto y se
-                     actualiza solo. El hueco está reservado por CSS. -->
+                <!-- El producto: una trayectoria real, no una tarjeta decorativa.
+                     Se superpone al bloque de texto y sangra por la derecha. -->
                 <div class="hp-visual">
                   <div class="hp-ventana-envoltura">
-                    <div class="hp-ventana" id="hp-ventana" aria-hidden="true">
-                        <div class="hp-ventana-barra">
+                    <div class="hp-ventana" id="hp-ventana">
+                        <div class="hp-ventana-barra" aria-hidden="true">
                             <span class="hp-punto"></span><span class="hp-punto"></span><span class="hp-punto"></span>
                             <span class="hp-ventana-url">sinapsisred.web.app</span>
                         </div>
-                        <!-- El esqueleto tiene la MISMA forma que la ficha (cabecera
-                             + tres pasos): así, cuando llegan los datos, el bloque
-                             no da un salto ni cambia de alto. -->
+                        <!-- El esqueleto tiene la MISMA forma que la ficha: al
+                             llegar los datos no hay salto de maquetación. -->
                         <div class="hp-ventana-cuerpo" id="hp-ficha">
                             <div class="hp-ficha-esqueleto">
                                 <div class="hp-esq-cab">
@@ -737,6 +813,11 @@
                             </div>
                         </div>
                     </div>
+                    <!-- Nodos que se escapan del marco: unen la ventana con el
+                         fondo para que no se lea como una lámina pegada encima. -->
+                    <span class="hp-nodo-suelto" data-n="1" aria-hidden="true"></span>
+                    <span class="hp-nodo-suelto" data-n="2" aria-hidden="true"></span>
+                    <span class="hp-nodo-suelto" data-n="3" aria-hidden="true"></span>
                   </div>
                 </div>
 
@@ -1188,7 +1269,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore-compat.js"></script>
     <script src="shared.js?v=36"></script>
     <script src="orientadora.js?v=7"></script>
-    <script src="historias.js?v=22"></script>
+    <script src="historias.js?v=23"></script>
     <script>
         // ── Estado global: base en shared.js. La nav (desktop + móvil) la
         // inyecta renderNav('home'), igual que en el resto de páginas del sitio.
