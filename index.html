@@ -600,10 +600,12 @@
            Ahora es el verde de la marca en su versión más suave. */
         .hp-banda { background: #f0fdf4; }
         html.dark .hp-banda { background: #10201a; }
-        /* Crema: el ámbar de la paleta llevado a fondo. Rompe el tramo largo sin
-           añadir ninguna familia nueva. */
-        .hp-banda-crema { background: #fffbeb; }
-        html.dark .hp-banda-crema { background: #1c1710; }
+        /* Aquí estuvo un crema (#fffbeb) y no funcionó: el amarillo choca con el
+           verde frío de la marca y el fondo se lee sucio. Se queda en la familia
+           verde, pero MÁS tenue que .hp-banda, para que las dos franjas no se
+           confundan entre sí. */
+        .hp-banda-crema { background: #f7fcf9; }
+        html.dark .hp-banda-crema { background: #141b17; }
         /* El bloque de historias lo pinta historias.js: su interior necesita el
            mismo margen lateral que el resto de franjas de color. */
         #historias-section.hp-a-sangre .hp-interior { padding-inline: 1rem; }
