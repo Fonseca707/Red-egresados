@@ -279,7 +279,11 @@
            necesita el mismo margen lateral que las demás franjas de color. */
         #historias-section.hp-a-sangre > .hp-seccion > .hp-interior { padding-inline: 1rem; }
         .hp-cab { max-width: 44rem; margin: 0 auto clamp(1.75rem, 3vw, 2.75rem); text-align: center; }
-        .hp-h2 { font-size: clamp(1.85rem, 3.1vw, 2.6rem); font-weight: 600; letter-spacing: -.032em; line-height: 1.13; color: #1c1917; text-wrap: balance; }
+                /* Tres niveles, no uno: momento principal, sección de apoyo y fila.
+           Antes todos los títulos median lo mismo y por eso ningún bloque
+           dominaba sobre los demás. */
+        .hp-h2 { font-size: clamp(1.75rem, 2.7vw, 2.3rem); font-weight: 600; letter-spacing: -.032em; line-height: 1.13; color: #1c1917; text-wrap: balance; }
+        .hp-h2-momento { font-size: clamp(2.3rem, 4.4vw, 3.9rem); letter-spacing: -.042em; line-height: 1.05; }
         html.dark .hp-h2 { color: #fafaf9; }
         .hp-sub { margin-top: .95rem; font-size: 1.03rem; line-height: 1.62; color: #57534e; }
         html.dark .hp-sub { color: #d6d3d1; }
@@ -346,12 +350,12 @@
         .hp-ruta-pasos { position: relative; }
         /* La línea que une los pasos. Va detrás de los nodos y no llega a los
            extremos, para que no se vea cortada. */
-        .hp-ruta-pasos::before { content: ''; position: absolute; left: 12%; right: 12%; top: 1.1rem; height: 2px;
-                                 background: linear-gradient(to right, #bbf7d0, #22c55e, #bbf7d0); display: none; }
+        .hp-ruta-pasos::before { content: ''; position: absolute; left: .5rem; right: calc(25% - 2.4rem); top: 1.1rem; height: 2px;
+                                 background: linear-gradient(to right, #bbf7d0, #22c55e 45%, #15803d); display: none; }
         @media (min-width: 1024px) { .hp-ruta-pasos::before { display: block; } }
         html.dark .hp-ruta-pasos::before { background: linear-gradient(to right, #14532d, #22c55e, #14532d); }
 
-        .hp-paso { position: relative; padding-top: 3.2rem; }
+        .hp-paso { position: relative; padding-top: 3.2rem; transition: background-color .3s ease; }
         /* En móvil la línea baja en vertical de un nodo al siguiente: sin ella
            los pasos quedan como cuatro círculos sueltos, no como una ruta. */
         .hp-paso:not(:last-child)::after { content: ''; position: absolute; left: .53rem; top: 2rem; bottom: -1.5rem; width: 2px;
@@ -359,13 +363,29 @@
         html.dark .hp-paso:not(:last-child)::after { background: linear-gradient(to bottom, #22c55e, #14532d); }
         @media (min-width: 1024px) { .hp-paso:not(:last-child)::after { display: none; } }
         /* El nodo: mismo círculo que marca cada hito en la ficha del hero. */
-        .hp-paso::before { content: ''; position: absolute; top: .55rem; left: 0; width: 1.15rem; height: 1.15rem; border-radius: 999px;
+        .hp-paso::before { content: ''; position: absolute; top: .55rem; left: 0; width: 1.15rem; height: 1.15rem; border-radius: 999px; z-index: 1;
                            background: #fff; border: 3px solid #22c55e; box-sizing: border-box; box-shadow: 0 0 0 5px rgba(34,197,94,.14); }
-        @media (min-width: 1024px) { .hp-paso::before { left: 50%; transform: translateX(-50%); } }
+        @media (min-width: 1024px) { .hp-paso::before { left: 0; transform: none; } }
         html.dark .hp-paso::before { background: #1c1917; }
 
-        .hp-paso-n { font-size: .7rem; font-weight: 600; letter-spacing: .1em; color: #16a34a; display: block; margin-bottom: .55rem; }
-        @media (min-width: 1024px) { .hp-paso { text-align: center; } .hp-paso .hp-card-icono { margin-inline: auto; } }
+        /* El número, a gran escala y con poco contraste: hace de marca de
+           posición en el recorrido sin robarle protagonismo al texto. */
+        .hp-paso-n { font-size: clamp(2.4rem, 3.6vw, 3.4rem); font-weight: 600; letter-spacing: -.04em; color: #bbf7d0;
+                     display: block; line-height: .8; margin-bottom: .9rem; }
+        html.dark .hp-paso-n { color: #1e3a2a; }
+        @media (min-width: 1024px) {
+            .hp-paso { text-align: left; }
+            /* Alterna el CONTENIDO, no el paso: si se desplaza el paso entero
+               su nodo baja con él y la línea recta deja de tocarlo, con lo que
+               el recorrido se ve partido. El nodo se queda en la línea. */
+            .hp-paso:nth-child(even) .hp-paso-n { margin-top: 3.2rem; }
+            /* El último se apoya en una superficie suave: es a donde lleva el
+               recorrido. El relleno empieza bajo la línea, no la tapa. */
+            .hp-paso:last-child { background: #f0fdf4; border-radius: 12px; padding: 2.6rem 1.25rem 1.4rem; margin-top: -.6rem; }
+            html.dark .hp-paso:last-child { background: #10201a; }
+            .hp-paso:last-child::before { top: 1.15rem; left: 1.25rem; }
+            .hp-paso:last-child .hp-paso-n { margin-top: 1.4rem; }
+        }
 
         .hp-enlace { display: inline-flex; align-items: center; gap: .4rem; margin-top: 1.1rem; font-size: .95rem; font-weight: 600; color: #15803d;
                      border-bottom: 1px solid transparent; transition: border-color .25s ease, gap .25s ease; }
@@ -439,18 +459,21 @@
 
         /* Lista numerada: el número hace de ancla visual y sustituye a la caja. */
         .hp-lista { max-width: 68rem; margin: 0; }
-        .hp-fila { display: flex; align-items: flex-start; gap: 1.5rem; padding: 1.75rem 0; border-top: 1px solid #ebeae8; }
+        .hp-fila { display: flex; align-items: center; gap: clamp(1.25rem, 3vw, 2.5rem); padding: clamp(1.75rem, 3vw, 2.6rem) 0; border-top: 1px solid #ebeae8; }
         .hp-fila:last-child { border-bottom: 1px solid #ebeae8; }
         html.dark .hp-fila { border-top-color: #332f2c; }
         html.dark .hp-fila:last-child { border-bottom-color: #332f2c; }
-        .hp-fila-n { font-size: .95rem; font-weight: 600; color: #22c55e; letter-spacing: .06em; padding-top: .15rem; flex: none; width: 2.2rem; }
-        .hp-fila:nth-child(2) .hp-fila-n { color: #d97706; }
-        .hp-fila:nth-child(3) .hp-fila-n { color: #0d9488; }
+                /* Número de gran formato y bajo contraste: ancla la fila sin dominarla. */
+        .hp-fila-n { font-size: clamp(1.8rem, 3vw, 2.6rem); font-weight: 600; color: #d6e9dc; letter-spacing: -.035em;
+                     flex: none; width: auto; min-width: 2.6rem; line-height: 1; }
+        html.dark .hp-fila-n { color: #2a3a30; }
+        .hp-fila:nth-child(2) .hp-fila-n { color: #f0dcc0; }
+        .hp-fila:nth-child(3) .hp-fila-n { color: #cfe6e3; }
         .hp-fila:nth-child(2):hover .hp-fila-icono { color: #d97706; }
         .hp-fila:nth-child(3):hover .hp-fila-icono { color: #0d9488; }
         .hp-fila-icono { transition: transform .35s cubic-bezier(.16,1,.3,1), color .3s ease; }
         .hp-fila-txt { flex: 1; min-width: 0; }
-        .hp-fila-t { font-size: 1.08rem; font-weight: 600; letter-spacing: -.018em; color: #1c1917; }
+        .hp-fila-t { font-size: clamp(1.15rem, 1.6vw, 1.45rem); font-weight: 600; letter-spacing: -.022em; color: #1c1917; }
         html.dark .hp-fila-t { color: #fafaf9; }
         .hp-fila-p { font-size: 1rem; line-height: 1.6; color: #57534e; margin-top: .4rem; }
         html.dark .hp-fila-p { color: #a8a29e; }
@@ -475,7 +498,7 @@
         .hp-fila:hover { background: #f4faf6; }
         html.dark .hp-fila:hover { background: #1a201c; }
         .hp-fila-n, .hp-fila-icono { transition: transform .35s cubic-bezier(.16,1,.3,1), color .3s ease; }
-        .hp-fila:hover .hp-fila-n { transform: translateX(4px); color: #15803d; }
+        .hp-fila:hover .hp-fila-n { transform: translateX(4px); color: #86efac; }
         .hp-fila:hover .hp-fila-icono { transform: scale(1.12); }
 
         .hp-columna .hp-card-icono, .hp-opcion .hp-card-icono { transition: transform .35s cubic-bezier(.16,1,.3,1); }
@@ -488,7 +511,7 @@
         /* Los pasos: el nodo se enciende cuando el cursor está en su columna. */
         .hp-paso::before { transition: transform .35s cubic-bezier(.16,1,.3,1), box-shadow .35s ease, background-color .3s ease; }
         .hp-paso:hover::before { transform: scale(1.2); background: #22c55e; }
-        @media (min-width: 1024px) { .hp-paso:hover::before { transform: translateX(-50%) scale(1.2); } }
+        @media (min-width: 1024px) { .hp-paso:hover::before { transform: scale(1.2); } }
         .hp-paso .hp-card-icono { transition: transform .35s cubic-bezier(.16,1,.3,1); }
         .hp-paso:hover .hp-card-icono { transform: translateY(-2px); }
 
@@ -544,6 +567,41 @@
         html.dark .hp-examen-dato { color: #4ade80; }
         html.dark .hp-examen-p { color: #a8a29e; }
 
+        /* Panel de preparación (§11): jerarquía dentro de la propia sección. */
+        .hp-prep { display: grid; gap: 1.15rem; }
+        @media (min-width: 900px) { .hp-prep { grid-template-columns: 1.5fr 1fr; align-items: start; } }
+        .hp-prep-panel { display: block; background: #fff; border-radius: 16px; padding: clamp(1.6rem, 2.6vw, 2.4rem);
+                         box-shadow: 0 1px 2px rgba(12,10,9,.04), 0 16px 36px -22px rgba(12,10,9,.22), 0 0 0 1px rgba(12,10,9,.05);
+                         transition: transform .4s cubic-bezier(.16,1,.3,1), box-shadow .4s ease; }
+        .hp-prep-panel:hover { transform: translateY(-4px); box-shadow: 0 1px 2px rgba(12,10,9,.05), 0 24px 48px -26px rgba(12,10,9,.28), 0 0 0 1px rgba(12,10,9,.06); }
+        html.dark .hp-prep-panel { background: #221f1d; box-shadow: 0 16px 36px -22px rgba(0,0,0,.6), 0 0 0 1px rgba(250,250,249,.07); }
+        .hp-prep-panel .hp-examen-barra { margin-bottom: 1.4rem; }
+        .hp-prep-panel:hover .hp-examen-barra { width: 100%; }
+        .hp-prep-n { font-size: clamp(1.7rem, 2.6vw, 2.3rem); font-weight: 600; letter-spacing: -.032em; color: #1c1917; line-height: 1.05; }
+        html.dark .hp-prep-n { color: #fafaf9; }
+        .hp-prep-p { font-size: 1rem; line-height: 1.6; color: #57534e; margin-top: 1rem; max-width: 34rem; }
+        html.dark .hp-prep-p { color: #a8a29e; }
+
+        /* Segmentos = partes oficiales del examen. NO es una barra de progreso:
+           su ancho sale del número de módulos, no de un porcentaje inventado. */
+        .hp-segmentos { list-style: none; margin: 1.5rem 0 0; padding: 0; display: flex; flex-direction: column; gap: .8rem; }
+        .hp-segmentos li { display: flex; align-items: center; gap: .8rem; font-size: .92rem; color: #57534e; }
+        html.dark .hp-segmentos li { color: #a8a29e; }
+        .hp-seg { display: flex; gap: 3px; flex: none; }
+        .hp-seg::before, .hp-seg::after { content: ''; width: 1.4rem; height: .4rem; border-radius: 3px; background: #22c55e; }
+        .hp-seg[data-peso="3"]::after { width: 2.9rem; }
+
+        .hp-prep-lado { display: grid; gap: 1.15rem; align-content: start; }
+        @media (min-width: 640px) and (max-width: 899px) { .hp-prep-lado { grid-template-columns: 1fr 1fr; } }
+        .hp-prep-otro { display: block; border: 1px solid #ebeae8; border-radius: 12px; padding: 1.35rem 1.4rem; background: rgba(255,255,255,.6);
+                        transition: transform .35s cubic-bezier(.16,1,.3,1), border-color .3s ease, background-color .3s ease; }
+        .hp-prep-otro:hover { transform: translateY(-3px); border-color: #d6d3d1; background: #fff; }
+        html.dark .hp-prep-otro { border-color: #332f2c; background: rgba(34,31,29,.6); }
+        .hp-prep-otro .hp-examen-barra { margin-bottom: 1rem; }
+        .hp-prep-otro:hover .hp-examen-barra { width: 100%; }
+        .hp-prep-otro-n { font-size: 1.2rem; font-weight: 600; letter-spacing: -.022em; color: #1c1917; }
+        html.dark .hp-prep-otro-n { color: #fafaf9; }
+
         /* Opciones de contacto: una fila de enlaces con separador, no tres cajas. */
         .hp-opcion { text-align: left; font: inherit; width: 100%; cursor: pointer; background: none; border: 0;
                      padding: .75rem 0 .25rem; transition: transform .3s cubic-bezier(.16,1,.3,1); }
@@ -560,14 +618,15 @@
         }
 
         /* Propósito: una cita a gran tamaño sobre la ilustración. */
-        .hp-lienzo-cita { padding: clamp(2.75rem, 5vw, 4.5rem) clamp(1.75rem, 5vw, 4.5rem); background: #fbfdfb; }
+        .hp-lienzo-cita { padding: clamp(3rem, 6vw, 6rem) clamp(1.75rem, 5vw, 4.5rem); background: #fbfdfb; }
         html.dark .hp-lienzo-cita { background: #14261a; }
-        .hp-lienzo-cita .hp-frase { font-size: clamp(1.5rem, 3vw, 2.5rem); }
+        .hp-lienzo-cita .hp-frase { font-size: clamp(1.9rem, 4vw, 3.6rem); line-height: 1.06; letter-spacing: -.04em; }
+        .hp-lienzo-cita .hp-frase-pie { font-size: 1.05rem; max-width: 34rem; }
         /* La ilustración sustituye al corte diagonal en este bloque. */
         .hp-lienzo-cita::after { display: none; }
         .hp-cita-grid { display: grid; gap: clamp(2rem, 4vw, 4rem); align-items: center; }
-        @media (min-width: 900px) { .hp-cita-grid { grid-template-columns: minmax(0,1.15fr) minmax(0,.85fr); } }
-        .hp-bloque-texto { max-width: 34rem; }
+        @media (min-width: 900px) { .hp-cita-grid { grid-template-columns: minmax(0,1.3fr) minmax(0,.7fr); } }
+        .hp-bloque-texto { max-width: 40rem; }
         /* La ruta de ejemplo se apoya en una superficie clara para leerse sobre
            la ilustración, sin taparla del todo. */
         .hp-ruta-tipo { background: rgba(255,255,255,.82); backdrop-filter: blur(2px); border-radius: 12px;
@@ -585,13 +644,18 @@
 
         /* Cierre: color pleno. El único bloque donde el verde de marca ocupa
            toda la superficie — por eso cierra. */
-        .hp-cierre { background: #15803d; border-radius: 16px; padding: clamp(2.5rem, 4.5vw, 3.75rem) clamp(1.5rem, 4vw, 3rem);
-                     text-align: center; position: relative; overflow: hidden; }
-        .hp-cierre::after { content: ''; position: absolute; inset: 0; background: #14532d;
-                            clip-path: polygon(0 68%, 100% 42%, 100% 100%, 0% 100%); pointer-events: none; }
+        .hp-cierre { background: #15803d; border-radius: 16px; padding: clamp(2.75rem, 5vw, 4.5rem) clamp(1.5rem, 4vw, 3rem);
+                     text-align: left; position: relative; overflow: hidden; }
+        /* El corte NO repite el del hero: alli es una diagonal recta, aqui una
+           curva ancha que entra por abajo. Mismo lenguaje, gesto distinto. */
+        .hp-cierre::after { content: ''; position: absolute; inset: -1px; background: #14532d; pointer-events: none;
+                            clip-path: ellipse(88% 62% at 88% 118%); }
         .hp-cierre > * { position: relative; z-index: 1; }
-        .hp-cierre-t { font-size: clamp(1.75rem, 3.2vw, 2.6rem); font-weight: 600; letter-spacing: -.03em; line-height: 1.15; color: #fff; }
-        .hp-cierre-p { margin: 1rem auto 0; max-width: 38rem; font-size: 1.03rem; line-height: 1.6; color: #dcfce7; }
+        .hp-cierre-t { font-size: clamp(2.1rem, 4.2vw, 3.6rem); font-weight: 600; letter-spacing: -.042em; line-height: 1.05; color: #fff; max-width: 18ch; }
+        .hp-cierre-p { margin: 1.15rem 0 0; max-width: 34rem; font-size: 1.05rem; line-height: 1.6; color: #dcfce7; }
+        /* Composicion asimetrica: el texto ocupa dos tercios y deja aire donde
+           entra la curva. */
+        @media (min-width: 900px) { .hp-cierre > .hp-interior { max-width: 64%; margin-inline: 0; } }
         .hp-cta-blanco { background: #fff; color: #14532d; }
         .hp-cta-blanco:hover { background: #f0fdf4; transform: translateY(-2px); }
         /* Tarjeta que flota sobre el lienzo: hereda la sombra del panel del hero,
@@ -600,6 +664,22 @@
                             box-shadow: 0 1px 2px rgba(12,10,9,.04), 0 10px 24px -18px rgba(12,10,9,.18), 0 0 0 1px rgba(12,10,9,.05); }
         .hp-card-flotante:hover { box-shadow: 0 1px 2px rgba(12,10,9,.05), 0 16px 32px -20px rgba(12,10,9,.24), 0 0 0 1px rgba(12,10,9,.06); border-color: transparent; }
         html.dark .hp-card-flotante, html.dark .hp-card-flotante:hover { border-color: transparent; }
+
+        /* Banda de contexto: franja editorial, no tres tarjetas. */
+        .hp-contexto-seccion { padding-block: clamp(2.5rem, 4vw, 3.5rem); }
+        .hp-contexto { display: grid; gap: clamp(1.5rem, 3vw, 3rem); align-items: center; }
+        @media (min-width: 900px) { .hp-contexto { grid-template-columns: minmax(0,1.5fr) minmax(0,1fr); } }
+        .hp-contexto-frase { font-size: clamp(1.3rem, 2.3vw, 1.95rem); font-weight: 600; letter-spacing: -.028em;
+                             line-height: 1.28; color: #1c1917; max-width: 34rem; text-wrap: balance; }
+        html.dark .hp-contexto-frase { color: #fafaf9; }
+        .hp-contexto-datos { display: flex; gap: clamp(1.5rem, 3vw, 2.5rem); }
+        /* Separadores verticales en vez de recuadros. */
+        .hp-contexto-datos > * + * { border-left: 1px solid #e7e5e4; padding-left: clamp(1.5rem, 3vw, 2.5rem); }
+        html.dark .hp-contexto-datos > * + * { border-left-color: #332f2c; }
+        .hp-dato-n { font-size: clamp(2rem, 3.2vw, 2.8rem); font-weight: 600; letter-spacing: -.035em; color: #15803d; line-height: 1; }
+        html.dark .hp-dato-n { color: #4ade80; }
+        .hp-dato-etq { font-size: .85rem; color: #57534e; margin-top: .5rem; max-width: 9rem; line-height: 1.4; }
+        html.dark .hp-dato-etq { color: #a8a29e; }
 
         /* ── Historias: una principal y las demás de apoyo ────────────────
            Eran cuatro tarjetas idénticas en cuadrícula y ninguna destacaba.
@@ -869,6 +949,27 @@
                 </div>
             </section>
 
+            <!-- BANDA DE CONTEXTO — transición entre el impacto del hero y el
+                 contenido narrativo. Una frase grande y, al lado, los ÚNICOS
+                 datos que existen de verdad; historias.js rellena los valores y
+                 esconde el bloque si no los hay. Nada de cifras de ejemplo. -->
+            <section class="hp-seccion hp-contexto-seccion"><div class="hp-interior">
+                <div class="hp-contexto" data-hp-sube>
+                    <p class="hp-contexto-frase">Una red donde cada trayectoria abre posibilidades para la siguiente.</p>
+                    <dl class="hp-contexto-datos" id="hp-contexto-datos" hidden>
+                        <div>
+                            <dt class="hp-dato-n" data-dato="promociones">—</dt>
+                            <dd class="hp-dato-etq">Promociones en la red</dd>
+                        </div>
+                        <div>
+                            <dt class="hp-dato-n" data-dato="rutas">—</dt>
+                            <dd class="hp-dato-etq">Trayectorias publicadas</dd>
+                        </div>
+                    </dl>
+                </div>
+              </div>
+            </section>
+
             <!-- Modo historias: rutas destacadas narrativas (renderiza historias.js) -->
             <div id="historias-section" class="hp-banda-crema hp-a-sangre"></div>
 
@@ -989,31 +1090,36 @@
                     <p class="hp-sub">Simulacros con el formato oficial vigente, dentro de la misma plataforma donde está la red.</p>
                 </div>
 
-                <div class="hp-rejilla hp-rejilla-3">
-                    <a href="preparacion.html" class="hp-examen" data-hp-sube style="--d:0ms">
+                <!-- Panel de preparación: un examen principal con su estructura
+                     desglosada en segmentos y los otros dos como opciones al
+                     lado. Los segmentos representan las PARTES oficiales del
+                     examen, no un progreso: no hay porcentaje que fingir. -->
+                <div class="hp-prep" data-hp-sube>
+                    <a href="preparacion.html" class="hp-prep-panel">
                         <span class="hp-examen-barra" data-tono="1"></span>
-                        <p class="hp-examen-n">TOEFL iBT</p>
+                        <p class="hp-prep-n">TOEFL iBT</p>
                         <p class="hp-examen-nivel">Formato oficial de enero 2026</p>
-                        <p class="hp-examen-p">Reading adaptativo en dos módulos y Writing con tres tareas cronometradas.</p>
-                        <p class="hp-examen-dato">2 módulos · 3 tareas</p>
+                        <p class="hp-prep-p">Reading adaptativo en dos módulos y Writing con tres tareas cronometradas.</p>
+                        <ul class="hp-segmentos" aria-label="Partes del examen">
+                            <li><span class="hp-seg" data-peso="2"></span>Reading · 2 módulos</li>
+                            <li><span class="hp-seg" data-peso="3"></span>Writing · 3 tareas</li>
+                        </ul>
                         <span class="hp-enlace">Ver el módulo <i class="ph-bold ph-arrow-right" aria-hidden="true"></i></span>
                     </a>
-                    <a href="preparacion.html" class="hp-examen" data-hp-sube style="--d:90ms">
-                        <span class="hp-examen-barra" data-tono="2"></span>
-                        <p class="hp-examen-n">DELF B1</p>
-                        <p class="hp-examen-nivel">Nouveau format</p>
-                        <p class="hp-examen-p">Comprensión con preguntas cerradas y producción escrita con la grilla de 25 puntos.</p>
-                        <p class="hp-examen-dato">4 épreuves · 25 puntos</p>
-                        <span class="hp-enlace">Ver el módulo <i class="ph-bold ph-arrow-right" aria-hidden="true"></i></span>
-                    </a>
-                    <a href="preparacion.html" class="hp-examen" data-hp-sube style="--d:180ms">
-                        <span class="hp-examen-barra" data-tono="3"></span>
-                        <p class="hp-examen-n">Saber 11</p>
-                        <p class="hp-examen-nivel">Entrenamiento por competencia</p>
-                        <p class="hp-examen-p">Sesiones cortas con la estructura oficial y retroalimentación que explica cada opción.</p>
-                        <p class="hp-examen-dato">Sesiones de 10 preguntas</p>
-                        <span class="hp-enlace">Ver el módulo <i class="ph-bold ph-arrow-right" aria-hidden="true"></i></span>
-                    </a>
+                    <div class="hp-prep-lado">
+                        <a href="preparacion.html" class="hp-prep-otro">
+                            <span class="hp-examen-barra" data-tono="2"></span>
+                            <p class="hp-prep-otro-n">DELF B1</p>
+                            <p class="hp-examen-nivel">Nouveau format</p>
+                            <p class="hp-examen-dato">4 épreuves · 25 puntos</p>
+                        </a>
+                        <a href="preparacion.html" class="hp-prep-otro">
+                            <span class="hp-examen-barra" data-tono="3"></span>
+                            <p class="hp-prep-otro-n">Saber 11</p>
+                            <p class="hp-examen-nivel">Entrenamiento por competencia</p>
+                            <p class="hp-examen-dato">Sesiones de 10 preguntas</p>
+                        </a>
+                    </div>
                 </div>
               </div>
             </section>
@@ -1269,7 +1375,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore-compat.js"></script>
     <script src="shared.js?v=36"></script>
     <script src="orientadora.js?v=7"></script>
-    <script src="historias.js?v=23"></script>
+    <script src="historias.js?v=24"></script>
     <script>
         // ── Estado global: base en shared.js. La nav (desktop + móvil) la
         // inyecta renderNav('home'), igual que en el resto de páginas del sitio.

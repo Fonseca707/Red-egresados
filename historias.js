@@ -92,6 +92,7 @@ const historiasLogic = {
             const resumen = await loadResumenRed();
             this.renderStats(resumen);
             this.renderHeroSocial(activos, resumen);
+            this.renderContexto(resumen, historias.length);
 
             // Con menos de 2 historias no se muestra nada: una fila medio vacía
             // también delata una red que apenas comienza.
@@ -186,6 +187,25 @@ const historiasLogic = {
         try {
             localStorage.setItem('hp_ficha_cache', JSON.stringify({ t: Date.now(), html: ficha.innerHTML }));
         } catch (e) { /* sin espacio o en modo privado: no pasa nada */ }
+    },
+
+    // Banda de contexto: solo cifras REALES. Las promociones salen del
+    // resumen de la red que mantiene el admin; las trayectorias, de las que se
+    // acaban de pintar. Si no hay ninguna de las dos, el bloque no aparece —
+    // una cifra de ejemplo en la portada es exactamente lo que no se hace aqui.
+    renderContexto(resumen, cuantasRutas) {
+        const caja = document.getElementById('hp-contexto-datos');
+        if (!caja) return;
+        const promos = Number(resumen?.promociones) || 0;
+        const datos = { promociones: promos, rutas: cuantasRutas || 0 };
+        let algunoVisible = false;
+        caja.querySelectorAll('[data-dato]').forEach(el => {
+            const v = datos[el.dataset.dato];
+            const bloque = el.parentElement;
+            if (v > 0) { el.textContent = v; bloque.hidden = false; algunoVisible = true; }
+            else { bloque.hidden = true; }
+        });
+        caja.hidden = !algunoVisible;
     },
 
     renderStats(resumen) {
