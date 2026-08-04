@@ -57,7 +57,7 @@
            un padding: no fija el ancho de nada, así que aunque la barra de
            desplazamiento se cuente de más no aparece scroll horizontal. */
         .hp-texto { padding-inline: max(1.5rem, calc((100vw - 80rem) / 2 + 1rem)); padding-block: 6.5rem 2.5rem; position: relative; z-index: 2; }
-        @media (min-width: 1024px) { .hp-texto { padding-right: 2rem; padding-block: 2rem; } }
+        @media (min-width: 1024px) { .hp-texto { padding-right: 2rem; padding-block: 6rem 3rem; } }
         .hp-titulo { margin-top: 1.1rem; }
         .hp-entrada { margin-top: 1.6rem; }
         .hp-acciones { margin-top: 2.2rem; display: flex; flex-wrap: wrap; gap: .75rem; }
@@ -303,7 +303,7 @@
         .hp-partida { display: grid; gap: clamp(1.75rem, 3.5vw, 3.5rem); align-items: start; }
         @media (min-width: 900px) {
             .hp-partida { grid-template-columns: minmax(0, .82fr) minmax(0, 1.18fr); gap: clamp(2.5rem, 5vw, 5rem); }
-            .hp-partida > .hp-cab { position: sticky; top: 6.5rem; margin-bottom: 0; }
+            .hp-partida > .hp-cab { position: sticky; top: 8rem; margin-bottom: 0; align-self: center; }
         }
         .hp-partida > .hp-cab { max-width: 30rem; margin-inline: 0; text-align: left; }
         .hp-partida > .hp-cab .hp-sub { margin-inline: 0; }
@@ -464,11 +464,11 @@
         html.dark .hp-fila { border-top-color: #332f2c; }
         html.dark .hp-fila:last-child { border-bottom-color: #332f2c; }
                 /* Número de gran formato y bajo contraste: ancla la fila sin dominarla. */
-        .hp-fila-n { font-size: clamp(1.8rem, 3vw, 2.6rem); font-weight: 600; color: #d6e9dc; letter-spacing: -.035em;
+        .hp-fila-n { font-size: clamp(1.8rem, 3vw, 2.6rem); font-weight: 600; color: #86efac; letter-spacing: -.035em;
                      flex: none; width: auto; min-width: 2.6rem; line-height: 1; }
         html.dark .hp-fila-n { color: #2a3a30; }
-        .hp-fila:nth-child(2) .hp-fila-n { color: #f0dcc0; }
-        .hp-fila:nth-child(3) .hp-fila-n { color: #cfe6e3; }
+        .hp-fila:nth-child(2) .hp-fila-n { color: #fcd34d; }
+        .hp-fila:nth-child(3) .hp-fila-n { color: #5eead4; }
         .hp-fila:nth-child(2):hover .hp-fila-icono { color: #d97706; }
         .hp-fila:nth-child(3):hover .hp-fila-icono { color: #0d9488; }
         .hp-fila-icono { transition: transform .35s cubic-bezier(.16,1,.3,1), color .3s ease; }
@@ -477,8 +477,7 @@
         html.dark .hp-fila-t { color: #fafaf9; }
         .hp-fila-p { font-size: 1rem; line-height: 1.6; color: #57534e; margin-top: .4rem; }
         html.dark .hp-fila-p { color: #a8a29e; }
-        .hp-fila-icono { font-size: 1.6rem; color: #15803d; flex: none; display: none; }
-        @media (min-width: 640px) { .hp-fila-icono { display: block; } }
+        .hp-fila-icono { display: none; }
         /* La columna derecha era un icono suelto con 200 px de aire a su
            izquierda. Ahora es el destino al que lleva la fila. */
         .hp-fila-ir { display: none; align-items: center; gap: .45rem; flex: none; font-size: .9rem; font-weight: 600;
@@ -635,12 +634,12 @@
         .hp-ruta-tipo li { padding-left: 1.6rem; }
 
         .hp-cita-fondo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center;
-                         opacity: .55; pointer-events: none; }
+                         opacity: .38; pointer-events: none; }
         /* Bajando la opacidad basta para que el texto negro se lea encima: sin
            velos ni degradados por delante, que era justo el recurso que hacía
            que la página anterior pareciera de plantilla. */
         html.dark .hp-cita-fondo { opacity: .16; }
-        @media (min-width: 768px) { .hp-cita-fondo { opacity: .7; } }
+        @media (min-width: 768px) { .hp-cita-fondo { opacity: .42; } }
 
         /* Cierre: color pleno. El único bloque donde el verde de marca ocupa
            toda la superficie — por eso cierra. */
@@ -709,6 +708,7 @@
                         letter-spacing: -.012em; }
         html.dark .hp-dest-cita { color: #e7e5e4; }
         .hp-dest-ruta { margin-top: 1.6rem; }
+        .hp-destacada .hp-dest-cita + .hp-dest-ruta { margin-top: 1.9rem; }
         .hp-dest-ruta .hp-ruta-rol { font-size: .95rem; }
         .hp-destacada .hp-enlace { margin-top: auto; padding-top: 1.5rem; }
 
