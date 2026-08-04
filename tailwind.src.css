@@ -1,3 +1,105 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SISTEMA VISUAL DE SINAPSIS  ·  prefijo .sx-
+   ───────────────────────────────────────────────────────────────────────────
+   Nació en la portada (donde vive como .hp-, atado a su composición) y sube
+   aquí para que el resto del sitio no lo duplique. Se compila dentro de
+   tailwind.css, que las 11 páginas ya cargan: ninguna petición nueva.
+
+   Reglas del sistema, en corto:
+   · Peso 600 como techo. Nunca 700 ni 800.
+   · Cuatro radios: 999 / 16 / 12 / 6.
+   · Sombra en tres capas (contacto + difusa + línea de 1px). La fuerte se
+     reserva al objeto principal de cada pantalla.
+   · CONTRASTE: el verde de acción es #15803d (5,02 con blanco). #16a34a solo
+     vale para texto grande (3,16) y #22c55e NO vale como texto (2,18).
+   · Solo se anima opacity y transform, y con cubic-bezier(.16,1,.3,1).
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@layer components {
+
+  /* ── Tipografía ──────────────────────────────────────────────────────── */
+  .sx-h1 { font-size: clamp(2.15rem, 6.4vw, 6rem); font-weight: 600; line-height: .98; letter-spacing: -.05em; color: #1c1917; text-wrap: balance; }
+  .sx-h2 { font-size: clamp(1.75rem, 2.7vw, 2.3rem); font-weight: 600; letter-spacing: -.032em; line-height: 1.13; color: #1c1917; text-wrap: balance; }
+  .sx-h3 { font-size: clamp(1.15rem, 1.6vw, 1.45rem); font-weight: 600; letter-spacing: -.022em; line-height: 1.25; color: #1c1917; }
+  .sx-kicker { font-size: .78rem; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: #15803d; }
+  .sx-sub { font-size: 1.03rem; line-height: 1.62; color: #57534e; }
+  .sx-p { font-size: 1rem; line-height: 1.6; color: #57534e; }
+  .sx-meta { font-size: .85rem; color: #78716c; }
+
+  /* ── Superficies ─────────────────────────────────────────────────────── */
+  /* Una superficie SOLO cuando el elemento se pulsa, agrupa una unidad o es un
+     objeto de interfaz. Un párrafo nunca lleva recuadro. */
+  .sx-card { background: #fff; border: 1px solid #ebeae8; border-radius: 12px; padding: 1.5rem;
+             transition: transform .4s cubic-bezier(.16,1,.3,1), box-shadow .4s ease, border-color .4s ease; }
+  .sx-card-pulsable { cursor: pointer; }
+  .sx-card-pulsable:hover { transform: translateY(-4px); border-color: #d6d3d1;
+                            box-shadow: 0 1px 2px rgba(12,10,9,.04), 0 14px 30px -18px rgba(12,10,9,.22), 0 0 0 1px rgba(12,10,9,.05); }
+  /* El objeto principal de la pantalla: la única sombra fuerte permitida. */
+  .sx-panel { background: #fff; border-radius: 16px;
+              box-shadow: 0 1px 1px rgba(12,10,9,.04), 0 18px 36px -12px rgba(12,10,9,.14),
+                          0 42px 80px -30px rgba(12,10,9,.22), 0 0 0 1px rgba(12,10,9,.05); }
+
+  /* ── Acciones ────────────────────────────────────────────────────────── */
+  .sx-cta { display: inline-flex; align-items: center; justify-content: center; gap: .55rem; min-height: 44px;
+            padding: .85rem 1.7rem; border-radius: 999px; font-weight: 600; font-size: 1rem; letter-spacing: -.01em;
+            transition: transform .2s cubic-bezier(.16,1,.3,1), background-color .2s ease, border-color .2s ease; }
+  .sx-cta:focus-visible { outline: 3px solid #15803d; outline-offset: 3px; }
+  .sx-cta-1 { background: #15803d; color: #fff; }
+  .sx-cta-1:hover { background: #166534; transform: translateY(-2px); }
+  .sx-cta-2 { background: transparent; color: #1c1917; border: 1px solid #d6d3d1; }
+  .sx-cta-2:hover { border-color: #1c1917; background: #f5f5f4; transform: translateY(-2px); }
+
+  .sx-enlace { display: inline-flex; align-items: center; gap: .4rem; font-size: .95rem; font-weight: 600; color: #15803d;
+               border-bottom: 1px solid transparent; transition: border-color .25s ease, gap .25s ease; }
+  .sx-enlace:hover { border-bottom-color: currentColor; gap: .6rem; }
+  .sx-enlace i { transition: transform .25s cubic-bezier(.16,1,.3,1); }
+  .sx-enlace:hover i { transform: translateX(3px); }
+
+  /* ── Piezas de datos ─────────────────────────────────────────────────── */
+  /* Iniciales sobre el verde de la marca. NUNCA el avatar de ui-avatars, que
+     pinta un color al azar por nombre y llena la pantalla de naranjas y
+     morados que no son de aquí. */
+  .sx-avatar { border-radius: 999px; object-fit: cover; flex: none; display: flex; align-items: center; justify-content: center;
+               background: #15803d; color: #fff; font-weight: 600; letter-spacing: .01em; }
+  .sx-etiqueta { display: inline-block; font-size: .78rem; font-weight: 500; color: #44403c; background: #f5f5f4;
+                 border-radius: 6px; padding: .3rem .6rem; }
+  /* El dato de «hoy»: el único ámbar de la interfaz, y por eso significa algo. */
+  .sx-hoy { display: inline-block; font-size: .72rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase;
+            color: #b45309; background: #fef3c7; border-radius: 999px; padding: .12rem .5rem; }
+
+  /* ── Formularios ─────────────────────────────────────────────────────── */
+  .sx-campo { width: 100%; min-height: 44px; padding: .8rem 1rem; background: #fff; border: 1px solid #e7e5e4;
+              border-radius: 12px; outline: none; font-size: .95rem; color: #1c1917;
+              transition: border-color .25s ease, box-shadow .25s ease; }
+  .sx-campo::placeholder { color: #a8a29e; }
+  .sx-campo:focus { border-color: #15803d; box-shadow: 0 0 0 3px rgba(21,128,61,.14); }
+
+  /* ── Ritmo ───────────────────────────────────────────────────────────── */
+  .sx-seccion { padding-block: clamp(3rem, 5.5vw, 5rem); }
+  .sx-interior { max-width: 80rem; margin-inline: auto; width: 100%; }
+
+  /* ── Modo oscuro ─────────────────────────────────────────────────────── */
+  html.dark .sx-h1, html.dark .sx-h2, html.dark .sx-h3 { color: #fafaf9; }
+  html.dark .sx-kicker { color: #4ade80; }
+  html.dark .sx-sub, html.dark .sx-p { color: #a8a29e; }
+  html.dark .sx-meta { color: #a8a29e; }
+  html.dark .sx-card { background: #221f1d; border-color: #332f2c; }
+  html.dark .sx-card-pulsable:hover { border-color: #4a443f; box-shadow: 0 14px 30px -18px rgba(0,0,0,.55); }
+  html.dark .sx-panel { background: #221f1d; box-shadow: 0 18px 36px -12px rgba(0,0,0,.5), 0 0 0 1px rgba(250,250,249,.07); }
+  html.dark .sx-cta-2 { color: #fafaf9; border-color: #57534e; }
+  html.dark .sx-cta-2:hover { border-color: #fafaf9; background: #292524; }
+  html.dark .sx-enlace { color: #4ade80; }
+  html.dark .sx-etiqueta { color: #d6d3d1; background: #2c2724; }
+  html.dark .sx-hoy { color: #fde68a; background: #422f06; }
+  html.dark .sx-campo { background: #221f1d; border-color: #332f2c; color: #fafaf9; }
+
+  /* ── Movimiento ──────────────────────────────────────────────────────── */
+  @media (prefers-reduced-motion: reduce) {
+    .sx-card, .sx-cta, .sx-enlace, .sx-enlace i { transition: none; }
+    .sx-card-pulsable:hover, .sx-cta:hover, .sx-enlace:hover i { transform: none; }
+  }
+}
