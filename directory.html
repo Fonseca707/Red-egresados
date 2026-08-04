@@ -37,6 +37,7 @@
         .dir-nombre { font-size: 1.02rem; font-weight: 600; letter-spacing: -.018em; color: #1c1917; line-height: 1.25; }
         html.dark .dir-nombre { color: #fafaf9; }
         .dir-promo { font-size: .82rem; color: #78716c; margin-top: .15rem; }
+        .dir-estado { margin-top: .45rem; }
         html.dark .dir-promo { color: #a8a29e; }
         /* El cargo iba en MAYUSCULAS y verde, compitiendo con el nombre. Es un
            dato de apoyo: peso normal y color de texto. */
@@ -270,19 +271,52 @@
                 }
 
                 grid.innerHTML = shown.map(alum => {
-                    // Iniciales sobre el verde de la marca cuando no hay foto: el
-                    // avatar por defecto asigna un color al azar segun el nombre y
-                    // el directorio se llenaba de naranjas, rosas y morados.
                     const iniciales = String(alum.name || '').trim().split(/\s+/).slice(0, 2)
                         .map(x => x[0] || '').join('').toUpperCase();
+                    // ⚠️ CADA PERSONA CON SU COLOR, dentro de la paleta.
+                    // Los avatares de ui-avatars daban un color al azar por nombre:
+                    // naranjas y morados que no son de la marca. Ponerlos todos del
+                    // mismo verde lo arreglo y MATO la pantalla — con doce fichas
+                    // iguales el directorio parecia un cementerio. La cuenta es
+                    // estable: la misma persona sale siempre del mismo tono.
+                    let suma = 0;
+                    const semilla = String(alum.id || alum.name || '');
+                    for (let i = 0; i < semilla.length; i++) suma = (suma + semilla.charCodeAt(i)) % 6;
                     const foto = alum.photoURL
                         ? `<img src="${sanitizeHTML(alum.img)}" alt="Foto de ${sanitizeHTML(alum.name)}" class="sx-avatar dir-foto" loading="lazy" decoding="async">`
-                        : `<span class="sx-avatar dir-foto" aria-hidden="true">${sanitizeHTML(iniciales)}</span>`;
+                        : `<span class="sx-avatar dir-foto" data-tono="${suma}" aria-hidden="true">${sanitizeHTML(iniciales)}</span>`;
+                    // El estado se leia de un vistazo en el disenio viejo y lo quite
+                    // de mas. Vuelve como etiqueta con color, no como mayusculas
+                    // verdes compitiendo con el nombre.
+                    const etiquetasCrudas = (alum.tags || []).map(t => String(t).trim()).filter(Boolean);
+                    const texto = etiquetasCrudas.join(' ').toLowerCase();
+                    const trabaja = texto.includes('trabajando');
+                    const estudia = texto.includes('estudiando');
+                    const estado = trabaja && estudia ? ['ambos', 'Trabajando y estudiando']
+                                 : trabaja ? ['trabajando', 'Trabajando']
+                                 : estudia ? ['estudiando', 'Estudiando'] : null;
                     // Lo que no existe NO se imprime: antes salia "Sin rol" como si
                     // fuera un dato.
-                    const rol = alum.role && alum.role !== 'Sin rol definido' && alum.role !== 'Sin rol' ? alum.role : '';
-                    const donde = alum.company && alum.company !== '---' ? alum.company : '';
-                    const etiquetas = (alum.tags || []).filter(t => t && String(t).trim()).slice(0, 3);
+                    // El rol no se repite si ya lo cuenta la etiqueta de estado o
+                    // una de las etiquetas de abajo: salia "ESTUDIANDO" arriba y
+                    // "Estudiando" otra vez debajo.
+                    const rolCrudo = alum.role && alum.role !== 'Sin rol definido' && alum.role !== 'Sin rol' ? String(alum.role).trim() : '';
+                    const yaDicho = etiquetasCrudas.some(t => t.toLowerCase() === rolCrudo.toLowerCase())
+                        || /^(trabajando|estudiando|trabajando y estudiando|emprendiendo)$/i.test(rolCrudo);
+                    const rol = yaDicho ? '' : rolCrudo;
+                    // OJO: el "Trabajando"/"Estudiando" que se repetia venia de
+                    // `company`, no de `role`. Ese campo guarda a veces el lugar
+                    // (una empresa, un titulo) y a veces solo el estado.
+                    const dondeCrudo = alum.company && alum.company !== '---' ? String(alum.company).trim() : '';
+                    const dondeYaDicho = etiquetasCrudas.some(t => t.toLowerCase() === dondeCrudo.toLowerCase())
+                        || /^(trabajando|estudiando|trabajando y estudiando|emprendiendo)$/i.test(dondeCrudo)
+                        || dondeCrudo.toLowerCase() === rol.toLowerCase();
+                    const donde = dondeYaDicho ? '' : dondeCrudo;
+                    // Fuera de la lista de abajo lo que ya cuenta la etiqueta de
+                    // estado: repetirlo era ruido.
+                    const etiquetas = etiquetasCrudas
+                        .filter(t => !/^(trabajando|estudiando|trabajando y estudiando)$/i.test(t))
+                        .slice(0, 3);
                     return `
                     <article class="sx-card sx-card-pulsable dir-card" role="button" tabindex="0" aria-label="Ver perfil de ${sanitizeHTML(alum.name)}" onclick="directoryLogic.openProfile('${sanitizeHTML(alum.id)}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();directoryLogic.openProfile('${sanitizeHTML(alum.id)}')}">
                         <div class="dir-cab">
@@ -290,6 +324,7 @@
                             <div class="min-w-0">
                                 <h3 class="dir-nombre">${sanitizeHTML(alum.name)}</h3>
                                 <p class="dir-promo">Promoción ${sanitizeHTML(alum.year || '—')}</p>
+                                ${estado ? `<span class="sx-estado dir-estado" data-estado="${estado[0]}">${estado[1]}</span>` : ''}
                             </div>
                         </div>
                         ${rol ? `<p class="dir-rol">${sanitizeHTML(rol)}</p>` : ''}
