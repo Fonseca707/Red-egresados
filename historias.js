@@ -127,7 +127,7 @@ const historiasLogic = {
             new Set(activos.map(a => String(a.year)).filter(y => y && y !== '---')).size;
         document.getElementById('hero-social-text').innerHTML = promos >= 3
             ? `Egresados de ${promos} promociones <span class="font-normal text-gray-500">ya están en la red.</span>`
-            : `Egresados del Liceo <span class="font-normal text-gray-500">ya están en la red.</span>`;
+            : `Egresados del colegio <span class="font-normal text-gray-500">ya están en la red.</span>`;
         wrap.classList.remove('hidden');
     },
 

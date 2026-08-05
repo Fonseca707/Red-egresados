@@ -264,8 +264,8 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore-compat.js"></script>
-    <script src="shared.js?v=36"></script>
-    <script src="orientadora.js?v=7"></script>
+    <script src="shared.js?v=37"></script>
+    <script src="orientadora.js?v=8"></script>
     <script>
         renderNav('profile');
 
@@ -392,7 +392,7 @@
             },
             mensaje: () => {
                 const nombre = state.profile.firstName || 'Un egresado';
-                return `Hola, soy ${nombre}, egresado del Liceo Campestre de Pereira. Estamos reuniendo a nuestra promoción en Sinapsis, la red de egresados del colegio. Regístrate aquí: ${invitarLogic.link()}`;
+                return `Hola, soy ${nombre}, egresado de nuestro colegio. Estamos reuniendo a nuestra promoción en Sinapsis, la red de egresados del colegio. Regístrate aquí: ${invitarLogic.link()}`;
             },
             whatsapp: () => {
                 window.open(`https://wa.me/?text=${encodeURIComponent(invitarLogic.mensaje())}`, '_blank');

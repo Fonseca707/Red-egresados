@@ -142,14 +142,14 @@ const CORREOS_CAMPANAS = {
         nombre: 'Completa tu ruta',
         descripcion: 'A quienes aún no tienen su línea de tiempo. Es la campaña que enciende la red.',
         soloSinRuta: true,
-        asunto: 'Tu ruta le falta a la red de egresados del Liceo',
+        asunto: 'Tu ruta le falta a la red de egresados del colegio',
         cuerpo: `Hola,
 
-Te escribo de Sinapsis, la red de egresados del Liceo Campestre de Pereira.
+Te escribo de Sinapsis, la red de egresados del colegio.
 
 Tu perfil ya está creado, pero todavía no cuenta por dónde has pasado. Y esa es justo la parte que hace útil a esta red: la ruta que recorriste desde que saliste del colegio.
 
-Del Liceo a la universidad. A tu primer trabajo. A lo que haces hoy.
+Del colegio a la universidad. A tu primer trabajo. A lo que haces hoy.
 
 Para un estudiante de once que está eligiendo carrera, tu camino es el mapa que no tiene. No necesita consejos abstractos: necesita ver que alguien que se sentó en su mismo salón hoy es ingeniero, médica, chef o profesora, y por dónde pasó para llegar ahí.
 
@@ -161,16 +161,16 @@ Con dos o tres hitos basta para que aparezca en el directorio y pueda orientar a
 Gracias por hacer parte de esto.
 
 Juan David Fonseca
-Sinapsis · Red de Egresados LCP`
+Sinapsis · Red de Egresados`
     },
     bienvenida: {
         nombre: 'Presentación de la red',
         descripcion: 'Para contarle a la comunidad qué es Sinapsis y qué puede hacer allí.',
         soloSinRuta: false,
-        asunto: 'Sinapsis: la red de egresados del Liceo ya está en línea',
+        asunto: 'Sinapsis: la red de egresados del colegio ya está en línea',
         cuerpo: `Hola,
 
-Sinapsis es la red de egresados del Liceo Campestre de Pereira, y ya está en línea:
+Sinapsis es la red de egresados del colegio, y ya está en línea:
 https://sinapsisred.web.app
 
 Qué puedes hacer allí:
@@ -182,7 +182,7 @@ Qué puedes hacer allí:
 La red vale por quienes están en ella. Si completas tu perfil, alguien que viene detrás lo va a agradecer.
 
 Juan David Fonseca
-Sinapsis · Red de Egresados LCP`
+Sinapsis · Red de Egresados`
     }
 };
 

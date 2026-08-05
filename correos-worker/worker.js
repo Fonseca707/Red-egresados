@@ -126,7 +126,7 @@ function envoltura(env, titulo, cuerpo, cta) {
       ${cuerpo}
       ${cta ? `<p style="margin:28px 0 0;"><a href="${cta.url}" style="display:inline-block;background:#16a34a;color:#fff;text-decoration:none;font-weight:700;padding:13px 26px;border-radius:10px;">${cta.texto}</a></p>` : ''}
       <p style="margin:32px 0 0;padding-top:20px;border-top:1px solid #f3f4f6;color:#9ca3af;font-size:12px;line-height:1.5;">
-        Recibes este correo porque aceptaste recibir información de la red de egresados del Liceo Campestre de Pereira.
+        Recibes este correo porque aceptaste recibir información de la red de egresados de tu colegio.
         Para dejar de recibirlos, desmarca la casilla en <a href="${env.SITIO}/profile.html" style="color:#16a34a;">tu perfil</a>.
       </p>
     </div>
@@ -141,7 +141,7 @@ function plantilla(tipo, alum, env, extra = {}) {
         return {
             asunto: 'Tu lugar en la red de egresados ya está listo',
             html: envoltura(env, `Bienvenido, ${nombre}`, `
-                <p>Gracias por unirte a <strong>Sinapsis</strong>, la red de egresados del Liceo Campestre de Pereira.</p>
+                <p>Gracias por unirte a <strong>Sinapsis</strong>, la red de egresados de tu colegio.</p>
                 <p>La red se sostiene con algo que solo tú puedes contar: <strong>tu ruta</strong>. Del colegio a la universidad, al primer trabajo, a lo que haces hoy. Para un estudiante que está eligiendo carrera, tu camino es el mapa que no tiene.</p>
                 <p>Completar tu ruta toma unos minutos.</p>`,
                 { url: perfil, texto: 'Completar mi ruta' })

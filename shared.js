@@ -520,7 +520,7 @@ const VENTAJAS_CON_COLEGIO = [
 ];
 function mensajeParaElColegio(nombre = '') {
     const firma = nombre ? `\n\n— ${nombre}` : '';
-    return `Hola, les escribo por Sinapsis (${location.origin}), la red de egresados que ya usa el Liceo Campestre de Pereira.\n\n` +
+    return `Hola, les escribo por Sinapsis (${location.origin}), la red de egresados para colegios.\n\n` +
         `Además del directorio de egresados y sus trayectorias, la institución puede activar:\n` +
         VENTAJAS_CON_COLEGIO.map(v => `• ${v.titulo}: ${v.que}`).join('\n') +
         `\n\nMe gustaría que nuestra comunidad lo tuviera. ¿Puedo pasarles el contacto?${firma}`;
@@ -1003,7 +1003,10 @@ const rutaImagen = {
         ctx.fillText(String(user.name || 'Egresado').slice(0, 32), 70, 148);
         ctx.fillStyle = 'rgba(255,255,255,0.85)';
         ctx.font = '600 30px "Plus Jakarta Sans", "Segoe UI", sans-serif';
-        ctx.fillText(`Promoción ${user.year || '—'} · Liceo Campestre de Pereira`, 70, 200);
+        // El colegio sale del perfil, no está escrito a mano: la imagen circula
+        // fuera de la plataforma y cada red tiene el suyo.
+        const colegio = String(user.school || '').trim();
+        ctx.fillText(`Promoción ${user.year || '—'}${colegio ? ` · ${colegio}` : ''}`, 70, 200);
 
         // Línea de tiempo
         const lineX = 110;
@@ -1042,7 +1045,7 @@ const rutaImagen = {
         ctx.fillStyle = '#f0fdf4'; ctx.fillRect(0, H - FOOTER, W, FOOTER);
         ctx.fillStyle = '#15803d';
         ctx.font = 'bold 26px "Plus Jakarta Sans", "Segoe UI", sans-serif';
-        ctx.fillText('Mi ruta también empezó en el Liceo', 70, H - FOOTER + 46);
+        ctx.fillText('Mi ruta también empezó en el colegio', 70, H - FOOTER + 46);
         ctx.fillStyle = '#4b5563';
         ctx.font = '500 22px "Plus Jakarta Sans", "Segoe UI", sans-serif';
         ctx.fillText('Únete a la red: sinapsisred.web.app', 70, H - FOOTER + 82);

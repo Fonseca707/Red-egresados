@@ -39,7 +39,7 @@ const colegiosAdminLogic = {
         const tag = document.getElementById('colegio-tag').value.trim().toUpperCase();
         const nombre = document.getElementById('colegio-nombre-input').value.trim();
         if (!/^[A-Z0-9-]{2,15}$/.test(tag)) {
-            feedback.textContent = 'El tag debe tener 2-15 caracteres (letras, números o guion). Ej: LCP';
+            feedback.textContent = 'El tag debe tener 2-15 caracteres (letras, números o guion).';
             return;
         }
         if (nombre.length < 3) {

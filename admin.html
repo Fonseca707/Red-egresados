@@ -89,7 +89,7 @@
                     <i class="ph-duotone ph-database text-amber-600 text-2xl mt-0.5 shrink-0"></i>
                     <div>
                         <p class="font-bold text-amber-900 text-sm">Migración de datos: Colegio</p>
-                        <p class="text-amber-700 text-xs mt-0.5">Asigna <strong>LCP</strong> como colegio a todos los usuarios que aún no lo tengan registrado.</p>
+                        <p class="text-amber-700 text-xs mt-0.5">Asigna el <strong>colegio por defecto</strong> a todos los usuarios que aún no lo tengan registrado.</p>
                     </div>
                 </div>
                 <button onclick="adminLogic.migrateSchoolLCP()" id="btn-migrate-school" class="shrink-0 px-5 py-2.5 bg-amber-600 hover:bg-amber-700 text-white font-bold text-sm rounded-xl transition flex items-center gap-2 shadow-sm">
@@ -170,7 +170,7 @@
                         <div><label class="input-label">Habilidades (coma separadas)</label><input id="admin-edit-skills" class="input-field"></div>
                         <div><label class="input-label">LinkedIn</label><input id="admin-edit-linkedin" class="input-field"></div>
                         <div><label class="input-label">Teléfono</label><input id="admin-edit-phone" class="input-field"></div>
-                        <div><label class="input-label">Colegio</label><input id="admin-edit-school" class="input-field" placeholder="Ej: LCP"></div>
+                        <div><label class="input-label">Colegio</label><input id="admin-edit-school" class="input-field" placeholder="Etiqueta del colegio"></div>
                         <div class="md:col-span-2"><label class="input-label">Proyecciones / expectativas</label><textarea id="admin-edit-expectations" class="input-field h-24 resize-none" placeholder="Metas, expectativas o proyecciones del estudiante"></textarea></div>
                         <div class="md:col-span-2 flex justify-end">
                             <button type="submit" class="px-6 py-3 bg-brand-600 text-white font-bold rounded-xl shadow-lg shadow-brand-500/30 hover:bg-brand-700 transition">Guardar cambios</button>
@@ -487,11 +487,11 @@
                         <i class="ph-bold ph-user-plus text-purple-600"></i> Crear administrador de colegio
                     </h3>
                     <form id="create-subadmin-form" class="grid grid-cols-1 md:grid-cols-2 gap-4" onsubmit="adminLogic.createSubAdmin(event)">
-                        <div><label class="input-label">Usuario</label><input id="subadmin-username" class="input-field" required placeholder="ej: admin.lcp"></div>
+                        <div><label class="input-label">Usuario</label><input id="subadmin-username" class="input-field" required placeholder="ej: admin.colegio"></div>
                         <div><label class="input-label">Contraseña inicial</label><input id="subadmin-password" type="password" minlength="6" class="input-field" required></div>
                         <div><label class="input-label">Nombre</label><input id="subadmin-first-name" class="input-field" required></div>
                         <div><label class="input-label">Apellido</label><input id="subadmin-last-name" class="input-field"></div>
-                        <div><label class="input-label">Colegio</label><input id="subadmin-school" class="input-field" value="LCP" required></div>
+                        <div><label class="input-label">Colegio</label><input id="subadmin-school" class="input-field" placeholder="Etiqueta del colegio" required></div>
                         <div><label class="input-label">Correo de contacto (opcional)</label><input id="subadmin-contact-email" type="email" class="input-field" placeholder="admin@colegio.edu"></div>
                         <div class="md:col-span-2 flex items-center justify-between gap-4">
                             <p id="subadmin-feedback" class="text-xs text-gray-500"></p>
@@ -610,12 +610,12 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-storage-compat.js"></script>
-    <script src="shared.js?v=36"></script>
-    <script src="admin-correos.js?v=4"></script>
-    <script src="admin-rutas-ia.js?v=3"></script>
+    <script src="shared.js?v=37"></script>
+    <script src="admin-correos.js?v=5"></script>
+    <script src="admin-rutas-ia.js?v=4"></script>
     <script src="admin-contactos.js?v=1"></script>
     <script src="admin-migracion.js?v=1"></script>
-    <script src="admin-colegios.js?v=2"></script>
+    <script src="admin-colegios.js?v=3"></script>
     <script src="admin-audio.js?v=12"></script>
     <script src="icfes-data.js?v=3"></script>
     <script src="admin-icfes.js?v=9"></script>
@@ -734,7 +734,7 @@
                     { label:'Egresados', value:users.length, icon:'ph-users-three', color:'text-brand-600 bg-brand-50' },
                     { label:'Activos', value:active, icon:'ph-check-circle', color:'text-green-600 bg-green-50' },
                     { label:'Suspendidos', value:suspended, icon:'ph-prohibit', color:'text-amber-600 bg-amber-50' },
-                    { label:'Con colegio LCP', value:withLcp, icon:'ph-identification-badge', color:'text-blue-600 bg-blue-50' },
+                    { label:'Con colegio por defecto', value:withLcp, icon:'ph-identification-badge', color:'text-blue-600 bg-blue-50' },
                     { label:'Perfiles incompletos', value:incomplete, icon:'ph-warning-circle', color:'text-red-600 bg-red-50' },
                     { label:'Newsletter', value:users.filter(u => u.newsletterOptIn).length, icon:'ph-envelope-simple', color:'text-purple-600 bg-purple-50' }
                 ];
@@ -1225,7 +1225,7 @@
             },
             migrateSchoolLCP: async () => {
                 const btn = document.getElementById('btn-migrate-school');
-                if (!confirm('¿Asignar la etiqueta "LCP" a todos los usuarios actuales? Mientras solo exista un colegio, esta etiqueta quedará como valor estándar.')) return;
+                if (!confirm(`¿Asignar la etiqueta de colegio por defecto ("${DEFAULT_SCHOOL}") a todos los usuarios actuales que no tengan colegio?`)) return;
                 btn.disabled = true;
                 btn.innerHTML = `<i class="ph-bold ph-spinner animate-spin"></i> Migrando...`;
                 try {
