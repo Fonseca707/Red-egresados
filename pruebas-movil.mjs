@@ -58,7 +58,14 @@ const DIR_CAPTURAS = join(process.cwd(), ".capturas-movil");
   más común de Android es 360: seis píxeles menos bastan para que algo que
   "cabía justo" deje de caber.
 */
+/*
+  El 320 no es un capricho: ahí apareció el corte de la cabecera (2026-08-06) y
+  en 360 no se veía. Un Android con «tamaño de pantalla» en grande baja el ancho
+  CSS efectivo por debajo de 360, así que es un aparato real, no un extremo
+  teórico. Empezar por el más estrecho: es donde algo deja de caber primero.
+*/
 const APARATOS = [
+  ["Estrecho 320", 320, 720, 3],
   ["Android 360", 360, 800, 3],
   ["iPhone 390", 390, 844, 3],
   ["iPhone Max 430", 430, 932, 3],
@@ -329,11 +336,29 @@ async function main() {
         const r = await s("Runtime.evaluate", { expression: MEDIR, returnByValue: true });
         const m = JSON.parse(r.result.value);
 
-        // El veredicto mira los DOS bordes: `scrollWidth` es ciego al izquierdo.
-        const cabe = m.desborde <= 1 && !m.seSaleIzquierda;
+        /*
+          EL VEREDICTO SALE DE LOS CULPABLES, NO DE `scrollWidth`.
+
+          Tercera corrección de la vara en el mismo día, y la que más duele:
+          este medidor llegó a imprimir «✅ cabe» en la misma línea en la que
+          listaba un elemento saliéndose 18 px. No era una contradicción: un
+          elemento puede salirse SIN generar scroll cuando su contenedor lo
+          recorta —que es justo lo que hace la cabecera—, y entonces no hay
+          barra que lo delate: en la pantalla solo se ve medio botón cortado.
+
+          `scrollWidth` responde «¿se puede desplazar la página?», que NO es la
+          pregunta. La pregunta es «¿se sale algo?», y eso lo contestan los
+          culpables. `desborde` se sigue informando porque distingue el caso
+          molesto (la página se corre de lado) del mudo (se recorta y calla).
+        */
+        const cabe = m.culpables.length === 0 && m.desborde <= 1;
         if (!cabe) fallos++;
         const partes = [
-          cabe ? "cabe" : m.desborde > 1 ? `SE SALE ${m.desborde} px a la derecha` : "SE CORTA POR LA IZQUIERDA",
+          cabe
+            ? "cabe"
+            : m.desborde > 1
+              ? `SE SALE ${m.desborde} px y la página se corre de lado`
+              : `SE CORTA (${m.culpables.length} elemento(s) fuera, sin barra que lo avise)`,
           m.nToques ? `${m.nToques} toque(s) <32 px` : null,
           m.nTexto ? `${m.nTexto} texto(s) <10.5 px` : null,
           m.camposChicos.length ? `${m.camposChicos.length} campo(s) <16 px (zoom iOS)` : null,
