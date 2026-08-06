@@ -273,6 +273,22 @@ function installThemeStyles() {
             input:not([type=checkbox]):not([type=radio]),
             select:not([hidden]),
             textarea:not([hidden]) { font-size: 16px; }
+
+            /* ── Lo que es SOLO DE ESCRITORIO en la cabecera ──
+               "Crear cuenta" y "Mi perfil" se escribieron con hidden + md:flex
+               —oculto en movil, visible en escritorio—, pero su visibilidad la
+               decide ADEMAS el rol: updateMemberNavVisibility() les quita la
+               clase hidden para revelarlos... y con eso les anula tambien el
+               limite responsive, asi que aparecian en el celular. La cabecera
+               crecia hasta salirse por la derecha y se veia CORTADA, sin barra
+               de scroll que lo delatara porque la nav recorta.
+               Con sesion es peor: "Mi perfil" convive con el avatar.
+               El rol seguira quitando y poniendo hidden; esta regla es de otra
+               clase, asi que el JS no puede pisarla.
+               (OJO: este bloque entero es un template literal. Nada de acentos
+               graves aqui dentro o se corta la cadena y theme.js deja de
+               cargar en las 11 paginas.) */
+            .solo-escritorio { display: none !important; }
         }
     `;
     document.head.appendChild(style);

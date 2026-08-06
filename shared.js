@@ -1897,9 +1897,9 @@ function renderNav(activePage='') {
                 <a href="profile.html" id="profile-menu-trigger" class="solo-miembro hidden h-10 w-10 rounded-full bg-brand-50 overflow-hidden ring-2 ring-transparent hover:ring-brand-300 transition-all shadow-sm" title="Ver perfil">
                     <img src="https://ui-avatars.com/api/?name=Usuario&background=22c55e&color=fff" alt="Perfil" class="object-cover w-full h-full" id="header-avatar">
                 </a>
-                <a href="profile.html" class="solo-miembro hidden md:flex items-center gap-1 text-xs text-gray-500 font-semibold hover:text-brand-600 transition px-2 py-1 rounded-lg hover:bg-brand-50"><span>Mi perfil</span><i class="ph-bold ph-caret-down"></i></a>
+                <a href="profile.html" class="solo-miembro solo-escritorio hidden md:flex items-center gap-1 text-xs text-gray-500 font-semibold hover:text-brand-600 transition px-2 py-1 rounded-lg hover:bg-brand-50"><span>Mi perfil</span><i class="ph-bold ph-caret-down"></i></a>
                 <a href="login.html" id="nav-login" class="solo-invitado hidden inline-flex items-center gap-1 text-xs font-bold text-gray-600 hover:text-brand-700 transition px-3 py-2 rounded-lg border border-gray-200 bg-white hover:bg-brand-50"><i class="ph-bold ph-sign-in"></i><span>Entrar</span></a>
-                <a href="register.html" id="nav-register" class="solo-invitado hidden md:flex items-center gap-1 text-xs font-bold text-white bg-brand-600 hover:bg-brand-700 transition px-3 py-2 rounded-lg shadow-sm"><span>Crear cuenta</span></a>
+                <a href="register.html" id="nav-register" class="solo-invitado solo-escritorio hidden md:flex items-center gap-1 text-xs font-bold text-white bg-brand-600 hover:bg-brand-700 transition px-3 py-2 rounded-lg shadow-sm"><span>Crear cuenta</span></a>
             </div>
         </nav>
         <nav id="mobile-nav" class="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur border-t border-gray-200 grid grid-cols-6">
