@@ -14,3 +14,7 @@ backups/
 # mismo repo (rama diseno-premium, etc.), no codigo nuevo. Subirlas duplicaria
 # el repo dentro de si mismo.
 .claude/
+
+# Capturas del medidor de móvil: material de trabajo, se regeneran con
+# `node pruebas-movil.mjs` (CAPTURAS=1). Lo que se versiona es el medidor.
+.capturas-movil/

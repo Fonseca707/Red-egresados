@@ -355,7 +355,15 @@
         @media (min-width: 1024px) { .hp-ruta-pasos::before { display: block; } }
         html.dark .hp-ruta-pasos::before { background: linear-gradient(to right, #14532d, #22c55e, #14532d); }
 
-        .hp-paso { position: relative; padding-top: 3.2rem; transition: background-color .3s ease; }
+        /* El `padding-left` es el CARRIL de la línea vertical y del nodo. Sin él
+           el contenido empieza en 0 y la línea —que va en left:.53rem— cruza el
+           texto por encima: en un celular se leía «uenta tu ruta», «el colegio
+           a la universidad», con una raya verde partiendo la primera letra de
+           cada párrafo. Solo ocurría por debajo de 1024 px, que es donde esta
+           línea existe (arriba la ruta es horizontal y se oculta), así que en
+           escritorio no se veía y la revisión móvil de julio no lo alcanzó:
+           esta portada es de agosto. Medido y corregido el 2026-08-06. */
+        .hp-paso { position: relative; padding-top: 3.2rem; padding-left: 2rem; transition: background-color .3s ease; }
         /* En móvil la línea baja en vertical de un nodo al siguiente: sin ella
            los pasos quedan como cuatro círculos sueltos, no como una ruta. */
         .hp-paso:not(:last-child)::after { content: ''; position: absolute; left: .53rem; top: 2rem; bottom: -1.5rem; width: 2px;
@@ -374,7 +382,9 @@
                      display: block; line-height: .85; margin-bottom: .9rem; }
         html.dark .hp-paso-n { color: #4ade80; }
         @media (min-width: 1024px) {
-            .hp-paso { text-align: left; }
+            /* Arriba la ruta es horizontal y la línea vertical no existe: el
+               carril del móvil sobra y desalinearía las cuatro columnas. */
+            .hp-paso { text-align: left; padding-left: 0; }
             /* Alterna el CONTENIDO, no el paso: si se desplaza el paso entero
                su nodo baja con él y la línea recta deja de tocarlo, con lo que
                el recorrido se ve partido. El nodo se queda en la línea. */
