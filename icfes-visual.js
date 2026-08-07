@@ -92,7 +92,7 @@ const icfesVisual = {
 
     titulo(v, y = 16) {
         if (!v.titulo) return '';
-        return `<text x="0" y="${y}" font-size="13" font-weight="700" fill="${ICFES_VIZ.tinta}">${this.esc(v.titulo)}</text>`;
+        return `<text x="0" y="${y}" font-size="13" font-weight="600" fill="${ICFES_VIZ.tinta}">${this.esc(v.titulo)}</text>`;
     },
 
     nota(v, alto) {
@@ -131,14 +131,14 @@ const icfesVisual = {
             c.tipo === 'numero' || (c.tipo === undefined && (v.filas || []).every(f => typeof f[i] === 'number')));
 
         const encabezado = cols.map((c, i) => `
-            <th scope="col" class="px-3 py-2.5 text-[11px] font-bold uppercase tracking-wide text-gray-500 whitespace-nowrap ${esNum[i] ? 'text-right' : 'text-left'}">
+            <th scope="col" class="px-3 py-2.5 text-[11px] font-semibold uppercase tracking-wide text-gray-500 whitespace-nowrap ${esNum[i] ? 'text-right' : 'text-left'}">
                 ${this.esc(c.nombre)}${c.unidad ? ` <span class="font-normal normal-case text-gray-400">(${this.esc(c.unidad)})</span>` : ''}
             </th>`).join('');
 
         const cuerpo = (v.filas || []).map((fila, fi) => {
             const destacada = v.destacarFila === fi;
             const celdas = fila.map((celda, ci) => `
-                <${ci === 0 ? 'th scope="row"' : 'td'} class="px-3 py-2.5 text-sm ${esNum[ci] ? 'text-right tabular-nums text-gray-900' : 'text-left text-gray-700'} ${ci === 0 ? 'font-semibold text-gray-900' : ''}">
+                <${ci === 0 ? 'th scope="row"' : 'td'} class="px-3 py-2.5 text-sm ${esNum[ci] ? 'text-right tabular-nums text-gray-900' : 'text-left text-gray-700'} ${ci === 0 ? 'font-medium text-gray-900' : ''}">
                     ${this.esc(typeof celda === 'number' ? this.num(celda, cols[ci]?.decimales ?? null) : celda)}
                 </${ci === 0 ? 'th' : 'td'}>`).join('');
             return `<tr class="border-t border-gray-100 ${destacada ? 'bg-amber-50' : ''}">${celdas}</tr>`;
@@ -146,7 +146,7 @@ const icfesVisual = {
 
         return `
         <figure class="my-4">
-            ${v.titulo ? `<figcaption class="text-sm font-bold text-gray-900 mb-2">${this.esc(v.titulo)}</figcaption>` : ''}
+            ${v.titulo ? `<figcaption class="text-sm font-semibold text-gray-900 mb-2">${this.esc(v.titulo)}</figcaption>` : ''}
             <div class="overflow-x-auto rounded-2xl border border-gray-200">
                 <table class="w-full border-collapse text-left">
                     <thead class="bg-gray-50"><tr>${encabezado}</tr></thead>
@@ -210,7 +210,7 @@ const icfesVisual = {
                 const altoBarra = Math.abs(y(val) - y(0));
                 const etiqueta = altoBarra > 16
                     ? `<text x="${x + anchoBarra / 2}" y="${yTop - 4}" text-anchor="middle" font-size="10"
-                             font-weight="700" fill="${ICFES_VIZ.tintaSuave}"
+                             font-weight="600" fill="${ICFES_VIZ.tintaSuave}"
                              style="font-variant-numeric:tabular-nums">${this.num(val, v.decimales)}</text>`
                     : '';
                 return `<rect x="${x}" y="${yTop}" width="${anchoBarra}" height="${Math.max(altoBarra, 1)}"
@@ -262,7 +262,7 @@ const icfesVisual = {
                 const ancho = Math.max(x(val), 1);
                 return `<rect x="0" y="${yB}" width="${ancho}" height="${altoBarra}"
                               fill="${ICFES_VIZ.series[si % ICFES_VIZ.series.length]}"/>
-                        <text x="${ancho + 6}" y="${yB + altoBarra / 2 + 3.5}" font-size="10.5" font-weight="700"
+                        <text x="${ancho + 6}" y="${yB + altoBarra / 2 + 3.5}" font-size="10.5" font-weight="600"
                               fill="${ICFES_VIZ.tintaSuave}" style="font-variant-numeric:tabular-nums">${this.num(val, v.decimales)}</text>`;
             }).join('');
             return `<text x="0" y="${yFila + 11}" font-size="10.5" fill="${ICFES_VIZ.tintaSuave}">${this.esc(cat)}</text>
@@ -330,7 +330,7 @@ const icfesVisual = {
                 const donde = colocaciones[i][si];
                 const etiqueta = donde
                     ? `<text x="${x(i)}" y="${y(val) + (donde === 'arriba' ? -9 : 15)}" text-anchor="middle"
-                             font-size="9.5" font-weight="700" fill="${ICFES_VIZ.tintaSuave}"
+                             font-size="9.5" font-weight="600" fill="${ICFES_VIZ.tintaSuave}"
                              style="font-variant-numeric:tabular-nums">${this.num(val, v.decimales)}</text>` : '';
                 return `<circle cx="${x(i)}" cy="${y(val)}" r="4.5" fill="${color}"
                                 stroke="${ICFES_VIZ.superficie}" stroke-width="2"/>${etiqueta}`;
@@ -435,7 +435,7 @@ const icfesVisual = {
             // no ponerlo.
             const etiqueta = porcion > 0.08
                 ? `<text x="${cx + R * 0.62 * Math.cos(medio)}" y="${cy + R * 0.62 * Math.sin(medio) + 4}"
-                         text-anchor="middle" font-size="11" font-weight="700" fill="#ffffff"
+                         text-anchor="middle" font-size="11" font-weight="600" fill="#ffffff"
                          style="font-variant-numeric:tabular-nums">${Math.round(porcion * 100)}%</text>` : '';
             return `<path d="M ${cx} ${cy} L ${x0} ${y0} A ${R} ${R} 0 ${largo} 1 ${x1} ${y1} Z"
                           fill="${ICFES_VIZ.series[i % ICFES_VIZ.series.length]}"/>${etiqueta}`;
@@ -445,7 +445,7 @@ const icfesVisual = {
             <g transform="translate(160,${28 + i * 21})">
                 <rect width="11" height="11" fill="${ICFES_VIZ.series[i % ICFES_VIZ.series.length]}"/>
                 <text x="17" y="9.5" font-size="10.5" fill="${ICFES_VIZ.tintaSuave}">${this.esc(d.nombre)}</text>
-                <text x="${ICFES_VIZ.W - 160}" y="9.5" text-anchor="end" font-size="10.5" font-weight="700"
+                <text x="${ICFES_VIZ.W - 160}" y="9.5" text-anchor="end" font-size="10.5" font-weight="600"
                       fill="${ICFES_VIZ.tinta}" style="font-variant-numeric:tabular-nums">${this.num(d.valor, v.decimales)}${v.unidad ? ' ' + this.esc(v.unidad) : ''}</text>
             </g>`).join('');
 

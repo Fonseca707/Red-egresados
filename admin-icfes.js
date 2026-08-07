@@ -492,7 +492,7 @@ Responde SOLO con este JSON, sin markdown ni explicaciones:
                 const cabecera = est ? `
                     <div class="bg-gray-50 border border-gray-200 rounded-2xl p-5 mb-3">
                         <p class="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-1">Texto base · ${items.length} pregunta(s)</p>
-                        <p class="font-bold text-gray-900 mb-2">${this.escapar(est.titulo || '')}</p>
+                        <p class="font-semibold text-gray-900 mb-2">${this.escapar(est.titulo || '')}</p>
                         ${est.texto ? `<p class="text-sm text-gray-700 whitespace-pre-line leading-relaxed">${this.escapar(est.texto)}</p>` : ''}
                         ${est.visual ? icfesVisual.render(est.visual) : ''}
                     </div>` : '';
@@ -527,7 +527,7 @@ Responde SOLO con este JSON, sin markdown ni explicaciones:
         }
 
         const opciones = (p.opciones || []).map((o, i) => `
-            <div class="flex items-start gap-2 ${i === p.clave ? 'text-green-700 font-bold' : 'text-gray-600'}">
+            <div class="flex items-start gap-2 ${i === p.clave ? 'text-green-800 font-medium' : 'text-gray-600'}">
                 <span class="shrink-0">${'ABCD'[i]}.</span>
                 <span class="flex-1">${this.escapar(o)}
                     <span class="block text-xs font-normal text-gray-400 mt-0.5">${this.escapar((p.justificaciones || [])[i] || '')}</span>
@@ -546,7 +546,7 @@ Responde SOLO con este JSON, sin markdown ni explicaciones:
                                     `<option value="${cod}" ${cod === p.evidencia ? 'selected' : ''}>${cod} — ${this.escapar(String(txt).slice(0, 70))}…</option>`).join('')}
                             </select>
                         </div>
-                        <p class="text-sm font-bold text-gray-900">${this.escapar(p.enunciado || '')}</p>
+                        <p class="text-sm font-medium text-gray-900 leading-relaxed">${this.escapar(p.enunciado || '')}</p>
                     </div>
                     <div class="flex gap-2 shrink-0">
                         <button onclick="icfesAdmin.aprobar('${p.id}')" class="px-4 py-2 bg-brand-600 text-white text-xs font-bold rounded-lg hover:bg-brand-700 transition">Aprobar</button>

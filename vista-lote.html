@@ -23,21 +23,24 @@
 function sanitizeHTML(str) { const d = document.createElement('div'); d.textContent = String(str ?? ''); return d.innerHTML; }
 </script>
 <script src="icfes-data.js?v=3"></script>
-<script src="icfes-visual.js?v=1"></script>
+<script src="icfes-visual.js?v=2"></script>
 <script>
 const esc = sanitizeHTML;
 
 function pintarItem(it, lote, n) {
     const af = ICFES_AFIRMACIONES[it.afirmacion || lote.afirmacion];
+    // Igual que el motor: sin caja alrededor de la opción. La letra es lo que
+    // identifica, y su color lo que marca la correcta.
     const opciones = (it.opciones || []).map((o, i) => {
         const correcta = i === it.clave;
         return `
-        <div class="w-full text-left border-2 ${correcta ? 'border-green-500 bg-green-50' : 'border-gray-200'} rounded-2xl px-4 py-3 flex items-start gap-3">
-            <span class="w-7 h-7 rounded-lg ${correcta ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-700'} font-extrabold text-sm flex items-center justify-center shrink-0">${'ABCD'[i]}</span>
+        <div class="w-full text-left rounded-xl px-2 py-2.5 flex items-start gap-3">
+            <span class="w-6 h-6 rounded ${correcta ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-600'} font-semibold text-xs flex items-center justify-center shrink-0 mt-px">${'ABCD'[i]}</span>
             <span class="flex-1 min-w-0">
-                <span class="block text-sm text-gray-900">${esc(o)}</span>
-                <span class="block text-xs text-gray-600 mt-1.5 leading-relaxed">${esc((it.justificaciones || [])[i] || '')}</span>
+                <span class="block text-sm ${correcta ? 'text-green-900' : 'text-gray-900'}">${esc(o)}</span>
+                <span class="block text-xs text-gray-500 mt-1 leading-relaxed">${esc((it.justificaciones || [])[i] || '')}</span>
             </span>
+            ${correcta ? '<i class="ph-bold ph-check-circle text-green-600 text-lg shrink-0"></i>' : ''}
         </div>`;
     }).join('');
 
@@ -46,7 +49,7 @@ function pintarItem(it, lote, n) {
         <p class="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-3">
             Pregunta ${n} · ${esc(ICFES_PRUEBAS[lote.prueba].nombre)} · ${esc(af ? af.corto : '')} · evidencia ${esc(it.evidencia || lote.evidencia)} · ${esc(it.forma || '')}
         </p>
-        <p class="text-base md:text-lg font-bold text-gray-900 ${it.visual ? 'mb-2' : 'mb-5'} whitespace-pre-line">${esc(it.enunciado || '')}</p>
+        <p class="text-base md:text-lg font-medium text-gray-900 ${it.visual ? 'mb-2' : 'mb-5'} whitespace-pre-line leading-relaxed">${esc(it.enunciado || '')}</p>
         ${it.visual ? `<div class="mb-5">${icfesVisual.render(it.visual)}</div>` : ''}
         <div class="space-y-3">${opciones}</div>
     </div>`;
