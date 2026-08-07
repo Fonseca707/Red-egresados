@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Taller visual · material de los ítems Saber 11</title>
+<link rel="stylesheet" href="tailwind.css?v=13">
+<style>body{background:#f9f9f7}</style>
+</head>
+<body class="py-8">
+
+<div class="max-w-3xl mx-auto px-4">
+    <h1 class="text-2xl font-extrabold text-gray-900 mb-1">Taller visual — material de las preguntas</h1>
+    <p class="text-sm text-gray-500 mb-6">Cada bloque es como se vería dentro de una pregunta real. Angosta la ventana a 390 px para ver el celular.</p>
+    <div id="salida" class="space-y-5"></div>
+</div>
+
+<script>
+// El taller no carga shared.js entero (arranca Firebase); solo necesita esto.
+function sanitizeHTML(str) { const d = document.createElement('div'); d.textContent = String(str ?? ''); return d.innerHTML; }
+</script>
+<script src="icfes-visual.js?v=1"></script>
+<script>
+const EJEMPLOS = [
+    ['Tabla — la forma más común en Matemáticas', {
+        tipo: 'tabla',
+        titulo: 'Estudiantes atendidos por la enfermería, por jornada',
+        columnas: [{ nombre: 'Mes' }, { nombre: 'Mañana', tipo: 'numero' }, { nombre: 'Tarde', tipo: 'numero' }, { nombre: 'Total', tipo: 'numero' }],
+        filas: [['Marzo', 48, 31, 79], ['Abril', 52, 44, 96], ['Mayo', 39, 47, 86], ['Junio', 61, 38, 99]],
+        nota: 'Registros de la enfermería del colegio.'
+    }],
+    ['Tabla ancha — debe desplazarse sola, sin mover la página', {
+        tipo: 'tabla',
+        titulo: 'Consumo del comedor por sede',
+        columnas: [{ nombre: 'Sede' }, { nombre: 'Lunes', tipo: 'numero' }, { nombre: 'Martes', tipo: 'numero' }, { nombre: 'Miércoles', tipo: 'numero' }, { nombre: 'Jueves', tipo: 'numero' }, { nombre: 'Viernes', tipo: 'numero' }, { nombre: 'Promedio', tipo: 'numero', decimales: 1 }],
+        filas: [['Norte', 120, 134, 128, 141, 119, 128.4], ['Centro', 98, 101, 95, 110, 88, 98.4], ['Sur', 143, 139, 150, 147, 133, 142.4]],
+        destacarFila: 2
+    }],
+    ['Barras — una sola serie, valores escritos en la marca', {
+        tipo: 'barras',
+        titulo: 'Botellas recogidas por curso',
+        categorias: ['11-A', '11-B', '11-C', '11-D'],
+        valores: [128, 96, 154, 110],
+        ejeX: { titulo: 'Curso' }
+    }],
+    ['Barras agrupadas — dos series, con leyenda', {
+        tipo: 'barras',
+        titulo: 'Inscritos en los talleres',
+        categorias: ['Música', 'Danza', 'Teatro'],
+        series: [{ nombre: '2025', valores: [34, 22, 18] }, { nombre: '2026', valores: [41, 19, 27] }]
+    }],
+    ['Barras horizontales — se voltea sola: etiquetas largas', {
+        tipo: 'barras',
+        titulo: 'Medio de transporte al colegio',
+        categorias: ['Ruta escolar', 'Transporte público', 'Carro particular', 'Bicicleta', 'A pie', 'Motocicleta'],
+        valores: [142, 96, 61, 28, 74, 19],
+        nota: 'Encuesta a los 420 estudiantes de bachillerato.'
+    }],
+    ['Líneas — cambio en el tiempo', {
+        tipo: 'lineas',
+        titulo: 'Litros de agua consumidos por día',
+        categorias: ['Lun', 'Mar', 'Mié', 'Jue', 'Vie'],
+        series: [{ nombre: 'Sede A', valores: [320, 345, 298, 410, 385] }, { nombre: 'Sede B', valores: [280, 265, 310, 295, 340] }]
+    }],
+    ['Dispersión — relación entre dos variables', {
+        tipo: 'dispersion',
+        titulo: 'Horas de estudio y puntaje en el simulacro',
+        puntos: [{ x: 2, y: 42 }, { x: 4, y: 55 }, { x: 5, y: 51 }, { x: 7, y: 68 }, { x: 8, y: 72 }, { x: 10, y: 79 }, { x: 11, y: 74 }, { x: 13, y: 88 }],
+        ejeX: { titulo: 'Horas semanales' },
+        ejeY: { titulo: 'Puntaje' }
+    }],
+    ['Circular — partes de un todo', {
+        tipo: 'circular',
+        titulo: 'Destino de los residuos del colegio',
+        porciones: [{ nombre: 'Aprovechables', valor: 420 }, { nombre: 'Orgánicos', valor: 310 }, { nombre: 'No aprovechables', valor: 180 }, { nombre: 'Peligrosos', valor: 40 }],
+        unidad: 'kg',
+        nota: 'Pesaje de una semana.'
+    }],
+];
+
+document.getElementById('salida').innerHTML = EJEMPLOS.map(([rotulo, v]) => `
+    <section class="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 md:p-8">
+        <p class="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-3">${rotulo}</p>
+        ${icfesVisual.render(v)}
+        <p class="text-xs text-gray-400 mt-3 border-t border-gray-100 pt-3">
+            Validación: ${icfesVisual.validar(v).length ? '<span class="text-red-600 font-bold">' + icfesVisual.validar(v).join(' · ') + '</span>' : '<span class="text-green-600 font-bold">sin fallos</span>'}
+        </p>
+    </section>`).join('');
+</script>
+</body>
+</html>
