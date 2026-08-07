@@ -12,10 +12,11 @@
 const PROXY_ITEMS = 'https://sinapsis-ia.sinapsis-lcp.workers.dev/items';
 
 const icfesAdmin = {
-    propuestas: [],   // pendientes de revisión (leídas de Firestore)
-    estimulos: {},    // textos base de esas pendientes, por id
-    editandoId: null, // tarjeta abierta en modo edición
+    propuestas: [],       // pendientes de revisión (leídas de Firestore)
+    estimulos: {},        // textos base de esas pendientes, por id
+    editandoId: null,     // tarjeta abierta en modo edición
     banco: [],
+    filtroOrigen: 'claude', // la cola arranca mostrando las escritas a mano
 
     // ── El prompt: aquí se juega la fidelidad ───────────────────────────────
     // Se genera contra una EVIDENCIA concreta, no contra una competencia
@@ -165,6 +166,10 @@ Responde SOLO con este JSON, sin markdown ni explicaciones:
         if (contexto.prueba === 'lectura_critica' && !contexto.hayEstimulo) {
             fallos.push('Lectura Crítica sin texto base: toda pregunta debe apoyarse en un texto.');
         }
+        // La tabla o el gráfico del ítem: un material mal formado se ve roto, y
+        // descubrirlo revisando gasta la atención de quien revisa, que es el
+        // recurso escaso del módulo.
+        if (item.visual) fallos.push(...icfesVisual.validar(item.visual));
         return fallos;
     },
 
@@ -184,8 +189,8 @@ Responde SOLO con este JSON, sin markdown ni explicaciones:
             : [];
     },
 
-    // Validación del LOTE, no del ítem: la cuota de forma solo tiene sentido
-    // mirando el conjunto.
+    // Validación del LOTE, no del ítem: hay sesgos que ninguna pregunta suelta
+    // delata y que solo se ven mirando el conjunto.
     validarLote(items, prueba) {
         const avisos = [];
         if (prueba === 'matematicas' && items.length >= 2) {
@@ -193,6 +198,41 @@ Responde SOLO con este JSON, sin markdown ni explicaciones:
             if (veredicto / items.length < ICFES_MIN_VEREDICTO_MAT) {
                 avisos.push(`Solo ${veredicto} de ${items.length} preguntas son de "veredicto + justificación". El examen real pregunta casi siempre así — revisa si estas se parecen de verdad al ICFES.`);
             }
+        }
+
+        // ── Sesgo de posición de la clave ───────────────────────────────────
+        // El más probable cuando UN SOLO autor escribe el banco entero: sin
+        // darse cuenta, tiende a poner la correcta en la misma letra. Un
+        // estudiante que lo note contesta sin leer, y el puntaje deja de medir
+        // lo que dice medir. No se detecta pregunta por pregunta: solo el lote
+        // lo delata.
+        if (items.length >= 8) {
+            const conteo = [0, 0, 0, 0];
+            items.forEach(i => { if (i.clave >= 0 && i.clave <= 3) conteo[i.clave]++; });
+            const esperado = items.length / 4;
+            conteo.forEach((n, i) => {
+                if (n > esperado * 1.6) avisos.push(`La respuesta correcta cae ${n} veces en la ${'ABCD'[i]} de ${items.length} preguntas (lo parejo sería ~${Math.round(esperado)}). Reparte las claves o el examen se vuelve adivinable.`);
+                if (n === 0) avisos.push(`Ninguna respuesta correcta es la ${'ABCD'[i]}. Un estudiante que lo note descarta esa opción sin leerla.`);
+            });
+            // Rachas: cuatro seguidas en la misma letra se nota aunque el
+            // reparto total esté perfecto.
+            let racha = 1;
+            for (let i = 1; i < items.length; i++) {
+                racha = items[i].clave === items[i - 1].clave ? racha + 1 : 1;
+                if (racha >= 4) { avisos.push(`Hay ${racha} preguntas seguidas con la misma letra correcta. Intercálalas.`); break; }
+            }
+        }
+
+        // ── Sesgo socioeconómico y de contexto ──────────────────────────────
+        // Un ítem ambientado en algo que solo vive parte de la población mide
+        // familiaridad, no competencia: el que nunca ha viajado en avión gasta
+        // su atención en entender el escenario. Es la *fairness review* que el
+        // ICFES hace con panel humano y aquí no existe; esto no la reemplaza,
+        // pero atrapa lo más burdo antes de la cola.
+        const EXCLUYENTE = /(tarjeta de cr[ée]dito|acciones en (la )?bolsa|club social|viaj[ea] (en avi[óo]n|a (europa|miami|estados unidos))|empleada dom[ée]stica|conductor privado|apartaestudio en el norte|colegio biling[üu]e|casa de campo|finca de recreo)/i;
+        const conSesgo = items.filter(i => EXCLUYENTE.test(String(i.enunciado || '')));
+        if (conSesgo.length) {
+            avisos.push(`${conSesgo.length} pregunta(s) usan un contexto que no toda la población conoce (tarjetas de crédito, viajes al exterior, servicio doméstico). Eso mide familiaridad, no matemáticas: cámbialo por una situación que le pase a cualquiera.`);
         }
         return avisos;
     },
@@ -252,7 +292,77 @@ Responde SOLO con este JSON, sin markdown ni explicaciones:
     // perdía y no se podía generar hoy para revisar mañana. Ahora nacen
     // guardadas con `revisado: false`, que es exactamente lo que el motor exige
     // para NO servírselas a un estudiante. La cola es la lista de pendientes.
-    async guardarPendientes(items, estimulo, prueba, tipoTexto) {
+    // ── Importar un lote escrito a mano ─────────────────────────────────────
+    // Las preguntas que escribe Claude no pueden entrar por el generador: el
+    // proxy solo habla con DeepSeek. Y escribirlas directo en Firestore desde
+    // fuera exigiría una llave de servidor que este repo no tiene (ni debe
+    // tener). Así que entran por aquí, pegadas como JSON, y pasan EXACTAMENTE
+    // por el mismo camino que lo generado: mismas validaciones, misma cola,
+    // mismo `revisado: false`. El gate humano no se salta por ser mías.
+    async importarLote() {
+        const caja = document.getElementById('icfes-import-json');
+        const boton = document.getElementById('icfes-btn-importar');
+        const crudo = String(caja?.value || '').trim();
+        if (!crudo) { this.aviso('Pega primero el JSON del lote.', 'error'); return; }
+
+        let paquete;
+        try {
+            paquete = JSON.parse(crudo);
+        } catch (e) {
+            this.aviso('El JSON no se pudo leer: ' + e.message, 'error');
+            return;
+        }
+        const lotes = Array.isArray(paquete) ? paquete : (paquete.lotes || [paquete]);
+        if (!lotes.length) { this.aviso('El JSON no trae ningún lote.', 'error'); return; }
+
+        boton.disabled = true; boton.textContent = 'Importando…';
+        let total = 0, limpias = 0;
+        const avisos = [];
+        try {
+            for (const [n, lote] of lotes.entries()) {
+                const faltan = ['prueba', 'afirmacion', 'evidencia'].filter(k => !lote[k]);
+                if (faltan.length) { avisos.push(`Lote ${n + 1}: le falta ${faltan.join(', ')}.`); continue; }
+                if (!Array.isArray(lote.items) || !lote.items.length) { avisos.push(`Lote ${n + 1}: sin preguntas.`); continue; }
+
+                const items = lote.items.map(it => ({
+                    ...it,
+                    prueba: lote.prueba,
+                    // Un mismo texto alimenta preguntas de afirmaciones distintas,
+                    // igual que en el examen real ("responda las preguntas 1 a 3
+                    // según el siguiente texto"). Por eso la pregunta puede traer
+                    // la suya y solo hereda la del lote si no la trae.
+                    afirmacion: it.afirmacion || lote.afirmacion,
+                    evidencia: it.evidencia || lote.evidencia,
+                    dificultad: it.dificultad || lote.dificultad || 2,
+                    tipoTexto: lote.prueba === 'lectura_critica' ? (lote.tipoTexto || '') : '',
+                    categoria: lote.prueba === 'matematicas' ? (lote.categoria || '') : '',
+                    contexto: lote.prueba === 'matematicas' ? (lote.contexto || '') : '',
+                    generico: lote.prueba === 'matematicas' ? (lote.generico ?? null) : null,
+                }));
+
+                const guardados = await this.guardarPendientes(items, lote.estimulo || null, lote.prueba, lote.tipoTexto || '', 'claude');
+                total += guardados.length;
+                limpias += guardados.filter(p => !p._fallos.length).length;
+                avisos.push(...this.validarLote(items, lote.prueba).map(a => `Lote ${n + 1}: ${a}`));
+            }
+
+            // El sesgo de posición de la clave se mide sobre TODO lo importado,
+            // no lote por lote: repartir bien dentro de cada lote de 3 y mal en
+            // el conjunto es exactamente el error que hay que ver.
+            const todas = lotes.flatMap(l => (Array.isArray(l.items) ? l.items : []));
+            avisos.push(...this.validarLote(todas, '_global').map(a => `En el conjunto — ${a}`));
+
+            this.aviso(`${total} preguntas importadas · ${limpias} pasaron limpias las validaciones. Están en la cola con revisado:false — ninguna llega a un estudiante hasta que la apruebes.${avisos.length ? ' ⚠️ ' + avisos.join(' ') : ''}`, avisos.length ? 'info' : 'ok');
+            if (caja) caja.value = '';
+            await this.cargarPendientes();
+        } catch (e) {
+            this.aviso(`Se cortó la importación: ${e.message}. Lo que alcanzó a entrar ya está en la cola.`, 'error');
+        } finally {
+            boton.disabled = false; boton.textContent = 'Importar lote';
+        }
+    },
+
+    async guardarPendientes(items, estimulo, prueba, tipoTexto, origen = 'ia') {
         let estimuloId = null;
         let avisoTexto = [];
         // El texto se guarda UNA vez por lote: en Lectura Crítica un mismo texto
@@ -266,6 +376,10 @@ Responde SOLO con este JSON, sin markdown ni explicaciones:
                 // a mitad: se corta ahí, porque un texto duplicado vuelve
                 // incontestables las preguntas que hablan de "el último párrafo".
                 texto: this.limpiarTexto(estimulo.texto || '', estimulo.titulo || ''),
+                // Tabla o gráfico del texto base. Los discontinuos del ICFES
+                // (infografía, tabla, diagrama) son el 8% oficial y antes había
+                // que describirlos en palabras porque no había cómo dibujarlos.
+                visual: estimulo.visual || null,
                 // La fuente NO se toma del modelo: firmó un texto inventado como
                 // "Manual de la Alcaldía de Bogotá, 2023". Un texto de práctica no
                 // puede presentarse como documento de una entidad real.
@@ -287,10 +401,11 @@ Responde SOLO con este JSON, sin markdown ni explicaciones:
                 tipoTexto: it.tipoTexto || '', categoria: it.categoria || '',
                 contexto: it.contexto || '', generico: it.generico ?? null,
                 forma: it.forma || '', estimuloId,
+                visual: it.visual || null,   // tabla o gráfico propio del ítem
                 enunciado: it.enunciado || '', opciones: it.opciones || [],
                 clave: Number(it.clave) || 0, justificaciones: it.justificaciones || [],
                 dificultad: it.dificultad || 2,
-                origen: 'ia',
+                origen,                   // 'ia' = DeepSeek · 'claude' = escritas a mano
                 revisado: false,          // ← el gate: sin aprobación humana no se sirve
                 validaciones: fallos,     // se guardan para que la cola las muestre
                 school: '', active: true,
@@ -342,23 +457,44 @@ Responde SOLO con este JSON, sin markdown ni explicaciones:
             return;
         }
 
+        // La cola mezcla dos bancos de procedencia distinta y revisarlos juntos
+        // confunde. El filtro NO borra nada: las de DeepSeek siguen ahí, sin
+        // publicar, y el contador dice cuántas se están ocultando para que no
+        // parezca que se perdieron.
+        const visibles = this.filtroOrigen && this.filtroOrigen !== 'todas'
+            ? this.propuestas.filter(p => (p.origen || 'ia') === this.filtroOrigen)
+            : this.propuestas;
+        const ocultas = this.propuestas.length - visibles.length;
+
         // Agrupadas por texto base: revisar seguidas las preguntas de un mismo
         // texto es mucho más rápido que saltar de un texto a otro.
         const grupos = {};
-        this.propuestas.forEach(p => { (grupos[p.estimuloId || '_sin'] = grupos[p.estimuloId || '_sin'] || []).push(p); });
+        visibles.forEach(p => { (grupos[p.estimuloId || '_sin'] = grupos[p.estimuloId || '_sin'] || []).push(p); });
 
         caja.innerHTML = `
             <div class="flex items-center justify-between gap-3 mb-3 flex-wrap">
-                <p class="text-sm font-bold text-gray-900">${this.propuestas.length} preguntas esperando tu revisión</p>
-                <button onclick="icfesAdmin.cargarPendientes()" class="text-xs font-bold text-brand-600 hover:underline">Actualizar</button>
-            </div>` +
+                <p class="text-sm font-bold text-gray-900">
+                    ${visibles.length} preguntas esperando tu revisión
+                    ${ocultas ? `<span class="font-normal text-gray-400">· ${ocultas} ocultas por el filtro</span>` : ''}
+                </p>
+                <div class="flex items-center gap-3">
+                    <select onchange="icfesAdmin.filtrarPorOrigen(this.value)" class="text-xs border border-gray-200 rounded-lg px-2 py-1 bg-white">
+                        <option value="claude" ${this.filtroOrigen === 'claude' ? 'selected' : ''}>Escritas a mano</option>
+                        <option value="ia" ${this.filtroOrigen === 'ia' ? 'selected' : ''}>Generadas con DeepSeek</option>
+                        <option value="todas" ${this.filtroOrigen === 'todas' ? 'selected' : ''}>Todas</option>
+                    </select>
+                    <button onclick="icfesAdmin.cargarPendientes()" class="text-xs font-bold text-brand-600 hover:underline">Actualizar</button>
+                </div>
+            </div>
+            ${!visibles.length ? '<p class="text-sm text-gray-500 mb-4">Ninguna pregunta de esa procedencia. Cambia el filtro para ver el resto.</p>' : ''}` +
             Object.entries(grupos).map(([eid, items]) => {
                 const est = this.estimulos && this.estimulos[eid];
                 const cabecera = est ? `
                     <div class="bg-gray-50 border border-gray-200 rounded-2xl p-5 mb-3">
                         <p class="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-1">Texto base · ${items.length} pregunta(s)</p>
-                        <p class="font-bold text-gray-900 mb-2">${this.escapar(est.titulo || '')}</p>
-                        <p class="text-sm text-gray-700 whitespace-pre-line leading-relaxed">${this.escapar(est.texto || '')}</p>
+                        <p class="font-semibold text-gray-900 mb-2">${this.escapar(est.titulo || '')}</p>
+                        ${est.texto ? `<p class="text-sm text-gray-700 whitespace-pre-line leading-relaxed">${this.escapar(est.texto)}</p>` : ''}
+                        ${est.visual ? icfesVisual.render(est.visual) : ''}
                     </div>` : '';
                 return cabecera + items.map(p => this.tarjeta(p)).join('');
             }).join('');
@@ -391,7 +527,7 @@ Responde SOLO con este JSON, sin markdown ni explicaciones:
         }
 
         const opciones = (p.opciones || []).map((o, i) => `
-            <div class="flex items-start gap-2 ${i === p.clave ? 'text-green-700 font-bold' : 'text-gray-600'}">
+            <div class="flex items-start gap-2 ${i === p.clave ? 'text-green-800 font-medium' : 'text-gray-600'}">
                 <span class="shrink-0">${'ABCD'[i]}.</span>
                 <span class="flex-1">${this.escapar(o)}
                     <span class="block text-xs font-normal text-gray-400 mt-0.5">${this.escapar((p.justificaciones || [])[i] || '')}</span>
@@ -410,7 +546,7 @@ Responde SOLO con este JSON, sin markdown ni explicaciones:
                                     `<option value="${cod}" ${cod === p.evidencia ? 'selected' : ''}>${cod} — ${this.escapar(String(txt).slice(0, 70))}…</option>`).join('')}
                             </select>
                         </div>
-                        <p class="text-sm font-bold text-gray-900">${this.escapar(p.enunciado || '')}</p>
+                        <p class="text-sm font-medium text-gray-900 leading-relaxed">${this.escapar(p.enunciado || '')}</p>
                     </div>
                     <div class="flex gap-2 shrink-0">
                         <button onclick="icfesAdmin.aprobar('${p.id}')" class="px-4 py-2 bg-brand-600 text-white text-xs font-bold rounded-lg hover:bg-brand-700 transition">Aprobar</button>
@@ -418,6 +554,7 @@ Responde SOLO con este JSON, sin markdown ni explicaciones:
                         <button onclick="icfesAdmin.descartar('${p.id}')" class="px-3 py-2 bg-gray-100 text-gray-600 text-xs font-bold rounded-lg hover:bg-gray-200 transition">Descartar</button>
                     </div>
                 </div>
+                ${p.visual ? icfesVisual.render(p.visual) : ''}
                 <div class="space-y-2 text-sm">${opciones}</div>
                 ${fallos.length ? `
                 <div class="mt-3 pt-3 border-t border-red-200">
@@ -441,6 +578,8 @@ Responde SOLO con este JSON, sin markdown ni explicaciones:
             this.aviso('Evidencia actualizada a ' + evidencia + '.', 'ok');
         } catch (e) { this.aviso('No se pudo reetiquetar: ' + e.message, 'error'); }
     },
+
+    filtrarPorOrigen(valor) { this.filtroOrigen = valor; this.pintarPropuestas(); },
 
     editar(id) { this.editandoId = id; this.pintarPropuestas(); },
     cancelarEdicion() { this.editandoId = null; this.pintarPropuestas(); },

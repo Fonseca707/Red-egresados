@@ -191,23 +191,34 @@ const icfesLogic = {
         const anterior = s.indice > 0 ? s.items[s.indice - 1] : null;
         const mismoTexto = anterior && anterior.estimuloId && anterior.estimuloId === item.estimuloId;
 
+        // Las opciones no van encerradas en una caja: sin borde ni fondo. Lo que
+        // dice cuál es cuál es la letra, y después de responder, el color de esa
+        // letra y su icono. Una rejilla de cuatro recuadros compite con el
+        // enunciado y con la tabla de la pregunta, que es lo que hay que leer.
         const opciones = (item.opciones || []).map((op, i) => {
             const letra = 'ABCD'[i];
-            let clases = 'border-gray-200 hover:border-amber-400 hover:bg-amber-50/40';
+            let ancla = 'bg-gray-100 text-gray-600';
+            let texto = 'text-gray-900';
             let marca = '';
             if (yaRespondida) {
-                if (i === item.clave) { clases = 'border-green-500 bg-green-50'; marca = '<i class="ph-bold ph-check-circle text-green-600 text-xl shrink-0"></i>'; }
-                else if (i === yaRespondida.elegida) { clases = 'border-red-400 bg-red-50'; marca = '<i class="ph-bold ph-x-circle text-red-500 text-xl shrink-0"></i>'; }
-                else clases = 'border-gray-200 opacity-60';
+                if (i === item.clave) {
+                    ancla = 'bg-green-600 text-white'; texto = 'text-green-900';
+                    marca = '<i class="ph-bold ph-check-circle text-green-600 text-lg shrink-0"></i>';
+                } else if (i === yaRespondida.elegida) {
+                    ancla = 'bg-red-500 text-white'; texto = 'text-red-900';
+                    marca = '<i class="ph-bold ph-x-circle text-red-500 text-lg shrink-0"></i>';
+                } else {
+                    ancla = 'bg-gray-100 text-gray-400'; texto = 'text-gray-400';
+                }
             }
             const justificacion = yaRespondida && item.justificaciones?.[i]
-                ? `<p class="text-xs text-gray-600 mt-1.5 leading-relaxed">${sanitizeHTML(item.justificaciones[i])}</p>` : '';
+                ? `<span class="block text-xs text-gray-500 mt-1 leading-relaxed">${sanitizeHTML(item.justificaciones[i])}</span>` : '';
             return `
                 <button ${yaRespondida ? 'disabled' : ''} onclick="icfesLogic.responder(${i})"
-                        class="w-full text-left border-2 ${clases} rounded-2xl px-4 py-3 transition flex items-start gap-3 ${yaRespondida ? 'cursor-default' : ''}">
-                    <span class="w-7 h-7 rounded-lg bg-gray-100 text-gray-700 font-extrabold text-sm flex items-center justify-center shrink-0">${letra}</span>
+                        class="w-full text-left rounded-xl px-2 py-2.5 transition flex items-start gap-3 ${yaRespondida ? 'cursor-default' : 'hover:bg-gray-50'}">
+                    <span class="w-6 h-6 rounded ${ancla} font-semibold text-xs flex items-center justify-center shrink-0 mt-px transition-colors">${letra}</span>
                     <span class="flex-1 min-w-0">
-                        <span class="block text-sm text-gray-900">${sanitizeHTML(op)}</span>
+                        <span class="block text-sm ${texto}">${sanitizeHTML(op)}</span>
                         ${justificacion}
                     </span>
                     ${marca}
@@ -222,12 +233,14 @@ const icfesLogic = {
                     ${mismoTexto ? 'El mismo texto de la pregunta anterior' : 'Lee el siguiente texto'}
                 </p>
                 ${estimulo.titulo ? `<h3 class="text-lg font-extrabold text-gray-900 mb-2">${sanitizeHTML(estimulo.titulo)}</h3>` : ''}
-                <div class="prose prose-sm max-w-none text-gray-700 whitespace-pre-line leading-relaxed">${sanitizeHTML(estimulo.texto || '')}</div>
+                ${estimulo.texto ? `<div class="prose prose-sm max-w-none text-gray-700 whitespace-pre-line leading-relaxed">${sanitizeHTML(estimulo.texto)}</div>` : ''}
+                ${estimulo.visual ? icfesVisual.render(estimulo.visual) : ''}
                 ${estimulo.fuente ? `<p class="text-xs text-gray-400 mt-3 italic">${sanitizeHTML(estimulo.fuente)}</p>` : ''}
             </div>` : ''}
 
             <div class="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 md:p-8">
-                <p class="text-base md:text-lg font-bold text-gray-900 mb-5 whitespace-pre-line">${sanitizeHTML(item.enunciado || '')}</p>
+                <p class="text-base md:text-lg font-medium text-gray-900 ${item.visual ? 'mb-2' : 'mb-5'} whitespace-pre-line leading-relaxed">${sanitizeHTML(item.enunciado || '')}</p>
+                ${item.visual ? `<div class="mb-5">${icfesVisual.render(item.visual)}</div>` : ''}
                 <div class="space-y-3">${opciones}</div>
 
                 ${yaRespondida ? `

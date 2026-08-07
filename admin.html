@@ -593,6 +593,24 @@
                         </div>
                     </div>
                     <div id="icfes-aviso" class="hidden mt-4"></div>
+
+                    <details class="mt-6 border-t border-gray-100 pt-5">
+                        <summary class="text-sm font-bold text-gray-700 cursor-pointer select-none">
+                            Importar un lote escrito a mano
+                        </summary>
+                        <p class="text-xs text-gray-500 mt-2 mb-3">
+                            Para las preguntas que no salen del generador. Entran por el mismo camino:
+                            se validan igual y quedan en la cola con <strong>revisado: false</strong>, así que
+                            ninguna llega a un estudiante sin que la apruebes aquí.
+                        </p>
+                        <textarea id="icfes-import-json" class="input-field text-xs font-mono" rows="6"
+                                  placeholder='{"lotes":[{"prueba":"matematicas","afirmacion":"mat_argumentacion","evidencia":"...","contexto":"familiar","items":[…]}]}'></textarea>
+                        <div class="flex justify-end mt-3">
+                            <button id="icfes-btn-importar" onclick="icfesAdmin.importarLote()"
+                                    class="px-5 py-2.5 bg-gray-900 text-white text-xs font-bold rounded-lg hover:bg-gray-800 transition">Importar lote</button>
+                        </div>
+                    </details>
+
                     <div id="icfes-propuestas" class="mt-6"></div>
                 </div>
 
@@ -632,7 +650,8 @@
     <script src="admin-colegios.js?v=3"></script>
     <script src="admin-audio.js?v=12"></script>
     <script src="icfes-data.js?v=3"></script>
-    <script src="admin-icfes.js?v=9"></script>
+    <script src="icfes-visual.js?v=2"></script>
+    <script src="admin-icfes.js?v=11"></script>
     <script>
         renderNav('admin');
 

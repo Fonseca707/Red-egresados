@@ -1,0 +1,273 @@
+{
+  "_nota": "Lote piloto escrito a mano (Claude), 2026-08-07. Se importa desde Admin > Saber 11 > Importar un lote escrito a mano. Nace con revisado:false: nada llega a un estudiante sin aprobación.",
+  "lotes": [
+    {
+      "prueba": "matematicas",
+      "afirmacion": "mat_argumentacion",
+      "evidencia": "a.1",
+      "categoria": "estadistica",
+      "contexto": "comunitario",
+      "generico": true,
+      "dificultad": 2,
+      "items": [
+        {
+          "forma": "veredicto_justificacion",
+          "enunciado": "La junta del acueducto veredal registró el consumo de agua de sus cuatro sectores durante dos meses. En la reunión, el tesorero afirma que el consumo total del acueducto aumentó de marzo a abril.\n\n¿Es correcta la afirmación del tesorero?",
+          "visual": {
+            "tipo": "tabla",
+            "titulo": "Consumo por sector (metros cúbicos)",
+            "columnas": [
+              { "nombre": "Sector" },
+              { "nombre": "Marzo", "tipo": "numero" },
+              { "nombre": "Abril", "tipo": "numero" }
+            ],
+            "filas": [
+              ["El Roble", 480, 505],
+              ["La Palma", 610, 590],
+              ["San Isidro", 375, 430],
+              ["Bella Vista", 520, 495]
+            ]
+          },
+          "opciones": [
+            "Sí, porque el total pasó de 1.985 a 2.020 metros cúbicos.",
+            "Sí, porque el consumo subió en tres de los cuatro sectores.",
+            "No, porque hubo dos sectores que redujeron su consumo.",
+            "No, porque La Palma, que es el que más gasta, consumió menos."
+          ],
+          "clave": 0,
+          "justificaciones": [
+            "Correcta. Sumar cada columna es lo que responde la pregunta: marzo da 1.985 y abril 2.020, así que el total sí subió.",
+            "El dato está mal contado: subieron dos sectores (El Roble y San Isidro) y bajaron los otros dos. Además, contar sectores no responde por el total.",
+            "Es cierto que dos sectores bajaron, pero eso no decide el total: lo que subieron los otros dos fue mayor que lo que estos bajaron.",
+            "La Palma sí bajó, y es el sector de mayor consumo, pero fijarse en un solo sector no permite concluir sobre la suma de los cuatro."
+          ],
+          "dificultad": 2
+        },
+        {
+          "forma": "veredicto_justificacion",
+          "afirmacion": "mat_argumentacion",
+          "evidencia": "a.2",
+          "enunciado": "Un colegio quiere reportar el promedio de la prueba de lectura de los dos cursos de noveno tomados como un solo grupo. La coordinadora dice que el promedio conjunto es 4,0, porque es el punto medio entre 3,8 y 4,2.\n\n¿Es correcto ese procedimiento?",
+          "visual": {
+            "tipo": "tabla",
+            "titulo": "Resultados por curso",
+            "columnas": [
+              { "nombre": "Curso" },
+              { "nombre": "Estudiantes", "tipo": "numero" },
+              { "nombre": "Promedio", "tipo": "numero", "decimales": 1 }
+            ],
+            "filas": [
+              ["9-A", 30, 3.8],
+              ["9-B", 20, 4.2]
+            ]
+          },
+          "opciones": [
+            "Sí, porque los dos promedios están igual de lejos de 4,0.",
+            "Sí, porque el promedio de un grupo siempre queda entre los dos promedios.",
+            "No, porque para calcularlo habría que conocer la nota de cada estudiante.",
+            "No, porque 9-A tiene más estudiantes y pesa más: el promedio conjunto es 3,96."
+          ],
+          "clave": 3,
+          "justificaciones": [
+            "Están igual de lejos, pero eso solo bastaría si los dos cursos tuvieran el mismo número de estudiantes, y no lo tienen.",
+            "Queda entre los dos, y 4,0 lo cumple; pero eso no alcanza para señalar cuál es: entre 3,8 y 4,2 hay infinitos valores.",
+            "No hace falta: con el promedio y el número de estudiantes de cada curso se reconstruye la suma total (114 y 84) y con eso basta.",
+            "Correcta. Cada promedio pesa según cuántos estudiantes representa: (30·3,8 + 20·4,2) ÷ 50 = 3,96, no 4,0."
+          ],
+          "dificultad": 3
+        }
+      ]
+    },
+    {
+      "prueba": "matematicas",
+      "afirmacion": "mat_interpretacion",
+      "evidencia": "i.1",
+      "categoria": "estadistica",
+      "contexto": "familiar",
+      "generico": true,
+      "dificultad": 2,
+      "items": [
+        {
+          "forma": "interpretacion_dato",
+          "enunciado": "La gráfica muestra en qué gastó una familia el mes pasado.\n\n¿Qué porcentaje del gasto total se fue en transporte?",
+          "visual": {
+            "tipo": "barras",
+            "titulo": "Gasto del mes (miles de pesos)",
+            "categorias": ["Mercado", "Servicios", "Transporte", "Salud"],
+            "valores": [640, 280, 200, 80]
+          },
+          "opciones": [
+            "20 %",
+            "17 %",
+            "23 %",
+            "31 %"
+          ],
+          "clave": 1,
+          "justificaciones": [
+            "Sale de dividir 200 entre 1.000, que es el gasto sin contar el transporte. El total tiene que incluirlo todo.",
+            "Correcta. El gasto total es 640 + 280 + 200 + 80 = 1.200, y 200 ÷ 1.200 ≈ 0,17, es decir 17 %.",
+            "Ese es el porcentaje de servicios (280 ÷ 1.200), no el de transporte.",
+            "Sale de comparar el transporte con el mercado (200 ÷ 640) y no con el gasto total."
+          ],
+          "dificultad": 2
+        }
+      ]
+    },
+    {
+      "prueba": "matematicas",
+      "afirmacion": "mat_formulacion",
+      "evidencia": "f.1",
+      "categoria": "estadistica",
+      "contexto": "laboral",
+      "generico": true,
+      "dificultad": 3,
+      "items": [
+        {
+          "forma": "veredicto_justificacion",
+          "enunciado": "El dueño de una panadería lleva el registro de panes vendidos durante la semana. Al cerrar el sábado comenta: «el fin de semana vendemos más que todos los otros días juntos».\n\n¿Es correcta esa afirmación?",
+          "visual": {
+            "tipo": "lineas",
+            "titulo": "Panes vendidos por día",
+            "categorias": ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"],
+            "valores": [180, 165, 190, 210, 260, 320]
+          },
+          "opciones": [
+            "Sí, porque el sábado se vendió más que cualquier otro día.",
+            "Sí, porque viernes y sábado suman 580 panes.",
+            "No, porque de lunes a jueves se vendieron 745 panes, más que los 580 del fin de semana.",
+            "No, porque el promedio diario de la semana es de 221 panes."
+          ],
+          "clave": 2,
+          "justificaciones": [
+            "El sábado sí fue el mejor día, pero que un día sea el mayor no dice nada sobre la suma de dos días frente a la de cuatro.",
+            "La suma está bien calculada, pero queda a medias: falta compararla con los otros cuatro días, que es lo que la afirmación sostiene.",
+            "Correcta. 180 + 165 + 190 + 210 = 745, mayor que 260 + 320 = 580, así que el fin de semana no supera al resto.",
+            "El promedio está bien calculado, pero no sirve para esta comparación: un promedio no distingue entre los días que se están comparando."
+          ],
+          "dificultad": 3
+        }
+      ]
+    },
+    {
+      "prueba": "lectura_critica",
+      "afirmacion": "lc_global",
+      "evidencia": "2.3",
+      "tipoTexto": "info_no_filosofico",
+      "dificultad": 2,
+      "estimulo": {
+        "titulo": "El derecho a no oír",
+        "texto": "Nos hemos acostumbrado a hablar de la contaminación como si solo entrara por los pulmones. Pensamos en el humo, en el río turbio, en la bolsa que flota. Pocas veces pensamos en el ruido, quizá porque no deja mancha ni se puede fotografiar.\n\nY sin embargo el ruido de una ciudad trabaja sin descanso sobre quienes la habitan. No hace falta un estruendo: basta el zumbido continuo del tráfico bajo la ventana, la alarma que nadie apaga, el altavoz que anuncia ofertas a media cuadra. Quien vive junto a una avenida duerme peor, y quien duerme peor rinde menos al día siguiente. El daño no aparece de golpe; se acumula.\n\nLo curioso es que exigimos silencio en lugares muy concretos —una biblioteca, un hospital, un teatro— y lo damos por perdido en todos los demás. Como si el silencio fuera un lujo de ciertos edificios y no una condición para vivir.\n\nHay quien responde que el ruido es el precio del progreso, que una ciudad viva suena. Es un argumento cómodo, porque quien lo formula rara vez vive sobre la avenida. El ruido no se reparte igual: se concentra en los barrios más densos y en las viviendas más baratas, que suelen ser las que menos pueden aislarse de él.\n\nQuizá el primer paso sea el más simple: dejar de tratar el ruido como un fastidio personal y empezar a tratarlo como lo que es, una condición del lugar donde vivimos, y que por lo tanto se puede decidir."
+      },
+      "items": [
+        {
+          "forma": "interpretacion_dato",
+          "afirmacion": "lc_global",
+          "evidencia": "2.3",
+          "enunciado": "¿Qué relación hay entre el tercer párrafo (el de la biblioteca y el hospital) y la idea que el texto viene defendiendo?",
+          "opciones": [
+            "Lo contradice, porque admite que en algunos lugares el silencio sí se respeta.",
+            "Señala una incoherencia: se exige silencio en unos sitios y se renuncia a él en todos los demás.",
+            "Cambia de tema para hablar del funcionamiento de las bibliotecas y los hospitales.",
+            "Resume lo dicho antes sobre los efectos del ruido en el descanso."
+          ],
+          "clave": 1,
+          "justificaciones": [
+            "Que el silencio se respete en ciertos sitios no debilita el argumento: el texto lo usa precisamente para mostrar lo arbitrario de la excepción.",
+            "Correcta. El párrafo contrasta dónde sí se exige silencio con dónde se da por perdido, y de ahí sale la crítica que el texto sostiene.",
+            "Esos lugares aparecen solo como ejemplos; en ningún momento el texto se ocupa de cómo funcionan.",
+            "No resume nada: los efectos sobre el descanso se explican en el párrafo anterior y este introduce una idea distinta."
+          ],
+          "dificultad": 2
+        },
+        {
+          "forma": "interpretacion_dato",
+          "afirmacion": "lc_evaluar",
+          "evidencia": "3.1",
+          "enunciado": "En el cuarto párrafo, el autor responde a quienes dicen que el ruido es «el precio del progreso». ¿Cuál es la fuerza de esa respuesta?",
+          "opciones": [
+            "Muestra que ese argumento suele venir de quien no sufre las consecuencias, y que el ruido recae sobre los que menos pueden evitarlo.",
+            "Demuestra con cifras que las ciudades ruidosas progresan menos que las silenciosas.",
+            "Acepta el argumento y propone que el progreso se detenga.",
+            "Sostiene que ninguna ciudad viva tiene por qué hacer ruido."
+          ],
+          "clave": 0,
+          "justificaciones": [
+            "Correcta. El autor no niega el progreso: desplaza la discusión a quién paga el ruido, y muestra que no se reparte parejo.",
+            "El texto no da ninguna cifra ni compara ciudades; su argumento es sobre cómo se distribuye el ruido, no sobre cuánto progresa cada ciudad.",
+            "En ningún momento propone detener el progreso; lo que discute es que el ruido sea su precio inevitable.",
+            "El texto admite que una ciudad viva suena. Lo que rechaza es la conclusión que se saca de ahí."
+          ],
+          "dificultad": 3
+        },
+        {
+          "forma": "interpretacion_dato",
+          "afirmacion": "lc_local",
+          "evidencia": "1.1",
+          "enunciado": "En la primera línea del texto, ¿qué quiere decir que la contaminación «solo entrara por los pulmones»?",
+          "opciones": [
+            "Que las enfermedades respiratorias son la principal causa de muerte en las ciudades.",
+            "Que el aire de las ciudades está más contaminado que su suelo o su agua.",
+            "Que solemos reconocer la contaminación únicamente cuando se respira o se ve.",
+            "Que el ruido también daña los pulmones, aunque no lo parezca."
+          ],
+          "clave": 2,
+          "justificaciones": [
+            "El texto no habla de causas de muerte ni de enfermedades concretas en ningún momento.",
+            "No compara aire, suelo y agua: la frase es sobre cómo reconocemos la contaminación, no sobre dónde hay más.",
+            "Correcta. La expresión resume la idea que el párrafo desarrolla enseguida: pensamos en el humo, en el río, en la bolsa, y no en lo que no deja mancha.",
+            "El texto sostiene lo contrario de que el ruido entre por los pulmones: su punto es que daña sin ser una de esas formas visibles."
+          ],
+          "dificultad": 2
+        }
+      ]
+    },
+    {
+      "prueba": "lectura_critica",
+      "afirmacion": "lc_global",
+      "evidencia": "2.5",
+      "tipoTexto": "info_discontinuo",
+      "dificultad": 3,
+      "estimulo": {
+        "titulo": "Cuadro de turnos del puesto de salud",
+        "texto": "El puesto de salud de un municipio publica en su entrada el cuadro de atención de la semana.",
+        "visual": {
+          "tipo": "tabla",
+          "titulo": "Atención por servicio",
+          "columnas": [
+            { "nombre": "Servicio" },
+            { "nombre": "Días" },
+            { "nombre": "Horario" },
+            { "nombre": "Cupos por día", "tipo": "numero" }
+          ],
+          "filas": [
+            ["Medicina general", "Lunes a viernes", "7:00 a. m. – 12:00 m.", 40],
+            ["Odontología", "Martes y jueves", "1:00 p. m. – 5:00 p. m.", 16],
+            ["Vacunación", "Miércoles", "8:00 a. m. – 4:00 p. m.", 60],
+            ["Control prenatal", "Lunes y miércoles", "1:00 p. m. – 4:00 p. m.", 12]
+          ],
+          "nota": "Los cupos se entregan por orden de llegada."
+        }
+      },
+      "items": [
+        {
+          "forma": "interpretacion_dato",
+          "enunciado": "Una persona solo puede acudir al puesto de salud los miércoles en la mañana. Según el cuadro, ¿a qué servicio puede acceder ese día y en esa jornada?",
+          "opciones": [
+            "A vacunación únicamente.",
+            "A vacunación y a control prenatal.",
+            "A medicina general y a vacunación.",
+            "A medicina general, vacunación y control prenatal."
+          ],
+          "clave": 2,
+          "justificaciones": [
+            "Vacunación sí atiende el miércoles en la mañana, pero no es el único: medicina general atiende de lunes a viernes de 7:00 a. m. a 12:00 m.",
+            "Control prenatal sí atiende los miércoles, pero de 1:00 a 4:00 p. m., o sea en la tarde.",
+            "Correcta. El miércoles en la mañana coinciden medicina general (7:00 a. m. – 12:00 m.) y vacunación (desde las 8:00 a. m.).",
+            "Los tres atienden el miércoles, pero control prenatal lo hace solo en la tarde: hay que cruzar el día con el horario, no solo el día."
+          ],
+          "dificultad": 3
+        }
+      ]
+    }
+  ]
+}
