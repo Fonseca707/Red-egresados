@@ -50,6 +50,18 @@
                 <button onclick="adminLogic.switchTab('subadmins')" id="tab-subadmins" class="hidden pb-3 text-sm font-bold border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition">Sub-Administradores</button>
             </div>
 
+            <!-- Todo lo de aqui dentro pertenece a la pestaña Usuarios: el
+                 resumen (tarjetas + graficos) y las herramientas de una vez.
+                 Vivian sueltas, fuera de los paneles de pestaña, asi que
+                 switchTab no las ocultaba y seguian a la vista en Noticias,
+                 Correos, Audio, Saber 11... Se envuelven en vez de moverlas
+                 dentro de #admin-users-tab para que cada tarjeta conserve SU
+                 propio 'hidden' (limpieza, rutas-IA y migracion de contactos
+                 solo las ve el superadmin): el wrapper decide la pestaña, el
+                 hijo decide el permiso. El wrapper no lleva clases de layout
+                 a proposito — el espaciado sigue siendo el mb-6 de cada hijo. -->
+            <div id="admin-inicio">
+
             <section id="admin-dashboard" class="mb-6 space-y-4">
                 <div id="admin-stats-grid" class="grid grid-cols-2 lg:grid-cols-4 gap-3"></div>
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -144,6 +156,8 @@
                     </div>
                 </div>
             </div>
+
+            </div><!-- /#admin-inicio -->
 
             <div id="admin-users-tab" class="space-y-4">
                 <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
@@ -669,6 +683,9 @@
                             : 'pb-3 text-sm font-bold border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition');
                     if (p) p.classList.toggle('hidden', key !== tab);
                 });
+                // El resumen y las herramientas de una vez son de Usuarios, no
+                // del panel entero: fuera de esa pestaña estorban.
+                document.getElementById('admin-inicio')?.classList.toggle('hidden', tab !== 'users');
                 if (tab === 'subadmins') adminLogic.renderSubAdmins();
                 if (tab === 'colegios') colegiosAdminLogic.load();
                 if (tab === 'audio') audioLogic.montar();
