@@ -288,6 +288,15 @@ function mime({ de, para, responderA, asunto, html }) {
         `To: ${para}`,
         responderA ? `Reply-To: ${responderA}` : '',
         `Subject: =?UTF-8?B?${b64(asunto)}?=`,
+        // Sin esta cabecera, Gmail no enseña su botón «Cancelar suscripción» y
+        // 38 correos casi idénticos saliendo a la vez desde una cuenta de Gmail
+        // tienen todas las papeletas de acabar en Promociones o en Spam. Con
+        // ella, quien no lo quiera se da de baja en un clic en vez de marcar el
+        // correo como basura — que es lo que de verdad hunde a un remitente.
+        // Es `mailto:` y no una URL porque no hay endpoint de baja: el aviso
+        // llega al buzón de Sinapsis y se atiende a mano, que con esta lista es
+        // más que suficiente.
+        responderA ? `List-Unsubscribe: <mailto:${responderA}?subject=Baja%20de%20Sinapsis>` : '',
         'MIME-Version: 1.0',
         'Content-Type: text/html; charset="UTF-8"',
         'Content-Transfer-Encoding: base64'
