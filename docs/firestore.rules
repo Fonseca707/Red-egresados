@@ -205,6 +205,16 @@ service cloud.firestore {
           );
         }
 
+        // La sesion de entrenamiento que el alumno dejo a medias: donde iba, en
+        // que orden le salieron las preguntas y que respondio. A diferencia de
+        // itemAttempts, esto SI se sobrescribe (avanza con cada respuesta) y se
+        // borra al terminar. Es un borrador de trabajo, no un hecho registrado,
+        // asi que ni el colegio ni el superadmin tienen por que leerlo: el dato
+        // que a ellos les sirve ya esta en itemAttempts.
+        match /icfesSesion/{docId} {
+          allow read, write: if request.auth != null && request.auth.uid == userId;
+        }
+
         // Intentos item por item del ICFES. Mismo criterio que examResults (son
         // progreso personal), y por la misma razon: el reporte por competencia
         // que ve el colegio se arma con esto. Inmutables: un intento es un hecho

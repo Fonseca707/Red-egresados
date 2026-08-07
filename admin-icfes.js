@@ -236,19 +236,41 @@ Responde SOLO con este JSON, sin markdown ni explicaciones:
         // estudiante que lo note contesta sin leer, y el puntaje deja de medir
         // lo que dice medir. No se detecta pregunta por pregunta: solo el lote
         // lo delata.
-        if (items.length >= 8) {
+        // Solo cuenta para las preguntas cuya posición SÍ es la que verá el
+        // estudiante: las de opciones numéricas, que el motor ordena de menor a
+        // mayor en vez de barajar. En las demás la posición guardada es una
+        // convención (la correcta va primera) y el orden se sortea al presentar,
+        // así que contarlas aquí sería medir algo que nadie ve.
+        // Y se cuenta la posición EFECTIVA —la que verá el estudiante tras
+        // ordenar por valor—, no la guardada. Desde que la correcta se almacena
+        // siempre primera, contar la guardada daría "todas en la A" en cualquier
+        // lote correcto: mediría la convención de almacenamiento, no el examen.
+        const valorDe = (o) => {
+            const m = String(o).match(/^[^\d]*?(-?\d[\d.,]*)/);
+            return m ? Number(m[1].replace(/\.(?=\d{3}\b)/g, '').replace(',', '.')) : null;
+        };
+        const posicionEfectiva = (i) => {
+            const valores = (i.opciones || []).map(valorDe);
+            if (valores.length !== 4 || valores.some(v => v === null || !Number.isFinite(v))) return null;
+            const orden = valores.map((_, k) => k).sort((a, b) => valores[a] - valores[b]);
+            return orden.indexOf(Number(i.clave) || 0);
+        };
+        const conPosicionFija = items
+            .map(i => ({ item: i, pos: posicionEfectiva(i) }))
+            .filter(x => x.pos !== null);
+        if (conPosicionFija.length >= 8) {
             const conteo = [0, 0, 0, 0];
-            items.forEach(i => { if (i.clave >= 0 && i.clave <= 3) conteo[i.clave]++; });
-            const esperado = items.length / 4;
+            conPosicionFija.forEach(x => conteo[x.pos]++);
+            const esperado = conPosicionFija.length / 4;
             conteo.forEach((n, i) => {
-                if (n > esperado * 1.6) avisos.push(`La respuesta correcta cae ${n} veces en la ${'ABCD'[i]} de ${items.length} preguntas (lo parejo sería ~${Math.round(esperado)}). Reparte las claves o el examen se vuelve adivinable.`);
+                if (n > esperado * 1.6) avisos.push(`La respuesta correcta cae ${n} veces en la ${'ABCD'[i]} de ${conPosicionFija.length} preguntas con opciones numéricas (lo parejo sería ~${Math.round(esperado)}). Reparte las claves o el examen se vuelve adivinable.`);
                 if (n === 0) avisos.push(`Ninguna respuesta correcta es la ${'ABCD'[i]}. Un estudiante que lo note descarta esa opción sin leerla.`);
             });
             // Rachas: cuatro seguidas en la misma letra se nota aunque el
             // reparto total esté perfecto.
             let racha = 1;
-            for (let i = 1; i < items.length; i++) {
-                racha = items[i].clave === items[i - 1].clave ? racha + 1 : 1;
+            for (let i = 1; i < conPosicionFija.length; i++) {
+                racha = conPosicionFija[i].pos === conPosicionFija[i - 1].pos ? racha + 1 : 1;
                 if (racha >= 4) { avisos.push(`Hay ${racha} preguntas seguidas con la misma letra correcta. Intercálalas.`); break; }
             }
         }
@@ -447,6 +469,18 @@ Responde SOLO con este JSON, sin markdown ni explicaciones:
         }
         const guardados = [];
         for (const it of items) {
+            // La correcta se guarda SIEMPRE primera. El orden que ve el
+            // estudiante lo decide el motor al presentar (baraja, o ordena por
+            // valor si son cifras), así que la posición guardada no es la que
+            // se muestra: es solo una convención que quita de en medio el sesgo
+            // de "siempre la C" al escribir.
+            const k = Number(it.clave) || 0;
+            if (k > 0 && Array.isArray(it.opciones) && it.opciones[k] !== undefined) {
+                const orden = [k, ...it.opciones.map((_, i) => i).filter(i => i !== k)];
+                it.opciones = orden.map(i => it.opciones[i]);
+                it.justificaciones = orden.map(i => (it.justificaciones || [])[i] || '');
+                it.clave = 0;
+            }
             // El modelo mete la letra dentro de la opción ("A. Cada ejemplo…") y
             // la UI le antepone otra, quedando "A. A. Cada ejemplo…".
             it.opciones = (it.opciones || []).map(o => String(o).replace(/^\s*[A-D][.)]\s+/, '').trim());

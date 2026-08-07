@@ -48,6 +48,77 @@ const icfesLogic = {
         );
     },
 
+    // ── Cómo se presentan las opciones ──────────────────────────────────────
+    //
+    // En el banco, la respuesta correcta se guarda SIEMPRE en la primera
+    // posición. Así, escribir una pregunta deja de exigir que uno reparta las
+    // claves a mano entre A, B, C y D — que es donde se colaba el sesgo: un solo
+    // autor tiende sin darse cuenta a la misma letra, y eso no se ve leyendo las
+    // preguntas una por una (una tanda salió con la clave en C nueve veces de
+    // dieciséis). Lo que el estudiante ve se decide aquí, al presentar.
+    //
+    // 🔑 Y hay una excepción que NO se puede barajar: cuando las cuatro opciones
+    // son cifras, el cuadernillo oficial las ordena de menor a mayor. Barajarlas
+    // se vería mal y delataría que no es un examen de verdad. Ahí se ordenan por
+    // valor, y la posición de la correcta queda determinada por su magnitud
+    // frente a los distractores — que es tan impredecible como barajar, sin
+    // romper la convención.
+    ordenables(opciones) {
+        const valor = (o) => {
+            // "5.800 pesos." → 5800 · "32 %." → 32 · "84 m²." → 84
+            // El primer grupo EXIGE un dígito. Con `[\d.,]+` a secas, el punto
+            // final de cualquier frase ("El Obrero y San José.") contaba como
+            // número, todas las opciones parecían cifras de valor 0 y el
+            // barajado no llegaba a ocurrir nunca.
+            const m = String(o).match(/^[^\d]*?(-?\d[\d.,]*)/);
+            if (!m) return null;
+            const n = Number(m[1].replace(/\.(?=\d{3}\b)/g, '').replace(',', '.'));
+            return Number.isFinite(n) ? n : null;
+        };
+        const valores = opciones.map(valor);
+        return valores.every(v => v !== null) ? valores : null;
+    },
+
+    // Generador con semilla: el mismo alumno, en la misma sesión y en el mismo
+    // ítem, ve siempre el mismo orden. Sin esto no se podría reanudar una sesión
+    // a medias: al volver, la respuesta ya guardada apuntaría a otra opción.
+    aleatorio(semilla) {
+        let h = 1779033703 ^ String(semilla).length;
+        for (let i = 0; i < String(semilla).length; i++) {
+            h = Math.imul(h ^ String(semilla).charCodeAt(i), 3432918353);
+            h = (h << 13) | (h >>> 19);
+        }
+        return () => {
+            h = Math.imul(h ^ (h >>> 16), 2246822507);
+            h = Math.imul(h ^ (h >>> 13), 3266489909);
+            h ^= h >>> 16;
+            return (h >>> 0) / 4294967296;
+        };
+    },
+
+    presentacion(item, semilla) {
+        const opciones = item.opciones || [];
+        const justificaciones = item.justificaciones || [];
+        const claveOriginal = Number(item.clave) || 0;
+        let orden = opciones.map((_, i) => i);
+
+        const valores = this.ordenables(opciones);
+        if (valores) {
+            orden.sort((a, b) => valores[a] - valores[b]);
+        } else {
+            const rnd = this.aleatorio(`${semilla}|${item.id}`);
+            for (let i = orden.length - 1; i > 0; i--) {
+                const j = Math.floor(rnd() * (i + 1));
+                [orden[i], orden[j]] = [orden[j], orden[i]];
+            }
+        }
+        return {
+            opciones: orden.map(i => opciones[i]),
+            justificaciones: orden.map(i => justificaciones[i] || ''),
+            clave: orden.indexOf(claveOriginal),
+        };
+    },
+
     // ── Historial del alumno (para no repetir y para diagnosticar) ───────────
     async cargarIntentos() {
         const uid = state.user?.uid;
@@ -75,7 +146,7 @@ const icfesLogic = {
     // ── Selección de ítems (el corazón del entrenamiento) ────────────────────
     // Regla simple y explicable, no IRT ni adaptativo: sería sobre-ingeniería
     // antes de tener un solo usuario.
-    seleccionar(prueba, cuantos, intentos) {
+    seleccionar(prueba, cuantos, intentos, semilla) {
         const vistos = new Set(intentos.map(a => a.itemId));
         const diag = this.diagnostico(intentos);
         const pool = this.disponibles(prueba).filter(i => !vistos.has(i.id));
@@ -110,9 +181,25 @@ const icfesLogic = {
                 .forEach(i => elegidos.push(i));
         }
 
-        // 5. Agrupar por estímulo: en Lectura Crítica un mismo texto alimenta
-        //    varias preguntas y debe presentarse UNA vez, no tres.
-        return elegidos.sort((a, b) => String(a.estimuloId || 'zz').localeCompare(String(b.estimuloId || 'zz')));
+        // 5. Agrupar por estímulo y barajar los BLOQUES, no las preguntas
+        //    sueltas. En Lectura Crítica un mismo texto alimenta varias
+        //    preguntas y debe presentarse UNA vez: si se barajaran sueltas, el
+        //    texto reaparecería tres veces separado y el rótulo "responde las
+        //    preguntas 1 a 3" dejaría de ser cierto. Cada sesión sale en un
+        //    orden distinto, pero cada texto conserva sus preguntas seguidas.
+        const bloques = new Map();
+        elegidos.forEach(i => {
+            const k = i.estimuloId || `solo:${i.id}`;
+            if (!bloques.has(k)) bloques.set(k, []);
+            bloques.get(k).push(i);
+        });
+        const orden = [...bloques.values()];
+        const rnd = this.aleatorio(semilla);
+        for (let i = orden.length - 1; i > 0; i--) {
+            const j = Math.floor(rnd() * (i + 1));
+            [orden[i], orden[j]] = [orden[j], orden[i]];
+        }
+        return orden.flat();
     },
 
     // ── Sesión ──────────────────────────────────────────────────────────────
@@ -122,16 +209,91 @@ const icfesLogic = {
         router.navigate('icfes-practice');
 
         await this.cargarBanco();
+
+        // ¿Quedó una sesión a medias de esta misma prueba? Se le pregunta antes
+        // de armar otra: rehacerla desde cero borraría lo que ya respondió.
+        const guardada = await this.cargarSesionGuardada();
+        if (guardada && guardada.prueba === prueba && !this.session) {
+            this.session = { ...guardada, stage: 'reanudar' };
+            return this.render();
+        }
+
         const intentos = await this.cargarIntentos();
-        const items = this.seleccionar(prueba, cuantos, intentos);
+        // La semilla identifica esta sesión: de ella dependen el orden de los
+        // bloques y el de las opciones dentro de cada pregunta. Se guarda con la
+        // sesión para que al reanudar todo salga exactamente igual.
+        const semilla = `${state.user?.uid || 'anon'}-${prueba}-${Date.now()}`;
+        const items = this.seleccionar(prueba, cuantos, intentos, semilla);
 
         this.session = {
-            prueba, items, indice: 0,
+            prueba, semilla,
+            itemIds: items.map(i => i.id),
+            items, indice: 0,
             respuestas: [],           // { itemId, elegida, correcta, segundos }
             inicioItem: Date.now(),
             stage: items.length ? 'item' : 'vacio'
         };
+        this.guardarSesion();
         this.render();
+    },
+
+    // ── Sesión a medias ─────────────────────────────────────────────────────
+    // Los intentos ya se guardaban uno a uno, así que lo practicado nunca se
+    // perdía; lo que se perdía era la SESIÓN: al volver, el alumno empezaba
+    // otras diez preguntas y las que había dejado a medias quedaban contadas
+    // como vistas sin haberlas terminado. Esto guarda dónde iba.
+    async guardarSesion() {
+        const uid = state.user?.uid;
+        const s = this.session;
+        if (!uid || state.guestMode || uid === 'guest-view' || !s) return;
+        try {
+            await icfesSesionDoc(uid).set({
+                prueba: s.prueba, semilla: s.semilla, itemIds: s.itemIds,
+                indice: s.indice, respuestas: s.respuestas,
+                actualizada: firebase.firestore.FieldValue.serverTimestamp()
+            });
+        } catch (e) { /* best-effort: nunca romper el entrenamiento */ }
+    },
+
+    async borrarSesionGuardada() {
+        const uid = state.user?.uid;
+        if (!uid || state.guestMode || uid === 'guest-view') return;
+        try { await icfesSesionDoc(uid).delete(); } catch (e) { /* da igual */ }
+    },
+
+    async cargarSesionGuardada() {
+        const uid = state.user?.uid;
+        if (!uid || state.guestMode || uid === 'guest-view') return null;
+        try {
+            const d = await icfesSesionDoc(uid).get();
+            if (!d.exists) return null;
+            const g = d.data();
+            // Los ítems se reconstruyen del banco por id: si alguno se retiró o
+            // dejó de estar aprobado desde entonces, sale de la sesión en vez de
+            // romperla.
+            const porId = new Map(this.banco.items.map(i => [i.id, i]));
+            const items = (g.itemIds || []).map(id => porId.get(id)).filter(Boolean);
+            if (items.length < 2) { await this.borrarSesionGuardada(); return null; }
+            const respuestas = (g.respuestas || []).filter(r => items.some(i => i.id === r.itemId));
+            return {
+                prueba: g.prueba, semilla: g.semilla, itemIds: items.map(i => i.id),
+                items, indice: Math.min(g.indice || 0, items.length - 1),
+                respuestas, inicioItem: Date.now()
+            };
+        } catch (e) { return null; }
+    },
+
+    reanudar() {
+        this.session.stage = 'item';
+        this.session.inicioItem = Date.now();
+        this.render();
+    },
+
+    async empezarDeNuevo() {
+        const prueba = this.session.prueba;
+        await this.borrarSesionGuardada();
+        this.session = null;
+        this.start(prueba);
     },
 
     exit() {
@@ -147,6 +309,7 @@ const icfesLogic = {
         const s = this.session;
         if (!s || !this.root()) return;
         if (s.stage === 'vacio') return this.renderVacio();
+        if (s.stage === 'reanudar') return this.renderReanudar();
         if (s.stage === 'resultados') return this.renderResultados();
         return this.renderItem();
     },
@@ -178,6 +341,147 @@ const icfesLogic = {
                 <h2 class="text-2xl font-extrabold text-gray-900 mb-2">Todavía no hay preguntas aprobadas de ${sanitizeHTML(prueba.nombre)}</h2>
                 <p class="text-gray-500 max-w-lg mx-auto">Cada pregunta de este módulo se genera con IA y <strong>la revisa una persona</strong> antes de que llegue a un estudiante. En cuanto haya preguntas aprobadas, aparecerán aquí.</p>
                 <button onclick="icfesLogic.exit()" class="mt-6 px-6 py-3 bg-brand-600 text-white font-bold rounded-xl hover:bg-brand-700 transition">Volver a los módulos</button>
+            </div>`);
+    },
+
+    // ── Mi progreso ─────────────────────────────────────────────────────────
+    // Lo que el estudiante no tenía: al terminar una sesión veía su resultado y
+    // se acababa ahí. No sabía cuánto le faltaba del banco, en qué competencia
+    // está flojo ni si va mejorando. Un entrenador que no lleva la cuenta es un
+    // cuestionario.
+    async progreso(prueba) {
+        const raiz = this.root();
+        if (raiz) raiz.innerHTML = `<div class="max-w-3xl mx-auto py-20 text-center text-gray-400"><i class="ph-duotone ph-circle-notch animate-spin text-3xl"></i></div>`;
+        router.navigate('icfes-practice');
+        await this.cargarBanco();
+        const intentos = await this.cargarIntentos();
+        this.session = { stage: 'progreso', prueba, intentos };
+        this.renderProgreso();
+    },
+
+    renderProgreso() {
+        const { prueba, intentos } = this.session;
+        const mios = intentos.filter(a => a.prueba === prueba);
+        const banco = this.disponibles(prueba);
+        const vistos = new Set(mios.map(a => a.itemId));
+        const pendientes = banco.filter(i => !vistos.has(i.id)).length;
+        const aciertos = mios.filter(a => a.correcta).length;
+        const puntaje = mios.length ? Math.round((aciertos / mios.length) * 100) : null;
+        const nivel = puntaje !== null ? icfesNivelDesempeno(puntaje, prueba) : null;
+        const diag = this.diagnostico(mios);
+
+        const barra = (hechas, total, color) => {
+            const pct = total ? Math.round((hechas / total) * 100) : 0;
+            return `<div class="h-2 bg-gray-100 overflow-hidden rounded-full"><div class="h-full ${color}" style="width:${pct}%"></div></div>`;
+        };
+
+        // Cómo va en cada competencia. Se dice cuántas lleva, porque una tasa
+        // sacada de dos preguntas no significa nada y presentarla como si
+        // significara algo es peor que no mostrarla.
+        const competencias = icfesAfirmacionesDe(prueba).map(a => {
+            const d = diag[a.codigo];
+            const n = d?.total || 0;
+            const tasa = n ? Math.round(d.tasa * 100) : null;
+            const color = tasa === null ? 'bg-gray-200' : tasa >= 70 ? 'bg-green-500' : tasa >= 45 ? 'bg-amber-500' : 'bg-red-400';
+            return `
+                <div class="py-3 border-t border-gray-100">
+                    <div class="flex items-baseline justify-between gap-3 mb-1.5">
+                        <p class="text-sm text-gray-800">${sanitizeHTML(a.corto)}</p>
+                        <p class="text-xs shrink-0 ${tasa === null ? 'text-gray-400' : 'text-gray-600 font-semibold'}">
+                            ${n ? `${tasa} % · ${n} pregunta${n === 1 ? '' : 's'}` : 'sin practicar'}
+                        </p>
+                    </div>
+                    ${barra(tasa || 0, 100, color)}
+                </div>`;
+        }).join('');
+
+        // La más floja, dicha con nombre: "vas al 40 %" no le dice a nadie qué
+        // hacer el lunes; "practica sentido global" sí.
+        const conDatos = Object.entries(diag).filter(([, d]) => d.total >= 3).sort((a, b) => a[1].tasa - b[1].tasa);
+        const floja = conDatos.length ? ICFES_AFIRMACIONES[conDatos[0][0]] : null;
+
+        const pestanas = Object.keys(ICFES_PRUEBAS).map(p => `
+            <button onclick="icfesLogic.progreso('${p}')"
+                    class="px-4 py-2 rounded-lg text-sm font-semibold transition ${p === prueba
+                        ? 'bg-gray-900 text-white' : 'bg-white text-gray-500 border border-gray-200 hover:text-gray-800'}">
+                ${sanitizeHTML(ICFES_PRUEBAS[p].nombre)}
+            </button>`).join('');
+
+        const cuerpo = `
+            <div class="flex gap-2 mb-4">${pestanas}</div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <div class="bg-white rounded-3xl border border-gray-100 shadow-sm p-6">
+                    <p class="text-[11px] font-semibold text-gray-400 uppercase tracking-widest mb-1">Preguntas practicadas</p>
+                    <p class="text-3xl font-extrabold text-gray-900">${mios.length}</p>
+                    <p class="text-xs text-gray-500 mt-1">${pendientes} sin ver en el banco</p>
+                </div>
+                <div class="bg-white rounded-3xl border border-gray-100 shadow-sm p-6">
+                    <p class="text-[11px] font-semibold text-gray-400 uppercase tracking-widest mb-1">Aciertos</p>
+                    <p class="text-3xl font-extrabold text-gray-900">${puntaje === null ? '—' : puntaje + '%'}</p>
+                    <p class="text-xs text-gray-500 mt-1">${mios.length ? `${aciertos} de ${mios.length}` : 'aún no has practicado'}</p>
+                </div>
+                <div class="bg-white rounded-3xl border border-gray-100 shadow-sm p-6">
+                    <p class="text-[11px] font-semibold text-gray-400 uppercase tracking-widest mb-1">Nivel estimado</p>
+                    <p class="text-3xl font-extrabold text-gray-900">${nivel ? nivel.nombre.replace('Nivel ', '') : '—'}</p>
+                    <p class="text-xs text-gray-500 mt-1">${nivel ? 'de 4' : 'practica para verlo'}</p>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 md:p-8">
+                <p class="text-[11px] font-semibold text-gray-400 uppercase tracking-widest mb-1">Cómo vas por competencia</p>
+                ${competencias}
+                ${floja ? `
+                <div class="mt-5 pt-4 border-t border-gray-100 flex items-start gap-2">
+                    <i class="ph-bold ph-target text-amber-600 mt-0.5"></i>
+                    <p class="text-sm text-gray-600">
+                        Lo que más te conviene reforzar ahora es <strong class="text-gray-900">${sanitizeHTML(floja.corto)}</strong>.
+                        Tu próxima sesión traerá una pregunta más de esa competencia.
+                    </p>
+                </div>` : `
+                <p class="text-xs text-gray-400 mt-4">Cuando lleves al menos tres preguntas de una competencia, aquí aparecerá cuál conviene reforzar.</p>`}
+            </div>
+
+            <div class="mt-4 flex flex-wrap gap-3">
+                <button onclick="icfesLogic.start('${prueba}')" class="px-6 py-3 bg-amber-600 text-white font-bold rounded-xl hover:bg-amber-700 transition">
+                    ${mios.length ? 'Seguir entrenando' : 'Empezar a entrenar'}
+                </button>
+                <button onclick="icfesLogic.exit()" class="px-6 py-3 bg-gray-100 text-gray-600 font-bold rounded-xl hover:bg-gray-200 transition">
+                    Volver a los módulos
+                </button>
+            </div>
+
+            ${pendientes === 0 && banco.length ? `
+            <p class="text-xs text-gray-400 mt-4">
+                Ya viste las ${banco.length} preguntas disponibles de esta prueba. Las siguientes sesiones repetirán preguntas
+                hasta que se publiquen más.
+            </p>` : ''}`;
+
+        this.root().innerHTML = this.shell(ICFES_PRUEBAS[prueba].nombre + ' · Mi progreso', cuerpo);
+    },
+
+    renderReanudar() {
+        const s = this.session;
+        const hechas = s.respuestas.length;
+        const total = s.items.length;
+        const aciertos = s.respuestas.filter(r => r.correcta).length;
+        this.root().innerHTML = this.shell(ICFES_PRUEBAS[s.prueba].nombre, `
+            <div class="bg-white rounded-3xl border border-gray-100 shadow-sm p-8 md:p-10 text-center">
+                <div class="w-16 h-16 mx-auto rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center text-3xl mb-4"><i class="ph-duotone ph-bookmark-simple"></i></div>
+                <h2 class="text-2xl font-extrabold text-gray-900 mb-2">Dejaste una sesión a medias</h2>
+                <p class="text-gray-500 max-w-lg mx-auto">
+                    Llevabas <strong class="text-gray-900">${hechas} de ${total}</strong> preguntas de ${sanitizeHTML(ICFES_PRUEBAS[s.prueba].nombre)},
+                    con ${aciertos} acertada${aciertos === 1 ? '' : 's'}. Puedes seguir donde ibas o empezar una sesión nueva.
+                </p>
+                <div class="flex flex-wrap gap-3 justify-center mt-6">
+                    <button onclick="icfesLogic.reanudar()" class="px-6 py-3 bg-amber-600 text-white font-bold rounded-xl hover:bg-amber-700 transition">
+                        Continuar donde iba
+                    </button>
+                    <button onclick="icfesLogic.empezarDeNuevo()" class="px-6 py-3 bg-gray-100 text-gray-600 font-bold rounded-xl hover:bg-gray-200 transition">
+                        Empezar una nueva
+                    </button>
+                </div>
+                <p class="text-xs text-gray-400 mt-4">Lo que respondiste ya quedó guardado en tu progreso, empieces una nueva o no.</p>
             </div>`);
     },
 
@@ -217,7 +521,9 @@ const icfesLogic = {
         // dice cuál es cuál es la letra, y después de responder, el color de esa
         // letra y su icono. Una rejilla de cuatro recuadros compite con el
         // enunciado y con la tabla de la pregunta, que es lo que hay que leer.
-        const opciones = (item.opciones || []).map((op, i) => {
+        // Orden en que se le muestran a ESTE alumno en ESTA sesión.
+        const vista = this.presentacion(item, s.semilla);
+        const opciones = vista.opciones.map((op, i) => {
             const letra = 'ABCD'[i];
             let ancla = 'bg-gray-100 text-gray-600';
             let texto = 'text-gray-900';
@@ -225,7 +531,7 @@ const icfesLogic = {
             let pesoTexto = '';
             let colorJusti = 'text-gray-500';
             if (yaRespondida) {
-                if (i === item.clave) {
+                if (i === vista.clave) {
                     // Sin caja, el color y el peso son lo único que señala la
                     // correcta, así que tienen que verse: verde saturado en el
                     // texto, no un verde tan oscuro que se confunda con negro.
@@ -240,8 +546,8 @@ const icfesLogic = {
                     ancla = 'bg-gray-100 text-gray-400'; texto = 'text-gray-400';
                 }
             }
-            const justificacion = yaRespondida && item.justificaciones?.[i]
-                ? `<span class="block text-xs ${colorJusti} mt-1 leading-relaxed">${sanitizeHTML(item.justificaciones[i])}</span>` : '';
+            const justificacion = yaRespondida && vista.justificaciones?.[i]
+                ? `<span class="block text-xs ${colorJusti} mt-1 leading-relaxed">${sanitizeHTML(vista.justificaciones[i])}</span>` : '';
             return `
                 <button ${yaRespondida ? 'disabled' : ''} onclick="icfesLogic.responder(${i})"
                         class="w-full text-left rounded-xl px-2 py-2.5 transition flex items-start gap-3 ${yaRespondida ? 'cursor-default' : 'hover:bg-gray-50'}">
@@ -293,7 +599,9 @@ const icfesLogic = {
         const s = this.session;
         const item = s.items[s.indice];
         if (s.respuestas.find(r => r.itemId === item.id)) return;
-        const correcta = indice === item.clave;
+        // Se compara contra la clave TAL COMO SE PRESENTÓ, no contra la del
+        // banco: el estudiante pulsó la opción que vio en pantalla.
+        const correcta = indice === this.presentacion(item, s.semilla).clave;
         s.respuestas.push({
             itemId: item.id, elegida: indice, correcta,
             afirmacion: item.afirmacion,
@@ -302,6 +610,7 @@ const icfesLogic = {
         // Se guarda intento por intento, no al final: si el alumno cierra la
         // pestaña a mitad de sesión, lo que ya practicó no se pierde.
         this.guardarIntento(item, indice, correcta, s.respuestas[s.respuestas.length - 1].segundos);
+        this.guardarSesion();
         this.render();
     },
 
@@ -322,9 +631,13 @@ const icfesLogic = {
         if (s.indice + 1 >= s.items.length) {
             s.stage = 'resultados';
             this.guardarResumen();
+            // La sesión terminada deja de estar 'a medias': si no se borra, al
+            // volver le ofreceríamos reanudar algo que ya acabó.
+            this.borrarSesionGuardada();
         } else {
             s.indice++;
             s.inicioItem = Date.now();
+            this.guardarSesion();
         }
         this.render();
     },

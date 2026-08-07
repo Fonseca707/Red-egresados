@@ -128,6 +128,16 @@ for (const [n, lote] of lotes.entries()) {
             evidencia: it.evidencia || lote.evidencia,
             dificultad: it.dificultad || lote.dificultad || 2,
         };
+        // La correcta se guarda siempre primera: el orden que ve el estudiante
+        // lo decide el motor al presentar. Mismo criterio que el importador del
+        // navegador.
+        const k = Number(item.clave) || 0;
+        if (k > 0 && Array.isArray(item.opciones) && item.opciones[k] !== undefined) {
+            const orden = [k, ...item.opciones.map((_, i) => i).filter(i => i !== k)];
+            item.opciones = orden.map(i => item.opciones[i]);
+            item.justificaciones = orden.map(i => (item.justificaciones || [])[i] || '');
+            item.clave = 0;
+        }
         todas.push(item);
         const fallos = [
             ...icfesAdmin.validar(item, { prueba: lote.prueba, hayEstimulo: !!estimuloId }),
@@ -165,10 +175,24 @@ for (const [n, lote] of lotes.entries()) {
 
 for (const a of icfesAdmin.validarLote(todas, '_global')) console.log(`  ⚠️  en el conjunto: ${a}`);
 
+// Dónde cae la correcta PARA EL ESTUDIANTE. En las de opciones numéricas es su
+// posición al ordenarlas de menor a mayor; en las demás la sortea el motor con
+// la semilla de cada sesión, así que aquí no hay nada que contar.
 const claves = [0, 0, 0, 0];
-todas.forEach(i => { if (i.clave >= 0 && i.clave <= 3) claves[i.clave]++; });
+let numericas = 0;
+for (const i of todas) {
+    const vals = (i.opciones || []).map(o => {
+        const m = String(o).match(/^[^\d]*?(-?\d[\d.,]*)/);
+        return m ? Number(m[1].replace(/\.(?=\d{3}\b)/g, '').replace(',', '.')) : null;
+    });
+    if (vals.length !== 4 || vals.some(v => v === null || !Number.isFinite(v))) continue;
+    const orden = vals.map((_, k) => k).sort((a, b) => vals[a] - vals[b]);
+    claves[orden.indexOf(Number(i.clave) || 0)]++;
+    numericas++;
+}
 
 console.log(`\n${ensayo ? '[ENSAYO — no se escribió nada] ' : ''}${nItems} preguntas y ${nEst} texto(s) base de ${nombreArchivo}`);
-console.log(`Reparto de la clave: ${claves.map((n, i) => `${'ABCD'[i]}=${n}`).join('  ')}`);
+console.log(`Dónde cae la correcta en las ${numericas} de opciones numéricas: ${claves.map((n, i) => `${'ABCD'[i]}=${n}`).join('  ')}`);
+console.log(`Las otras ${nItems - numericas} se barajan en cada sesión.`);
 console.log(`Con avisos: ${conAvisos}/${nItems}`);
 console.log(ensayo ? '' : 'Todas quedaron con revisado:false — hay que aprobarlas en Admin → Saber 11.\n');

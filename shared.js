@@ -320,6 +320,10 @@ const examResultsCollection = (uid) => alumniCollection.doc(uid).collection('exa
 // del estudiante. Alimenta tres cosas a la vez — no repetirle ítems ya vistos,
 // diagnosticar su competencia más floja, y el reporte agregado para el colegio.
 const itemAttemptsCollection = (uid) => alumniCollection.doc(uid).collection('itemAttempts');
+// Sesión de entrenamiento a medias. Un solo documento por alumno: lo que hay que
+// poder recuperar es "la que dejó sin terminar", no un historial de sesiones
+// abandonadas. Se borra al terminarla.
+const icfesSesionDoc = (uid) => alumniCollection.doc(uid).collection('icfesSesion').doc('actual');
 const userChatsCollection = (uid) => artifactsRoot.collection('users').doc(uid).collection('chats');
 const userChatMessagesCollection = (uid, chatId) => userChatsCollection(uid).doc(chatId).collection('messages');
 

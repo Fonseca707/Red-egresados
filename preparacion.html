@@ -65,9 +65,9 @@
     <script src="toefl-data.js?v=2"></script>
     <script src="toefl-practice.js?v=12"></script>
     <script src="delf-data.js?v=5"></script>
-    <script src="icfes-data.js?v=4"></script>
+    <script src="icfes-data.js?v=5"></script>
     <script src="icfes-visual.js?v=4"></script>
-    <script src="icfes-engine.js?v=6"></script>
+    <script src="icfes-engine.js?v=7"></script>
     <script src="delf-practice.js?v=9"></script>
     <script src="ia-calificadora.js?v=4"></script>
     <script src="orientadora.js?v=8"></script>
@@ -167,6 +167,9 @@
                 practices: [
                     { name: 'Lectura Crítica', focus: 'Contenidos locales, sentido global y evaluación del texto', format: 'Sesión de 10 preguntas · cuota oficial 25/42/33', status: 'Disponible', action: "icfesLogic.start('lectura_critica')" },
                     { name: 'Matemáticas', focus: 'Interpretación, formulación y argumentación en contextos reales', format: 'Sesión de 10 preguntas · cuota oficial 34/43/23', status: 'Disponible', action: "icfesLogic.start('matematicas')" },
+                    // Entrar a "mi progreso" es un camino aparte del de practicar: se
+                    // consulta antes de decidir si practicar, no despues de terminar.
+                    { name: 'Mi progreso', focus: 'Que has practicado, que te falta y en que competencia estas mas flojo', format: 'Seguimiento de las dos pruebas', status: 'Disponible', action: "icfesLogic.progreso('lectura_critica')" },
                     { name: 'Sociales, Ciencias e Inglés', focus: 'Las otras tres pruebas del examen', format: 'El motor ya las soporta; falta el contenido', status: 'Próximamente' }
                 ],
                 excluded: 'Se arranca por Lectura Crítica y Matemáticas: son las que más pesan en el puntaje global. Cada pregunta la genera la IA contra el blueprint oficial y la aprueba una persona antes de publicarse.'

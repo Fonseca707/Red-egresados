@@ -86,6 +86,12 @@ const itemAttemptsCollection = () => ({
     orderBy: () => ({ limit: () => ({ get: async () => snapDe(BD.intentos) }) }),
     add: async (a) => { BD.intentos.push(a); }
 });
+// La sesión a medias. Un solo documento, igual que en producción.
+const icfesSesionDoc = () => ({
+    set: async (d) => { BD.sesion = d; },
+    get: async () => ({ exists: !!BD.sesion, data: () => BD.sesion }),
+    delete: async () => { BD.sesion = null; },
+});
 const firebase = { firestore: { FieldValue: { serverTimestamp: () => new Date() } } };
 const state = { user: { uid: 'prueba' }, profile: { school: '' }, guestMode: false };
 // El motor cambia de vista al empezar y al salir. Aquí solo hay una vista, así
@@ -96,9 +102,9 @@ function saveExamResult() { /* en producción guarda el resumen de la sesión */
 function sanitizeHTML(str) { const d = document.createElement('div'); d.textContent = String(str ?? ''); return d.innerHTML; }
 </script>
 
-<script src="icfes-data.js?v=4"></script>
+<script src="icfes-data.js?v=5"></script>
 <script src="icfes-visual.js?v=4"></script>
-<script src="icfes-engine.js?v=6"></script>
+<script src="icfes-engine.js?v=7"></script>
 
 <script>
 const LOTES_CONOCIDOS = ['lotes/matematicas-01.json', 'lotes/lectura-critica-01.json'];
