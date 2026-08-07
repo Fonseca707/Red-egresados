@@ -236,18 +236,26 @@ const b64url = t => b64(t).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/
 // El asunto se codifica en RFC 2047 y el cuerpo va en base64 partido a 76
 // columnas, como manda MIME (una sola línea kilométrica la rechazan algunos
 // servidores intermedios).
+// ⚠️ La línea EN BLANCO entre cabeceras y cuerpo es obligatoria en MIME: es lo
+// único que le dice al servidor dónde terminan las cabeceras. Antes todo iba en
+// un solo array con `.filter(Boolean)` al final —puesto ahí para quitar el
+// Reply-To cuando no lo hay— y ese filtro se llevaba también la cadena vacía del
+// separador. Resultado: el base64 del cuerpo quedaba pegado como si fuera otra
+// cabecera y **Gmail entregaba los correos con el asunto correcto y el cuerpo
+// vacío**. Se descubrió el 2026-08-07 con el Radar IA. Por eso ahora el filtro
+// solo toca las cabeceras y el separador se pone aparte, donde nadie lo pisa.
 function mime({ de, para, responderA, asunto, html }) {
-    return [
+    const cabeceras = [
         `From: ${de}`,
         `To: ${para}`,
         responderA ? `Reply-To: ${responderA}` : '',
         `Subject: =?UTF-8?B?${b64(asunto)}?=`,
         'MIME-Version: 1.0',
         'Content-Type: text/html; charset="UTF-8"',
-        'Content-Transfer-Encoding: base64',
-        '',
-        b64(html).replace(/(.{76})/g, '$1\r\n')
-    ].filter(Boolean).join('\r\n');
+        'Content-Transfer-Encoding: base64'
+    ].filter(Boolean);
+    const cuerpo = b64(html).replace(/(.{76})/g, '$1\r\n');
+    return cabeceras.join('\r\n') + '\r\n\r\n' + cuerpo;
 }
 
 // Única puerta de salida: aquí se vuelve a comprobar el interruptor, para que
