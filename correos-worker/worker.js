@@ -39,7 +39,7 @@ const DIA = 86400000;
 
 // Sube cada vez que cambie el aspecto o el texto de los correos. Lo devuelve
 // /estado, y sirve para saber si un despliegue ya propagó ANTES de mandar nada.
-const PLANTILLA_VERSION = 'v3-ruta';
+const PLANTILLA_VERSION = 'v4-ruta-alineada';
 
 // Único destinatario posible de /radar. Fijo a propósito: ver el comentario del
 // endpoint. Cambiarlo por un parámetro convertiría este Worker en un relay abierto
@@ -198,12 +198,22 @@ function envoltura(env, titulo, cuerpo, cta) {
     // 2. La RUTA: cuatro nodos unidos por una línea. Es de lo que va la
     //    plataforma, así que dibujarla dice más que cualquier adorno — y es
     //    exactamente el recurso con el que Juan aprobó la portada.
-    const paso = (texto, activo) => `<td align="center" style="padding:0 4px;">
-          <div style="width:11px;height:11px;border-radius:11px;background:${activo ? '#15803d' : '#ffffff'};border:2px solid ${activo ? '#15803d' : '#bbf7d0'};margin:0 auto 7px;font-size:0;line-height:0;">&nbsp;</div>
-          <p style="margin:0;font-size:11px;font-weight:700;color:${activo ? '#15803d' : '#78716c'};letter-spacing:.03em;">${texto}</p></td>`;
-    const ruta = `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;margin:26px 0 4px;">
-      <tr><td style="padding:0 0 6px;"><div style="height:2px;background:#dcfce7;font-size:0;line-height:0;margin:5px 6px -13px;">&nbsp;</div></td></tr>
-      <tr>${paso('Colegio', true)}${paso('Estudios', false)}${paso('Trabajo', false)}${paso('Hoy', false)}</tr>
+    //    ⚠️ La línea NO se dibuja con un margen negativo por detrás de los
+    //    puntos: Gmail borra los márgenes negativos y la barra quedaba flotando
+    //    ENCIMA de la fila, como un subrayado suelto (visto en el correo real,
+    //    no supuesto). Se dibuja como celdas intermedias en la MISMA fila que
+    //    los puntos, que es lo único que garantiza que estén a la misma altura.
+    //    Y las etiquetas van en su propia fila, para que el texto no empuje la
+    //    línea hacia abajo.
+    const NODOS = [['Colegio', true], ['Estudios', false], ['Trabajo', false], ['Hoy', false]];
+    const punto = (activo) => `<td width="13" style="padding:0;font-size:0;line-height:0;">
+          <div style="width:11px;height:11px;border-radius:11px;background:${activo ? '#15803d' : '#ffffff'};border:2px solid ${activo ? '#15803d' : '#bbf7d0'};font-size:0;line-height:0;">&nbsp;</div></td>`;
+    const tramo = `<td style="padding:0;"><div style="height:2px;background:#dcfce7;font-size:0;line-height:0;">&nbsp;</div></td>`;
+    const etiqueta = ([t, activo], i) => `<td style="padding:7px 0 0;text-align:${i === 0 ? 'left' : i === NODOS.length - 1 ? 'right' : 'center'};" colspan="${i === 0 || i === NODOS.length - 1 ? 1 : 2}">
+          <p style="margin:0;font-size:11px;font-weight:700;color:${activo ? '#15803d' : '#78716c'};letter-spacing:.03em;white-space:nowrap;">${t}</p></td>`;
+    const ruta = `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;margin:28px 0 2px;">
+      <tr>${NODOS.map(([, a], i) => punto(a) + (i < NODOS.length - 1 ? tramo : '')).join('')}</tr>
+      <tr>${NODOS.map(etiqueta).join('')}</tr>
     </table>`;
     return `<!doctype html><html><body style="margin:0;padding:0;background:#ffffff;font-family:'Segoe UI',Helvetica,Arial,sans-serif;">
   ${centrado('#16a34a', `
@@ -678,7 +688,14 @@ export default {
                     const p = plantilla(tipo, ejemplo, env, { deNombre: 'Andrés Gómez' });
                     if (!p) return new Response(JSON.stringify({ error: `Tipo desconocido: ${tipo}` }), { status: 400, headers });
                     await enviarSinComprobar(env, para, `[PRUEBA · ${tipo}] ${p.asunto}`, p.html);
-                    return new Response(JSON.stringify({ enviado: true, para, tipo, asunto: p.asunto }), { headers });
+                    // ⭐ La versión viaja CON el envío, no en /estado. El 2026-08-07
+                    // se comprobó `/estado` (decía v3), se mandó el correo y llegó
+                    // hecho con v2: Cloudflare propaga por PoP, y la comprobación
+                    // cayó en uno actualizado mientras el envío salió de otro que no.
+                    // Un marcador en un endpoint aparte no dice nada del código que
+                    // atendió LA OTRA petición — el marcador tiene que salir de la
+                    // misma ejecución que hizo el trabajo.
+                    return new Response(JSON.stringify({ enviado: true, para, tipo, plantilla: PLANTILLA_VERSION, asunto: p.asunto }), { headers });
                 }
                 await enviarSinComprobar(env, para, 'Prueba de Sinapsis (envío por Gmail)',
                     envoltura(env, 'Funciona', `
