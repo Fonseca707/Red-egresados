@@ -296,6 +296,89 @@ function mime({ de, para, responderA, asunto, html }) {
     return cabeceras.join('\r\n') + '\r\n\r\n' + cuerpo;
 }
 
+// ── Plantilla del Radar IA ───────────────────────────────────────────────────
+// Registro editorial (elegido por Juan el 2026-08-07 sobre otras dos propuestas):
+// titulares en serif, mucho aire, y la cifra del cambio como protagonista. Se lee
+// como una carta breve, no como un panel de control.
+//
+// Todo va en tablas con estilos en línea porque los clientes de correo no
+// entienden flexbox ni hojas de estilo externas, y Gmail borra los <style>.
+const RADAR_TONOS = {
+    precio:  { color: '#2d6a4f', etiqueta: 'MÁS BARATO' },
+    calidad: { color: '#1e4d78', etiqueta: 'MEJOR CALIDAD' },
+    cambio:  { color: '#b4501e', etiqueta: 'YA LO USAS' }
+};
+
+// El respaldo en texto plano: feo pero legible. Solo se usa si el schedule manda
+// `cuerpo` en vez de `hallazgos[]`.
+function radarTextoPlano(cuerpo) {
+    return `<div style="font-family:Georgia,serif;font-size:16px;line-height:1.7;`
+        + `color:#1a1a1a;max-width:600px;white-space:pre-wrap">${escaparHTML(cuerpo, 40000)}</div>`;
+}
+
+function plantillaRadar({ fecha, titular, veredicto, hallazgos = [], tendencia, descartado, nota }) {
+    const esc = (t, max = 4000) => escaparHTML(t, max);
+
+    const bloques = hallazgos.map(h => {
+        const tono = RADAR_TONOS[h.tipo] || RADAR_TONOS.cambio;
+        // La cifra solo aparece si la hay: un hallazgo sin número no debe dejar un
+        // hueco tipográfico donde debería estar el protagonista del bloque.
+        const cifra = h.cifra ? `
+            <tr><td style="padding:18px 0 0">
+                <div style="font-family:Georgia,'Times New Roman',serif;font-size:42px;line-height:1.1;color:${tono.color}">${esc(h.cifra, 40)}</div>
+                ${h.cifraPie ? `<div style="font-size:15px;color:#6b6b6b;padding-top:6px">${esc(h.cifraPie, 120)}</div>` : ''}
+            </td></tr>` : '';
+        return `
+        <tr><td style="padding:44px 0 0">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr><td style="font-size:12px;letter-spacing:1.5px;color:${tono.color};text-transform:uppercase">${tono.etiqueta}</td></tr>
+                <tr><td style="font-family:Georgia,'Times New Roman',serif;font-size:21px;color:#1a1a1a;padding-top:8px">${esc(h.proveedor, 120)}</td></tr>
+                ${cifra}
+                <tr><td style="font-size:16px;line-height:1.7;color:#3d3d3d;padding-top:16px">${esc(h.texto, 3000)}</td></tr>
+                ${h.fuente ? `<tr><td style="padding-top:14px"><a href="${esc(h.fuente, 500)}" style="font-size:14px;color:${tono.color};text-decoration:none;border-bottom:1px solid ${tono.color}33">Ver la fuente</a></td></tr>` : ''}
+            </table>
+        </td></tr>`;
+    }).join('');
+
+    const cola = (titulo, texto) => texto ? `
+        <tr><td style="padding:40px 0 0">
+            <div style="font-size:12px;letter-spacing:1.5px;color:#8a8a8a;text-transform:uppercase">${titulo}</div>
+            <div style="font-size:15px;line-height:1.7;color:#6b6b6b;padding-top:10px">${esc(texto, 3000)}</div>
+        </td></tr>` : '';
+
+    return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#faf9f7;margin:0;padding:0">
+<tr><td align="center" style="padding:32px 16px">
+<table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;background:#ffffff;border:1px solid #eae7e1">
+<tr><td style="padding:44px 44px 52px">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+
+    <tr><td style="font-family:Georgia,'Times New Roman',serif;font-size:17px;color:#1a1a1a">Radar IA</td></tr>
+    <tr><td style="font-size:14px;color:#8a8a8a;padding-top:4px">${esc(fecha, 60)}</td></tr>
+
+    <tr><td style="padding:40px 0 0">
+        <div style="font-family:Georgia,'Times New Roman',serif;font-size:29px;line-height:1.3;color:#1a1a1a">${esc(titular, 300)}</div>
+        <div style="width:64px;height:2px;background:#1a1a1a;margin-top:18px"></div>
+    </td></tr>
+
+    ${veredicto ? `<tr><td style="font-size:17px;line-height:1.7;color:#3d3d3d;padding:24px 0 0">${esc(veredicto, 1500)}</td></tr>` : ''}
+
+    ${bloques}
+    ${cola('Tendencia', tendencia)}
+    ${cola('Evaluado y descartado', descartado)}
+
+    <tr><td style="padding:44px 0 0">
+        <div style="border-top:1px solid #eae7e1;padding-top:16px;font-size:13px;color:#a0a0a0">
+            ${nota ? `Nota completa en el vault: ${esc(nota, 200)}<br>` : ''}Radar IA &middot; todos los días a las 7:00
+        </div>
+    </td></tr>
+
+</table>
+</td></tr>
+</table>
+</td></tr>
+</table>`;
+}
+
 // Única puerta de salida: aquí se vuelve a comprobar el interruptor, para que
 // ningún camino (cron, /ejecutar, /mensaje-nuevo) pueda saltárselo por error.
 async function enviar(env, para, asunto, html) {
@@ -551,21 +634,20 @@ export default {
         // esto corre desatendido en la nube, y con la clave del panel podría además
         // encender el interruptor y disparar la corrida a los 68 egresados. Su llave
         // solo abre esta puerta.
-        //   POST /radar?clave=...  body: { asunto, cuerpo }   (cuerpo en texto plano)
+        //   POST /radar?clave=...  body: ver plantillaRadar() para la forma del JSON.
+        //   Se acepta `cuerpo` en texto plano como respaldo (se ve pobre, es para
+        //   pruebas rápidas y para que un fallo del formato no deje a Juan sin aviso).
         if (url.pathname === '/radar' && request.method === 'POST') {
             if (!env.RADAR_SECRET || claveDelPanel(request, url) !== env.RADAR_SECRET) {
                 return new Response(JSON.stringify({ error: 'Clave incorrecta' }), { status: 403, headers });
             }
-            const { asunto, cuerpo } = await request.json().catch(() => ({}));
-            if (!asunto || !cuerpo) {
-                return new Response(JSON.stringify({ error: 'Faltan asunto o cuerpo' }), { status: 400, headers });
+            const datos = await request.json().catch(() => ({}));
+            if (!datos.asunto || (!datos.hallazgos?.length && !datos.cuerpo)) {
+                return new Response(JSON.stringify({ error: 'Falta el asunto, o hallazgos[] / cuerpo' }), { status: 400, headers });
             }
             try {
-                const escapado = String(cuerpo)
-                    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-                const html = `<div style="font-family:system-ui,sans-serif;font-size:15px;line-height:1.6;`
-                    + `color:#1f2937;max-width:640px;white-space:pre-wrap">${escapado}</div>`;
-                await enviarSinComprobar(env, DESTINO_RADAR, String(asunto), html);
+                const html = datos.hallazgos?.length ? plantillaRadar(datos) : radarTextoPlano(datos.cuerpo);
+                await enviarSinComprobar(env, DESTINO_RADAR, String(datos.asunto), html);
                 return new Response(JSON.stringify({ enviado: true, para: DESTINO_RADAR }), { headers });
             } catch (e) {
                 return new Response(JSON.stringify({ enviado: false, error: String(e.message || e) }), { status: 500, headers });
