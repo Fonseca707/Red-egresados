@@ -1,0 +1,155 @@
+{
+  "_nota": "Lectura Crítica — escrito a mano (Claude), 2026-08-07. Contrastado contra el cuadernillo oficial: la mediana de opción queda en 72 caracteres frente a los 63 del original, dentro de rango. Un texto base alimenta varias preguntas, como en el examen real.",
+  "lotes": [
+    {
+      "prueba": "lectura_critica",
+      "afirmacion": "lc_global",
+      "evidencia": "2.3",
+      "tipoTexto": "info_no_filosofico",
+      "dificultad": 2,
+      "estimulo": {
+        "titulo": "El derecho a no oír",
+        "texto": "Nos hemos acostumbrado a hablar de la contaminación como si solo entrara por los pulmones. Pensamos en el humo, en el río turbio, en la bolsa que flota. Pocas veces pensamos en el ruido, quizá porque no deja mancha ni se puede fotografiar.\n\nY sin embargo el ruido de una ciudad trabaja sin descanso sobre quienes la habitan. No hace falta un estruendo: basta el zumbido continuo del tráfico bajo la ventana, la alarma que nadie apaga, el altavoz que anuncia ofertas a media cuadra. Quien vive junto a una avenida duerme peor, y quien duerme peor rinde menos al día siguiente. El daño no aparece de golpe; se acumula.\n\nLo curioso es que exigimos silencio en lugares muy concretos —una biblioteca, un hospital, un teatro— y lo damos por perdido en todos los demás. Como si el silencio fuera un lujo de ciertos edificios y no una condición para vivir.\n\nHay quien responde que el ruido es el precio del progreso, que una ciudad viva suena. Es un argumento cómodo, porque quien lo formula rara vez vive sobre la avenida. El ruido no se reparte igual: se concentra en los barrios más densos y en las viviendas más baratas, que suelen ser las que menos pueden aislarse de él.\n\nQuizá el primer paso sea el más simple: dejar de tratar el ruido como un fastidio personal y empezar a tratarlo como lo que es, una condición del lugar donde vivimos, y que por lo tanto se puede decidir."
+      },
+      "items": [
+        {
+          "forma": "interpretacion_dato",
+          "afirmacion": "lc_global",
+          "evidencia": "2.3",
+          "enunciado": "¿Qué relación hay entre el tercer párrafo (el de la biblioteca y el hospital) y la idea que el texto viene defendiendo?",
+          "opciones": [
+            "Lo contradice, porque admite que en algunos lugares el silencio sí se respeta.",
+            "Señala una incoherencia: se exige silencio en unos sitios y se renuncia a él en todos los demás.",
+            "Cambia de tema para hablar del funcionamiento de las bibliotecas y los hospitales.",
+            "Resume lo dicho antes sobre los efectos del ruido en el descanso."
+          ],
+          "clave": 1,
+          "justificaciones": [
+            "Que el silencio se respete en ciertos sitios no debilita el argumento: el texto lo usa precisamente para mostrar lo arbitrario de la excepción.",
+            "Correcta. El párrafo contrasta dónde sí se exige silencio con dónde se da por perdido, y de ahí sale la crítica que el texto sostiene.",
+            "Esos lugares aparecen solo como ejemplos; en ningún momento el texto se ocupa de cómo funcionan.",
+            "No resume nada: los efectos sobre el descanso se explican en el párrafo anterior y este introduce una idea distinta."
+          ],
+          "dificultad": 2
+        },
+        {
+          "forma": "interpretacion_dato",
+          "afirmacion": "lc_evaluar",
+          "evidencia": "3.1",
+          "enunciado": "En el cuarto párrafo, el autor responde a quienes dicen que el ruido es «el precio del progreso». ¿Cuál es la fuerza de esa respuesta?",
+          "opciones": [
+            "Muestra que ese argumento suele venir de quien no sufre las consecuencias, y que el ruido recae sobre los que menos pueden evitarlo.",
+            "Demuestra con cifras que las ciudades ruidosas progresan menos que las silenciosas.",
+            "Acepta el argumento y propone que el progreso se detenga.",
+            "Sostiene que ninguna ciudad viva tiene por qué hacer ruido."
+          ],
+          "clave": 0,
+          "justificaciones": [
+            "Correcta. El autor no niega el progreso: desplaza la discusión a quién paga el ruido, y muestra que no se reparte parejo.",
+            "El texto no da ninguna cifra ni compara ciudades; su argumento es sobre cómo se distribuye el ruido, no sobre cuánto progresa cada ciudad.",
+            "En ningún momento propone detener el progreso; lo que discute es que el ruido sea su precio inevitable.",
+            "El texto admite que una ciudad viva suena. Lo que rechaza es la conclusión que se saca de ahí."
+          ],
+          "dificultad": 3
+        },
+        {
+          "forma": "interpretacion_dato",
+          "afirmacion": "lc_local",
+          "evidencia": "1.1",
+          "enunciado": "En la primera línea del texto, ¿qué quiere decir que la contaminación «solo entrara por los pulmones»?",
+          "opciones": [
+            "Que las enfermedades respiratorias son la principal causa de muerte en las ciudades.",
+            "Que el aire de las ciudades está más contaminado que su suelo o su agua.",
+            "Que solemos reconocer la contaminación únicamente cuando se respira o se ve.",
+            "Que el ruido también daña los pulmones, aunque no lo parezca."
+          ],
+          "clave": 2,
+          "justificaciones": [
+            "El texto no habla de causas de muerte ni de enfermedades concretas en ningún momento.",
+            "No compara aire, suelo y agua: la frase es sobre cómo reconocemos la contaminación, no sobre dónde hay más.",
+            "Correcta. La expresión resume la idea que el párrafo desarrolla enseguida: pensamos en el humo, en el río, en la bolsa, y no en lo que no deja mancha.",
+            "El texto sostiene lo contrario de que el ruido entre por los pulmones: su punto es que daña sin ser una de esas formas visibles."
+          ],
+          "dificultad": 2
+        }
+      ]
+    },
+    {
+      "prueba": "lectura_critica",
+      "afirmacion": "lc_global",
+      "evidencia": "2.5",
+      "tipoTexto": "info_discontinuo",
+      "dificultad": 3,
+      "estimulo": {
+        "titulo": "Cuadro de turnos del puesto de salud",
+        "texto": "El puesto de salud de un municipio publica en su entrada el cuadro de atención de la semana.",
+        "visual": {
+          "tipo": "tabla",
+          "titulo": "Atención por servicio",
+          "columnas": [
+            {
+              "nombre": "Servicio"
+            },
+            {
+              "nombre": "Días"
+            },
+            {
+              "nombre": "Horario"
+            },
+            {
+              "nombre": "Cupos por día",
+              "tipo": "numero"
+            }
+          ],
+          "filas": [
+            [
+              "Medicina general",
+              "Lunes a viernes",
+              "7:00 a. m. – 12:00 m.",
+              40
+            ],
+            [
+              "Odontología",
+              "Martes y jueves",
+              "1:00 p. m. – 5:00 p. m.",
+              16
+            ],
+            [
+              "Vacunación",
+              "Miércoles",
+              "8:00 a. m. – 4:00 p. m.",
+              60
+            ],
+            [
+              "Control prenatal",
+              "Lunes y miércoles",
+              "1:00 p. m. – 4:00 p. m.",
+              12
+            ]
+          ],
+          "nota": "Los cupos se entregan por orden de llegada."
+        }
+      },
+      "items": [
+        {
+          "forma": "interpretacion_dato",
+          "enunciado": "Una persona solo puede acudir al puesto de salud los miércoles en la mañana. Según el cuadro, ¿a qué servicio puede acceder ese día y en esa jornada?",
+          "opciones": [
+            "A vacunación únicamente.",
+            "A vacunación y a control prenatal.",
+            "A medicina general y a vacunación.",
+            "A medicina general, vacunación y control prenatal."
+          ],
+          "clave": 2,
+          "justificaciones": [
+            "Vacunación sí atiende el miércoles en la mañana, pero no es el único: medicina general atiende de lunes a viernes de 7:00 a. m. a 12:00 m.",
+            "Control prenatal sí atiende los miércoles, pero de 1:00 a 4:00 p. m., o sea en la tarde.",
+            "Correcta. El miércoles en la mañana coinciden medicina general (7:00 a. m. – 12:00 m.) y vacunación (desde las 8:00 a. m.).",
+            "Los tres atienden el miércoles, pero control prenatal lo hace solo en la tarde: hay que cruzar el día con el horario, no solo el día."
+          ],
+          "dificultad": 3
+        }
+      ]
+    }
+  ]
+}

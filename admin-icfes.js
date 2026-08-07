@@ -200,7 +200,11 @@ Responde SOLO con este JSON, sin markdown ni explicaciones:
         // examen real tampoco hace: el aviso saltaba en lotes correctos y
         // presionaba a deformarlos para callarlo. Una vara mal puesta no
         // protege la fidelidad, la erosiona.
-        if (prueba === 'matematicas' && items.length >= 6) {
+        // Solo tiene sentido sobre un conjunto grande: un lote de una sola
+        // competencia puede legítimamente no traer ninguna de veredicto (las de
+        // interpretación piden leer una gráfica, no juzgar un razonamiento), y
+        // avisar ahí es empujar a deformarlo para callar la alarma.
+        if (prueba === 'matematicas' && items.length >= 12) {
             const veredicto = items.filter(i => i.forma === 'veredicto_justificacion').length;
             const proporcion = veredicto / items.length;
             if (proporcion > ICFES_VEREDICTO_MAT.max) {
