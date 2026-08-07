@@ -51,7 +51,9 @@ const colegiosAdminLogic = {
             if (existing.exists) { feedback.textContent = `Ya existe un colegio con el tag ${tag}.`; return; }
             await colegiosCollection.doc(tag).set({
                 nombre,
-                modulos: { toefl: false, delf: false },
+                // Un colegio nace sin nada contratado: los módulos se activan uno
+                // a uno desde esta misma pestaña.
+                modulos: { ...MODULOS_DEFAULT },
                 createdAt: firebase.firestore.FieldValue.serverTimestamp()
             });
             e.target.reset();
@@ -70,6 +72,48 @@ const colegiosAdminLogic = {
             });
             await colegiosAdminLogic.load();
         } catch (e) { alert(`No se pudo cambiar el módulo: ${e.message}`); }
+    },
+
+    // Borrar un colegio es irreversible y arrastra cosas que no están a la
+    // vista, así que va con tres frenos:
+    //  1. El colegio semilla no se borra: `load()` lo volvería a crear en el
+    //     acto y quedaría un colegio "nuevo" sin sus módulos ni sus códigos.
+    //  2. Si tiene usuarios, no se borra. Sus perfiles quedarían con un tag que
+    //     ya no existe: no perderían la cuenta, pero sí el colegio, los módulos
+    //     y el aislamiento de su sub-admin, y nada en la interfaz lo explicaría.
+    //  3. Hay que escribir el tag a mano. Un `confirm()` se acepta sin leer.
+    // Y se borran TAMBIÉN sus códigos de invitación: un código huérfano sigue
+    // pareciendo válido y vincularía un registro nuevo a un colegio inexistente.
+    eliminar: async (colegioId) => {
+        if (colegioId === DEFAULT_SCHOOL) {
+            alert(`${colegioId} es el colegio semilla de la red: si se borra, la próxima carga del panel lo vuelve a crear vacío. No se puede eliminar desde aquí.`);
+            return;
+        }
+        const usuarios = (state.data.alumni || []).filter(u => u.school === colegioId).length;
+        if (usuarios > 0) {
+            alert(`No se puede eliminar ${colegioId}: tiene ${usuarios} usuario${usuarios === 1 ? '' : 's'} con ese tag.\n\nSus perfiles quedarían apuntando a un colegio que ya no existe y perderían módulos y aislamiento. Primero hay que mover o dar de baja a esas personas.`);
+            return;
+        }
+        const codigos = colegiosAdminLogic.codigosPorColegio[colegioId] || [];
+        const escrito = prompt(
+            `Vas a eliminar el colegio ${colegioId}.\n\n` +
+            `Se borrará también ${codigos.length === 1 ? 'su código de invitación' : `sus ${codigos.length} códigos de invitación`}. No se puede deshacer.\n\n` +
+            `Escribe ${colegioId} para confirmar:`);
+        if (escrito !== colegioId) {
+            if (escrito !== null) alert('El texto no coincide. No se eliminó nada.');
+            return;
+        }
+        try {
+            // Primero los códigos: si algo falla a mitad, es preferible un
+            // colegio sin códigos (inofensivo) que códigos sin colegio.
+            for (const c of codigos) await codigosCollection.doc(c.id).delete();
+            await colegiosCollection.doc(colegioId).delete();
+            await colegiosAdminLogic.load();
+            alert(`Colegio ${colegioId} eliminado, junto con ${codigos.length} código(s).`);
+        } catch (e) {
+            alert(`No se pudo eliminar: ${e.message}`);
+            await colegiosAdminLogic.load();
+        }
     },
 
     generarCodigo: async (colegioId) => {
@@ -156,10 +200,17 @@ const colegiosAdminLogic = {
                             </div>
                             <p class="text-xs text-gray-500 mt-1"><i class="ph-bold ph-users"></i> ${usuarios} usuario${usuarios === 1 ? '' : 's'} con este tag</p>
                         </div>
+                        ${colegio.id === DEFAULT_SCHOOL ? '' : `
+                        <button onclick="colegiosAdminLogic.eliminar('${sanitizeHTML(colegio.id)}')"
+                                class="px-3 py-1.5 rounded-lg text-xs font-bold text-gray-400 hover:text-red-600 hover:bg-red-50 transition order-last"
+                                title="${usuarios ? 'Tiene usuarios: hay que moverlos antes' : 'Eliminar este colegio y sus códigos'}">
+                            <i class="ph-bold ph-trash"></i> Eliminar
+                        </button>`}
                         <div class="flex items-center gap-2">
                             <span class="text-[10px] font-bold uppercase tracking-widest text-gray-400">Módulos:</span>
                             ${moduloToggle('toefl', 'TOEFL')}
                             ${moduloToggle('delf', 'DELF')}
+                            ${moduloToggle('icfes', 'Saber 11')}
                         </div>
                     </div>
                     <div class="space-y-2">

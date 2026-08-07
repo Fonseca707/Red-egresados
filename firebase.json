@@ -7,72 +7,86 @@
   },
   "hosting": [
     {
-    "site": "sinapsisred",
-    "public": ".",
-    "ignore": [
-      "firebase.json",
-      ".firebaserc",
-      "**/.*",
-      "**/.*/**",
-      ".git/**",
-      ".github/**",
-      ".firebase/**",
-      ".wrangler/**",
-      "**/node_modules/**",
-      "backups/**",
-      "scripts/**",
-      "proxy-ia/**",
-      "correos-worker/**",
-      "docs/**",
-      "README.md",
-      "CLAUDE.md",
-      "*.md",
-      "firebase-config.example.js",
-      "tailwind.config.js",
-      "tailwind.src.css"
-    ],
-    "headers": [
-      {
-        "source": "**/*.@(html|js|css)",
-        "headers": [
-          { "key": "Cache-Control", "value": "max-age=0, must-revalidate" }
-        ]
-      }
-    ]
+      "site": "sinapsisred",
+      "public": ".",
+      "ignore": [
+        "firebase.json",
+        ".firebaserc",
+        "**/.*",
+        "**/.*/**",
+        ".git/**",
+        ".github/**",
+        ".firebase/**",
+        ".wrangler/**",
+        "**/node_modules/**",
+        "backups/**",
+        "scripts/**",
+        "proxy-ia/**",
+        "correos-worker/**",
+        "docs/**",
+        "README.md",
+        "CLAUDE.md",
+        "*.md",
+        "firebase-config.example.js",
+        "tailwind.config.js",
+        "tailwind.src.css",
+        "lotes/**",
+        "vista-lote.html",
+        "pruebas-visual.html",
+        "pruebas-*.mjs"
+      ],
+      "headers": [
+        {
+          "source": "**/*.@(html|js|css)",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "max-age=0, must-revalidate"
+            }
+          ]
+        }
+      ]
     },
     {
-    "site": "red-egresados-65a1a",
-    "public": ".",
-    "ignore": [
-      "firebase.json",
-      ".firebaserc",
-      "**/.*",
-      "**/.*/**",
-      ".git/**",
-      ".github/**",
-      ".firebase/**",
-      ".wrangler/**",
-      "**/node_modules/**",
-      "backups/**",
-      "scripts/**",
-      "proxy-ia/**",
-      "correos-worker/**",
-      "docs/**",
-      "README.md",
-      "CLAUDE.md",
-      "*.md",
-      "firebase-config.example.js",
-      "tailwind.config.js",
-      "tailwind.src.css"
-    ],
-    "headers": [
-      {
-        "source": "**/*.@(html|js|css)",
-        "headers": [
-          { "key": "Cache-Control", "value": "max-age=0, must-revalidate" }
-        ]
-      }
-    ]
+      "site": "red-egresados-65a1a",
+      "public": ".",
+      "ignore": [
+        "firebase.json",
+        ".firebaserc",
+        "**/.*",
+        "**/.*/**",
+        ".git/**",
+        ".github/**",
+        ".firebase/**",
+        ".wrangler/**",
+        "**/node_modules/**",
+        "backups/**",
+        "scripts/**",
+        "proxy-ia/**",
+        "correos-worker/**",
+        "docs/**",
+        "README.md",
+        "CLAUDE.md",
+        "*.md",
+        "firebase-config.example.js",
+        "tailwind.config.js",
+        "tailwind.src.css",
+        "lotes/**",
+        "vista-lote.html",
+        "pruebas-visual.html",
+        "pruebas-*.mjs"
+      ],
+      "headers": [
+        {
+          "source": "**/*.@(html|js|css)",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "max-age=0, must-revalidate"
+            }
+          ]
+        }
+      ]
     }
   ]
 }

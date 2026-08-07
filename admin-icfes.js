@@ -307,23 +307,49 @@ Responde SOLO con este JSON, sin markdown ni explicaciones:
     // tener). Así que entran por aquí, pegadas como JSON, y pasan EXACTAMENTE
     // por el mismo camino que lo generado: mismas validaciones, misma cola,
     // mismo `revisado: false`. El gate humano no se salta por ser mías.
-    async importarLote() {
+    // Los lotes se leen del disco, no de una URL del sitio: publicarlos dejaría
+    // el banco con sus claves en una dirección que cualquier estudiante puede
+    // adivinar. Por eso `lotes/**` está fuera del hosting y el archivo se elige
+    // aquí, desde el computador.
+    async importarArchivos(input) {
+        const archivos = [...(input?.files || [])];
+        if (!archivos.length) return;
+        for (const archivo of archivos) {
+            try {
+                const texto = await archivo.text();
+                await this.importarLote(texto, archivo.name);
+            } catch (e) {
+                this.aviso(`No se pudo leer ${archivo.name}: ${e.message}`, 'error');
+            }
+        }
+        input.value = '';   // permite volver a elegir el mismo archivo
+    },
+
+    async importarLote(textoCrudo = null, nombreArchivo = '') {
         const caja = document.getElementById('icfes-import-json');
         const boton = document.getElementById('icfes-btn-importar');
-        const crudo = String(caja?.value || '').trim();
-        if (!crudo) { this.aviso('Pega primero el JSON del lote.', 'error'); return; }
+        const crudo = String(textoCrudo ?? caja?.value ?? '').trim();
+        if (!crudo) { this.aviso('Elige un archivo de lote o pega su JSON.', 'error'); return; }
 
         let paquete;
         try {
             paquete = JSON.parse(crudo);
         } catch (e) {
-            this.aviso('El JSON no se pudo leer: ' + e.message, 'error');
+            this.aviso(`El JSON ${nombreArchivo ? 'de ' + nombreArchivo + ' ' : ''}no se pudo leer: ${e.message}`, 'error');
             return;
         }
         const lotes = Array.isArray(paquete) ? paquete : (paquete.lotes || [paquete]);
         if (!lotes.length) { this.aviso('El JSON no trae ningún lote.', 'error'); return; }
 
-        boton.disabled = true; boton.textContent = 'Importando…';
+        // Importar dos veces el mismo archivo llenaría la cola de duplicados y
+        // eso solo se descubre revisando, que es lo caro. Se avisa antes.
+        if (nombreArchivo) {
+            const yaEstan = this.propuestas.filter(p => p.loteArchivo === nombreArchivo).length
+                          + (this.banco || []).filter(p => p.loteArchivo === nombreArchivo).length;
+            if (yaEstan && !confirm(`Ya hay ${yaEstan} pregunta(s) de "${nombreArchivo}" en el sistema. ¿Importarlo otra vez? Quedarían repetidas.`)) return;
+        }
+
+        if (boton) { boton.disabled = true; boton.textContent = 'Importando…'; }
         let total = 0, limpias = 0;
         const avisos = [];
         try {
@@ -348,7 +374,7 @@ Responde SOLO con este JSON, sin markdown ni explicaciones:
                     generico: lote.prueba === 'matematicas' ? (lote.generico ?? null) : null,
                 }));
 
-                const guardados = await this.guardarPendientes(items, lote.estimulo || null, lote.prueba, lote.tipoTexto || '', 'claude');
+                const guardados = await this.guardarPendientes(items, lote.estimulo || null, lote.prueba, lote.tipoTexto || '', 'claude', nombreArchivo);
                 total += guardados.length;
                 limpias += guardados.filter(p => !p._fallos.length).length;
                 avisos.push(...this.validarLote(items, lote.prueba).map(a => `Lote ${n + 1}: ${a}`));
@@ -360,17 +386,17 @@ Responde SOLO con este JSON, sin markdown ni explicaciones:
             const todas = lotes.flatMap(l => (Array.isArray(l.items) ? l.items : []));
             avisos.push(...this.validarLote(todas, '_global').map(a => `En el conjunto — ${a}`));
 
-            this.aviso(`${total} preguntas importadas · ${limpias} pasaron limpias las validaciones. Están en la cola con revisado:false — ninguna llega a un estudiante hasta que la apruebes.${avisos.length ? ' ⚠️ ' + avisos.join(' ') : ''}`, avisos.length ? 'info' : 'ok');
-            if (caja) caja.value = '';
+            this.aviso(`${nombreArchivo ? nombreArchivo + ': ' : ''}${total} preguntas importadas · ${limpias} pasaron limpias las validaciones. Están en la cola con revisado:false — ninguna llega a un estudiante hasta que la apruebes.${avisos.length ? ' ⚠️ ' + avisos.join(' ') : ''}`, avisos.length ? 'info' : 'ok');
+            if (caja && !nombreArchivo) caja.value = '';
             await this.cargarPendientes();
         } catch (e) {
             this.aviso(`Se cortó la importación: ${e.message}. Lo que alcanzó a entrar ya está en la cola.`, 'error');
         } finally {
-            boton.disabled = false; boton.textContent = 'Importar lote';
+            if (boton) { boton.disabled = false; boton.textContent = 'Importar lo pegado'; }
         }
     },
 
-    async guardarPendientes(items, estimulo, prueba, tipoTexto, origen = 'ia') {
+    async guardarPendientes(items, estimulo, prueba, tipoTexto, origen = 'ia', loteArchivo = '') {
         let estimuloId = null;
         let avisoTexto = [];
         // El texto se guarda UNA vez por lote: en Lectura Crítica un mismo texto
@@ -414,6 +440,7 @@ Responde SOLO con este JSON, sin markdown ni explicaciones:
                 clave: Number(it.clave) || 0, justificaciones: it.justificaciones || [],
                 dificultad: it.dificultad || 2,
                 origen,                   // 'ia' = DeepSeek · 'claude' = escritas a mano
+                loteArchivo,              // de qué archivo vino: sirve para no importarlo dos veces
                 revisado: false,          // ← el gate: sin aprobación humana no se sirve
                 validaciones: fallos,     // se guardan para que la cola las muestre
                 school: '', active: true,

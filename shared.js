@@ -501,7 +501,7 @@ function rankAlumniForDirectory(items = []) {
 // obtenía lo que se le cobra a los colegios.
 // **No hay módulos por defecto**: lo que no está activo en el doc del colegio,
 // no está. Este mapa es solo la lista de los que existen, todos en falso.
-const MODULOS_DEFAULT = { toefl: false, delf: false };
+const MODULOS_DEFAULT = { toefl: false, delf: false, icfes: false };
 
 // ===== LO QUE DESBLOQUEA UN COLEGIO =====
 // Quien entra sin código queda en la red general: perfil, directorio, novedades
