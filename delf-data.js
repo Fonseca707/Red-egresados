@@ -69,6 +69,121 @@ const DELF_TEST_B1_1 = {
         ]
     },
 
+    // ── Compréhension de l'oral ──────────────────────────────────────────────
+    // TRANSCRIPTS Y PREGUNTAS SON DE ELABORACIÓN PROPIA (2026-08-02). Antes eran
+    // los literales del sujet démo B1TP_02; se reemplazaron porque Sinapsis se
+    // vende a colegios y republicar el sujet oficial en un producto de pago no es
+    // lo mismo que descargarlo para practicar. Del examen real se replica lo que
+    // es estructura, no contenido:
+    //   · 3 documentos de dificultad creciente: diálogo cotidiano → radio sobre
+    //     un tema profesional/educativo → radio sobre un tema de sociedad.
+    //   · 7 + 9 + 9 = 25 puntos, 19 ítems, 100% QCM (nouveau format).
+    //   · Puntuación NO uniforme dentro de cada ejercicio: conviven ítems de 1 y
+    //     de 1,5 puntos, como en el baremo oficial.
+    //   · Longitud calibrada contra el sujet (324-388 palabras por documento,
+    //     ~2 min a 150 wpm) y por debajo del tope de 2000 caracteres del endpoint
+    //     de diálogo de ElevenLabs, para que cada clip salga de UNA sola tirada.
+    //
+    // Los mismos textos están en `admin-audio.js` (ESTILOS[...].referencia): es
+    // lo que carga el botón del estudio de audio, y por eso el examen encuentra
+    // su clip solo, emparejado por transcript. Si se edita un transcript aquí,
+    // hay que editarlo allí — si no, el documento se queda sin audio.
+    co: {
+        totalPoints: 25,
+        // Pausas del nouveau format, medidas en la pista del surveillant. Son la
+        // estructura real de la épreuve; el reproductor las respeta pero deja
+        // saltarlas (decisión de Juan: practicar no es examinarse).
+        pausas: { leer: 60, entreEscuchas: 10, responder: 30 },
+        documents: [
+            {
+                id: 'co1',
+                clipTipo: 'delf-dialogo',
+                title: 'Exercice 1 — Conversation',
+                consigne: 'Vous écoutez une conversation entre deux amis.',
+                points: 7,
+                maxPlays: 2,
+                transcript: `Sophie: Karim ! Tu tombes bien, j'allais justement t'appeler.
+Karim: Ah bon ? Il y a un problème ?
+Sophie: Au contraire ! Ça y est, j'ai signé : je déménage à Nantes le mois prochain.
+Karim: À Nantes ? Mais c'est loin ! Et ton travail ici, alors ?
+Sophie: Justement, c'est pour le travail. On m'a proposé un poste de responsable dans une agence là-bas. J'ai longtemps hésité à cause de la distance, mais l'appartement est beaucoup plus grand et le loyer est presque le même qu'ici.
+Karim: Alors là, bravo ! Et tu pars quand, exactement ?
+Sophie: Le samedi 12. Et c'est un peu pour ça que je voulais te parler... Tu serais libre ce week-end-là ?
+Karim: Pour porter des cartons, tu veux dire ?
+Sophie: Voilà. J'ai déjà réservé une camionnette, mais toute seule, je n'y arriverai jamais.
+Karim: Le samedi matin, j'accompagne mon fils au football, mais je peux passer à partir de midi. Ça t'irait ?
+Sophie: Parfait ! De toute façon, le matin, je dois encore vider la cave.
+Karim: Et les meubles ? Tu emportes tout ?
+Sophie: Non, je laisse le canapé et la vieille armoire. Je préfère les donner à une association plutôt que de les jeter.
+Karim: Tu as raison, ils serviront à quelqu'un. Et pour le déjeuner, ne t'inquiète pas : je passe à la boulangerie avant de venir.
+Sophie: C'est gentil, merci ! Ah, et j'allais oublier le plus important : est-ce que tu pourrais garder le chat une semaine, le temps que je m'installe ?
+Karim: Sans problème, les enfants vont être ravis. Mais à une condition : tu nous invites à Nantes cet été !
+Sophie: Ça, c'est promis. Et je vous ferai visiter, il paraît que la mer est à moins d'une heure.`,
+                questions: [
+                    { q: 'Sophie annonce à Karim qu’elle va…', options: ['changer d’appartement dans la même ville', 'déménager à Nantes', 'partir en vacances au bord de la mer'], answer: 1, points: 1 },
+                    { q: 'Quelle est la raison principale de ce changement ?', options: ['Un nouveau poste de responsable', 'Un loyer beaucoup moins cher', 'Se rapprocher de sa famille'], answer: 0, points: 1 },
+                    { q: 'Qu’est-ce que Sophie a déjà fait ?', options: ['Elle a réservé une camionnette', 'Elle a vidé la cave', 'Elle a vendu ses meubles'], answer: 0, points: 1 },
+                    { q: 'Pourquoi Karim ne peut-il pas venir le samedi matin ?', options: ['Parce qu’il travaille', 'Parce qu’il accompagne son fils au football', 'Parce qu’il doit aller à la boulangerie'], answer: 1, points: 1.5 },
+                    { q: 'Que va faire Sophie du canapé et de l’armoire ?', options: ['Les emporter à Nantes', 'Les jeter', 'Les donner à une association'], answer: 2, points: 1.5 },
+                    { q: 'Qu’est-ce que Karim demande en échange de son aide ?', options: ['Être invité à Nantes cet été', 'Garder la camionnette un jour de plus', 'Récupérer la vieille armoire'], answer: 0, points: 1 }
+                ]
+            },
+            {
+                id: 'co2',
+                clipTipo: 'delf-radio-pro',
+                title: 'Exercice 2 — Émission de radio',
+                consigne: 'Vous écoutez la radio. Il s’agit d’une interview sur l’orientation des jeunes.',
+                points: 9,
+                maxPlays: 2,
+                transcript: `Journaliste: Chaque année, des milliers de collégiens doivent choisir une orientation sans avoir jamais vu de près le métier qui les attire. L'association Un métier, une journée leur propose de passer une journée entière avec un professionnel. Je reçois sa coordinatrice, Claire Berthier. Bonjour Claire. Comment est née cette idée ?
+Claire: Bonjour. Elle est née d'un constat très simple. En troisième, les élèves font un stage d'observation d'une semaine ; mais la plupart le font chez un parent ou chez un voisin, parce qu'ils n'ont pas d'autre contact. Résultat : ils découvrent toujours les mêmes métiers, ceux de leur famille.
+Journaliste: Et concrètement, comment se passe cette journée ?
+Claire: L'élève suit un professionnel qui a accepté de l'accueillir : une vétérinaire, un architecte, une cuisinière... Il ne visite pas, il l'accompagne du matin au soir, il assiste aux réunions, il pose ses questions. C'est très différent d'une visite d'entreprise en groupe, où l'on regarde tout de loin.
+Journaliste: Combien de professionnels participent aujourd'hui ?
+Claire: Un peu plus de trois cents dans la région, et l'année dernière, mille deux cents élèves ont fait leur journée. Ce qui nous manque, ce ne sont pas les jeunes : ce sont les métiers manuels, où il y a pourtant énormément de travail.
+Journaliste: Et si un professionnel nous écoute et veut participer ?
+Claire: La première étape, c'est de remplir le formulaire sur notre site. Ensuite, nous l'appelons : un entretien d'une vingtaine de minutes, pour préparer la journée ensemble. Et c'est lui qui choisit ses dates.
+Journaliste: Un dernier mot ?
+Claire: Ce qui me frappe le plus, c'est qu'un élève sur trois change d'avis après sa journée. Parfois il abandonne une idée qu'il avait depuis des années, parfois il découvre un métier dont il ignorait l'existence. Dans les deux cas, il choisit en connaissance de cause.`,
+                questions: [
+                    { q: 'Que propose l’association aux élèves ?', options: ['Une journée complète auprès d’un professionnel', 'Des cours du soir pour préparer l’orientation', 'Une visite d’entreprise en groupe'], answer: 0, points: 1.5 },
+                    { q: 'Selon Claire, quel est le problème des stages de troisième ?', options: ['Ils durent trop peu de temps', 'Les élèves les font chez un parent ou un voisin', 'Les entreprises refusent d’accueillir les élèves'], answer: 1, points: 1.5 },
+                    { q: 'Pendant la journée, l’élève…', options: ['observe l’entreprise de loin', 'accompagne le professionnel du matin au soir', 'travaille à la place du professionnel'], answer: 1, points: 1.5 },
+                    { q: 'Combien d’élèves ont participé l’année dernière ?', options: ['Trois cents', 'Mille deux cents', 'Une vingtaine'], answer: 1, points: 1.5 },
+                    { q: 'Qu’est-ce qui manque le plus à l’association ?', options: ['Des jeunes intéressés', 'Des professionnels des métiers manuels', 'De l’argent pour les transports'], answer: 1, points: 1.5 },
+                    { q: 'Après leur journée, un élève sur trois…', options: ['change d’avis sur son orientation', 'demande à revenir une deuxième fois', 'abandonne ses études'], answer: 0, points: 1.5 }
+                ]
+            },
+            {
+                id: 'co3',
+                clipTipo: 'delf-radio-soc',
+                title: 'Exercice 3 — Émission de radio',
+                consigne: 'Vous écoutez la radio. Il s’agit d’une interview sur un sujet de société.',
+                points: 9,
+                maxPlays: 2,
+                transcript: `Journaliste: Aujourd'hui, je reçois Martine Delaunay, maire de Villeneuve-le-Haut. C'est un village de sept cents habitants qui, il y a dix ans, perdait sa population, et qui accueille aujourd'hui de nouvelles familles.
+Martine: Bonjour. Il faut se souvenir d'où l'on vient. Il y a dix ans, nous perdions une vingtaine d'habitants par an, la dernière épicerie avait fermé, et surtout, nous étions passés sous les trente élèves : l'école du village allait fermer. Et quand l'école ferme, plus aucune famille ne s'installe.
+Journaliste: Par quoi avez-vous commencé ?
+Martine: Pas par des travaux, contrairement à ce qu'on croit toujours. Nous avons commencé par la fibre : dans une commune comme la nôtre, une connexion lente, c'est une porte fermée. Ensuite, nous avons transformé l'ancienne école en un lieu partagé, avec des bureaux que l'on peut louer soixante euros par mois. Des gens qui travaillent à distance sont venus s'installer, d'abord deux familles, puis d'autres, parce qu'elles se sont parlé entre elles.
+Journaliste: Avec quels résultats ?
+Martine: Une quarantaine de familles en cinq ans, et l'école a rouvert une deuxième classe l'an dernier. Ça, c'est le signe qui ne trompe pas.
+Journaliste: Et les difficultés ?
+Martine: Il y en a, bien sûr. On me parle toujours du transport, et c'est vrai qu'ici il faut deux voitures par foyer. Mais le vrai obstacle aujourd'hui, ce n'est pas le transport, c'est le logement : nous avons des maisons vides dont les propriétaires ne veulent pas louer, parce qu'elles demanderaient trop de travaux.
+Journaliste: Que conseilleriez-vous à quelqu'un qui nous écoute et qui rêve de s'installer à la campagne ?
+Martine: De venir passer une semaine ici en hiver, pas au mois d'août. Un tiers des familles qui arrivent uniquement pour le prix des maisons repartent au bout de deux ans. Celles qui restent, ce sont celles qui savaient exactement où elles venaient.`,
+                questions: [
+                    { q: 'Combien d’habitants compte le village aujourd’hui ?', options: ['Trois cents', 'Sept cents', 'Deux mille'], answer: 1, points: 1 },
+                    { q: 'Il y a dix ans, le village risquait surtout…', options: ['la fermeture de son école', 'la fermeture de sa mairie', 'de perdre sa gare'], answer: 0, points: 1 },
+                    { q: 'Par quoi la commune a-t-elle commencé ?', options: ['Par installer la fibre', 'Par construire des logements neufs', 'Par rouvrir une épicerie'], answer: 0, points: 1 },
+                    { q: 'Le lieu partagé a été aménagé dans…', options: ['l’ancienne épicerie', 'l’ancienne école', 'la mairie'], answer: 1, points: 1.5 },
+                    { q: 'Combien de familles se sont installées en cinq ans ?', options: ['Une dizaine', 'Une quarantaine', 'Une centaine'], answer: 1, points: 1.5 },
+                    { q: 'Selon la maire, le principal obstacle aujourd’hui, c’est…', options: ['le transport', 'le logement', 'le manque de travail'], answer: 1, points: 1.5 },
+                    { q: 'Que conseille-t-elle aux personnes intéressées ?', options: ['De venir passer une semaine en hiver', 'De visiter le village au mois d’août', 'D’acheter une maison le plus vite possible'], answer: 0, points: 1.5 }
+                ]
+            }
+        ]
+    },
+
     pe: {
         minutes: 45,
         totalPoints: 25,

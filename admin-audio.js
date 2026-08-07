@@ -65,71 +65,91 @@ const VOCES = [
 //  · TOEFL — `toefl-ibt-full-length-practice-test1.pdf` de ETS ("aligns with
 //    tests from January 21, 2026"), que trae los guiones literales de los audios.
 //
-// Cada estilo lleva su `ficha` (cómo suena el audio real) y su `referencia` (un
-// transcript oficial). Generar la referencia y compararla con la grabación real
-// es la única forma honesta de medir cuánto se parece nuestro TTS.
+// Cada estilo lleva su `ficha` (cómo suena el audio real) y su `referencia` (el
+// transcript que carga el botón del estudio).
+//
+// ⚠️ En los tres estilos DELF, `referencia` es NUESTRO transcript, el mismo que
+// está en `delf-data.js` (2026-08-02): el clip generado desde aquí queda
+// emparejado con su documento del examen por transcript, así que **si se edita
+// uno hay que editar el otro** o el documento se queda sin audio. Antes eran los
+// literales del sujet oficial, que servían para comparar nuestro TTS con la
+// grabación real; esa comparación ya se hizo y el francés quedó cerrado
+// (ElevenLabs, preset por defecto), y republicar el sujet en un producto que se
+// vende a colegios no es lo mismo que descargarlo para practicar. Lo que sigue
+// saliendo del sujet son las MEDIDAS de cada ficha, no el texto.
 const ESTILOS = {
     'delf-dialogo': {
         wpm: 150,
         examen: 'delf', etiqueta: 'DELF · Ej.1 diálogo cotidiano', hablantes: 2,
         instruccion: "Dialogue authentique en français de France entre deux amis proches qui se tutoient. Débit naturel d'environ 150 mots par minute, ton spontané, chaleureux et non théâtral — surtout pas une lecture à voix haute. Articulation nette (chaque mot doit rester identifiable pour un apprenant B1), enchaînements et intonations montantes des questions bien marquées, courtes respirations entre les répliques. Aucune musique, aucun bruit de fond, prise de son de studio :",
         ficha: {
-            duracion: '≈ 1 min 50 s – 2 min (352 palabras en el sujet oficial)',
+            duracion: '≈ 1 min 50 s – 2 min (nuestro guion: 284 palabras; el del sujet oficial, 352)',
             voces: '2 · francés de Francia, timbres claramente distintos, tuteo',
             ritmo: '≈ 150 palabras/min, espontáneo pero articulado',
             fondo: 'Estudio limpio: sin música, sin ambiente, sin efectos',
             ojo: 'El audio real es una PISTA completa: consigna hablada + un “son” (bip) antes de cada escucha + silencios de 1 min / 10 s / 30 s. Eso lo arma el reproductor, no el TTS.'
         },
-        referencia: `Célia: Salut Lilian !
-Lilian: Salut Célia ! Ça va ?
-Célia: Génial ! Tu sais quoi ? Pour mes trente ans, je vais organiser un week-end à la montagne. Un week-end... sans enfants !
-Lilian: C'est une super idée ! Tu sais déjà où ?
-Célia: Mes parents ont une maison dans les Alpes. Ils nous la prêtent avec plaisir ! Et moi, je leur offre le restaurant pour leur dire merci !
-Lilian: Génial ! Et tu vas inviter beaucoup de monde ?
-Célia: Non, seulement mes meilleurs amis. On sera une dizaine. Je préfère quand il n'y a pas trop de gens, pour pouvoir parler avec tout le monde. Tu vas venir ?
-Lilian: J'aimerais bien ! C'est quand ?
-Célia: Les 20 et 21 janvier.
-Lilian: Malheureusement, je travaille le samedi, mais je peux prendre le train après et passer la moitié du week-end avec vous ! Ça me ferait plaisir de partager ce moment avec toi, depuis tout le temps qu'on se connaît !
-Célia: Oui, c'est parfait, tu arriveras juste à temps pour le grand repas d'anniversaire !
-Lilian: Ça ne va pas te faire trop de choses à préparer ?
-Célia: Non, je vais demander à chaque personne d'apporter quelque chose à manger, et moi, je m'occupe des boissons.
-Lilian: C'est une bonne solution ! Et le dimanche, qu'est-ce qu'on va faire ?
-Célia: J'espère qu'il va y avoir de la neige. Comme ça, on pourra faire du ski.
-Lilian: J'aime beaucoup ce programme ! Et au fait... qu'est-ce que tu aimerais comme cadeau pour ton anniversaire ?
-Célia: Hmm, j'ai réfléchi mais je ne veux pas de cadeau. En fait, ce qui est le plus important pour moi, c'est que vous soyez tous présents ce week-end-là !
-Lilian: D'accord. Alors compte sur moi !`
+        referencia: `Sophie: Karim ! Tu tombes bien, j'allais justement t'appeler.
+Karim: Ah bon ? Il y a un problème ?
+Sophie: Au contraire ! Ça y est, j'ai signé : je déménage à Nantes le mois prochain.
+Karim: À Nantes ? Mais c'est loin ! Et ton travail ici, alors ?
+Sophie: Justement, c'est pour le travail. On m'a proposé un poste de responsable dans une agence là-bas. J'ai longtemps hésité à cause de la distance, mais l'appartement est beaucoup plus grand et le loyer est presque le même qu'ici.
+Karim: Alors là, bravo ! Et tu pars quand, exactement ?
+Sophie: Le samedi 12. Et c'est un peu pour ça que je voulais te parler... Tu serais libre ce week-end-là ?
+Karim: Pour porter des cartons, tu veux dire ?
+Sophie: Voilà. J'ai déjà réservé une camionnette, mais toute seule, je n'y arriverai jamais.
+Karim: Le samedi matin, j'accompagne mon fils au football, mais je peux passer à partir de midi. Ça t'irait ?
+Sophie: Parfait ! De toute façon, le matin, je dois encore vider la cave.
+Karim: Et les meubles ? Tu emportes tout ?
+Sophie: Non, je laisse le canapé et la vieille armoire. Je préfère les donner à une association plutôt que de les jeter.
+Karim: Tu as raison, ils serviront à quelqu'un. Et pour le déjeuner, ne t'inquiète pas : je passe à la boulangerie avant de venir.
+Sophie: C'est gentil, merci ! Ah, et j'allais oublier le plus important : est-ce que tu pourrais garder le chat une semaine, le temps que je m'installe ?
+Karim: Sans problème, les enfants vont être ravis. Mais à une condition : tu nous invites à Nantes cet été !
+Sophie: Ça, c'est promis. Et je vous ferai visiter, il paraît que la mer est à moins d'une heure.`
     },
     'delf-radio-pro': {
         wpm: 150,
         examen: 'delf', etiqueta: 'DELF · Ej.2 radio (entrevista, tema profesional)', hablantes: 2,
         instruccion: "Extrait d'émission de radio française : un journaliste interviewe un invité. Le journaliste a une voix de studio posée et bien articulée, il pose ses questions avec une intonation claire ; l'invité répond sur un ton naturel et spontané, un peu plus rapide et moins net que le journaliste, comme une vraie personne interviewée. Débit d'environ 150 mots par minute. Pas de jingle, pas de musique, pas d'ambiance : voix seules, prise de son de studio :",
         ficha: {
-            duracion: '≈ 2 min – 2 min 30 s (388 palabras en el sujet oficial)',
+            duracion: '≈ 2 min – 2 min 30 s (nuestro guion: 297 palabras; el del sujet oficial, 388)',
             voces: '2 · periodista (locución) + invitado (habla natural)',
             ritmo: '≈ 150 palabras/min; el invitado algo más suelto que el periodista',
             fondo: 'Sin jingle ni música — el examen recorta solo las voces',
             ojo: 'La consigna previa es “Vous écoutez la radio.” Nunca se anuncia el nombre del programa.'
         },
-        referencia: `Journaliste: Aujourd'hui, je vous présente l'association Un regard pour toi, qui propose à des personnes malvoyantes de faire leur shopping avec des bénévoles qui, eux, voient et les aident. Je suis avec Hayette Louail, 29 ans, qui a créé l'association. Bonjour Hayette, est-ce que vous pouvez nous expliquer pourquoi vous avez lancé Un regard pour toi ?
-Hayette: Bonjour. Moi, je suis malvoyante. Quand je vais dans les magasins pour acheter des vêtements, je ne sais jamais si je vais trouver un vendeur disponible. Et même si un vendeur est là, ce n'est pas toujours facile : est-ce qu'il a bien compris ce que je cherche ? Les vendeurs vont vite, ils n'ont pas le temps... Moi, j'ai besoin de prendre mon temps... Alors j'ai pensé que des gens qui aiment faire du shopping pourraient m'aider en venant avec moi et en m'expliquant ce qu'ils voient !
-Journaliste: Qu'est-ce que ça a changé dans votre expérience du shopping ?
-Hayette: J'adore quand un bénévole me suggère une façon différente de m'habiller. Il me décrit un vêtement, et je pense, oh la la, non, ce n'est pas du tout pour moi ! mais j'essaie, et parfois, c'est vraiment super ! Grâce aux bénévoles, j'apprends à porter d'autres choses. Après, au travail, mes collègues me demandent où j'ai acheté mes vêtements.
-Journaliste: Et si je veux aider l'association, comment est-ce que je fais ?
-Hayette: Aujourd'hui, on a une cinquantaine de bénévoles, mais on est toujours à la recherche de nouvelles personnes, donc vous êtes le bienvenu. D'abord, vous aurez une réunion d'information pour rencontrer les autres bénévoles et préparer votre premier rendez-vous. Puis, c'est vous qui décidez à quel rythme vous faites des sorties shopping, et quand.`
+        referencia: `Journaliste: Chaque année, des milliers de collégiens doivent choisir une orientation sans avoir jamais vu de près le métier qui les attire. L'association Un métier, une journée leur propose de passer une journée entière avec un professionnel. Je reçois sa coordinatrice, Claire Berthier. Bonjour Claire. Comment est née cette idée ?
+Claire: Bonjour. Elle est née d'un constat très simple. En troisième, les élèves font un stage d'observation d'une semaine ; mais la plupart le font chez un parent ou chez un voisin, parce qu'ils n'ont pas d'autre contact. Résultat : ils découvrent toujours les mêmes métiers, ceux de leur famille.
+Journaliste: Et concrètement, comment se passe cette journée ?
+Claire: L'élève suit un professionnel qui a accepté de l'accueillir : une vétérinaire, un architecte, une cuisinière... Il ne visite pas, il l'accompagne du matin au soir, il assiste aux réunions, il pose ses questions. C'est très différent d'une visite d'entreprise en groupe, où l'on regarde tout de loin.
+Journaliste: Combien de professionnels participent aujourd'hui ?
+Claire: Un peu plus de trois cents dans la région, et l'année dernière, mille deux cents élèves ont fait leur journée. Ce qui nous manque, ce ne sont pas les jeunes : ce sont les métiers manuels, où il y a pourtant énormément de travail.
+Journaliste: Et si un professionnel nous écoute et veut participer ?
+Claire: La première étape, c'est de remplir le formulaire sur notre site. Ensuite, nous l'appelons : un entretien d'une vingtaine de minutes, pour préparer la journée ensemble. Et c'est lui qui choisit ses dates.
+Journaliste: Un dernier mot ?
+Claire: Ce qui me frappe le plus, c'est qu'un élève sur trois change d'avis après sa journée. Parfois il abandonne une idée qu'il avait depuis des années, parfois il découvre un métier dont il ignorait l'existence. Dans les deux cas, il choisit en connaissance de cause.`
     },
     'delf-radio-soc': {
         wpm: 150,
         examen: 'delf', etiqueta: 'DELF · Ej.3 radio (tema de société)', hablantes: 2,
         instruccion: "Extrait d'émission de radio française sur un sujet de société : le journaliste présente brièvement son invité, puis l'invité développe une longue réponse suivie. Ton de reportage, débit d'environ 150 mots par minute, phrases longues avec des respirations aux virgules, sans emphase publicitaire. L'invité parle comme un professionnel passionné, pas comme un lecteur. Aucune musique ni bruit de fond, prise de son de studio :",
         ficha: {
-            duracion: '≈ 2 min (324 palabras en el sujet oficial)',
-            voces: '2 · presentación corta del periodista + monólogo largo del invitado',
+            duracion: '≈ 2 min (nuestro guion: 301 palabras; el del sujet oficial, 324)',
+            voces: '2 · presentación corta del periodista + respuestas largas del invitado',
             ritmo: '≈ 150 palabras/min, frases largas con respiraciones marcadas',
             fondo: 'Sin música ni ambiente',
-            ojo: 'Es el documento “más difícil” de los tres, pero NO por ser más rápido: por densidad de información y cifras (30 cuisiniers, 400 à 1 000 repas, 48 heures).'
+            ojo: 'Es el documento “más difícil” de los tres, pero NO por ser más rápido: por densidad de información y cifras (700 habitants, 30 élèves, 60 €, une quarantaine de familles).'
         },
-        referencia: `Journaliste: Aujourd'hui, je reçois François Dechy qui va nous parler de Baluchon. C'est une entreprise qu'il a créée à Romainville, en région parisienne.
-François: Alors, Baluchon, c'est une petite entreprise qui existe depuis deux ans. On prépare des repas qu'on livre dans les entreprises, pour les salariés qui n'ont pas le temps de cuisiner eux-mêmes et qui en ont assez de manger des sandwichs en cinq minutes devant leur ordinateur... Je me suis rendu compte que les employés prenaient de moins en moins de temps pour déjeuner. Mais on sait que s'arrêter un bon moment et prendre un vrai repas permet d'être plus productif l'après-midi ! Je voulais donc créer un projet qui redonnait de l'importance au moment du déjeuner. Je voulais aussi que cette entreprise mette en valeur des produits locaux, cultivés naturellement et sans produits chimiques. Et puis, ce qui m'intéresse surtout, c'est l'humain. J'avais envie d'aider des gens qui ont du mal à trouver du travail, des personnes qui sont au chômage depuis longtemps ou des jeunes qui ont arrêté l'école. À Baluchon, ces personnes sont formées pendant deux ans pour apprendre un métier dans la restauration. Pour accéder à nos cours, on leur demande seulement de savoir parler français, écrire, et compter jusqu'à cent. Quand j'ai présenté le projet à ma ville, ils ont décidé de m'aider, et le maire nous a prêté une cuisine qui n'était pas utilisée depuis plusieurs années. On prépare tous les repas là-bas, et c'est vraiment pratique pour nous, parce que c'est très central ! Tous les jours, on a 30 cuisiniers qui préparent entre 400 et 1 000 repas. Par exemple, aujourd'hui, notre équipe prépare une crème de courgette à la menthe. Vous pouvez regarder les menus sur notre site internet. Pour commander, téléphonez au moins 48 heures à l'avance, surtout pour un grand groupe.`
+        referencia: `Journaliste: Aujourd'hui, je reçois Martine Delaunay, maire de Villeneuve-le-Haut. C'est un village de sept cents habitants qui, il y a dix ans, perdait sa population, et qui accueille aujourd'hui de nouvelles familles.
+Martine: Bonjour. Il faut se souvenir d'où l'on vient. Il y a dix ans, nous perdions une vingtaine d'habitants par an, la dernière épicerie avait fermé, et surtout, nous étions passés sous les trente élèves : l'école du village allait fermer. Et quand l'école ferme, plus aucune famille ne s'installe.
+Journaliste: Par quoi avez-vous commencé ?
+Martine: Pas par des travaux, contrairement à ce qu'on croit toujours. Nous avons commencé par la fibre : dans une commune comme la nôtre, une connexion lente, c'est une porte fermée. Ensuite, nous avons transformé l'ancienne école en un lieu partagé, avec des bureaux que l'on peut louer soixante euros par mois. Des gens qui travaillent à distance sont venus s'installer, d'abord deux familles, puis d'autres, parce qu'elles se sont parlé entre elles.
+Journaliste: Avec quels résultats ?
+Martine: Une quarantaine de familles en cinq ans, et l'école a rouvert une deuxième classe l'an dernier. Ça, c'est le signe qui ne trompe pas.
+Journaliste: Et les difficultés ?
+Martine: Il y en a, bien sûr. On me parle toujours du transport, et c'est vrai qu'ici il faut deux voitures par foyer. Mais le vrai obstacle aujourd'hui, ce n'est pas le transport, c'est le logement : nous avons des maisons vides dont les propriétaires ne veulent pas louer, parce qu'elles demanderaient trop de travaux.
+Journaliste: Que conseilleriez-vous à quelqu'un qui nous écoute et qui rêve de s'installer à la campagne ?
+Martine: De venir passer une semaine ici en hiver, pas au mois d'août. Un tiers des familles qui arrivent uniquement pour le prix des maisons repartent au bout de deux ans. Celles qui restent, ce sont celles qui savaient exactement où elles venaient.`
     },
     'toefl-respuesta': {
         wpm: 150,
@@ -530,16 +550,19 @@ const audioLogic = {
             ${f.ojo ? `<p class="text-xs text-amber-700 flex items-start gap-1"><i class="ph-bold ph-warning-circle mt-0.5 shrink-0"></i> ${this.escapar(f.ojo)}</p>` : ''}`;
     },
 
-    // Carga el transcript OFICIAL de ese tipo de documento. Sirve para lo único
-    // que resuelve la duda de fidelidad: generar exactamente el mismo texto que
-    // existe grabado por el examen real y escuchar los dos seguidos.
+    // Carga el transcript de ese tipo de documento. En el DELF es EL del examen
+    // (el mismo que está en `delf-data.js`): generarlo aquí es lo que le da audio
+    // al documento, porque el examen empareja su clip por transcript. En el TOEFL
+    // sigue siendo un guion de muestra del practice test de ETS, para calibrar.
     cargarReferencia() {
         const cfg = ESTILOS[document.getElementById('audio-tipo').value];
         if (!cfg?.referencia) return;
         const campo = document.getElementById('audio-texto');
         if (campo.value.trim() && !confirm('Se reemplaza el transcript que hay escrito. ¿Seguir?')) return;
         campo.value = cfg.referencia;
-        this.aviso('Cargado el transcript oficial de ese tipo de documento. Genéralo y compáralo con la grabación real del examen: es la prueba de fidelidad.', 'info');
+        this.aviso(cfg.examen === 'delf'
+            ? 'Cargado el transcript de ese documento del examen. Genéralo y guárdalo: el DELF lo encuentra solo, sin emparejarlo a mano.'
+            : 'Cargado un guion de muestra de ese tipo de tarea. Sirve para calibrar la voz, no es contenido de examen.', 'info');
     },
 
     proveedor() {

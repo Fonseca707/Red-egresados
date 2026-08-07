@@ -64,11 +64,11 @@
     <script src="shared.js?v=39"></script>
     <script src="toefl-data.js?v=2"></script>
     <script src="toefl-practice.js?v=12"></script>
-    <script src="delf-data.js?v=2"></script>
+    <script src="delf-data.js?v=4"></script>
     <script src="icfes-data.js?v=3"></script>
     <script src="icfes-visual.js?v=2"></script>
     <script src="icfes-engine.js?v=5"></script>
-    <script src="delf-practice.js?v=7"></script>
+    <script src="delf-practice.js?v=8"></script>
     <script src="ia-calificadora.js?v=4"></script>
     <script src="orientadora.js?v=8"></script>
     <script>
@@ -143,9 +143,9 @@
                 practices: [
                     { name: 'Compréhension écrite (B1)', focus: '3 ejercicios: anuncios con criterios + 2 artículos de prensa', format: '45 min con cronómetro · 25 pts · todo QCM/Oui-Non', status: 'Disponible', action: "delfLogic.start('ce')" },
                     { name: 'Production écrite (B1)', focus: 'Ensayo/artículo de opinión de 160 palabras mínimo', format: '45 min con cronómetro · grilla oficial /25 + respuesta modelo', status: 'Disponible', action: "delfLogic.start('pe')" },
-                    { name: 'Compréhension orale', focus: 'Escucha de situaciones cotidianas o académicas', format: 'Audio + preguntas por nivel', status: 'Próximamente' }
+                    { name: 'Compréhension de l’oral (B1)', focus: '3 documentos: conversación + dos programas de radio', format: '2 escuchas por documento · 25 pts · con las pausas del examen', status: 'Disponible', action: "delfLogic.start('co')" }
                 ],
-                excluded: 'Production orale y compréhension orale quedan por fuera temporalmente; la oral requiere interacción y evaluación especializada.'
+                excluded: 'Solo la production orale queda por fuera: requiere interacción con un examinador y evaluación especializada.'
             }
             ,
             {
