@@ -236,6 +236,16 @@ service cloud.firestore {
         allow write: if isSuperAdmin();
       }
 
+      // Estado publicado de los modulos que dependen de contenido montado a
+      // mano (hoy: si el DELF CO ya tiene sus 3 audios). Lo escribe el estudio
+      // de audio del admin y lo lee la tarjeta de Preparacion para no abrir un
+      // examen mudo. Lectura publica porque esa tarjeta se ve sin sesion; es un
+      // recuento, no trae contenido. Escritura solo superadmin.
+      match /public/data/config/{docId} {
+        allow read: if true;
+        allow write: if isSuperAdmin();
+      }
+
       // Banco de ITEMS del ICFES y los textos que alimentan varias preguntas.
       // Lectura publica como examTests (entrenar no exige sesion); escritura
       // solo superadmin. OJO: que un item no revisado no se le sirva a un

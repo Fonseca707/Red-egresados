@@ -9,6 +9,11 @@
 // las 11 páginas necesita bump de ?v=.
 
 const audioClipsCollection = artifactsRoot.collection('public').doc('data').collection('audioClips');
+// Resumen de qué exámenes de escucha están completos. Lo escribe este estudio y
+// lo lee la tarjeta de «Preparación» para decidir si abre el CO. Es un dato
+// DERIVADO del banco: se recalcula cada vez que se abre esta pestaña, así que
+// no puede quedarse mintiendo si alguien borra un clip.
+const listeningEstadoDoc = artifactsRoot.collection('public').doc('data').collection('config').doc('listening');
 const PROXY_TTS = 'https://sinapsis-ia.sinapsis-lcp.workers.dev/tts';
 const PROXY_TTS_VOCES = PROXY_TTS + '/voces';
 
@@ -1498,6 +1503,10 @@ const audioLogic = {
             return;
         }
         this.pintarLista();
+        // El tablero de montaje se recalcula SIEMPRE desde el banco recién
+        // leído: es lo que impide que diga «montado» de un clip ya borrado.
+        this.pintarMontaje();
+        this.publicarEstado();
     },
 
     // El ritmo de los clips YA guardados se recalcula aquí con el mismo dato de
@@ -1585,6 +1594,187 @@ const audioLogic = {
                 </details>
             </div>`;
         }).join('');
+    },
+
+    // ── 4. Montaje: qué documento del examen ya suena y cuál sigue mudo ─────
+    //
+    // Guardar un clip en el banco YA lo monta: el examen lo empareja solo por
+    // transcript. El problema era que eso pasaba a ciegas — nada decía si un
+    // documento tenía audio, con qué clip, ni cuánto faltaba para poder abrir
+    // la prueba. Este tablero enseña exactamente lo que el motor va a decidir
+    // (misma función, `DELF_CO_MATCH`, no una imitación) y añade lo único que
+    // de verdad faltaba: poder decir «este clip va en este documento» cuando el
+    // texto ya no calza.
+    //
+    // Por qué el vínculo a mano existe: si se retoca el transcript del examen
+    // aunque sea una coma, el emparejamiento por texto deja de encontrar el
+    // clip y el documento se queda mudo. Antes eso no avisaba de nada.
+
+    // OJO: `DELF_TESTS` se declara con `const` en delf-data.js, así que NO
+    // cuelga de `window` — los `const` de un script clásico viven en el scope
+    // léxico global, no en el objeto global. Se accede por nombre, y con
+    // `typeof` porque admin.html podría dejar de cargar ese archivo.
+    docsCO() {
+        const tests = (typeof DELF_TESTS !== 'undefined' && DELF_TESTS) || [];
+        return tests[0]?.co?.documents || [];
+    },
+
+    // El banco tal y como lo ve el motor: solo DELF y el más nuevo primero.
+    bancoDelf() {
+        return this.clips
+            .filter(c => c.examen === 'delf')
+            .sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+    },
+
+    estadoMontaje() {
+        const banco = this.bancoDelf();
+        const docs = this.docsCO().map(doc => ({ doc, ...DELF_CO_MATCH.buscar(doc, banco) }));
+        // Un documento con clip «por tipo» suena, pero NO dice lo que el alumno
+        // lee: para el examen eso no está listo. Se cuenta como falta.
+        const montados = docs.filter(d => d.via === 'montado' || d.via === 'transcript').length;
+        return { docs, montados, total: docs.length, listo: docs.length > 0 && montados === docs.length };
+    },
+
+    pintarMontaje() {
+        const cont = document.getElementById('audio-montaje');
+        const resumen = document.getElementById('audio-montaje-resumen');
+        if (!cont) return;
+        const est = this.estadoMontaje();
+        if (!est.total) {
+            cont.innerHTML = '<p class="text-sm text-gray-500">No hay ningún examen de escucha definido en el código.</p>';
+            if (resumen) resumen.textContent = '';
+            return;
+        }
+        if (resumen) {
+            resumen.innerHTML = est.listo
+                ? `<span class="text-green-700">${est.montados} de ${est.total} documentos montados · los alumnos ya ven la prueba</span>`
+                : `<span class="text-amber-700">${est.montados} de ${est.total} documentos montados · la prueba sigue oculta para los alumnos</span>`;
+        }
+        const opciones = this.bancoDelf();
+        cont.innerHTML = est.docs.map(({ doc, clip, via }) => {
+            const sello = {
+                montado:    '<span class="px-2 py-0.5 rounded-lg text-xs bg-green-100 text-green-700">montado a mano</span>',
+                transcript: '<span class="px-2 py-0.5 rounded-lg text-xs bg-green-100 text-green-700">montado</span>',
+                tipo:       '<span class="px-2 py-0.5 rounded-lg text-xs bg-red-100 text-red-700">suena OTRO texto</span>',
+                falta:      '<span class="px-2 py-0.5 rounded-lg text-xs bg-gray-200 text-gray-600">sin audio</span>'
+            }[via];
+            const aviso = via === 'tipo'
+                ? `<p class="text-xs text-red-700 mt-2 flex items-start gap-1"><i class="ph-bold ph-warning-circle mt-0.5 shrink-0"></i> Hay un clip de este tipo, pero su transcript <b>no es</b> el del documento: el alumno leería una cosa y oiría otra. Genera el audio de este documento, o monta a mano el clip correcto.</p>`
+                : via === 'falta'
+                ? `<p class="text-xs text-gray-500 mt-2">Todavía no tiene audio. Pulsa «Preparar en el estudio»: carga su transcript y el generador que le toca; al guardar el clip queda montado solo.</p>`
+                : '';
+            const select = opciones.length ? `
+                <div class="flex items-center gap-2 flex-wrap mt-3">
+                    <select id="montaje-sel-${doc.id}" class="input-field text-xs py-2 max-w-xs">
+                        <option value="">Montar a mano otro clip…</option>
+                        ${opciones.map(c => `<option value="${this.escapar(c.id)}"${clip && c.id === clip.id ? ' selected' : ''}>${this.escapar(c.titulo || c.id)}</option>`).join('')}
+                    </select>
+                    <button onclick="audioLogic.montar('${doc.id}')" class="px-3 py-2 text-xs font-bold rounded-lg border border-gray-200 hover:bg-gray-50 transition">Montar aquí</button>
+                    ${via === 'montado' ? `<button onclick="audioLogic.desmontar('${doc.id}')" class="px-3 py-2 text-xs font-bold text-red-600 hover:underline">Quitar el montaje</button>` : ''}
+                </div>` : '';
+            return `
+            <div class="border ${via === 'montado' || via === 'transcript' ? 'border-green-200 bg-green-50/40' : via === 'tipo' ? 'border-red-200 bg-red-50/40' : 'border-gray-200'} rounded-xl p-4">
+                <div class="flex items-start justify-between gap-3 flex-wrap">
+                    <div class="min-w-0">
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <p class="font-bold text-sm">${this.escapar(doc.title || doc.id)}</p>
+                            ${sello}
+                            <span class="text-xs text-gray-400">${doc.points} pts · se escucha ${doc.maxPlays === 1 ? '1 vez' : (doc.maxPlays || 2) + ' veces'}</span>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-0.5">${clip
+                            ? `Clip: <b>${this.escapar(clip.titulo || clip.id)}</b> · ${this.formatoDuracion(clip.duracionSeg || 0)} · ${clip.proveedor === 'elevenlabs' ? 'ElevenLabs' : 'Gemini'}`
+                            : this.escapar(ESTILOS[doc.clipTipo]?.etiqueta || doc.clipTipo)}</p>
+                    </div>
+                    <button onclick="audioLogic.prepararDoc('${doc.id}')" class="px-3 py-2 text-xs font-bold rounded-lg bg-amber-600 text-white hover:bg-amber-700 transition shrink-0">Preparar en el estudio</button>
+                </div>
+                ${clip ? `<audio controls preload="none" src="${clip.audioUrl}" class="w-full mt-3 h-9"></audio>` : ''}
+                ${aviso}
+                ${select}
+            </div>`;
+        }).join('');
+    },
+
+    // Deja el estudio listo para generar el audio de ESE documento: su tipo, su
+    // generador y su transcript (el del examen, no una muestra). Es el camino
+    // normal — el que hace que no haya que montar nada a mano después.
+    prepararDoc(docId) {
+        const doc = this.docsCO().find(d => d.id === docId);
+        if (!doc) return;
+        const campo = document.getElementById('audio-texto');
+        if (campo.value.trim() && campo.value.trim() !== doc.transcript.trim()
+            && !confirm('Se reemplaza el transcript que hay escrito. ¿Seguir?')) return;
+        document.getElementById('audio-tipo').value = doc.clipTipo;
+        this.onTipoChange();
+        campo.value = doc.transcript;
+        const titulo = document.getElementById('audio-titulo');
+        if (!titulo.value.trim()) titulo.value = doc.title || doc.id;
+        this.onTextoInput();
+        document.getElementById('audio-texto').scrollIntoView({ block: 'center' });
+        this.aviso(`Listo para generar el audio de «${doc.title || doc.id}». Al guardarlo en el banco queda montado solo.`, 'info');
+    },
+
+    // Un documento, un clip: montar aquí desmonta el que estuviera puesto. Si no
+    // fuera así, dos clips con el mismo `montadoEn` dejarían la elección al
+    // orden de llegada, que es la clase de azar que no se ve hasta el examen.
+    async montar(docId) {
+        const sel = document.getElementById(`montaje-sel-${docId}`);
+        const clipId = sel?.value;
+        if (!clipId) { this.aviso('Elige primero un clip de la lista.', 'error'); return; }
+        try {
+            const lote = firebase.firestore().batch();
+            for (const c of this.clips) {
+                if (c.montadoEn === docId && c.id !== clipId) lote.update(audioClipsCollection.doc(c.id), { montadoEn: firebase.firestore.FieldValue.delete() });
+            }
+            lote.update(audioClipsCollection.doc(clipId), { montadoEn: docId });
+            await lote.commit();
+            this.aviso('Clip montado en ese documento.', 'ok');
+            await this.cargar();
+        } catch (e) {
+            this.aviso(`No se pudo montar: ${e.message}`, 'error');
+        }
+    },
+
+    async desmontar(docId) {
+        try {
+            const lote = firebase.firestore().batch();
+            for (const c of this.clips) {
+                if (c.montadoEn === docId) lote.update(audioClipsCollection.doc(c.id), { montadoEn: firebase.firestore.FieldValue.delete() });
+            }
+            await lote.commit();
+            this.aviso('Montaje quitado. Vuelve a mandar el emparejamiento por transcript.', 'ok');
+            await this.cargar();
+        } catch (e) {
+            this.aviso(`No se pudo quitar: ${e.message}`, 'error');
+        }
+    },
+
+    // Publica el resumen que lee «Preparación» para decidir si enseña el CO.
+    // Solo escribe si CAMBIÓ: abrir esta pestaña no tiene por qué costar una
+    // escritura cada vez.
+    async publicarEstado() {
+        const est = this.estadoMontaje();
+        const nuevo = {
+            listo: est.listo,
+            montados: est.montados,
+            total: est.total,
+            docs: Object.fromEntries(est.docs.map(d => [d.doc.id, d.via]))
+        };
+        try {
+            const snap = await listeningEstadoDoc.get();
+            const previo = snap.exists ? snap.data()?.delfCo : null;
+            const igual = previo && previo.listo === nuevo.listo && previo.montados === nuevo.montados
+                && previo.total === nuevo.total
+                && JSON.stringify(previo.docs || {}) === JSON.stringify(nuevo.docs);
+            if (igual) return;
+            await listeningEstadoDoc.set({
+                delfCo: { ...nuevo, actualizado: firebase.firestore.FieldValue.serverTimestamp() }
+            }, { merge: true });
+        } catch (e) {
+            // Que no se pueda publicar el resumen no debe romper el estudio: el
+            // tablero sigue diciendo la verdad, solo que la tarjeta del alumno
+            // tardará en enterarse.
+            console.warn('No se pudo publicar el estado del listening:', e.message);
+        }
     },
 
     // Rehacer un clip que salió mal no debería obligar a volver a pegar el

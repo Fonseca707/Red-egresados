@@ -20,7 +20,7 @@
         .input-field { width:100%; padding:0.85rem 1rem; background:rgba(250,250,249,0.9); border:1px solid #e7e5e4; border-radius:0.75rem; outline:none; transition:all 0.2s ease; font-size:0.9rem; font-weight:500; color:#292524; }
         .input-field:focus { border-color:#16a34a; box-shadow:0 0 0 4px rgb(34 197 94/0.15); background:#fff; }
     </style>
-    <link rel="stylesheet" href="tailwind.css?v=14">
+    <link rel="stylesheet" href="tailwind.css?v=15">
 </head>
 <body class="text-stone-800 font-sans min-h-screen flex flex-col">
 
@@ -350,6 +350,21 @@
                     </div>
                 </div>
 
+                <!-- Qué documento del examen ya suena y cuál sigue mudo. Va
+                     ARRIBA del estudio a propósito: es la pregunta con la que
+                     se entra aquí ("¿qué me falta?"), y antes no tenía
+                     respuesta en ninguna pantalla. -->
+                <div class="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-gray-100">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
+                        <h3 class="text-lg font-bold text-gray-900 flex items-center gap-2">
+                            <i class="ph-bold ph-list-checks text-amber-600"></i> Montaje del listening
+                        </h3>
+                        <p id="audio-montaje-resumen" class="text-xs font-bold"></p>
+                    </div>
+                    <p class="text-xs text-gray-500 mb-4">No hay que aprobar nada: el clip que guardes en el banco queda montado en su documento por el transcript. Esto es para <strong>ver</strong> qué falta — y para forzar el vínculo si el texto ya no coincide.</p>
+                    <div id="audio-montaje" class="space-y-3"></div>
+                </div>
+
                 <div class="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-gray-100">
                     <h3 class="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2">
                         <i class="ph-bold ph-microphone-stage text-amber-600"></i> Nuevo clip
@@ -662,7 +677,11 @@
     <script src="admin-contactos.js?v=1"></script>
     <script src="admin-migracion.js?v=1"></script>
     <script src="admin-colegios.js?v=8"></script>
-    <script src="admin-audio.js?v=13"></script>
+    <!-- El examen es la fuente de verdad de qué documentos hay que montar: el
+         estudio lee `DELF_TESTS` en vez de llevar su propia lista, que sería
+         una copia condenada a separarse del examen real. -->
+    <script src="delf-data.js?v=5"></script>
+    <script src="admin-audio.js?v=14"></script>
     <script src="icfes-data.js?v=3"></script>
     <script src="icfes-visual.js?v=2"></script>
     <script src="admin-icfes.js?v=13"></script>

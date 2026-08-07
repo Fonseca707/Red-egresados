@@ -228,3 +228,43 @@ Martine: De venir passer une semaine ici en hiver, pas au mois d'août. Un tiers
 
 // Registro de tests DELF disponibles (para agregar niveles/tests futuros)
 const DELF_TESTS = [DELF_TEST_B1_1];
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Cómo un documento del CO encuentra su audio. Vive AQUÍ, en el dato, y no en
+// cada uno de los dos que lo usan (el motor del examen en `delf-practice.js` y
+// el tablero de montaje del admin en `admin-audio.js`): si cada uno llevara su
+// copia, bastaría con tocar una para que el admin dijera «montado» y el alumno
+// se quedara sin audio — y ese fallo no hace ruido, solo silencio.
+//
+// El orden de preferencia es deliberado:
+//   1. `montadoEn` — un vínculo puesto a mano en el admin. Manda sobre todo lo
+//      demás: existe justo para los casos en que el texto ya no calza.
+//   2. transcript idéntico (normalizado) — el camino normal: se genera el clip
+//      desde el estudio con el transcript del documento y queda enganchado solo.
+//   3. mismo `clipTipo` — último recurso. Suena algo, pero ⚠️ NO es el texto del
+//      documento: el tablero lo marca en rojo porque es peor que el silencio si
+//      nadie se entera.
+const DELF_CO_MATCH = {
+    // Ignora marcas de hablante y acentos, y corta a 300 caracteres: compara
+    // «es el mismo documento», no «es idéntico carácter a carácter».
+    normalizar(t) {
+        return (t || '')
+            .replace(/^[ \t]*[A-Za-zÀ-ÿ0-9 _-]{1,20}:[ \t]*/gm, ' ')   // marcas de hablante
+            .normalize('NFD').replace(/[̀-ͯ]/g, '')          // acentos
+            .replace(/[^a-z0-9]/gi, '').toLowerCase().slice(0, 300);
+    },
+
+    // `banco` debe venir con el más nuevo primero: si hay varias versiones de un
+    // documento, gana la última generada.
+    buscar(doc, banco) {
+        const lista = banco || [];
+        const porMontaje = lista.find(c => c.montadoEn && c.montadoEn === doc.id);
+        if (porMontaje) return { clip: porMontaje, via: 'montado' };
+        const esperado = this.normalizar(doc.transcript);
+        const porTexto = lista.find(c => this.normalizar(c.transcript) === esperado);
+        if (porTexto) return { clip: porTexto, via: 'transcript' };
+        const porTipo = lista.find(c => c.tipo === doc.clipTipo);
+        if (porTipo) return { clip: porTipo, via: 'tipo' };
+        return { clip: null, via: 'falta' };
+    }
+};

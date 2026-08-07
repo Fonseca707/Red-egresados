@@ -25,8 +25,8 @@ const sandbox = {
 };
 const fabricar = new Function(...Object.keys(sandbox),
     leer('delf-data.js') + '\n' + leer('delf-practice.js') +
-    '\n return { delfLogic, DELF_TESTS };');
-const { delfLogic: L, DELF_TESTS } = fabricar(...Object.values(sandbox));
+    '\n return { delfLogic, DELF_TESTS, DELF_CO_MATCH };');
+const { delfLogic: L, DELF_TESTS, DELF_CO_MATCH } = fabricar(...Object.values(sandbox));
 const test = DELF_TESTS[0];
 
 console.log('\n1) Puntuación oficial: 3 documentos de 7 + 9 + 9 = 25');
@@ -50,7 +50,7 @@ const refs = Object.fromEntries([...estudio.matchAll(/'(delf-[a-z-]+)':\s*\{[\s\
 for (const d of test.co.documents) {
     const delEstudio = refs[d.clipTipo];
     comprobar(`${d.id} ↔ preset ${d.clipTipo}`,
-        !!delEstudio && L.normalizarTranscript(delEstudio) === L.normalizarTranscript(d.transcript),
+        !!delEstudio && DELF_CO_MATCH.normalizar(delEstudio) === DELF_CO_MATCH.normalizar(d.transcript),
         delEstudio ? '(los textos difieren)' : '(no existe ese preset en el estudio)');
 }
 // La comparación de arriba es la del motor, y el motor solo mira los primeros
@@ -69,11 +69,11 @@ for (const d of test.co.documents) {
 console.log('\n3) El emparejamiento resiste diferencias que no importan');
 const base = test.co.documents[0].transcript;
 comprobar('mismo texto con otros nombres de hablante → empareja',
-    L.normalizarTranscript(base) === L.normalizarTranscript(base.replace(/^Sophie:/gm, 'Marie:').replace(/^Karim:/gm, 'Paul:')));
+    DELF_CO_MATCH.normalizar(base) === DELF_CO_MATCH.normalizar(base.replace(/^Sophie:/gm, 'Marie:').replace(/^Karim:/gm, 'Paul:')));
 comprobar('mismo texto sin acentos → empareja',
-    L.normalizarTranscript(base) === L.normalizarTranscript(base.normalize('NFD').replace(/[\u0300-\u036f]/g, '')));
+    DELF_CO_MATCH.normalizar(base) === DELF_CO_MATCH.normalizar(base.normalize('NFD').replace(/[\u0300-\u036f]/g, '')));
 comprobar('un texto distinto NO empareja',
-    L.normalizarTranscript(base) !== L.normalizarTranscript(test.co.documents[1].transcript));
+    DELF_CO_MATCH.normalizar(base) !== DELF_CO_MATCH.normalizar(test.co.documents[1].transcript));
 
 console.log('\n3-bis) Cada documento cabe en UNA sola tirada del generador');
 // El troceo está descartado (con él, las partes no suenan a la misma grabación),

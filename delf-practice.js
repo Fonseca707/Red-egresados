@@ -312,15 +312,14 @@ const delfLogic = {
     // Si se pudiera repetir, la prueba mediría otra cosa.
 
     // Cada documento lleva escrito en `clipTipo` qué tipo de clip le toca, y su
-    // transcript es el mismo que carga el botón «transcript oficial de
-    // referencia» del estudio. Así el examen encuentra su audio solo, sin un
-    // panel que los empareje a mano: se genera el clip y queda enganchado.
-    normalizarTranscript(t) {
-        return (t || '')
-            .replace(/^[ \t]*[A-Za-zÀ-ÿ0-9 _-]{1,20}:[ \t]*/gm, ' ')   // marcas de hablante
-            .normalize('NFD').replace(/[̀-ͯ]/g, '')          // acentos
-            .replace(/[^a-z0-9]/gi, '').toLowerCase().slice(0, 300);
-    },
+    // transcript es el mismo que carga el botón «transcript de este documento»
+    // del estudio. Así el examen encuentra su audio solo, sin un panel que los
+    // empareje a mano: se genera el clip y queda enganchado.
+    //
+    // La regla de emparejamiento ya no vive aquí: es `DELF_CO_MATCH`, en
+    // `delf-data.js`, compartida con el tablero de montaje del admin. Tenerla
+    // en dos sitios era el camino corto a que el admin dijera «montado» y el
+    // alumno no oyera nada.
 
     async cargarClips() {
         const s = this.session;
@@ -338,12 +337,38 @@ const delfLogic = {
         // última generada.
         banco.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
         for (const doc of s.test.co.documents) {
-            const esperado = this.normalizarTranscript(doc.transcript);
-            s.clips[doc.id] =
-                banco.find(c => this.normalizarTranscript(c.transcript) === esperado)
-                || banco.find(c => c.tipo === doc.clipTipo)
-                || null;
+            s.clips[doc.id] = DELF_CO_MATCH.buscar(doc, banco).clip;
         }
+    },
+
+    // ── ¿Se le puede enseñar el CO al alumno? ───────────────────────────────
+    // La tarjeta de preparación pregunta esto ANTES de abrir el examen. Se lee
+    // UN documento resumen (`config/listening`, que el tablero de montaje del
+    // admin mantiene al día), no el banco entero: el banco tiene un clip por
+    // toma guardada y crece, así que consultarlo aquí haría que el coste de
+    // abrir «Preparación» subiera cada vez que se genera un audio. Un documento
+    // es un documento para siempre.
+    //
+    // Cacheado por pestaña: el estado cambia cuando Juan monta un clip, no
+    // mientras alguien navega.
+    async coEstaListo() {
+        const CLAVE = 'sinapsis_listening_estado';
+        try {
+            const c = JSON.parse(sessionStorage.getItem(CLAVE) || 'null');
+            if (c && Date.now() - c.t < 300000) return !!c.listo;
+        } catch {}
+        let listo = false;
+        try {
+            const snap = await artifactsRoot.collection('public').doc('data')
+                .collection('config').doc('listening').get();
+            listo = snap.exists && snap.data()?.delfCo?.listo === true;
+        } catch (e) {
+            // Sin el dato NO se abre: enseñar un examen mudo es peor que no
+            // enseñarlo. El admin siempre puede entrar por su propio tablero.
+            return false;
+        }
+        try { sessionStorage.setItem(CLAVE, JSON.stringify({ t: Date.now(), listo })); } catch {}
+        return listo;
     },
 
     // Los documentos que sí tienen audio. Se puede practicar con los que haya:
