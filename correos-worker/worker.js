@@ -37,6 +37,10 @@
 
 const DIA = 86400000;
 
+// Sube cada vez que cambie el aspecto o el texto de los correos. Lo devuelve
+// /estado, y sirve para saber si un despliegue ya propagó ANTES de mandar nada.
+const PLANTILLA_VERSION = 'v2-sangre';
+
 // Único destinatario posible de /radar. Fijo a propósito: ver el comentario del
 // endpoint. Cambiarlo por un parámetro convertiría este Worker en un relay abierto
 // para quien tenga la clave.
@@ -156,22 +160,42 @@ function escaparHTML(s, max = 80) {
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#39;');
 }
+// ─────────────────────────────────────────────────────────────────────────────
+// A SANGRE, sin el marco gris (2026-08-07, Juan viéndolo en su buzón)
+//
+// Antes: fondo gris `#f5f5f4`, tarjeta de 560 px centrada con `padding:32px 20px`
+// y esquinas de 20 px. En el panel de Gmail eso se lee como una tarjeta pequeña
+// flotando sobre un marco gris — que es justo lo que Juan señaló.
+//
+// Ahora el color llega a los cuatro bordes: sin padding exterior, sin radios y
+// con el fondo del body igual al del contenido, para que no asome ni una franja.
+// El TEXTO sí conserva su medida de lectura (620 px, centrado): a sangre está el
+// FONDO, no la línea de texto — en un monitor ancho, un párrafo de 1200 px no se
+// lee, y eso no es lo que se pedía.
+//
+// ⚠️ `<table>` y no `<div>` para la caja de lectura: Outlook ignora `max-width`
+// en un div y el texto se iría a todo lo ancho. Con tabla, respeta el `width`.
 function envoltura(env, titulo, cuerpo, cta) {
-    return `<!doctype html><html><body style="margin:0;background:#f5f5f4;font-family:'Segoe UI',Helvetica,Arial,sans-serif;">
-  <div style="max-width:560px;margin:0 auto;padding:32px 20px;">
-    <div style="background:#16a34a;border-radius:20px 20px 0 0;padding:28px 32px;">
-      <p style="margin:0;color:rgba(255,255,255,.8);font-size:12px;font-weight:700;letter-spacing:2px;">SINAPSIS</p>
-      <h1 style="margin:6px 0 0;color:#fff;font-size:24px;">${titulo}</h1>
-    </div>
-    <div style="background:#fff;border-radius:0 0 20px 20px;padding:32px;color:#374151;font-size:15px;line-height:1.6;">
-      ${cuerpo}
-      ${cta ? `<p style="margin:28px 0 0;"><a href="${cta.url}" style="display:inline-block;background:#16a34a;color:#fff;text-decoration:none;font-weight:700;padding:13px 26px;border-radius:10px;">${cta.texto}</a></p>` : ''}
-      <p style="margin:32px 0 0;padding-top:20px;border-top:1px solid #f3f4f6;color:#9ca3af;font-size:12px;line-height:1.5;">
-        Recibes este correo porque aceptaste recibir información de la red de egresados de tu colegio.
-        Para dejar de recibirlos, desmarca la casilla en <a href="${env.SITIO}/profile.html" style="color:#16a34a;">tu perfil</a>.
-      </p>
-    </div>
-  </div>
+    const centrado = (bg, contenido, padding) => `
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${bg};border-collapse:collapse;">
+      <tr><td align="center" style="padding:${padding};">
+        <table role="presentation" width="620" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:620px;border-collapse:collapse;">
+          <tr><td>${contenido}</td></tr>
+        </table>
+      </td></tr>
+    </table>`;
+    return `<!doctype html><html><body style="margin:0;padding:0;background:#ffffff;font-family:'Segoe UI',Helvetica,Arial,sans-serif;">
+  ${centrado('#16a34a', `
+          <p style="margin:0;color:rgba(255,255,255,.85);font-size:12px;font-weight:700;letter-spacing:2px;">SINAPSIS</p>
+          <h1 style="margin:8px 0 0;color:#fff;font-size:26px;line-height:1.25;">${titulo}</h1>`, '34px 24px')}
+  ${centrado('#ffffff', `
+          <div style="color:#374151;font-size:15px;line-height:1.65;">${cuerpo}</div>
+          ${cta ? `<p style="margin:30px 0 0;"><a href="${cta.url}" style="display:inline-block;background:#15803d;color:#fff;text-decoration:none;font-weight:700;font-size:16px;padding:16px 32px;">${cta.texto}</a></p>` : ''}`, '36px 24px 40px')}
+  ${centrado('#f7f7f6', `
+          <p style="margin:0;color:#6b7280;font-size:12px;line-height:1.6;">
+            Recibes este correo porque aceptaste recibir información de la red de egresados de tu colegio.
+            Para dejar de recibirlos, desmarca la casilla en <a href="${env.SITIO}/profile.html" style="color:#15803d;">tu perfil</a>.
+          </p>`, '22px 24px 28px')}
 </body></html>`;
 }
 
@@ -188,7 +212,13 @@ function plantilla(tipo, alum, env, extra = {}) {
                 <p>Gracias por unirte a <strong>Sinapsis</strong>, la red de egresados de tu colegio.</p>
                 <p>La red se sostiene con algo que solo tú puedes contar: <strong>tu ruta</strong>. Del colegio a la universidad, al primer trabajo, a lo que haces hoy. Para un estudiante que está eligiendo carrera, tu camino es el mapa que no tiene.</p>
                 <p>Completar tu ruta toma unos minutos.</p>`,
-                { url: perfil, texto: 'Completar mi ruta' })
+                // Los botones van en PRIMERA PERSONA y nombran la acción real
+                // («contar mi camino», no «completar mi perfil»). Es lo
+                // contrario de ejecutivo sin caer en lo comercial: no promete
+                // nada, no mete prisa, no usa mayúsculas ni signos de admiración
+                // — simplemente dice, con las palabras de quien lo pulsa, lo que
+                // va a pasar al pulsarlo.
+                { url: perfil, texto: 'Contar mi camino' })
         };
     }
     if (tipo === 'completar-perfil') {
@@ -197,7 +227,7 @@ function plantilla(tipo, alum, env, extra = {}) {
             html: envoltura(env, 'A la red le falta tu trayectoria', `
                 <p>Tu perfil en Sinapsis está creado, pero todavía no cuenta por dónde has pasado.</p>
                 <p>Con agregar dos o tres hitos —dónde estudiaste, dónde trabajas hoy— tu ruta aparece en el directorio y puede orientar a los estudiantes que vienen detrás.</p>`,
-                { url: perfil, texto: 'Agregar mis hitos' })
+                { url: perfil, texto: 'Contar por dónde he pasado' })
         };
     }
     if (tipo === 'pulso') {
@@ -207,7 +237,7 @@ function plantilla(tipo, alum, env, extra = {}) {
             html: envoltura(env, 'Una pregunta rápida', `
                 <p>Hola${nombre ? ' ' + nombre : ''}. Hace un año registraste ${donde ? `<strong>${donde}</strong>` : 'tu situación actual'} en tu ruta.</p>
                 <p>¿Sigue siendo así? Si cambió algo —nuevo trabajo, grado, un proyecto propio— actualizarlo toma un minuto y mantiene la red viva.</p>`,
-                { url: perfil, texto: 'Revisar mi ruta' })
+                { url: perfil, texto: 'Poner mi ruta al día' })
         };
     }
     if (tipo === 'mensaje-nuevo') {
@@ -217,7 +247,10 @@ function plantilla(tipo, alum, env, extra = {}) {
             html: envoltura(env, 'Tienes un mensaje sin leer', `
                 <p>Hola${nombre ? ' ' + nombre : ''}. <strong>${deNombre || 'Un miembro de la red'}</strong> te escribió en Sinapsis y aún no has leído el mensaje.</p>
                 <p>Muchas veces es un estudiante preguntando por tu carrera. Una respuesta corta puede cambiarle la decisión.</p>`,
-                { url: `${env.SITIO}/messages.html`, texto: 'Leer el mensaje' })
+                // Con el nombre real de quien escribió. «Leer el mensaje» es una
+                // notificación de sistema; «Responderle a Andrés» es una persona
+                // esperando — y eso es exactamente lo que pasa.
+                { url: `${env.SITIO}/messages.html`, texto: deNombre ? `Responderle a ${deNombre.split(' ')[0]}` : 'Leer y responder' })
         };
     }
     return null;
@@ -559,7 +592,12 @@ export default {
         if (url.pathname === '/estado') {
             const pausado = await estaPausado(env);
             const desde = await env.CORREOS_ESTADO.get(CLAVE_INTERRUPTOR + ':desde');
-            return new Response(JSON.stringify({ pausado, desde: desde || null }), { headers });
+            // `plantilla` dice QUÉ VERSIÓN del diseño está viva ahí fuera. Suena
+            // a capricho y no lo es: Cloudflare tarda en propagar un despliegue
+            // y hoy se mandaron correos dos veces creyendo que ya estaba el
+            // código nuevo — la primera vez llegaron VACÍOS por eso. Con esto se
+            // comprueba antes de enviar, sin gastar un correo en averiguarlo.
+            return new Response(JSON.stringify({ pausado, desde: desde || null, plantilla: PLANTILLA_VERSION }), { headers });
         }
 
         // Interruptor maestro: encender / pausar (protegido con clave)
