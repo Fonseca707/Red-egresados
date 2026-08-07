@@ -90,17 +90,6 @@ const icfesVisual = {
         </div>`;
     },
 
-    // Barra con redondeo SOLO en el extremo del dato: la base queda plana,
-    // pegada a su línea. Un rect con rx redondea las cuatro esquinas y la barra
-    // parece flotar sobre el eje en vez de nacer de él.
-    barraPath(x, y, w, h, direccion) {
-        const r = Math.max(0, Math.min(4, direccion === 'arriba' ? w / 2 : h / 2, direccion === 'arriba' ? h : w));
-        if (direccion === 'arriba') {
-            return `M ${x} ${y + h} L ${x} ${y + r} Q ${x} ${y} ${x + r} ${y} L ${x + w - r} ${y} Q ${x + w} ${y} ${x + w} ${y + r} L ${x + w} ${y + h} Z`;
-        }
-        return `M ${x} ${y} L ${x + w - r} ${y} Q ${x + w} ${y} ${x + w} ${y + r} L ${x + w} ${y + h - r} Q ${x + w} ${y + h} ${x + w - r} ${y + h} L ${x} ${y + h} Z`;
-    },
-
     titulo(v, y = 16) {
         if (!v.titulo) return '';
         return `<text x="0" y="${y}" font-size="13" font-weight="700" fill="${ICFES_VIZ.tinta}">${this.esc(v.titulo)}</text>`;
@@ -224,7 +213,7 @@ const icfesVisual = {
                              font-weight="700" fill="${ICFES_VIZ.tintaSuave}"
                              style="font-variant-numeric:tabular-nums">${this.num(val, v.decimales)}</text>`
                     : '';
-                return `<path d="${this.barraPath(x, yTop, anchoBarra, Math.max(altoBarra, 1), 'arriba')}"
+                return `<rect x="${x}" y="${yTop}" width="${anchoBarra}" height="${Math.max(altoBarra, 1)}"
                               fill="${ICFES_VIZ.series[si % ICFES_VIZ.series.length]}"/>
                         ${etiqueta}`;
             }).join('');
@@ -271,7 +260,7 @@ const icfesVisual = {
                 if (typeof val !== 'number') return '';
                 const yB = yFila + 17 + si * (altoBarra + GAP);
                 const ancho = Math.max(x(val), 1);
-                return `<path d="${this.barraPath(0, yB, ancho, altoBarra, 'derecha')}"
+                return `<rect x="0" y="${yB}" width="${ancho}" height="${altoBarra}"
                               fill="${ICFES_VIZ.series[si % ICFES_VIZ.series.length]}"/>
                         <text x="${ancho + 6}" y="${yB + altoBarra / 2 + 3.5}" font-size="10.5" font-weight="700"
                               fill="${ICFES_VIZ.tintaSuave}" style="font-variant-numeric:tabular-nums">${this.num(val, v.decimales)}</text>`;
@@ -428,11 +417,14 @@ const icfesVisual = {
         const alto = 175 + (v.nota ? 14 : 0);
 
         let angulo = -Math.PI / 2;   // Arranca arriba, como se espera.
-        const GAP = 0.03;            // Hueco angular: separa por superficie.
+        // Sectores pegados, sin hueco entre ellos: la separación angular dejaba
+        // rendijas blancas que se leían como si faltara un pedazo de la torta.
+        // Los colores vecinos ya se distinguen solos (la paleta se validó para
+        // eso), así que el hueco no estaba haciendo ninguna falta.
         const sectores = datos.map((d, i) => {
             const porcion = d.valor / total;
             const barrido = porcion * Math.PI * 2;
-            const a0 = angulo + GAP / 2, a1 = angulo + barrido - GAP / 2;
+            const a0 = angulo, a1 = angulo + barrido;
             angulo += barrido;
             const x0 = cx + R * Math.cos(a0), y0 = cy + R * Math.sin(a0);
             const x1 = cx + R * Math.cos(a1), y1 = cy + R * Math.sin(a1);
@@ -451,7 +443,7 @@ const icfesVisual = {
 
         const leyenda = datos.map((d, i) => `
             <g transform="translate(160,${28 + i * 21})">
-                <rect width="11" height="11" rx="3" fill="${ICFES_VIZ.series[i % ICFES_VIZ.series.length]}"/>
+                <rect width="11" height="11" fill="${ICFES_VIZ.series[i % ICFES_VIZ.series.length]}"/>
                 <text x="17" y="9.5" font-size="10.5" fill="${ICFES_VIZ.tintaSuave}">${this.esc(d.nombre)}</text>
                 <text x="${ICFES_VIZ.W - 160}" y="9.5" text-anchor="end" font-size="10.5" font-weight="700"
                       fill="${ICFES_VIZ.tinta}" style="font-variant-numeric:tabular-nums">${this.num(d.valor, v.decimales)}${v.unidad ? ' ' + this.esc(v.unidad) : ''}</text>
@@ -472,7 +464,7 @@ const icfesVisual = {
         const anchoItem = ICFES_VIZ.W / Math.min(series.length, 3);
         return series.map((s, i) => `
             <g transform="translate(${(i % 3) * anchoItem},${y + Math.floor(i / 3) * 18})">
-                <rect width="11" height="11" rx="3" fill="${ICFES_VIZ.series[i % ICFES_VIZ.series.length]}"/>
+                <rect width="11" height="11" fill="${ICFES_VIZ.series[i % ICFES_VIZ.series.length]}"/>
                 <text x="16" y="9.5" font-size="10.5" fill="${ICFES_VIZ.tintaSuave}">${this.esc(s.nombre)}</text>
             </g>`).join('');
     },
