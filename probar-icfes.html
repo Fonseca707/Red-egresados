@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Probar el entrenamiento Saber 11</title>
+<link rel="stylesheet" href="tailwind.css?v=14">
+<style>body{background:#fafaf9}</style>
+</head>
+<body class="min-h-screen">
+
+<!--
+  Banco de pruebas del entrenamiento ICFES.
+
+  Para qué: hasta ahora, para ver si una pregunta funcionaba de verdad había que
+  importarla a Firestore, aprobarla y entrar como estudiante. Eso son tres pasos
+  y una sesión de superadmin, así que en la práctica las preguntas no se probaban
+  — se leían. Aquí se prueban.
+
+  Cómo: corre el MOTOR REAL (icfes-engine.js, el mismo que usa el estudiante) con
+  Firestore simulado en memoria y las preguntas de un archivo de lote. Nada toca
+  la base de datos ni necesita cuenta. Si el motor se rompe con estas preguntas,
+  se rompe aquí, que es donde no cuesta nada.
+
+  Lo que esta página NO prueba: el gate por colegio, el guardado de intentos y
+  el reporte del rector, porque eso vive en Firestore. Prueba el recorrido del
+  estudiante: selección por cuota, agrupación por texto base, dibujo de tablas y
+  gráficos, corrección, retroalimentación y resultado por competencia.
+-->
+
+<div class="max-w-4xl mx-auto px-4 py-8">
+    <div class="mb-6">
+        <h1 class="text-2xl font-extrabold text-gray-900">Probar el entrenamiento Saber 11</h1>
+        <p class="text-sm text-gray-500 mt-1">
+            Corre el motor real con las preguntas de un archivo de lote, sin tocar la base de datos.
+            Sirve para ver si una pregunta funciona antes de importarla.
+        </p>
+    </div>
+
+    <div id="cargador" class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-6">
+        <p class="text-sm text-gray-600 mb-4">Carga uno o varios lotes de <code class="bg-gray-100 px-1 rounded">lotes/</code>:</p>
+        <div class="flex flex-wrap items-center gap-3">
+            <label class="flex items-center gap-2 border-2 border-dashed border-gray-200 rounded-xl px-4 py-3 cursor-pointer hover:border-gray-300 hover:bg-gray-50 transition">
+                <i class="ph-bold ph-folder-open text-gray-400"></i>
+                <span class="text-sm text-gray-600">Elegir archivos (.json)</span>
+                <input type="file" accept=".json" multiple class="hidden" onchange="banco.desdeArchivos(this)">
+            </label>
+            <button onclick="banco.desdeServidor()" class="px-4 py-3 rounded-xl bg-gray-900 text-white text-sm font-semibold hover:bg-gray-800 transition">
+                Cargar los lotes conocidos
+            </button>
+            <span class="text-xs text-gray-400">(el botón solo funciona con un servidor local)</span>
+        </div>
+        <div id="estado" class="mt-4 text-sm"></div>
+    </div>
+
+    <div id="acciones" class="hidden bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-6">
+        <p class="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Empezar una sesión</p>
+        <div class="flex flex-wrap gap-3" id="botones-prueba"></div>
+        <p class="text-xs text-gray-400 mt-3">
+            Todas las preguntas del lote se dan por aprobadas para esta prueba. En producción,
+            una pregunta sin aprobar nunca se le sirve a un estudiante.
+        </p>
+    </div>
+
+    <div id="icfes-root"></div>
+</div>
+
+<script src="https://unpkg.com/@phosphor-icons/web"></script>
+<script>
+// ── Firestore simulado ──────────────────────────────────────────────────────
+// Lo mínimo que el motor toca. Cada stub imita la forma de la respuesta real
+// (docs[].data(), .id) para que el motor no note la diferencia: si hubiera que
+// tocar el motor para que corriera aquí, esta página dejaría de probar el motor
+// de verdad y pasaría a probar una copia suya.
+const BD = { items: [], estimulos: {}, intentos: [] };
+
+const snapDe = (arr) => ({ docs: arr.map(x => ({ id: x.id, data: () => x })) });
+
+const examItemsCollection = {
+    where: () => ({ get: async () => snapDe(BD.items) })
+};
+const examStimuliCollection = {
+    get: async () => snapDe(Object.values(BD.estimulos))
+};
+const itemAttemptsCollection = () => ({
+    orderBy: () => ({ limit: () => ({ get: async () => snapDe(BD.intentos) }) }),
+    add: async (a) => { BD.intentos.push(a); }
+});
+const firebase = { firestore: { FieldValue: { serverTimestamp: () => new Date() } } };
+const state = { user: { uid: 'prueba' }, profile: { school: '' }, guestMode: false };
+// El motor cambia de vista al empezar y al salir. Aquí solo hay una vista, así
+// que basta con registrar el cambio: si algún día el motor navegara a una vista
+// que no existe, se vería en la consola en vez de fallar en silencio.
+const router = { navigate: (v) => console.log('[prueba] el motor pidió la vista:', v) };
+function saveExamResult() { /* en producción guarda el resumen de la sesión */ }
+function sanitizeHTML(str) { const d = document.createElement('div'); d.textContent = String(str ?? ''); return d.innerHTML; }
+</script>
+
+<script src="icfes-data.js?v=3"></script>
+<script src="icfes-visual.js?v=2"></script>
+<script src="icfes-engine.js?v=5"></script>
+
+<script>
+const LOTES_CONOCIDOS = ['lotes/piloto-2026-08-07.json', 'lotes/matematicas-01.json'];
+
+const banco = {
+    cargados: [],
+
+    async desdeArchivos(input) {
+        const textos = [];
+        for (const f of [...(input.files || [])]) {
+            textos.push([f.name, await f.text()]);
+        }
+        input.value = '';
+        this.montar(textos);
+    },
+
+    async desdeServidor() {
+        const textos = [];
+        for (const ruta of LOTES_CONOCIDOS) {
+            try {
+                const r = await fetch(ruta);
+                if (r.ok) textos.push([ruta, await r.text()]);
+            } catch (e) { /* sin servidor, no hay fetch */ }
+        }
+        if (!textos.length) {
+            this.estado('No se pudo leer ningún lote. Sin un servidor local, usa el selector de archivos de la izquierda.', 'error');
+            return;
+        }
+        this.montar(textos);
+    },
+
+    montar(textos) {
+        let nItems = 0, nEst = 0;
+        const problemas = [];
+        for (const [nombre, crudo] of textos) {
+            let paquete;
+            try { paquete = JSON.parse(crudo); }
+            catch (e) { problemas.push(`${nombre}: JSON ilegible (${e.message})`); continue; }
+            const lotes = Array.isArray(paquete) ? paquete : (paquete.lotes || [paquete]);
+            for (const lote of lotes) {
+                let estimuloId = null;
+                if (lote.estimulo) {
+                    estimuloId = 'est-' + (++nEst);
+                    BD.estimulos[estimuloId] = {
+                        id: estimuloId, prueba: lote.prueba, tipoTexto: lote.tipoTexto || '',
+                        titulo: lote.estimulo.titulo || '', texto: lote.estimulo.texto || '',
+                        visual: lote.estimulo.visual || null,
+                        fuente: 'Texto original para práctica · Sinapsis'
+                    };
+                }
+                (lote.items || []).forEach((it, i) => {
+                    BD.items.push({
+                        id: `${nombre}-${nItems}-${i}`,
+                        exam: 'ICFES', prueba: lote.prueba,
+                        afirmacion: it.afirmacion || lote.afirmacion,
+                        evidencia: it.evidencia || lote.evidencia,
+                        tipoTexto: lote.tipoTexto || '', categoria: lote.categoria || '',
+                        contexto: lote.contexto || '', generico: lote.generico ?? null,
+                        forma: it.forma || '', estimuloId,
+                        visual: it.visual || null,
+                        enunciado: it.enunciado || '', opciones: it.opciones || [],
+                        clave: Number(it.clave) || 0, justificaciones: it.justificaciones || [],
+                        dificultad: it.dificultad || lote.dificultad || 2,
+                        // Aquí sí se dan por aprobadas: es el único punto donde esta
+                        // página se aparta de producción, y es a propósito.
+                        revisado: true, active: true, school: '', origen: 'claude'
+                    });
+                    nItems++;
+                });
+            }
+            this.cargados.push(nombre);
+        }
+        icfesLogic.banco.cargado = false;   // que el motor relea
+        this.pintarEstado(nItems, nEst, problemas);
+    },
+
+    pintarEstado(nItems, nEst, problemas) {
+        const porPrueba = {};
+        BD.items.forEach(i => { porPrueba[i.prueba] = (porPrueba[i.prueba] || 0) + 1; });
+
+        this.estado(
+            `<strong>${BD.items.length}</strong> preguntas y <strong>${Object.keys(BD.estimulos).length}</strong> texto(s) base cargados ` +
+            `de ${this.cargados.length} archivo(s).` +
+            (problemas.length ? `<br><span class="text-red-600">${problemas.join('<br>')}</span>` : ''),
+            problemas.length ? 'error' : 'ok');
+
+        const botones = document.getElementById('botones-prueba');
+        botones.innerHTML = Object.entries(porPrueba).map(([prueba, n]) => `
+            <button onclick="icfesLogic.start('${prueba}')"
+                    class="px-5 py-3 rounded-xl bg-amber-600 text-white text-sm font-semibold hover:bg-amber-700 transition">
+                ${ICFES_PRUEBAS[prueba]?.nombre || prueba} · ${n} disponibles
+            </button>`).join('');
+        document.getElementById('acciones').classList.toggle('hidden', !BD.items.length);
+    },
+
+    estado(html, tipo) {
+        const c = { ok: 'text-green-700', error: 'text-red-600', info: 'text-gray-600' }[tipo] || 'text-gray-600';
+        document.getElementById('estado').innerHTML = `<p class="${c}">${html}</p>`;
+    }
+};
+
+// Con servidor, se cargan solos: si no hay, el selector queda esperando.
+banco.desdeServidor();
+</script>
+</body>
+</html>

@@ -33,7 +33,8 @@
         "lotes/**",
         "vista-lote.html",
         "pruebas-visual.html",
-        "pruebas-*.mjs"
+        "pruebas-*.mjs",
+        "probar-icfes.html"
       ],
       "headers": [
         {
@@ -74,7 +75,8 @@
         "lotes/**",
         "vista-lote.html",
         "pruebas-visual.html",
-        "pruebas-*.mjs"
+        "pruebas-*.mjs",
+        "probar-icfes.html"
       ],
       "headers": [
         {
