@@ -39,7 +39,7 @@ const DIA = 86400000;
 
 // Sube cada vez que cambie el aspecto o el texto de los correos. Lo devuelve
 // /estado, y sirve para saber si un despliegue ya propagó ANTES de mandar nada.
-const PLANTILLA_VERSION = 'v2-sangre';
+const PLANTILLA_VERSION = 'v3-ruta';
 
 // Único destinatario posible de /radar. Fijo a propósito: ver el comentario del
 // endpoint. Cambiarlo por un parámetro convertiría este Worker en un relay abierto
@@ -184,18 +184,42 @@ function envoltura(env, titulo, cuerpo, cta) {
         </table>
       </td></tr>
     </table>`;
+    // ── Los tres recursos que le quitan lo plano ─────────────────────────────
+    // Ninguno es decoración suelta: los tres salen del lenguaje de la portada
+    // aprobada (dos verdes de la misma familia, la ruta de nodos, un acento
+    // escaso). Nada de degradados de dos colores ajenos ni sombras de color.
+    //
+    // 1. Un CORTE de dos verdes bajo la cabecera. Es el «lienzo» de la portada
+    //    traído al correo: da profundidad sin añadir un solo elemento nuevo.
+    const corte = `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
+      <tr><td height="6" style="background:#15803d;font-size:0;line-height:0;">&nbsp;</td>
+          <td height="6" width="34%" style="background:#22c55e;font-size:0;line-height:0;">&nbsp;</td></tr>
+    </table>`;
+    // 2. La RUTA: cuatro nodos unidos por una línea. Es de lo que va la
+    //    plataforma, así que dibujarla dice más que cualquier adorno — y es
+    //    exactamente el recurso con el que Juan aprobó la portada.
+    const paso = (texto, activo) => `<td align="center" style="padding:0 4px;">
+          <div style="width:11px;height:11px;border-radius:11px;background:${activo ? '#15803d' : '#ffffff'};border:2px solid ${activo ? '#15803d' : '#bbf7d0'};margin:0 auto 7px;font-size:0;line-height:0;">&nbsp;</div>
+          <p style="margin:0;font-size:11px;font-weight:700;color:${activo ? '#15803d' : '#78716c'};letter-spacing:.03em;">${texto}</p></td>`;
+    const ruta = `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;margin:26px 0 4px;">
+      <tr><td style="padding:0 0 6px;"><div style="height:2px;background:#dcfce7;font-size:0;line-height:0;margin:5px 6px -13px;">&nbsp;</div></td></tr>
+      <tr>${paso('Colegio', true)}${paso('Estudios', false)}${paso('Trabajo', false)}${paso('Hoy', false)}</tr>
+    </table>`;
     return `<!doctype html><html><body style="margin:0;padding:0;background:#ffffff;font-family:'Segoe UI',Helvetica,Arial,sans-serif;">
   ${centrado('#16a34a', `
           <p style="margin:0;color:rgba(255,255,255,.85);font-size:12px;font-weight:700;letter-spacing:2px;">SINAPSIS</p>
-          <h1 style="margin:8px 0 0;color:#fff;font-size:26px;line-height:1.25;">${titulo}</h1>`, '34px 24px')}
+          <h1 style="margin:8px 0 0;color:#fff;font-size:26px;line-height:1.25;">${titulo}</h1>`, '34px 24px 30px')}
+  ${corte}
   ${centrado('#ffffff', `
           <div style="color:#374151;font-size:15px;line-height:1.65;">${cuerpo}</div>
-          ${cta ? `<p style="margin:30px 0 0;"><a href="${cta.url}" style="display:inline-block;background:#15803d;color:#fff;text-decoration:none;font-weight:700;font-size:16px;padding:16px 32px;">${cta.texto}</a></p>` : ''}`, '36px 24px 40px')}
+          ${cta ? `<p style="margin:30px 0 0;"><a href="${cta.url}" style="display:inline-block;background:#15803d;color:#fff;text-decoration:none;font-weight:700;font-size:16px;padding:16px 32px;">${cta.texto}</a></p>` : ''}
+          ${cta ? ruta : ''}`, '36px 24px 40px')}
   ${centrado('#f7f7f6', `
+          <p style="margin:0 0 10px;font-size:12px;font-weight:700;letter-spacing:2px;color:#15803d;">SINAPSIS</p>
           <p style="margin:0;color:#6b7280;font-size:12px;line-height:1.6;">
             Recibes este correo porque aceptaste recibir información de la red de egresados de tu colegio.
             Para dejar de recibirlos, desmarca la casilla en <a href="${env.SITIO}/profile.html" style="color:#15803d;">tu perfil</a>.
-          </p>`, '22px 24px 28px')}
+          </p>`, '24px 24px 30px')}
 </body></html>`;
 }
 

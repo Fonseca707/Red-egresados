@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Vista previa de un lote · Saber 11</title>
-<link rel="stylesheet" href="tailwind.css?v=16">
+<link rel="stylesheet" href="tailwind.css?v=17">
 <style>body{background:#f9f9f7}</style>
 </head>
 <body class="py-8">
@@ -22,7 +22,7 @@
 <script>
 function sanitizeHTML(str) { const d = document.createElement('div'); d.textContent = String(str ?? ''); return d.innerHTML; }
 </script>
-<script src="icfes-data.js?v=5"></script>
+<script src="icfes-data.js?v=6"></script>
 <script src="icfes-visual.js?v=4"></script>
 <script>
 const esc = sanitizeHTML;
@@ -37,8 +37,8 @@ function pintarItem(it, lote, n) {
         <div class="w-full text-left rounded-xl px-2 py-2.5 flex items-start gap-3">
             <span class="w-6 h-6 rounded ${correcta ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-600'} font-semibold text-xs flex items-center justify-center shrink-0 mt-px">${'ABCD'[i]}</span>
             <span class="flex-1 min-w-0">
-                <span class="block text-sm ${correcta ? 'text-green-900' : 'text-gray-900'}">${esc(o)}</span>
-                <span class="block text-xs text-gray-500 mt-1 leading-relaxed">${esc((it.justificaciones || [])[i] || '')}</span>
+                <span class="block text-sm ${correcta ? 'text-green-600 font-bold' : 'text-gray-900'}">${esc(o)}</span>
+                <span class="block text-xs ${correcta ? 'text-green-600' : 'text-gray-500'} mt-1 leading-relaxed">${esc((it.justificaciones || [])[i] || '')}</span>
             </span>
             ${correcta ? '<i class="ph-bold ph-check-circle text-green-600 text-lg shrink-0"></i>' : ''}
         </div>`;

@@ -618,7 +618,7 @@ Responde SOLO con este JSON, sin markdown ni explicaciones:
         }
 
         const opciones = (p.opciones || []).map((o, i) => `
-            <div class="flex items-start gap-2 ${i === p.clave ? 'text-green-800 font-medium' : 'text-gray-600'}">
+            <div class="flex items-start gap-2 ${i === p.clave ? 'text-green-600 font-bold' : 'text-gray-600'}">
                 <span class="shrink-0">${'ABCD'[i]}.</span>
                 <span class="flex-1">${this.escapar(o)}
                     <span class="block text-xs font-normal text-gray-400 mt-0.5">${this.escapar((p.justificaciones || [])[i] || '')}</span>

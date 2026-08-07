@@ -14,9 +14,13 @@
 // transformación (obra derivada). Sinapsis le cobra al colegio, así que de ellos
 // se toma la FORMA — nunca un texto, un enunciado ni una opción, ni parafraseado.
 
+// Las cuatro pruebas con puntaje que cubre el módulo. Inglés queda fuera por
+// decisión de Juan (2026-08-07): ya hay dos módulos de idiomas.
 const ICFES_PRUEBAS = {
-    lectura_critica: { nombre: 'Lectura Crítica', preguntasExamen: 41, icono: 'ph-book-open' },
-    matematicas:     { nombre: 'Matemáticas',     preguntasExamen: 50, icono: 'ph-math-operations' }
+    lectura_critica: { nombre: 'Lectura Crítica',       preguntasExamen: 41, icono: 'ph-book-open' },
+    matematicas:     { nombre: 'Matemáticas',           preguntasExamen: 50, icono: 'ph-math-operations' },
+    sociales:        { nombre: 'Sociales y Ciudadanas', preguntasExamen: 50, icono: 'ph-globe-stand' },
+    ciencias:        { nombre: 'Ciencias Naturales',    preguntasExamen: 58, icono: 'ph-flask' }
 };
 
 // El ICFES diseña por evidencias: competencia → afirmación → evidencia → tarea.
@@ -86,7 +90,128 @@ const ICFES_AFIRMACIONES = {
             'a.1': 'Valida o refuta una afirmación a partir de datos, propiedades o procedimientos.',
             'a.2': 'Justifica la pertinencia de un procedimiento o de una conclusión.'
         }
+    },
+
+    // ── Sociales y Ciudadanas ───────────────────────────────────────────────
+    // Cuotas de la Tabla 27 de la Guía 2026: 30 / 40 / 30. Afirmaciones y
+    // evidencias transcritas de las tablas 24, 25 y 26 (desagregado de cada
+    // competencia). Los códigos son los del documento oficial.
+    soc_pensamiento: {
+        prueba: 'sociales', cuota: 0.30,
+        nombre: 'Pensamiento social',
+        corto: 'Pensamiento social',
+        evidencias: {
+            '1.1': 'Identifica y usa conceptos sociales básicos (económicos, políticos, culturales y geográficos).',
+            '1.2': 'Conoce el modelo de Estado Social de Derecho y su aplicación en Colombia.',
+            '1.3': 'Conoce la organización del Estado: funciones y alcances de las ramas del poder y de los organismos de control.',
+            '1.4': 'Conoce los mecanismos que los ciudadanos tienen a su disposición para participar en la democracia y garantizar el respeto de sus derechos.',
+            '2.1': 'Localiza en el tiempo y en el espacio eventos históricos y prácticas sociales.',
+            '2.2': 'Relaciona dimensiones históricas y geográficas de eventos y problemáticas sociales.',
+            '2.3': 'Relaciona problemáticas o prácticas sociales con características del espacio geográfico.'
+        }
+    },
+    soc_perspectivas: {
+        prueba: 'sociales', cuota: 0.40,
+        nombre: 'Interpretación y análisis de perspectivas',
+        corto: 'Perspectivas',
+        evidencias: {
+            '3.1': 'Inscribe una fuente primaria dada en un contexto económico, político o cultural.',
+            '3.2': 'Evalúa posibilidades y limitaciones del uso de una fuente para apoyar argumentos o explicaciones.',
+            '3.3': 'Devela prejuicios e intenciones en enunciados o argumentos.',
+            '4.1': 'Reconoce y compara perspectivas de actores y grupos sociales.',
+            '4.2': 'Reconoce que las cosmovisiones, ideologías y roles sociales influyen en diferentes argumentos, posiciones y conductas.',
+            '4.3': 'Establece relaciones entre las perspectivas de los individuos en una situación conflictiva y las propuestas de solución.'
+        }
+    },
+    soc_reflexivo: {
+        prueba: 'sociales', cuota: 0.30,
+        nombre: 'Pensamiento reflexivo y sistémico',
+        corto: 'Reflexivo y sistémico',
+        evidencias: {
+            '5.1': 'Analiza modelos conceptuales y sus usos en decisiones sociales.',
+            '6.1': 'Establece relaciones que hay entre dimensiones presentes en una situación problemática.',
+            '6.2': 'Analiza los efectos en distintas dimensiones que tendría una posible intervención.'
+        }
+    },
+
+    // ── Ciencias Naturales ──────────────────────────────────────────────────
+    // Cuotas de la Tabla 31: uso comprensivo 30 %, explicación 30 %,
+    // indagación 40 %. Esa misma tabla cruza cada competencia con los
+    // COMPONENTES (biológico, físico, químico y CTS) — ver ICFES_COMPONENTES_CN.
+    cn_uso: {
+        prueba: 'ciencias', cuota: 0.30,
+        nombre: 'Uso comprensivo del conocimiento científico',
+        corto: 'Uso comprensivo',
+        evidencias: {
+            '1.1': 'Explica algunos principios para mantener la salud individual y la pública, basado en principios biológicos, químicos y físicos.',
+            '1.2': 'Explica cómo la explotación de un recurso o el uso de una tecnología tiene efectos positivos o negativos en las personas y en el entorno.',
+            '1.3': 'Explica el uso correcto y seguro de una tecnología o artefacto en un contexto específico.',
+            '2.1': 'Da las razones por las cuales una reacción describe un fenómeno y justifica las relaciones cuantitativas, teniendo en cuenta la ley de conservación de la masa.',
+            '2.2': 'Reconoce las razones por las cuales la materia se puede diferenciar según su estructura y propiedades, y justifica las diferencias entre elementos, compuestos y mezclas.',
+            '2.3': 'Reconoce los atributos que definen ciertos procesos fisicoquímicos simples (separación de mezclas, solubilidad, gases ideales, cambios de fase).',
+            '2.4': 'Elabora explicaciones sobre un sistema electrónico a partir de los modelos básicos de circuitos.',
+            '2.5': 'Elabora explicaciones sobre un sistema a partir de los modelos básicos de cinemática y dinámica newtoniana.',
+            '2.6': 'Elabora explicaciones sobre un sistema a partir de los modelos básicos de la termodinámica.',
+            '2.7': 'Elabora explicaciones sobre un sistema a partir de los modelos básicos de ondas.',
+            '2.8': 'Analiza aspectos de los ecosistemas y da razón de cómo funcionan y de sus interrelaciones con los factores bióticos y abióticos.',
+            '2.9': 'Analiza la dinámica interna de los organismos y da razón de cómo funcionan sus componentes para mantener la vida.',
+            '3.1': 'Usa modelos físicos basados en dinámica clásica para comprender un fenómeno particular en un sistema.',
+            '3.2': 'Identifica y usa modelos químicos para comprender fenómenos particulares de la naturaleza.',
+            '3.3': 'Analiza y usa modelos biológicos para comprender la dinámica que se da en lo vivo y en el entorno.'
+        }
+    },
+    cn_explicacion: {
+        prueba: 'ciencias', cuota: 0.30,
+        nombre: 'Explicación de fenómenos',
+        corto: 'Explicación',
+        evidencias: {
+            '4.1': 'Relaciona los componentes de un circuito en serie y en paralelo con sus respectivos voltajes y corrientes.',
+            '4.2': 'Relaciona los factores que determinan la dinámica de un sistema o fenómeno para identificar su comportamiento, según las leyes de la física.',
+            '4.3': 'Relaciona los tipos de energía presentes en un objeto con las interacciones del sistema con su entorno.',
+            '4.4': 'Establece relaciones entre fenómenos biológicos para comprender la dinámica de lo vivo.',
+            '4.5': 'Establece relaciones entre fenómenos biológicos para comprender su entorno.',
+            '4.6': 'Diferencia distintos tipos de reacciones químicas y realiza cálculos teniendo en cuenta la ley de conservación de la masa y la carga.',
+            '4.7': 'Establece relaciones entre conceptos fisicoquímicos simples (separación de mezclas, solubilidad, gases ideales) y distintos fenómenos naturales.',
+            '4.8': 'Establece relaciones entre las propiedades y la estructura de la materia con la formación de iones y moléculas.',
+            '5.1': 'Identifica las características fundamentales de las ondas, así como algunos fenómenos asociados a ellas.',
+            '5.2': 'Identifica las formas de energía presentes en un fenómeno físico y las transformaciones que se dan entre ellas.',
+            '5.3': 'Identifica los diferentes tipos de fuerzas que actúan sobre los cuerpos que conforman un sistema.',
+            '5.4': 'Identifica características de algunos procesos que se dan en los ecosistemas para comprender su dinámica interior.',
+            '5.5': 'Identifica características de algunos procesos que se dan en los organismos para comprender la dinámica de lo vivo.',
+            '5.6': 'Identifica las propiedades y estructura de la materia y diferencia elementos, compuestos y mezclas.',
+            '5.7': 'Reconoce posibles cambios en el entorno por la explotación de un recurso o el uso de una tecnología.'
+        }
+    },
+    cn_indagacion: {
+        prueba: 'ciencias', cuota: 0.40,
+        nombre: 'Indagación',
+        corto: 'Indagación',
+        evidencias: {
+            '6.1': 'Analiza qué tipo de pregunta puede ser contestada a partir del contexto de una investigación científica.',
+            '6.2': 'Reconoce la importancia de la evidencia para comprender fenómenos naturales.',
+            '7.1': 'Comunica de forma apropiada el proceso y los resultados de una investigación en ciencias naturales.',
+            '7.2': 'Determina si los resultados derivados de una investigación son suficientes y pertinentes para sacar conclusiones.',
+            '7.3': 'Elabora conclusiones a partir de información o evidencias que las respalden.',
+            '7.4': 'Hace predicciones basado en información, patrones y regularidades.',
+            '8.1': 'Interpreta y analiza datos representados en texto, gráficas, dibujos, diagramas o tablas.',
+            '8.2': 'Representa datos en gráficas y tablas.',
+            '9.1': 'Da posibles explicaciones de eventos o fenómenos consistentes con conceptos de la ciencia.',
+            '9.2': 'Diseña experimentos para dar respuesta a sus preguntas.',
+            '9.3': 'Elige y utiliza instrumentos adecuados para reunir datos.',
+            '9.4': 'Reconoce la necesidad de registrar y clasificar la información para realizar un buen análisis.',
+            '9.5': 'Usa información adicional para evaluar una predicción.'
+        }
     }
+};
+
+// Componentes de Ciencias Naturales (Tabla 31). La cuota es un CRUCE: cada
+// competencia se reparte entre los cuatro componentes, no es una lista aparte.
+// CTS = Ciencia, Tecnología y Sociedad.
+const ICFES_COMPONENTES_CN = {
+    biologico: { nombre: 'Biológico', cuota: 0.30 },
+    fisico:    { nombre: 'Físico',    cuota: 0.30 },
+    quimico:   { nombre: 'Químico',   cuota: 0.30 },
+    cts:       { nombre: 'Ciencia, Tecnología y Sociedad', cuota: 0.10 }
 };
 
 // Cuota oficial por tipo de texto en Lectura Crítica (Tabla 22). Los

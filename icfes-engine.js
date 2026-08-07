@@ -535,12 +535,12 @@ const icfesLogic = {
                     // Sin caja, el color y el peso son lo único que señala la
                     // correcta, así que tienen que verse: verde saturado en el
                     // texto, no un verde tan oscuro que se confunda con negro.
-                    ancla = 'bg-green-600 text-white'; texto = 'text-green-700';
-                    pesoTexto = 'font-semibold'; colorJusti = 'text-green-700/80';
+                    ancla = 'bg-green-600 text-white'; texto = 'text-green-600';
+                    pesoTexto = 'font-bold'; colorJusti = 'text-green-600';
                     marca = '<i class="ph-fill ph-check-circle text-green-600 text-xl shrink-0"></i>';
                 } else if (i === yaRespondida.elegida) {
-                    ancla = 'bg-red-500 text-white'; texto = 'text-red-700';
-                    pesoTexto = 'font-semibold'; colorJusti = 'text-red-700/80';
+                    ancla = 'bg-red-500 text-white'; texto = 'text-red-600';
+                    pesoTexto = 'font-bold'; colorJusti = 'text-red-600';
                     marca = '<i class="ph-fill ph-x-circle text-red-500 text-xl shrink-0"></i>';
                 } else {
                     ancla = 'bg-gray-100 text-gray-400'; texto = 'text-gray-400';
