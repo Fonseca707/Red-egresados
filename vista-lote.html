@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vista previa de un lote · Saber 11</title>
+<link rel="stylesheet" href="tailwind.css?v=13">
+<style>body{background:#f9f9f7}</style>
+</head>
+<body class="py-8">
+
+<div class="max-w-3xl mx-auto px-4">
+    <h1 class="text-2xl font-extrabold text-gray-900 mb-1">Vista previa del lote</h1>
+    <p class="text-sm text-gray-500 mb-4">Las preguntas como las verá un estudiante, con la retroalimentación ya destapada. Nada de esto está publicado.</p>
+    <div class="flex items-center gap-3 mb-6">
+        <input id="ruta" class="input-field text-xs font-mono flex-1" value="lotes/piloto-2026-08-07.json">
+        <button onclick="cargar()" class="px-4 py-2 bg-gray-900 text-white text-xs font-bold rounded-lg hover:bg-gray-800 transition shrink-0">Ver</button>
+    </div>
+    <div id="salida" class="space-y-4"></div>
+</div>
+
+<script>
+function sanitizeHTML(str) { const d = document.createElement('div'); d.textContent = String(str ?? ''); return d.innerHTML; }
+</script>
+<script src="icfes-data.js?v=3"></script>
+<script src="icfes-visual.js?v=1"></script>
+<script>
+const esc = sanitizeHTML;
+
+function pintarItem(it, lote, n) {
+    const af = ICFES_AFIRMACIONES[it.afirmacion || lote.afirmacion];
+    const opciones = (it.opciones || []).map((o, i) => {
+        const correcta = i === it.clave;
+        return `
+        <div class="w-full text-left border-2 ${correcta ? 'border-green-500 bg-green-50' : 'border-gray-200'} rounded-2xl px-4 py-3 flex items-start gap-3">
+            <span class="w-7 h-7 rounded-lg ${correcta ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-700'} font-extrabold text-sm flex items-center justify-center shrink-0">${'ABCD'[i]}</span>
+            <span class="flex-1 min-w-0">
+                <span class="block text-sm text-gray-900">${esc(o)}</span>
+                <span class="block text-xs text-gray-600 mt-1.5 leading-relaxed">${esc((it.justificaciones || [])[i] || '')}</span>
+            </span>
+        </div>`;
+    }).join('');
+
+    return `
+    <div class="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 md:p-8">
+        <p class="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-3">
+            Pregunta ${n} · ${esc(ICFES_PRUEBAS[lote.prueba].nombre)} · ${esc(af ? af.corto : '')} · evidencia ${esc(it.evidencia || lote.evidencia)} · ${esc(it.forma || '')}
+        </p>
+        <p class="text-base md:text-lg font-bold text-gray-900 ${it.visual ? 'mb-2' : 'mb-5'} whitespace-pre-line">${esc(it.enunciado || '')}</p>
+        ${it.visual ? `<div class="mb-5">${icfesVisual.render(it.visual)}</div>` : ''}
+        <div class="space-y-3">${opciones}</div>
+    </div>`;
+}
+
+async function cargar() {
+    const salida = document.getElementById('salida');
+    salida.innerHTML = '<p class="text-sm text-gray-400">Cargando…</p>';
+    try {
+        const paquete = await fetch(document.getElementById('ruta').value).then(r => r.json());
+        const lotes = Array.isArray(paquete) ? paquete : (paquete.lotes || [paquete]);
+        let n = 0;
+        salida.innerHTML = lotes.map(lote => {
+            const est = lote.estimulo;
+            const cabecera = est ? `
+                <div class="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 md:p-8">
+                    <p class="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2">Lee el siguiente texto</p>
+                    ${est.titulo ? `<h3 class="text-lg font-extrabold text-gray-900 mb-2">${esc(est.titulo)}</h3>` : ''}
+                    ${est.texto ? `<div class="prose prose-sm max-w-none text-gray-700 whitespace-pre-line leading-relaxed">${esc(est.texto)}</div>` : ''}
+                    ${est.visual ? icfesVisual.render(est.visual) : ''}
+                    <p class="text-xs text-gray-400 mt-3 italic">Texto original para práctica · Sinapsis</p>
+                </div>` : '';
+            return cabecera + (lote.items || []).map(it => pintarItem(it, lote, ++n)).join('');
+        }).join('');
+    } catch (e) {
+        salida.innerHTML = `<p class="text-sm text-red-600">No se pudo cargar: ${esc(e.message)}. Esta página necesita un servidor local (fetch no funciona con file://).</p>`;
+    }
+}
+cargar();
+</script>
+</body>
+</html>
