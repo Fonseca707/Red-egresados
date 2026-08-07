@@ -68,11 +68,46 @@ function campos(f = {}) {
 function base(env) {
     return `https://firestore.googleapis.com/v1/projects/${env.FIRESTORE_PROJECT}/databases/(default)/documents/artifacts/${encodeURIComponent(env.FIRESTORE_APP_ID)}/public/data`;
 }
-async function coleccion(url) {
+// ─────────────────────────────────────────────────────────────────────────────
+// 🔴 Leer Firestore EXIGE sesión desde el 2026-07-29
+//
+// Este Worker leía `alumni` por REST a pelo. El 28-jul se cerró el directorio
+// (`allow read: if request.auth != null`) y desde ese día toda lectura devuelve
+// 403 — o sea, **el motor de correos llevaba nueve días muerto y nadie se
+// enteró**, porque nunca se había vuelto a llamar a /previsualizar. Es el mismo
+// fallo que tuvo el proxy de IA con el mismo cambio de reglas, en otro Worker
+// que tampoco se revisó.
+//
+// Se resuelve con una sesión ANÓNIMA de Identity Toolkit: es exactamente lo que
+// hace el modo invitado de la web, cumple `request.auth != null` y no exige
+// credenciales nuevas (la apiKey es pública por diseño, va en el cliente).
+// El token vive 1 h y se cachea mientras la instancia esté viva.
+//
+// ⚠️ Lo LIMPIO sería una cuenta de servicio (JWT RS256 + scope datastore), que
+// no crearía usuarios anónimos sueltos en Auth. Se deja anotado en el vault: no
+// se hizo hoy porque exige que Juan genere la clave en la consola de Firebase.
+let _idToken = null, _idTokenExp = 0;
+async function idTokenAnonimo(env) {
+    if (_idToken && Date.now() < _idTokenExp) return _idToken;
+    const res = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${env.FIREBASE_API_KEY}`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ returnSecureToken: true })
+    });
+    if (!res.ok) throw new Error(`No se pudo abrir sesión para leer Firestore (${res.status}). Sin ella, las reglas del directorio devuelven 403 y no hay a quién escribirle.`);
+    const j = await res.json();
+    _idToken = j.idToken;
+    _idTokenExp = Date.now() + (Number(j.expiresIn || 3600) - 300) * 1000;   // 5 min de margen
+    return _idToken;
+}
+
+async function coleccion(url, env) {
     const docs = [];
     let token = '';
+    // `hitos` es de lectura pública, pero `alumni` no: se manda la cabecera
+    // siempre, que no estorba, en vez de acordarse de cuál la necesita.
+    const auth = env ? { Authorization: `Bearer ${await idTokenAnonimo(env)}` } : {};
     do {
-        const res = await fetch(`${url}?pageSize=300${token ? `&pageToken=${token}` : ''}`);
+        const res = await fetch(`${url}?pageSize=300${token ? `&pageToken=${token}` : ''}`, { headers: auth });
         if (!res.ok) throw new Error(`Firestore ${res.status}`);
         const data = await res.json();
         for (const d of data.documents || []) {
@@ -141,12 +176,15 @@ function envoltura(env, titulo, cuerpo, cta) {
 }
 
 function plantilla(tipo, alum, env, extra = {}) {
-    const nombre = escaparHTML((alum.firstName || '').trim() || 'Hola', 40);
+    // Sin nombre NO se inventa un saludo: el fallback 'Hola' producia
+    // "Te damos la bienvenida, Hola" y "Hola Hola.". Se deja vacio y cada
+    // plantilla decide como leerse sin el.
+    const nombre = escaparHTML((alum.firstName || '').trim(), 40);
     const perfil = `${env.SITIO}/profile.html`;
     if (tipo === 'bienvenida') {
         return {
             asunto: 'Tu lugar en la red de egresados ya está listo',
-            html: envoltura(env, `Bienvenido, ${nombre}`, `
+            html: envoltura(env, nombre ? `Te damos la bienvenida, ${nombre}` : 'Te damos la bienvenida', `
                 <p>Gracias por unirte a <strong>Sinapsis</strong>, la red de egresados de tu colegio.</p>
                 <p>La red se sostiene con algo que solo tú puedes contar: <strong>tu ruta</strong>. Del colegio a la universidad, al primer trabajo, a lo que haces hoy. Para un estudiante que está eligiendo carrera, tu camino es el mapa que no tiene.</p>
                 <p>Completar tu ruta toma unos minutos.</p>`,
@@ -155,8 +193,8 @@ function plantilla(tipo, alum, env, extra = {}) {
     }
     if (tipo === 'completar-perfil') {
         return {
-            asunto: `${nombre}, tu ruta aún está en blanco`,
-            html: envoltura(env, 'Tu trayectoria le falta a la red', `
+            asunto: nombre ? `${nombre}, tu ruta aún está en blanco` : 'Tu ruta aún está en blanco',
+            html: envoltura(env, 'A la red le falta tu trayectoria', `
                 <p>Tu perfil en Sinapsis está creado, pero todavía no cuenta por dónde has pasado.</p>
                 <p>Con agregar dos o tres hitos —dónde estudiaste, dónde trabajas hoy— tu ruta aparece en el directorio y puede orientar a los estudiantes que vienen detrás.</p>`,
                 { url: perfil, texto: 'Agregar mis hitos' })
@@ -167,7 +205,7 @@ function plantilla(tipo, alum, env, extra = {}) {
         return {
             asunto: donde ? `¿Sigues en ${donde}?` : '¿Sigue actualizada tu ruta?',
             html: envoltura(env, 'Una pregunta rápida', `
-                <p>Hola ${nombre}. Hace un año registraste ${donde ? `<strong>${donde}</strong>` : 'tu situación actual'} en tu ruta.</p>
+                <p>Hola${nombre ? ' ' + nombre : ''}. Hace un año registraste ${donde ? `<strong>${donde}</strong>` : 'tu situación actual'} en tu ruta.</p>
                 <p>¿Sigue siendo así? Si cambió algo —nuevo trabajo, grado, un proyecto propio— actualizarlo toma un minuto y mantiene la red viva.</p>`,
                 { url: perfil, texto: 'Revisar mi ruta' })
         };
@@ -177,7 +215,7 @@ function plantilla(tipo, alum, env, extra = {}) {
         return {
             asunto: `${deNombre || 'Alguien'} te escribió en Sinapsis`,
             html: envoltura(env, 'Tienes un mensaje sin leer', `
-                <p>Hola ${nombre}. <strong>${deNombre || 'Un miembro de la red'}</strong> te escribió en Sinapsis y aún no has leído el mensaje.</p>
+                <p>Hola${nombre ? ' ' + nombre : ''}. <strong>${deNombre || 'Un miembro de la red'}</strong> te escribió en Sinapsis y aún no has leído el mensaje.</p>
                 <p>Muchas veces es un estudiante preguntando por tu carrera. Una respuesta corta puede cambiarle la decisión.</p>`,
                 { url: `${env.SITIO}/messages.html`, texto: 'Leer el mensaje' })
         };
@@ -283,7 +321,7 @@ async function enviarSinComprobar(env, para, asunto, html) {
 
 // ── Motor: quién recibe qué hoy ──────────────────────────────────────────────
 async function calcular(env) {
-    const alumni = await coleccion(`${base(env)}/alumni`);
+    const alumni = await coleccion(`${base(env)}/alumni`, env);
     const pendientes = [];
 
     for (const a of alumni) {
@@ -312,7 +350,7 @@ async function calcular(env) {
         // 3. Pulso: hito abierto con más de un año sin actualizar (máx. 1/año)
         if (!esProfesor && hitos > 0) {
             try {
-                const hs = await coleccion(`${base(env)}/alumni/${a._id}/hitos`);
+                const hs = await coleccion(`${base(env)}/alumni/${a._id}/hitos`, env);
                 const abierto = hs.find(h => h.actual);
                 const edad = dias(abierto?.updatedAt);
                 if (abierto && edad !== null && edad >= 365) {
@@ -471,7 +509,23 @@ export default {
             }
             const para = url.searchParams.get('para') || '';
             if (!para.includes('@')) return new Response(JSON.stringify({ error: 'Falta ?para=' }), { status: 400, headers });
+            // ?tipo= manda la PLANTILLA REAL, tal y como le llegará a un
+            // egresado, en vez del correo de salud. Es la única forma de
+            // revisar la redacción sin escribirle a nadie: hasta ahora el
+            // chequeo decía «funciona», que no es lo mismo que «está bien
+            // escrito». Los datos son de ejemplo y no tocan el KV.
+            const tipo = url.searchParams.get('tipo') || '';
             try {
+                if (tipo) {
+                    const ejemplo = {
+                        firstName: url.searchParams.get('nombre') || 'María',
+                        _hitoAbierto: { rol: 'Analista de datos', organizacion: 'Bancolombia' }
+                    };
+                    const p = plantilla(tipo, ejemplo, env, { deNombre: 'Andrés Gómez' });
+                    if (!p) return new Response(JSON.stringify({ error: `Tipo desconocido: ${tipo}` }), { status: 400, headers });
+                    await enviarSinComprobar(env, para, `[PRUEBA · ${tipo}] ${p.asunto}`, p.html);
+                    return new Response(JSON.stringify({ enviado: true, para, tipo, asunto: p.asunto }), { headers });
+                }
                 await enviarSinComprobar(env, para, 'Prueba de Sinapsis (envío por Gmail)',
                     envoltura(env, 'Funciona', `
                         <p>Si estás leyendo esto, el Worker de correos de Sinapsis ya sabe enviar por la API de Gmail.</p>

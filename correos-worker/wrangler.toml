@@ -14,6 +14,7 @@ id = "5979fe3a33004c96b5b8406a4dda2f1e"
 [vars]
 FIRESTORE_PROJECT = "red-egresados-65a1a"
 FIRESTORE_APP_ID = "1:874010522484:web:28881821d110defd3b7221"
+FIREBASE_API_KEY = "AIzaSyBoVTqroZ7zR-3a5QGy5CzK19a4422t0Rg"
 SITIO = "https://sinapsisred.web.app"
 # El From lo impone Gmail: tiene que ser la cuenta autenticada (o un alias
 # verificado en ella). Cambiar esta dirección sin re-autorizar no sirve.
