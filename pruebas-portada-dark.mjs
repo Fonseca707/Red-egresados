@@ -38,10 +38,18 @@ comprobar('body y main se pintan con el fondo cálido',
     /html\.dark body\.hp-portada,\s*\n?\s*html\.dark body\.hp-portada main \{ background: #1c1917 !important/.test(HTML));
 comprobar('la barra ya no cambia de familia al desplazarse',
     /html\.dark body\.hp-portada \.glass-nav \{ background: rgba\(28,25,23/.test(HTML));
-comprobar('el tema global sigue pintando de azul (no se tocó theme.js)',
-    /html\.dark body \{ background:#0b1120/.test(THEME));
+// 2026-08-07, segunda vuelta: arreglar solo la portada movió el corte de sitio
+// — Juan: «el modo oscuro de home tiene fondo café, pero el resto azul». Así
+// que el tema global se pasó ENTERO a la gama cálida y ya no hay dos webs.
+comprobar('el tema global también es cálido', /html\.dark body \{ background:#1c1917/.test(THEME));
+const azules = [...new Set((THEME.match(/#(0b1120|0f172a|111827|1e293b|334155|263244|1f2937|172033|475569|f8fafc|e5e7eb|cbd5e1|94a3b8|64748b)/g) || []))];
+comprobar('no quedan neutros azulados en theme.js', azules.length === 0, azules.join(' '));
+// Los azules que SÍ deben quedar son los acentos: bg-blue-50 y bg-purple-50
+// tienen que seguir siendo azul y morado en oscuro, no un café.
+comprobar('los acentos azul y morado sobreviven',
+    /bg-blue-50"\] \{ background-color:#0b2545/.test(THEME) && /bg-purple-50"\] \{ background-color:#2e1065/.test(THEME));
 // Si alguna regla nueva se escribiera sin `hp-portada` ni `.hp-`, alcanzaría a
-// las otras 10 páginas, que son de gama azul a propósito.
+// las otras 10 páginas — que ahora comparten gama, pero no composición.
 const reglasDark = [...HTML.matchAll(/^\s*(html\.dark [^{]+)\{/gm)].map(m => m[1].trim());
 comprobar(`las ${reglasDark.length} reglas oscuras son SOLO de la portada`,
     reglasDark.every(r => r.split(',').every(s => /\.hp-|hp-portada|hp-js/.test(s))),
