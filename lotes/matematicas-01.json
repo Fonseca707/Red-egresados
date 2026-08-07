@@ -1,0 +1,398 @@
+{
+  "_nota": "Matemáticas, tanda 1 — escrito a mano (Claude), 2026-08-07. Cubre las 6 evidencias, los 4 contextos y las 3 categorías. Más de la mitad en forma veredicto+justificación, como el examen real.",
+  "lotes": [
+    {
+      "prueba": "matematicas",
+      "afirmacion": "mat_interpretacion",
+      "evidencia": "i.1",
+      "categoria": "estadistica",
+      "contexto": "comunitario",
+      "generico": true,
+      "dificultad": 2,
+      "items": [
+        {
+          "forma": "interpretacion_dato",
+          "enunciado": "La alcaldía de un municipio publicó cuántos kilogramos de material reciclable recogió en cada barrio durante un mes.\n\n¿Qué barrios recogieron más que el promedio de los cuatro?",
+          "visual": {
+            "tipo": "barras",
+            "titulo": "Material reciclable recogido (kilogramos)",
+            "categorias": ["Centro", "El Obrero", "La Esperanza", "San José"],
+            "valores": [340, 520, 275, 410]
+          },
+          "opciones": [
+            "Solo El Obrero.",
+            "El Obrero y San José.",
+            "El Obrero, San José y Centro.",
+            "Ninguno alcanza el promedio."
+          ],
+          "clave": 1,
+          "justificaciones": [
+            "El Obrero está por encima, pero no es el único: hay que comparar los cuatro barrios contra el promedio, no quedarse con el mayor.",
+            "Correcta. El promedio es (340 + 520 + 275 + 410) ÷ 4 = 386,25, y solo El Obrero (520) y San José (410) lo superan.",
+            "Centro recogió 340 kg, por debajo del promedio de 386,25 kg.",
+            "El promedio siempre queda entre el menor y el mayor, así que es imposible que ningún dato lo alcance."
+          ],
+          "dificultad": 2
+        },
+        {
+          "forma": "interpretacion_dato",
+          "evidencia": "i.1",
+          "enunciado": "Una encuesta preguntó a mil personas de un municipio por dónde se entera de las noticias locales.\n\n¿Qué parte del total representan, juntas, la radio y la prensa?",
+          "visual": {
+            "tipo": "circular",
+            "titulo": "¿Por dónde se entera de las noticias locales?",
+            "porciones": [
+              { "nombre": "Redes sociales", "valor": 420 },
+              { "nombre": "Televisión", "valor": 260 },
+              { "nombre": "Radio", "valor": 180 },
+              { "nombre": "Prensa", "valor": 140 }
+            ],
+            "unidad": "personas"
+          },
+          "opciones": [
+            "Cerca de un tercio.",
+            "Menos de la cuarta parte.",
+            "Exactamente la mitad.",
+            "Más de dos tercios."
+          ],
+          "clave": 0,
+          "justificaciones": [
+            "Correcta. Radio y prensa suman 180 + 140 = 320 de 1.000 personas, es decir 32 %, muy cerca de un tercio.",
+            "La cuarta parte serían 250 personas y estas dos suman 320, así que la superan.",
+            "La mitad serían 500 personas; esa cifra la alcanzan redes sociales y televisión juntas, no radio y prensa.",
+            "Dos tercios serían unas 667 personas, más del doble de lo que suman estas dos."
+          ],
+          "dificultad": 2
+        },
+        {
+          "forma": "interpretacion_dato",
+          "evidencia": "i.1",
+          "categoria": "algebra_calculo",
+          "contexto": "laboral",
+          "enunciado": "Una finca cafetera anotó cuántas arrobas recogió en cada trimestre del año.\n\n¿En cuál trimestre se dio el mayor aumento respecto al trimestre anterior?",
+          "visual": {
+            "tipo": "lineas",
+            "titulo": "Arrobas de café recogidas",
+            "categorias": ["Primero", "Segundo", "Tercero", "Cuarto"],
+            "valores": [120, 145, 138, 170]
+          },
+          "opciones": [
+            "En el segundo trimestre.",
+            "En el cuarto trimestre.",
+            "En el tercer trimestre.",
+            "El aumento fue el mismo en todos."
+          ],
+          "clave": 1,
+          "justificaciones": [
+            "En el segundo subió 25 arrobas (de 120 a 145), pero no es el mayor aumento del año.",
+            "Correcta. Del tercero al cuarto subió 32 arrobas (de 138 a 170), más que los 25 del segundo.",
+            "En el tercero la recolección bajó de 145 a 138: no hubo aumento sino disminución.",
+            "Los cambios fueron distintos: +25, −7 y +32."
+          ],
+          "dificultad": 2
+        }
+      ]
+    },
+    {
+      "prueba": "matematicas",
+      "afirmacion": "mat_interpretacion",
+      "evidencia": "i.2",
+      "categoria": "estadistica",
+      "contexto": "familiar",
+      "generico": true,
+      "dificultad": 2,
+      "items": [
+        {
+          "forma": "calculo",
+          "enunciado": "Este es el tarifario de un parqueadero del centro del pueblo.\n\nUna persona deja su moto a las 8:00 a. m. y la recoge a las 11:30 a. m. ¿Cuánto debe pagar?",
+          "visual": {
+            "tipo": "tabla",
+            "titulo": "Tarifas (pesos)",
+            "columnas": [
+              { "nombre": "Vehículo" },
+              { "nombre": "Primera hora", "tipo": "numero" },
+              { "nombre": "Hora adicional", "tipo": "numero" },
+              { "nombre": "Fracción de 30 min", "tipo": "numero" }
+            ],
+            "filas": [
+              ["Moto", 2000, 1500, 800],
+              ["Carro", 3500, 2500, 1300]
+            ],
+            "nota": "La fracción se cobra cuando el tiempo pasa de una hora completa pero no llega a la siguiente."
+          },
+          "opciones": [
+            "$ 5.000",
+            "$ 6.500",
+            "$ 5.800",
+            "$ 7.000"
+          ],
+          "clave": 2,
+          "justificaciones": [
+            "Cuenta la primera hora y dos adicionales, pero deja por fuera la media hora final, que sí se cobra como fracción.",
+            "Cobra tres horas adicionales, cuando la última media hora se paga como fracción (800), no como hora completa (1.500).",
+            "Correcta. Son 3 horas y media: primera hora 2.000, dos horas adicionales 3.000 y una fracción 800. Total 5.800.",
+            "Multiplica la tarifa de la primera hora por las 3,5 horas, pero las horas siguientes tienen otro precio."
+          ],
+          "dificultad": 3
+        },
+        {
+          "forma": "interpretacion_dato",
+          "enunciado": "Un municipio publica el horario de sus rutas escolares de la mañana.\n\n¿Cuál de las rutas llega primero a su destino?",
+          "visual": {
+            "tipo": "tabla",
+            "titulo": "Rutas escolares",
+            "columnas": [
+              { "nombre": "Ruta" },
+              { "nombre": "Hora de salida" },
+              { "nombre": "Duración (minutos)", "tipo": "numero" }
+            ],
+            "filas": [
+              ["Ruta 1", "6:20 a. m.", 45],
+              ["Ruta 2", "6:35 a. m.", 25],
+              ["Ruta 3", "6:15 a. m.", 55],
+              ["Ruta 4", "6:40 a. m.", 15]
+            ]
+          },
+          "opciones": [
+            "La Ruta 3, porque es la que sale primero.",
+            "La Ruta 1, porque sale temprano y no es la más larga.",
+            "La Ruta 2, porque llega a las 7:00 en punto.",
+            "La Ruta 4, porque llega a las 6:55 a. m."
+          ],
+          "clave": 3,
+          "justificaciones": [
+            "Sale primero, pero también es la más larga: sumando sus 55 minutos llega a las 7:10, la última de todas.",
+            "La Ruta 1 llega a las 7:05, más tarde que la Ruta 2 y que la Ruta 4.",
+            "El cálculo es correcto, pero la Ruta 4 llega cinco minutos antes.",
+            "Correcta. 6:40 más 15 minutos da 6:55, la hora de llegada más temprana de las cuatro."
+          ],
+          "dificultad": 2
+        }
+      ]
+    },
+    {
+      "prueba": "matematicas",
+      "afirmacion": "mat_formulacion",
+      "evidencia": "f.2",
+      "categoria": "geometria",
+      "contexto": "laboral",
+      "generico": true,
+      "dificultad": 3,
+      "items": [
+        {
+          "forma": "calculo",
+          "enunciado": "Un carpintero tiene un tablero rectangular de 2,40 m de largo por 1,20 m de ancho y necesita cortar tablas de 60 cm por 40 cm, sin desperdiciar material.\n\n¿Cuántas tablas puede sacar del tablero?",
+          "opciones": [
+            "24 tablas",
+            "12 tablas",
+            "10 tablas",
+            "8 tablas"
+          ],
+          "clave": 1,
+          "justificaciones": [
+            "Sale de dividir solo los largos (240 ÷ 60 = 4) y multiplicarlos por los 6 que darían 120 ÷ 20: hay que usar las dos medidas de la tabla, 60 y 40.",
+            "Correcta. A lo largo caben 240 ÷ 60 = 4 tablas y a lo ancho 120 ÷ 40 = 3, así que salen 4 × 3 = 12.",
+            "Es un cálculo aproximado, pero el tablero se reparte exacto: no sobra material y por eso el número es entero y mayor.",
+            "Sería el resultado si cada tabla midiera el doble de ancho; con 40 cm caben tres filas, no dos."
+          ],
+          "dificultad": 3
+        },
+        {
+          "forma": "veredicto_justificacion",
+          "evidencia": "f.1",
+          "categoria": "estadistica",
+          "contexto": "comunitario",
+          "enunciado": "Una junta de acción comunal quiere pintar el salón comunal. Le dicen que un galón de pintura rinde 30 metros cuadrados y que las paredes suman 260 metros cuadrados. El tesorero propone comprar 8 galones y afirma que alcanzan para dar dos manos de pintura.\n\n¿Es correcta su afirmación?",
+          "opciones": [
+            "Sí, porque 8 galones rinden 240 metros cuadrados.",
+            "Sí, porque la segunda mano gasta menos que la primera.",
+            "No, porque para dos manos hay que cubrir 520 metros cuadrados y harían falta 18 galones.",
+            "No, porque el rendimiento de la pintura nunca es exacto."
+          ],
+          "clave": 2,
+          "justificaciones": [
+            "El cálculo de los 240 metros cuadrados está bien, pero ni siquiera alcanza para una mano de 260: menos aún para dos.",
+            "Los datos del problema no dicen eso, y aunque la segunda mano rindiera más, la diferencia no es del doble.",
+            "Correcta. Dos manos son 2 × 260 = 520 metros cuadrados, y 520 ÷ 30 = 17,3, así que hacen falta 18 galones.",
+            "Es cierto que en la práctica varía, pero con los datos dados la respuesta se decide con la cuenta, no con esa reserva."
+          ],
+          "dificultad": 3
+        }
+      ]
+    },
+    {
+      "prueba": "matematicas",
+      "afirmacion": "mat_formulacion",
+      "evidencia": "f.1",
+      "categoria": "algebra_calculo",
+      "contexto": "familiar",
+      "generico": false,
+      "dificultad": 3,
+      "items": [
+        {
+          "forma": "veredicto_justificacion",
+          "enunciado": "Dos tiendas del barrio venden el mismo cuaderno. La tienda A lo tiene a $ 4.800 y ofrece el cuarto cuaderno gratis por cada tres comprados. La tienda B lo tiene a $ 3.900 sin promoción.\n\nUna estudiante necesita 8 cuadernos y dice que le conviene la tienda A por la promoción. ¿Tiene razón?",
+          "opciones": [
+            "Sí, porque en la tienda A se lleva ocho cuadernos pagando seis.",
+            "Sí, porque la promoción equivale a un descuento del 25 %.",
+            "No, porque en la tienda A pagaría $ 28.800 y en la B $ 31.200.",
+            "No, porque en la tienda A pagaría $ 28.800 y en la B $ 31.200 solo si no hubiera promoción; con ella conviene la A."
+          ],
+          "clave": 0,
+          "justificaciones": [
+            "Correcta. Con 8 cuadernos aplica dos veces la promoción, así que paga 6 × 4.800 = 28.800, menos que los 8 × 3.900 = 31.200 de la tienda B.",
+            "La promoción sí descuenta la cuarta parte, pero por sí sola no decide: hay que comparar el precio final de las dos tiendas.",
+            "Las dos cifras están bien calculadas, pero la conclusión está al revés: 28.800 es menos que 31.200.",
+            "Mezcla las dos cuentas: los $ 28.800 ya incluyen la promoción, no son el precio sin ella."
+          ],
+          "dificultad": 3
+        },
+        {
+          "forma": "veredicto_justificacion",
+          "evidencia": "f.2",
+          "categoria": "estadistica",
+          "contexto": "laboral",
+          "generico": true,
+          "enunciado": "Una tienda de barrio registró sus ventas de la semana. La dueña quiere saber cuánto vendió en promedio por día y calcula el promedio sumando el mayor y el menor valor y dividiendo entre dos.\n\n¿Es adecuado ese procedimiento?",
+          "visual": {
+            "tipo": "tabla",
+            "titulo": "Ventas de la semana (miles de pesos)",
+            "columnas": [
+              { "nombre": "Día" },
+              { "nombre": "Ventas", "tipo": "numero" }
+            ],
+            "filas": [
+              ["Lunes", 310],
+              ["Martes", 285],
+              ["Miércoles", 290],
+              ["Jueves", 340],
+              ["Viernes", 480],
+              ["Sábado", 620]
+            ]
+          },
+          "opciones": [
+            "Sí, porque el promedio siempre queda en la mitad entre el mayor y el menor.",
+            "Sí, porque así se evita que los días flojos bajen el resultado.",
+            "No, porque ese cálculo da 452,5 y el promedio real es 387,5: hay que sumar los seis días.",
+            "No, porque el promedio solo se puede calcular con un número par de datos."
+          ],
+          "clave": 2,
+          "justificaciones": [
+            "Eso solo pasaría si los datos estuvieran repartidos de forma simétrica, y aquí hay cuatro días bajos y dos altos.",
+            "El promedio precisamente debe tener en cuenta todos los días; ignorar los flojos no lo hace más útil, lo hace falso.",
+            "Correcta. (285 + 620) ÷ 2 = 452,5, mientras que sumar los seis días y dividir entre 6 da 2.325 ÷ 6 = 387,5.",
+            "El promedio se calcula con cualquier cantidad de datos, sean pares o impares."
+          ],
+          "dificultad": 3
+        }
+      ]
+    },
+    {
+      "prueba": "matematicas",
+      "afirmacion": "mat_argumentacion",
+      "evidencia": "a.1",
+      "categoria": "estadistica",
+      "contexto": "comunitario",
+      "generico": true,
+      "dificultad": 3,
+      "items": [
+        {
+          "forma": "veredicto_justificacion",
+          "enunciado": "En una vereda se midió la temperatura al mediodía durante seis días. Un vecino afirma que «la mitad de los días hizo más de 24 grados».\n\n¿Es correcta esa afirmación?",
+          "visual": {
+            "tipo": "barras",
+            "titulo": "Temperatura al mediodía (grados)",
+            "categorias": ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"],
+            "valores": [23, 26, 22, 25, 24, 27],
+            "decimales": 0
+          },
+          "opciones": [
+            "Sí, porque tres de los seis días pasaron de 24 grados.",
+            "Sí, porque el promedio de la semana fue superior a 24 grados.",
+            "No, porque solo dos días pasaron de 24 grados.",
+            "No, porque el día más caluroso llegó a 27 grados."
+          ],
+          "clave": 0,
+          "justificaciones": [
+            "Correcta. Martes (26), jueves (25) y sábado (27) pasan de 24: son tres de seis, o sea la mitad.",
+            "El promedio es 24,5, pero un promedio alto no dice cuántos días individuales pasaron de 24.",
+            "Son tres días, no dos: el jueves con 25 grados también pasa de 24.",
+            "Que un día llegara a 27 no dice nada sobre cuántos días superaron los 24."
+          ],
+          "dificultad": 2
+        },
+        {
+          "forma": "veredicto_justificacion",
+          "evidencia": "a.2",
+          "categoria": "estadistica",
+          "contexto": "matematico",
+          "generico": false,
+          "enunciado": "Un profesor quiere describir con un solo número los resultados de un examen de su curso. Propone usar el promedio y descartar la mediana, porque «el promedio usa todos los datos y la mediana solo el del medio».\n\n¿Es adecuada esa justificación?",
+          "visual": {
+            "tipo": "tabla",
+            "titulo": "Puntajes del curso",
+            "columnas": [
+              { "nombre": "Puntaje" },
+              { "nombre": "Estudiantes", "tipo": "numero" }
+            ],
+            "filas": [
+              ["10 a 20", 1],
+              ["41 a 50", 9],
+              ["51 a 60", 8],
+              ["61 a 70", 2]
+            ]
+          },
+          "opciones": [
+            "Sí, porque un valor que resume debe tener en cuenta todos los datos.",
+            "Sí, porque la mediana no se puede calcular con datos agrupados.",
+            "No, porque la mediana siempre describe mejor que el promedio.",
+            "No, porque usar todos los datos también significa que un puntaje muy bajo arrastra el promedio hacia abajo."
+          ],
+          "clave": 3,
+          "justificaciones": [
+            "Es cierto que el promedio los usa todos, pero eso no lo hace automáticamente mejor: aquí es justo lo que lo vuelve sensible al puntaje aislado de 10 a 20.",
+            "Sí se puede estimar con datos agrupados; ese no es el motivo por el que la justificación falla.",
+            "Ninguna de las dos es siempre mejor: depende de cómo estén repartidos los datos, y afirmar «siempre» es lo que hace incorrecta esta opción.",
+            "Correcta. Con 17 de 20 estudiantes entre 41 y 60, el estudiante del grupo de 10 a 20 baja el promedio sin que el curso haya cambiado."
+          ],
+          "dificultad": 4
+        },
+        {
+          "forma": "veredicto_justificacion",
+          "evidencia": "a.1",
+          "categoria": "algebra_calculo",
+          "contexto": "familiar",
+          "generico": true,
+          "enunciado": "Un acueducto cobra una tarifa fija más un valor por cada metro cúbico consumido. Una vecina compara dos meses y concluye: «si consumí el doble, la factura tenía que ser el doble».\n\n¿Es correcto su razonamiento?",
+          "visual": {
+            "tipo": "tabla",
+            "titulo": "Facturas de la vivienda",
+            "columnas": [
+              { "nombre": "Mes" },
+              { "nombre": "Consumo (m³)", "tipo": "numero" },
+              { "nombre": "Total pagado", "tipo": "numero" }
+            ],
+            "filas": [
+              ["Abril", 10, 26000],
+              ["Mayo", 20, 44000]
+            ]
+          },
+          "opciones": [
+            "Sí, porque al doble de consumo corresponde el doble de pago.",
+            "No, porque hay un cargo fijo que se paga igual: solo se duplica la parte que depende del consumo.",
+            "No, porque el precio del metro cúbico sube cuando se consume más.",
+            "Sí, porque 44.000 es aproximadamente el doble de 26.000."
+          ],
+          "clave": 1,
+          "justificaciones": [
+            "Eso valdría si todo el cobro dependiera del consumo, y aquí una parte se paga igual sin importar cuánto se gaste.",
+            "Correcta. De los datos sale un cargo fijo de 8.000 y 1.800 por metro cúbico: 8.000 + 10 × 1.800 = 26.000 y 8.000 + 20 × 1.800 = 44.000.",
+            "Con estos datos el metro cúbico cuesta lo mismo en los dos meses (1.800); lo que rompe la proporción es el cargo fijo, no un aumento de tarifa.",
+            "44.000 no es el doble de 26.000: el doble sería 52.000, y esa diferencia es justo lo que hay que explicar."
+          ],
+          "dificultad": 3
+        }
+      ]
+    }
+  ]
+}

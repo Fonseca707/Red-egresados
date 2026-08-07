@@ -193,10 +193,18 @@ Responde SOLO con este JSON, sin markdown ni explicaciones:
     // delata y que solo se ven mirando el conjunto.
     validarLote(items, prueba) {
         const avisos = [];
-        if (prueba === 'matematicas' && items.length >= 2) {
-            const veredicto = items.filter(i => i.forma === 'veredicto_justificacion').length;
-            if (veredicto / items.length < ICFES_MIN_VEREDICTO_MAT) {
-                avisos.push(`Solo ${veredicto} de ${items.length} preguntas son de "veredicto + justificación". El examen real pregunta casi siempre así — revisa si estas se parecen de verdad al ICFES.`);
+        // La cuota de forma se mide SOLO sobre argumentación y formulación, que
+        // es donde el ICFES pregunta "¿es válido este razonamiento?". En
+        // interpretación y representación la tarea es leer una gráfica o una
+        // tabla, y ahí exigir veredicto+justificación es pedir algo que el
+        // examen real tampoco hace: el aviso saltaba en lotes correctos y
+        // presionaba a deformarlos para callarlo. Una vara mal puesta no
+        // protege la fidelidad, la erosiona.
+        const juzgan = items.filter(i => ['mat_argumentacion', 'mat_formulacion'].includes(i.afirmacion));
+        if (prueba === 'matematicas' && juzgan.length >= 2) {
+            const veredicto = juzgan.filter(i => i.forma === 'veredicto_justificacion').length;
+            if (veredicto / juzgan.length < ICFES_MIN_VEREDICTO_MAT) {
+                avisos.push(`De las ${juzgan.length} preguntas de argumentación y formulación, solo ${veredicto} son de "veredicto + justificación". Ahí el examen real casi siempre pregunta si un razonamiento es válido, no cuánto da.`);
             }
         }
 
