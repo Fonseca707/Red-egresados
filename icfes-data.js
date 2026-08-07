@@ -279,10 +279,20 @@ const ICFES_VEREDICTO_MAT = { min: 0.10, max: 0.35, real: 0.16 };
 //   Lectura Crítica 63 / 90 caracteres
 // Sirve para avisar cuando un lote sale con opciones que parecen párrafos: eso
 // delata contenido generado, no un examen.
+// Medido en el cuadernillo de CADA prueba, no extrapolado de una a otra: las
+// cuatro son muy distintas. Matemáticas responde con cifras (mediana 27) y
+// Sociales con afirmaciones completas (80): usar un solo número para todas
+// habría dado por buenas unas y por malas otras sin motivo.
 const ICFES_LARGO_OPCION = {
     matematicas:     { mediana: 27, p90: 91 },
-    lectura_critica: { mediana: 63, p90: 90 }
+    lectura_critica: { mediana: 63, p90: 90 },
+    ciencias:        { mediana: 68, p90: 91 },
+    sociales:        { mediana: 80, p90: 85 }
 };
+
+// Proporción de la forma veredicto+justificación, contada en cada cuadernillo.
+// Ninguna prueba se acerca a la mitad; era una creencia del diseño inicial.
+const ICFES_VEREDICTO_REAL = { matematicas: 0.16, sociales: 0.13, ciencias: 0.07 };
 
 // 🔴 CERO de las 344 opciones del cuadernillo empieza con una expresión vaga
 // ("cerca de", "más de", "aproximadamente"). El ICFES sí usa aproximaciones,

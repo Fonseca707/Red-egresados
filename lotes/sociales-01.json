@@ -1,0 +1,256 @@
+{
+  "_nota": "Sociales y Ciudadanas, tanda 1 — escrito a mano (Claude), 2026-08-07. Contrastado contra el cuadernillo oficial de la prueba: mediana de opción 80 caracteres (afirmaciones completas, no cifras), veredicto+justificación 13 %, cero opciones vagas. La forma típica es un caso o una fuente breve seguido de una pregunta de análisis. Cuota oficial 30/40/30 (tabla 27).",
+  "lotes": [
+    {
+      "prueba": "sociales",
+      "afirmacion": "soc_pensamiento",
+      "evidencia": "1.3",
+      "dificultad": 2,
+      "items": [
+        {
+          "forma": "interpretacion_dato",
+          "enunciado": "Un grupo de habitantes de un municipio considera que la construcción de una vía incumplió los requisitos ambientales y quiere que un organismo del Estado investigue si hubo irregularidades de los funcionarios que la aprobaron.\n\n¿A cuál entidad deben acudir?",
+          "opciones": [
+            "A la Procuraduría General de la Nación.",
+            "Al Congreso de la República.",
+            "A la Registraduría Nacional del Estado Civil.",
+            "Al Banco de la República."
+          ],
+          "clave": 0,
+          "justificaciones": [
+            "Correcta. La Procuraduría es un organismo de control y su función es vigilar la conducta de los servidores públicos e investigar sus faltas disciplinarias.",
+            "El Congreso legisla; no investiga la conducta de funcionarios en un caso concreto.",
+            "La Registraduría se ocupa de la identificación de los ciudadanos y de los procesos electorales, no del control disciplinario.",
+            "El Banco de la República tiene funciones económicas y monetarias, ajenas a la vigilancia de funcionarios."
+          ],
+          "dificultad": 2
+        },
+        {
+          "forma": "interpretacion_dato",
+          "evidencia": "1.4",
+          "enunciado": "Los habitantes de un barrio llevan meses sin servicio continuo de agua. Han elevado peticiones a la empresa prestadora y no han recibido respuesta de fondo. Quieren un mecanismo que obligue a proteger un derecho fundamental de forma inmediata.\n\n¿Cuál mecanismo corresponde a lo que buscan?",
+          "opciones": [
+            "La acción de tutela.",
+            "El referendo.",
+            "La revocatoria del mandato.",
+            "El cabildo abierto."
+          ],
+          "clave": 0,
+          "justificaciones": [
+            "Correcta. La tutela es el mecanismo para proteger derechos fundamentales cuando están amenazados o vulnerados, y se resuelve en diez días.",
+            "El referendo sirve para decidir sobre normas, no para proteger un derecho de un grupo concreto en un caso puntual.",
+            "La revocatoria termina el mandato de un gobernante elegido; no restablece el servicio ni protege el derecho.",
+            "El cabildo abierto permite discutir el problema con la corporación pública, pero no obliga a nadie a restablecer el servicio."
+          ],
+          "dificultad": 2
+        },
+        {
+          "forma": "interpretacion_dato",
+          "afirmacion": "soc_pensamiento",
+          "evidencia": "2.3",
+          "enunciado": "Un municipio de ladera creció ocupando las zonas más inclinadas, donde el terreno es inestable y las lluvias fuertes provocan deslizamientos. Los barrios construidos allí concentran hoy la mayor parte de las emergencias por invierno.\n\n¿Qué relación entre el espacio geográfico y la problemática social ilustra este caso?",
+          "opciones": [
+            "Las condiciones del terreno agravan el riesgo de quienes ocupan las zonas menos aptas.",
+            "El relieve determina por sí solo el nivel de ingresos de los habitantes.",
+            "Las emergencias por lluvias ocurren por igual en todo el territorio.",
+            "La pendiente impide por completo cualquier asentamiento humano."
+          ],
+          "clave": 0,
+          "justificaciones": [
+            "Correcta. El caso muestra cómo una característica del espacio —la pendiente inestable— se combina con la ocupación de esas zonas y concentra allí el riesgo.",
+            "El texto no habla de ingresos, y el relieve no determina por sí solo la situación económica de nadie.",
+            "El propio caso dice lo contrario: las emergencias se concentran en los barrios de ladera.",
+            "El caso demuestra que sí hay asentamientos en esas zonas; el problema es el riesgo que corren, no la imposibilidad."
+          ],
+          "dificultad": 3
+        },
+        {
+          "forma": "interpretacion_dato",
+          "afirmacion": "soc_pensamiento",
+          "evidencia": "1.1",
+          "enunciado": "En un municipio, el precio del arriendo subió con fuerza después de que se anunciara la llegada de una empresa grande que contratará a cientos de trabajadores. Todavía no ha llegado ningún trabajador nuevo.\n\n¿Qué concepto económico explica mejor el aumento del precio?",
+          "opciones": [
+            "La expectativa de mayor demanda futura frente a una oferta que no ha crecido.",
+            "La devaluación de la moneda nacional frente a las divisas vecinas.",
+            "El aumento del salario mínimo decretado para todo el país.",
+            "La pérdida de viviendas disponibles por un desastre natural."
+          ],
+          "clave": 0,
+          "justificaciones": [
+            "Correcta. Los precios reaccionan a la demanda esperada: si se anticipan más interesados y la oferta sigue igual, el precio sube antes de que lleguen.",
+            "El caso no menciona ningún cambio en el valor de la moneda, y eso afectaría a todo el país, no al arriendo de un municipio.",
+            "Una subida del salario mínimo se aplicaría en todo el país; aquí el aumento es local y tiene una causa local.",
+            "El texto no menciona ningún desastre ni pérdida de viviendas: la oferta no cambió."
+          ],
+          "dificultad": 3
+        }
+      ]
+    },
+    {
+      "prueba": "sociales",
+      "afirmacion": "soc_perspectivas",
+      "evidencia": "3.3",
+      "dificultad": 3,
+      "items": [
+        {
+          "forma": "interpretacion_dato",
+          "enunciado": "En una asamblea sobre el cierre de una plaza de mercado, un comerciante afirma: «Los vendedores ambulantes ocupan el andén y por eso la gente ya no viene. Es cierto que muchos llevan años trabajando ahí y que sostienen a sus familias con eso, pero esa clase de gente no entiende de orden».\n\n¿Cuál parte de su intervención contiene un prejuicio?",
+          "opciones": [
+            "Que esa clase de gente no entiende de orden.",
+            "Que los vendedores ambulantes ocupan el andén de la plaza.",
+            "Que muchos vendedores llevan años trabajando en ese lugar.",
+            "Que los vendedores sostienen a sus familias con ese trabajo."
+          ],
+          "clave": 0,
+          "justificaciones": [
+            "Correcta. Atribuye una característica negativa a todo un grupo por pertenecer a él, sin evidencia: eso es un prejuicio, no una observación.",
+            "Es una afirmación sobre un hecho observable, que se puede comprobar o desmentir mirando el andén.",
+            "Es un dato sobre la antigüedad de los vendedores, no una valoración de cómo son.",
+            "Reconoce una situación de los vendedores; no los descalifica."
+          ],
+          "dificultad": 2
+        },
+        {
+          "forma": "interpretacion_dato",
+          "evidencia": "4.1",
+          "enunciado": "Un municipio quiere convertir un lote baldío en parqueadero público. Los comerciantes del sector lo apoyan porque atraería clientes; un grupo de vecinos se opone porque es el único espacio donde juegan los niños; la administración señala que el parqueadero dejaría ingresos para el municipio.\n\n¿Qué diferencia fundamental hay entre las tres posturas?",
+          "opciones": [
+            "Cada actor valora el mismo lote según el uso que más le conviene o le importa.",
+            "Los tres actores persiguen exactamente el mismo objetivo con argumentos distintos.",
+            "Solo la administración tiene un interés económico en la decisión que se tome.",
+            "Los vecinos y los comerciantes coinciden en que el lote debe seguir baldío."
+          ],
+          "clave": 0,
+          "justificaciones": [
+            "Correcta. El desacuerdo no es sobre los hechos sino sobre para qué debe servir el lote, y cada actor lo evalúa desde lo que necesita.",
+            "Los objetivos son distintos: atraer clientes, conservar un espacio de juego y obtener ingresos.",
+            "Los comerciantes también tienen un interés económico: esperan más clientes.",
+            "Los comerciantes quieren el parqueadero; solo los vecinos quieren conservar el espacio."
+          ],
+          "dificultad": 2
+        },
+        {
+          "forma": "interpretacion_dato",
+          "evidencia": "3.2",
+          "enunciado": "Un estudiante quiere sostener que en su municipio aumentó el desempleo juvenil el año pasado. Como única prueba presenta una encuesta que él mismo aplicó a treinta compañeros de su colegio.\n\n¿Cuál es la principal limitación de esa fuente para respaldar su afirmación?",
+          "opciones": [
+            "Los encuestados no representan al conjunto de los jóvenes del municipio.",
+            "Las encuestas nunca sirven para estudiar fenómenos económicos de una población.",
+            "El estudiante debió aplicar la encuesta en persona y no por medios digitales.",
+            "El desempleo juvenil solo puede medirse con datos de más de diez años."
+          ],
+          "clave": 0,
+          "justificaciones": [
+            "Correcta. Treinta compañeros de un mismo colegio no son una muestra representativa: no permiten concluir nada sobre todos los jóvenes del municipio.",
+            "Las encuestas sí son una herramienta válida; el problema aquí es a quiénes se aplicó, no el método.",
+            "La forma de aplicarla no es lo que invalida la conclusión, sino a quiénes se les preguntó.",
+            "Un fenómeno anual se puede medir con datos de ese periodo; el problema es la muestra, no el plazo."
+          ],
+          "dificultad": 3
+        },
+        {
+          "forma": "veredicto_justificacion",
+          "evidencia": "4.3",
+          "enunciado": "En el conflicto por el lote baldío, la administración propone dividirlo: la mitad para parqueadero y la mitad para un parque infantil. Un concejal afirma que esa propuesta atiende los intereses de todas las partes.\n\n¿Es correcta la afirmación del concejal?",
+          "opciones": [
+            "Sí, porque atiende parcialmente tanto el interés comercial como el de los vecinos.",
+            "Sí, porque cualquier propuesta intermedia satisface por completo a las partes.",
+            "No, porque una solución solo es válida si una de las partes cede del todo.",
+            "No, porque las partes en conflicto nunca aceptan una propuesta de la administración."
+          ],
+          "clave": 0,
+          "justificaciones": [
+            "Correcta. La división recoge algo de cada interés en juego, aunque ninguno quede satisfecho por completo.",
+            "Una propuesta intermedia no satisface por completo a nadie; eso es distinto de atender los intereses en parte.",
+            "Que alguien ceda del todo no es condición para que una solución sea válida: es lo contrario de una negociación.",
+            "No hay nada en el caso que permita afirmar eso, y es una generalización sobre cómo actúan las partes."
+          ],
+          "dificultad": 3
+        },
+        {
+          "forma": "interpretacion_dato",
+          "evidencia": "4.2",
+          "enunciado": "Ante una propuesta de destinar más presupuesto municipal a bibliotecas, el director de una editorial la respalda por su valor cultural, mientras que un comerciante de la zona sostiene que ese dinero rendiría más en arreglar las vías.\n\n¿Qué explica mejor la diferencia entre las dos posiciones?",
+          "opciones": [
+            "El lugar que cada uno ocupa en la vida económica del municipio orienta lo que considera prioritario.",
+            "Uno de los dos conoce el presupuesto municipal y el otro lo desconoce por completo.",
+            "El comerciante está en contra de que existan bibliotecas públicas en el municipio.",
+            "Ninguno de los dos tiene argumentos válidos sobre el uso del presupuesto."
+          ],
+          "clave": 0,
+          "justificaciones": [
+            "Correcta. Las posiciones no salen de la nada: el rol social y económico de cada uno influye en qué considera urgente.",
+            "El caso no dice nada sobre cuánto sabe cada uno del presupuesto.",
+            "El comerciante no se opone a las bibliotecas: sostiene que hay una prioridad mayor.",
+            "Los dos dan razones —valor cultural y estado de las vías— que son argumentos atendibles."
+          ],
+          "dificultad": 2
+        }
+      ]
+    },
+    {
+      "prueba": "sociales",
+      "afirmacion": "soc_reflexivo",
+      "evidencia": "6.1",
+      "dificultad": 3,
+      "items": [
+        {
+          "forma": "interpretacion_dato",
+          "enunciado": "Un municipio prohibió la minería artesanal en su río para frenar la contaminación del agua. Meses después, la calidad del agua mejoró, pero decenas de familias que vivían de esa actividad quedaron sin ingresos y algunas se desplazaron a la ciudad.\n\n¿Qué muestra este caso sobre la relación entre las dimensiones de un problema?",
+          "opciones": [
+            "Una medida acertada en lo ambiental puede generar efectos negativos en lo económico y lo social.",
+            "Los problemas ambientales y los económicos son independientes entre sí en un territorio.",
+            "La contaminación del agua solo se resuelve prohibiendo por completo cualquier actividad.",
+            "El desplazamiento de las familias demuestra que la medida ambiental fue un error técnico."
+          ],
+          "clave": 0,
+          "justificaciones": [
+            "Correcta. El caso muestra las dos caras: el objetivo ambiental se cumplió y a la vez aparecieron consecuencias económicas y sociales.",
+            "El caso demuestra justamente lo contrario: la medida ambiental tuvo efectos económicos directos.",
+            "El caso no permite concluir eso; solo describe lo que pasó con una prohibición concreta.",
+            "El resultado ambiental fue el buscado. Que haya efectos no previstos no convierte la medida en un error técnico."
+          ],
+          "dificultad": 3
+        },
+        {
+          "forma": "interpretacion_dato",
+          "evidencia": "6.2",
+          "enunciado": "Ese mismo municipio evalúa acompañar la prohibición con un programa de formación en oficios para las familias afectadas.\n\n¿Qué efecto principal tendría esa intervención sobre el problema?",
+          "opciones": [
+            "Atendería la dimensión económica sin renunciar al objetivo ambiental de la medida.",
+            "Reemplazaría la prohibición y permitiría que la minería artesanal continuara.",
+            "Mejoraría aún más la calidad del agua del río en el corto plazo.",
+            "Eliminaría la necesidad de vigilar el cumplimiento de la prohibición."
+          ],
+          "clave": 0,
+          "justificaciones": [
+            "Correcta. La formación da una alternativa de ingresos a quienes perdieron el suyo, y la prohibición sigue en pie.",
+            "El programa acompaña la prohibición; no la sustituye ni permite volver a la actividad.",
+            "La calidad del agua depende de que no haya minería en el río, no de que las familias reciban formación.",
+            "Seguiría haciendo falta vigilar: el programa atiende a las familias, no garantiza que nadie incumpla."
+          ],
+          "dificultad": 3
+        },
+        {
+          "forma": "interpretacion_dato",
+          "evidencia": "5.1",
+          "enunciado": "Para decidir dónde construir un nuevo centro de salud, una alcaldía usa un modelo que ubica el punto que minimiza el tiempo promedio de desplazamiento de toda la población del municipio.\n\n¿Cuál es la principal limitación de decidir únicamente con ese modelo?",
+          "opciones": [
+            "Puede dejar lejos a poblaciones pequeñas y dispersas que son las que más necesitan el servicio.",
+            "Los modelos matemáticos no se pueden aplicar a decisiones sobre servicios de salud.",
+            "El tiempo de desplazamiento es un dato imposible de estimar en un municipio.",
+            "Un centro de salud debe ubicarse siempre en el centro geográfico del territorio."
+          ],
+          "clave": 0,
+          "justificaciones": [
+            "Correcta. Un promedio favorece a donde se concentra la mayoría, y puede dejar por fuera a quienes viven dispersos y tienen menos acceso.",
+            "Sí se pueden aplicar y son útiles; el punto es que un solo criterio no recoge todo lo que está en juego.",
+            "El tiempo de desplazamiento se estima con distancias y vías: es un dato manejable.",
+            "El centro geográfico no tiene por qué ser el mejor lugar; depende de dónde vive la gente."
+          ],
+          "dificultad": 4
+        }
+      ]
+    }
+  ]
+}

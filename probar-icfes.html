@@ -102,12 +102,12 @@ function saveExamResult() { /* en producción guarda el resumen de la sesión */
 function sanitizeHTML(str) { const d = document.createElement('div'); d.textContent = String(str ?? ''); return d.innerHTML; }
 </script>
 
-<script src="icfes-data.js?v=6"></script>
+<script src="icfes-data.js?v=7"></script>
 <script src="icfes-visual.js?v=4"></script>
 <script src="icfes-engine.js?v=8"></script>
 
 <script>
-const LOTES_CONOCIDOS = ['lotes/matematicas-01.json', 'lotes/lectura-critica-01.json'];
+const LOTES_CONOCIDOS = ['lotes/matematicas-01.json', 'lotes/lectura-critica-01.json', 'lotes/sociales-01.json'];
 
 const banco = {
     cargados: [],
