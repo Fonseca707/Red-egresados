@@ -282,6 +282,11 @@ async function calcular(env) {
         if (!puedeRecibir(a)) continue;
         const antiguedad = dias(a.createdAt);
         const hitos = Number(a.hitosCount) || 0;
+        // ⚠️ Los profesores del colegio reciben la bienvenida, pero NADA que
+        // hable de trayectoria: «completa tu ruta» y el «pulso» de hito abierto
+        // dan por hecho una vida de egresado que ellos no tienen aquí. Es el
+        // mismo error que Karla contando a la red entera: no falla, miente.
+        const esProfesor = a.tipo === 'profesor';
 
         // 1. Bienvenida: al día siguiente de registrarse. Sin ventana de cierre:
         //    los ya registrados (que nunca la recibieron) también la reciben,
@@ -292,12 +297,12 @@ async function calcular(env) {
 
         // 2. Completar perfil: desde los 3 días sin ruta. Se reintenta cada 45
         //    días (recordatorio suave, no spam) hasta que agregue sus hitos.
-        if (hitos < 2 && antiguedad !== null && antiguedad >= 3) {
+        if (!esProfesor && hitos < 2 && antiguedad !== null && antiguedad >= 3) {
             pendientes.push({ alum: a, tipo: 'completar-perfil', repetirCadaDias: 45 });
         }
 
         // 3. Pulso: hito abierto con más de un año sin actualizar (máx. 1/año)
-        if (hitos > 0) {
+        if (!esProfesor && hitos > 0) {
             try {
                 const hs = await coleccion(`${base(env)}/alumni/${a._id}/hitos`);
                 const abierto = hs.find(h => h.actual);

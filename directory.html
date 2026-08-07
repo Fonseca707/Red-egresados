@@ -53,6 +53,15 @@
                         <input type="text" id="directory-search" placeholder="Buscar por nombre, cargo, empresa..." class="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100 transition shadow-sm" oninput="directoryLogic.debouncedFilter()" aria-label="Buscar egresados">
                     </div>
                     <div class="flex gap-3 w-full sm:w-auto">
+                    <!-- Quién, no en qué anda: un profesor del colegio no es un
+                         egresado con otra situación laboral, es otra figura. Va
+                         antes que los demás filtros porque los condiciona (a un
+                         profesor no se le pregunta la promoción). -->
+                    <select id="directory-tipo" class="flex-1 min-w-0 sm:flex-none sm:w-44 bg-white px-3 py-3 border border-gray-200 rounded-xl hover:bg-gray-50 text-gray-600 shadow-sm transition text-sm font-medium" onchange="directoryLogic.filter()" aria-label="Filtrar por tipo de miembro">
+                        <option value="all">Egresados y profesores</option>
+                        <option value="egresado">Solo egresados</option>
+                        <option value="profesor">Solo profesores</option>
+                    </select>
                     <input type="number" id="directory-year" placeholder="Promoción" class="flex-1 min-w-0 sm:flex-none sm:w-32 bg-white px-3 py-3 border border-gray-200 rounded-xl hover:bg-gray-50 text-gray-600 shadow-sm transition text-sm font-medium" oninput="directoryLogic.debouncedFilter()" aria-label="Filtrar por año de promoción">
                     <select id="directory-filter" class="flex-1 min-w-0 sm:flex-none bg-white px-3 py-3 border border-gray-200 rounded-xl hover:bg-gray-50 text-gray-600 shadow-sm transition text-sm font-medium" onchange="directoryLogic.filter()">
                         <option value="all">Todos</option>
@@ -157,7 +166,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore-compat.js"></script>
-    <script src="shared.js?v=39"></script>
+    <script src="shared.js?v=40"></script>
     <script src="orientadora.js?v=8"></script>
     <script>
         renderNav('directory');
@@ -252,9 +261,15 @@
                                 <img src="${sanitizeHTML(alum.img)}" alt="Foto de ${sanitizeHTML(alum.name)}" class="w-14 h-14 rounded-xl object-cover shadow-sm group-hover:scale-105 transition shrink-0">
                                 <div class="min-w-0 pt-0.5">
                                     <h3 class="font-bold text-gray-900 group-hover:text-brand-600 transition leading-tight break-words">${sanitizeHTML(alum.name)}</h3>
-                                    <p class="text-xs text-brand-600 font-semibold uppercase tracking-wide mt-1 leading-tight break-words">${sanitizeHTML(alum.company)}</p>
-                                    <p class="text-[11px] font-bold text-brand-600 mt-1 leading-tight">Promoción ${sanitizeHTML(alum.year || '---')}</p>
-                                    <p class="text-sm text-gray-500 mt-1 line-clamp-1">${sanitizeHTML(alum.role)}</p>
+                                    <p class="text-xs text-brand-600 font-semibold uppercase tracking-wide mt-1 leading-tight break-words">${sanitizeHTML(esProfesor(alum) ? (alum.formacion || 'Docente') : alum.company)}</p>
+                                    ${esProfesor(alum)
+                                        // La segunda línea de la ficha es la que dice quién es esta
+                                        // persona de un vistazo. En un egresado eso es su promoción;
+                                        // en un profesor, que enseña aquí y desde cuándo. Poner
+                                        // "Promoción ---" a quien no tiene una es peor que no poner nada.
+                                        ? `<p class="text-[11px] font-bold text-amber-700 mt-1 leading-tight"><i class="ph-bold ph-chalkboard-teacher"></i> Profesor del colegio${alum.aniosEnsenando ? ` · ${sanitizeHTML(alum.aniosEnsenando)} años enseñando` : ''}</p>`
+                                        : `<p class="text-[11px] font-bold text-brand-600 mt-1 leading-tight">Promoción ${sanitizeHTML(alum.year || '---')}</p>`}
+                                    <p class="text-sm text-gray-500 mt-1 line-clamp-1">${sanitizeHTML(esProfesor(alum) ? (alum.areas || 'Sin áreas declaradas todavía') : alum.role)}</p>
                                 </div>
                             </div>
                         </div>
@@ -402,12 +417,16 @@
                 const term = document.getElementById('directory-search').value.toLowerCase().trim();
                 const yearTerm = (document.getElementById('directory-year')?.value || '').trim();
                 const selected = document.getElementById('directory-filter')?.value || 'all';
+                const tipoTerm = document.getElementById('directory-tipo')?.value || 'all';
                 // ⚠️ Buscar es lo único que necesita la red ENTERA: con el directorio
                 // paginado, filtrar solo lo cargado diría "no se encontraron egresados"
                 // de alguien que sí está — el peor fallo posible en un buscador. Se trae
                 // todo UNA vez (y queda en caché para el resto de la sesión), así que el
                 // coste alto lo paga solo quien busca, y solo la primera vez.
-                directoryLogic._filtrando = Boolean(term || yearTerm || selected !== 'all');
+                // Pedir «solo profesores» obliga a traer la red entera, igual
+                // que buscar: son pocos y estarían repartidos por todo el orden
+                // alfabético, así que con un bloque de 12 casi nunca saldrían.
+                directoryLogic._filtrando = Boolean(term || yearTerm || selected !== 'all' || tipoTerm !== 'all');
                 if (directoryLogic._filtrando && hayMasDirectorio()) {
                     state.directoryLoading = true;
                     directoryLogic.render();
@@ -415,13 +434,22 @@
                     state.directoryLoading = false;
                 }
                 const filtered = state.data.alumni.filter(u => {
+                    // Las áreas del profesor entran en la búsqueda: son texto
+                    // libre (decisión de Juan), así que buscar es la única
+                    // forma de encontrar «física» o «proyecto de grado».
                     const matchesTerm = u.name.toLowerCase().includes(term) ||
                         (u.role || '').toLowerCase().includes(term) ||
-                        (u.company || '').toLowerCase().includes(term);
+                        (u.company || '').toLowerCase().includes(term) ||
+                        (u.areas || '').toLowerCase().includes(term);
                     if (!matchesTerm) return false;
 
+                    if (tipoTerm !== 'all' && (esProfesor(u) ? 'profesor' : 'egresado') !== tipoTerm) return false;
+
+                    // La promoción no descarta a un profesor: no tiene ninguna.
+                    // Sin esta salvedad, escribir un año los borraba a todos —
+                    // y quien filtra por promoción está buscando egresados.
                     const yearValue = String(u.year || '').trim();
-                    if (yearTerm && !yearValue.includes(yearTerm)) return false;
+                    if (yearTerm && (esProfesor(u) || !yearValue.includes(yearTerm))) return false;
 
                     if (selected === 'all') return true;
                     const tags = (u.tags || []).map(t => String(t).toLowerCase());

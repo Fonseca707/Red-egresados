@@ -361,6 +361,28 @@ async function avisarMensajePorCorreo(destinatarioUid, deNombre) {
 const USERNAME_AUTH_DOMAIN = 'users.sinapsis.app';
 const LEGACY_USERNAME_AUTH_DOMAIN = 'sinapsis.local';
 const STATUS = { TRABAJANDO:'trabajando', ESTUDIANDO:'estudiando', TRABAJANDO_ESTUDIANDO:'trabajando-estudiando', EMPRENDIENDO:'emprendiendo', PROFESOR:'profesor', SIN_DEFINIR:'sin-definir' };
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TIPO DE MIEMBRO — no confundir con STATUS.PROFESOR, que es otra cosa
+//
+// `STATUS.PROFESOR` significa «este EGRESADO se dedica hoy a dar clase»: es su
+// situación actual, como trabajando o emprendiendo. `TIPO_MIEMBRO.PROFESOR`
+// significa «esta persona es docente del colegio y no es egresada»: no tiene
+// promoción ni trayectoria, y la red la trata distinto. Diseño en el vault:
+// proyectos/red-egresados/tipos-de-miembro.md
+//
+// ⛔ El tipo NO lo elige quien se registra: lo dice su código de invitación.
+// Si fuera un desplegable, cualquiera se declararía docente del colegio ante un
+// grupo de estudiantes — es una credencial, no una preferencia.
+const TIPO_MIEMBRO = { EGRESADO: 'egresado', PROFESOR: 'profesor' };
+const esProfesor = u => (u?.tipo || TIPO_MIEMBRO.EGRESADO) === TIPO_MIEMBRO.PROFESOR;
+// ⭐ Usar SIEMPRE esto para «los egresados», nunca `state.data.alumni` a secas.
+// Seis sitios daban por hecho que todo documento de la colección era un
+// egresado (el contador de promociones de la portada, el resumen que alimenta a
+// Karla, las historias destacadas, los agregados del admin, los correos y el
+// filtro por promoción). Ninguno da error con un profesor dentro: mienten.
+const soloEgresados = lista => (lista || []).filter(u => !esProfesor(u));
+const soloProfesores = lista => (lista || []).filter(esProfesor);
 const ACCOUNT_STATUS = { ACTIVO:'activo', SUSPENDIDO:'suspendido' };
 const DIRECTORY_PAGE_SIZE = 12;
 
@@ -579,7 +601,14 @@ async function validarCodigoInvitacion(codigo) {
         if (!doc.exists || doc.data().activo !== true) return null;
         const colegioId = doc.data().colegioId || '';
         if (!colegioId) return null;
-        return { codigo: clean, colegioId, colegio: await getColegio(colegioId) };
+        // ⛔ El TIPO DE MIEMBRO sale de aquí y de ningún otro sitio. Es lo que
+        // impide que alguien se declare docente del colegio ante un grupo de
+        // estudiantes: hay que tener en la mano el código que el colegio
+        // reparte a sus profesores. Cualquier valor que no sea exactamente
+        // 'profesor' cae en egresado, incluidos los códigos viejos que no
+        // tienen el campo.
+        const tipo = doc.data().tipo === TIPO_MIEMBRO.PROFESOR ? TIPO_MIEMBRO.PROFESOR : TIPO_MIEMBRO.EGRESADO;
+        return { codigo: clean, colegioId, tipo, colegio: await getColegio(colegioId) };
     } catch (e) { return null; }
 }
 // Módulos disponibles para el usuario actual según su colegio. Sin cuenta o sin
@@ -1609,13 +1638,30 @@ function mapearAlumno(doc) {
         role: d.role || 'Sin rol', status: d.status || 'sin-definir', statusLabel: formatStatusLabel(d.status),
         accountStatus: d.accountStatus || 'activo', company: d.studies || formatStatusLabel(d.status),
         photoURL: d.photoURL || '', img: d.photoURL || buildAvatarUrl(`${d.firstName || 'Usuario'} ${d.lastName || ''}`.trim()),
-        tags: [d.school || '', d.area || 'General', formatStatusLabel(d.status)].filter(Boolean),
+        // ⚠️ El profesor NO lleva la etiqueta de «situación actual»: en ese
+        // desplegable ya existe «Profesor» con otro significado (un egresado
+        // que da clase), y mezclarlos haría que el filtro devolviera dos cosas
+        // distintas bajo el mismo nombre.
+        tags: d.tipo === TIPO_MIEMBRO.PROFESOR
+            ? [d.school || '', 'Profesor del colegio'].filter(Boolean)
+            : [d.school || '', d.area || 'General', formatStatusLabel(d.status)].filter(Boolean),
         fullStudies: d.studies || 'No especificado', location: d.location || 'Ubicación no disponible',
         bio: d.bio || 'Sin biografía disponible.', year: d.graduationYear || '---', area: d.area || 'General',
         skills: Array.isArray(d.skills) ? d.skills : (d.skills ? String(d.skills).split(',') : []),
         linkedin: d.linkedin || '', expectations: d.expectations || '', school: d.school || '',
         hitosCount: Number(d.hitosCount) || 0, rutaDestacada: Boolean(d.rutaDestacada),
-        graduationYear: d.graduationYear || '', studies: d.studies || ''
+        graduationYear: d.graduationYear || '', studies: d.studies || '',
+        // ── Tipo de miembro ────────────────────────────────────────────────
+        // Los 68 documentos anteriores al 2026-08-07 NO tienen este campo, así
+        // que la ausencia significa `egresado`. Se normaliza AQUÍ y solo aquí:
+        // es el único sitio por el que pasan las tres formas de leer la
+        // colección (entera, por bloques, destacados). Comparar `d.tipo` crudo
+        // contra 'egresado' dejaría fuera a los 68 de siempre.
+        tipo: d.tipo === TIPO_MIEMBRO.PROFESOR ? TIPO_MIEMBRO.PROFESOR : TIPO_MIEMBRO.EGRESADO,
+        // Del profesor: en qué acompaña, cuánto lleva enseñando y su formación.
+        // `areas` es TEXTO LIBRE por decisión de Juan (2026-08-07), así que se
+        // busca, no se filtra por lista.
+        areas: d.areas || '', aniosEnsenando: d.aniosEnsenando || '', formacion: d.formacion || ''
     };
     return { ...user, profileCompleteness: getProfileCompletenessScore(user) };
 }
@@ -1692,7 +1738,12 @@ async function loadAlumniBloque({ limite = DIRECTORY_PAGE_SIZE } = {}) {
 // egresados hay» eso sobra.
 const RESUMEN_CACHE = 'sinapsis_resumen_red';
 function calcularResumenRed(alumni) {
-    const activos = alumni.filter(a => a.accountStatus !== ACCOUNT_STATUS.SUSPENDIDO);
+    const vivos = (alumni || []).filter(a => a.accountStatus !== ACCOUNT_STATUS.SUSPENDIDO);
+    // ⭐ Los profesores NO son egresados: si entraran en esta cuenta, la portada
+    // diría «Egresados de N promociones» contando docentes sin promoción, y
+    // Karla repetiría ese total con toda seriedad. Es exactamente lo que pasó
+    // cuando creyó que la red eran 4 personas — ver lecturas-firestore.
+    const activos = soloEgresados(vivos);
     const distintos = (arr) => new Set(arr.filter(Boolean)).size;
     const anios = activos.map(a => parseInt(a.year, 10)).filter(Number.isFinite);
     return {
@@ -1709,6 +1760,9 @@ function calcularResumenRed(alumni) {
             return acc;
         }, {})).sort((x, y) => y[1] - x[1]).slice(0, 8).map(([a, n]) => `${a} (${n})`),
         rutasCompletas: activos.filter(a => (a.hitosCount || 0) >= 2).length,
+        // Aparte y con su nombre: son otra cosa, y quien los quiera contar que
+        // los pida. Meterlos en `total` es lo que hace mentir a la portada.
+        profesores: soloProfesores(vivos).length,
         actualizado: Date.now()
     };
 }
@@ -1718,7 +1772,7 @@ async function guardarResumenRed(alumni) {
     try {
         const nuevo = calcularResumenRed(alumni);
         const previo = _cacheLeer(RESUMEN_CACHE);
-        const igual = previo && ['total','promociones','areas','rutasCompletas','promoMin','promoMax']
+        const igual = previo && ['total','promociones','areas','rutasCompletas','promoMin','promoMax','profesores']
             .every(k => previo[k] === nuevo[k]);
         if (igual) return;
         await resumenRedDoc.set(nuevo, { merge: true });
@@ -1745,12 +1799,16 @@ async function loadResumenRed() {
 // real, y pedirlos era pagar por descartarlos. No se puede ordenar por
 // `profileCompleteness` porque ese número se calcula en el navegador.
 async function loadAlumniConRutas({ limite = 18 } = {}) {
+    // Son las rutas que Karla cita por nombre y promoción: un profesor no tiene
+    // ninguna de las dos cosas. Se filtra en el cliente y no en la consulta a
+    // propósito — `where('tipo','!=',...)` obligaría a ordenar primero por
+    // `tipo` y rompería el cursor alfabético que sostiene el directorio.
     const cache = _alumniDesdeCache();
-    if (cache) return cache.filter(a => (a.hitosCount || 0) >= 1).slice(0, limite);
+    if (cache) return soloEgresados(cache).filter(a => (a.hitosCount || 0) >= 1).slice(0, limite);
     try {
         await asegurarSesionParaLeer();
         const snap = await conReintento(() => alumniCollection.where('hitosCount', '>=', 1).limit(limite).get());
-        return snap.docs.map(mapearAlumno)
+        return soloEgresados(snap.docs.map(mapearAlumno))
             .filter(a => hasValidFirstName(a.firstName) && a.accountStatus !== ACCOUNT_STATUS.SUSPENDIDO);
     } catch (e) { return []; }
 }
@@ -1772,8 +1830,10 @@ async function loadAlumniDestacados({ limite = 8 } = {}) {
 async function _leerDestacados(limite) {
     try {
         await asegurarSesionParaLeer();
-        const traer = async (consulta) => (await conReintento(() => consulta.get()))
-            .docs.map(mapearAlumno)
+        // Las historias de la portada son trayectorias de egresados: «del
+        // colegio a donde están hoy». Un profesor no tiene ruta que contar, así
+        // que aunque el admin lo marcara destacado por error, aquí no entra.
+        const traer = async (consulta) => soloEgresados((await conReintento(() => consulta.get())).docs.map(mapearAlumno))
             .filter(a => hasValidFirstName(a.firstName) && a.accountStatus !== 'suspendido');
         let lista = await traer(alumniCollection.where('rutaDestacada', '==', true).limit(limite));
         if (lista.length < 2) {

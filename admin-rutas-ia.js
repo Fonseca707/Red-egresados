@@ -383,7 +383,11 @@ const agregadosLogic = {
         const btn = document.getElementById('btn-agregados');
         if (btn) { btn.disabled = true; btn.innerHTML = '<i class="ph-bold ph-spinner animate-spin"></i> Calculando…'; }
         try {
-            const conRuta = adminLogic.getVisibleUsers().filter(u => (u.hitosCount || 0) > 0);
+            // «A dónde llegan los egresados» agrega universidades y empleos de
+            // las rutas. Un profesor no tiene ruta, y si la tuviera sería la
+            // suya, no la de un egresado del colegio: mezclarlas ensuciaría el
+            // único dato que este panel existe para dar.
+            const conRuta = soloEgresados(adminLogic.getVisibleUsers()).filter(u => (u.hitosCount || 0) > 0);
             const listas = await Promise.all(conRuta.map(u => loadHitos(u.id)));
             const unis = {}, orgs = {};
             listas.flat().forEach(h => {

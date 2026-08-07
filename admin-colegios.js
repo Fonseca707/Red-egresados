@@ -116,7 +116,10 @@ const colegiosAdminLogic = {
         }
     },
 
-    generarCodigo: async (colegioId) => {
+    // `tipo` es la CREDENCIAL que reparte el colegio: quien entre con un código
+    // de profesor nace profesor, y no hay otra forma de serlo. Por eso son dos
+    // botones y no un desplegable en el registro — ver tipos-de-miembro.
+    generarCodigo: async (colegioId, tipo = 'egresado') => {
         // 6 caracteres alfanuméricos en mayúscula, aleatoriedad criptográfica
         // (antes Math.random(), no apto para un identificador de acceso).
         const ALFABETO = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -127,6 +130,7 @@ const colegiosAdminLogic = {
         try {
             await codigosCollection.doc(codigo).set({
                 colegioId,
+                tipo: tipo === 'profesor' ? 'profesor' : 'egresado',
                 activo: true,
                 createdAt: firebase.firestore.FieldValue.serverTimestamp()
             });
@@ -183,6 +187,10 @@ const colegiosAdminLogic = {
                 <div class="flex flex-wrap items-center gap-2 rounded-xl border ${c.activo ? 'border-gray-100 bg-gray-50/70' : 'border-gray-100 bg-gray-50/40 opacity-60'} px-3 py-2">
                     <code class="text-xs font-bold ${c.activo ? 'text-gray-800' : 'text-gray-400 line-through'}">${sanitizeHTML(c.id)}</code>
                     <span class="px-2 py-0.5 rounded-md text-[10px] font-bold ${c.activo ? 'bg-green-50 text-green-600 border border-green-100' : 'bg-gray-100 text-gray-500 border border-gray-200'}">${c.activo ? 'Activo' : 'Inactivo'}</span>
+                    <!-- Se marca solo el de profesor: es el que no se puede
+                         repartir a la ligera. Los de egresado son el caso
+                         normal y no necesitan etiqueta. -->
+                    ${c.tipo === 'profesor' ? '<span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200"><i class="ph-bold ph-chalkboard-teacher"></i> Profesor</span>' : ''}
                     <span class="flex-1"></span>
                     ${c.activo ? `<button onclick="colegiosAdminLogic.copiarEnlace('${sanitizeHTML(c.id)}', this)" class="px-3 py-1 rounded-lg text-xs font-bold bg-white border border-gray-200 text-gray-600 hover:text-brand-600 hover:border-brand-200 transition"><i class="ph-bold ph-link"></i> Copiar enlace</button>` : ''}
                     <button onclick="colegiosAdminLogic.toggleCodigo('${sanitizeHTML(c.id)}', ${Boolean(c.activo)})" class="px-3 py-1 rounded-lg text-xs font-bold transition ${c.activo ? 'text-amber-600 hover:bg-amber-50' : 'text-green-600 hover:bg-green-50'}">
@@ -216,7 +224,8 @@ const colegiosAdminLogic = {
                     <div class="space-y-2">
                         <div class="flex items-center justify-between gap-2">
                             <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400">Códigos de invitación</p>
-                            <button onclick="colegiosAdminLogic.generarCodigo('${sanitizeHTML(colegio.id)}')" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-brand-600 text-white hover:bg-brand-700 transition"><i class="ph-bold ph-plus"></i> Generar código</button>
+                            <button onclick="colegiosAdminLogic.generarCodigo('${sanitizeHTML(colegio.id)}')" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-brand-600 text-white hover:bg-brand-700 transition"><i class="ph-bold ph-plus"></i> Código de egresado</button>
+                            <button onclick="colegiosAdminLogic.generarCodigo('${sanitizeHTML(colegio.id)}', 'profesor')" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-600 text-white hover:bg-amber-700 transition" title="Quien entre con este código nace como profesor del colegio. Repártelo solo a docentes."><i class="ph-bold ph-chalkboard-teacher"></i> Código de profesor</button>
                         </div>
                         ${codigosHTML}
                     </div>

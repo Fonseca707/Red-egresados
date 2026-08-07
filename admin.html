@@ -671,12 +671,12 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-storage-compat.js"></script>
-    <script src="shared.js?v=39"></script>
+    <script src="shared.js?v=40"></script>
     <script src="admin-correos.js?v=5"></script>
-    <script src="admin-rutas-ia.js?v=4"></script>
+    <script src="admin-rutas-ia.js?v=5"></script>
     <script src="admin-contactos.js?v=1"></script>
     <script src="admin-migracion.js?v=1"></script>
-    <script src="admin-colegios.js?v=8"></script>
+    <script src="admin-colegios.js?v=9"></script>
     <!-- El examen es la fuente de verdad de qué documentos hay que montar: el
          estudio lee `DELF_TESTS` en vez de llevar su propia lista, que sería
          una copia condenada a separarse del examen real. -->
@@ -798,9 +798,14 @@
                 // colegio (registro sin código) y contarlos como LCP tapaba
                 // justo el dato que importa para vender.
                 const withLcp = users.filter(u => u.school === DEFAULT_SCHOOL).length;
-                const incomplete = users.filter(u => !u.role || !u.year || !u.location).length;
+                // Un profesor no tiene promoción, así que `!u.year` lo contaba
+                // SIEMPRE como perfil incompleto: la tarjeta habría subido sola
+                // con cada docente que entrara, y nadie sabría por qué.
+                const incomplete = soloEgresados(users).filter(u => !u.role || !u.year || !u.location).length;
+                const profes = soloProfesores(users).length;
                 const stats = [
-                    { label:'Egresados', value:users.length, icon:'ph-users-three', color:'text-brand-600 bg-brand-50' },
+                    { label:'Egresados', value:soloEgresados(users).length, icon:'ph-users-three', color:'text-brand-600 bg-brand-50' },
+                    { label:'Profesores', value:profes, icon:'ph-chalkboard-teacher', color:'text-amber-600 bg-amber-50' },
                     { label:'Activos', value:active, icon:'ph-check-circle', color:'text-green-600 bg-green-50' },
                     { label:'Suspendidos', value:suspended, icon:'ph-prohibit', color:'text-amber-600 bg-amber-50' },
                     { label:'Con colegio por defecto', value:withLcp, icon:'ph-identification-badge', color:'text-blue-600 bg-blue-50' },
@@ -862,6 +867,7 @@
                         <td class="px-6 py-4 text-right space-x-1">
                             <button onclick="adminLogic.openUserEditor('${user.id}')" class="p-2 rounded-lg text-blue-600 hover:bg-blue-50 transition" title="Editar perfil"><i class="ph-bold ph-user-circle-gear text-lg"></i></button>
                             <button onclick="adminLogic.toggleUserStatus('${user.id}', '${accountStatus}')" class="p-2 rounded-lg text-amber-600 hover:bg-amber-50 transition" title="${toggleTitle}"><i class="ph-bold ${toggleIcon} text-lg"></i></button>
+                            <button onclick="adminLogic.cambiarTipo('${user.id}', '${sanitizeHTML(user.tipo || 'egresado')}')" class="p-2 rounded-lg ${esProfesor(user) ? 'text-amber-600 hover:bg-amber-50' : 'text-gray-400 hover:bg-gray-100'} transition" title="${esProfesor(user) ? 'Es profesor del colegio — pasarlo a egresado' : 'Pasarlo a profesor del colegio'}"><i class="ph-bold ph-chalkboard-teacher text-lg"></i></button>
                             <button onclick="adminLogic.toggleSubAdmin('${user.id}', '${sanitizeHTML(user.school || '')}')" class="p-2 rounded-lg ${isSubAdmin ? 'text-purple-600 hover:bg-purple-50' : 'text-gray-400 hover:bg-gray-100'} transition" title="${isSubAdmin ? 'Revocar sub-admin' : 'Asignar sub-admin'}"><i class="ph-bold ph-shield-star text-lg"></i></button>
                             <button onclick="adminLogic.removeUser('${user.id}')" class="p-2 rounded-lg text-red-600 hover:bg-red-50 transition" title="Eliminar"><i class="ph-bold ph-trash text-lg"></i></button>
                         </td>` : `
@@ -991,6 +997,27 @@
                 } catch (error) {
                     alert(`No se pudo guardar el perfil: ${error.message}`);
                 }
+            },
+            // Cambiar el tipo de una persona: la ÚNICA vía que existe además
+            // del código de invitación con el que se registró. Solo superadmin,
+            // porque es una credencial — un profesor es alguien a quien los
+            // estudiantes van a creer.
+            cambiarTipo: async (uid, tipoActual) => {
+                if (state.adminRole !== 'superadmin') { alert('Solo el superadministrador puede cambiar el tipo de una cuenta.'); return; }
+                const next = tipoActual === TIPO_MIEMBRO.PROFESOR ? TIPO_MIEMBRO.EGRESADO : TIPO_MIEMBRO.PROFESOR;
+                const u = state.data.alumni.find(a => String(a.id) === String(uid));
+                // Los tipos son excluyentes (decisión de Juan, 2026-08-07), así
+                // que pasar a profesor deja la trayectoria sin usar. Se avisa
+                // con el número delante en vez de borrar nada.
+                const aviso = next === TIPO_MIEMBRO.PROFESOR && (u?.hitosCount || 0) > 0
+                    ? `\n\nOJO: tiene ${u.hitosCount} hito(s) de trayectoria. Como profesor dejará de aparecer en las historias y en lo que cita Karla. Los hitos NO se borran: vuelven si le devuelves el tipo.`
+                    : '';
+                if (!confirm(`¿Pasar a ${u?.name || uid} a "${next}"?${aviso}`)) return;
+                try {
+                    await alumniCollection.doc(uid).set({ tipo: next, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+                    await loadAlumni();
+                    adminLogic.renderUsers();
+                } catch (e) { alert(`No se pudo cambiar el tipo: ${e.message}`); }
             },
             toggleUserStatus: async (uid, currentStatus) => {
                 if (state.adminRole === 'subadmin') {

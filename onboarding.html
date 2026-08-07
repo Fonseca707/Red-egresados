@@ -88,6 +88,33 @@
                 </div>
 
                 <!-- ===== PANEL 2: TU RUTA (TRAYECTORIA) ===== -->
+                <!-- Paso 2 del PROFESOR. El de al lado pide promoción, estudios
+                     superiores y trayectoria laboral: a un docente del colegio
+                     no le significan nada, y un formulario que pide datos
+                     imposibles es la forma más rápida de que nadie complete el
+                     perfil. `goToStep` enseña uno u otro según el tipo, que
+                     viene del código de invitación. -->
+                <div id="panel-2-profesor" class="space-y-6 hidden">
+                    <div class="rounded-xl border border-brand-100 bg-brand-50 px-4 py-3 text-sm text-brand-900">
+                        <i class="ph-bold ph-chalkboard-teacher"></i> Entraste con un código de <strong>profesor</strong>. Tu ficha no cuenta una trayectoria de egresado: cuenta <strong>en qué puedes acompañar</strong> a los estudiantes.
+                    </div>
+                    <div>
+                        <label class="input-label">¿En qué áreas puedes acompañar?</label>
+                        <textarea id="ob-areas" class="input-field h-24 resize-none" maxlength="400" placeholder="Ej: Matemáticas y física de grados 10 y 11, preparación de olimpiadas, proyecto de grado, escritura académica…"></textarea>
+                        <p class="text-xs text-gray-400 mt-1">Escríbelo con tus palabras. Es lo que un estudiante va a leer y por lo que te va a buscar.</p>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="input-label">Años enseñando</label>
+                            <input id="ob-anios" type="text" maxlength="30" placeholder="Ej: 12" class="input-field">
+                        </div>
+                        <div>
+                            <label class="input-label">Formación</label>
+                            <input id="ob-formacion" type="text" maxlength="120" placeholder="Ej: Licenciado en Matemáticas, Magíster en Educación" class="input-field">
+                        </div>
+                    </div>
+                </div>
+
                 <div id="panel-2" class="space-y-6 hidden">
                     <div>
                         <label class="input-label">Situación actual</label>
@@ -166,17 +193,24 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore-compat.js"></script>
-    <script src="shared.js?v=39"></script>
+    <script src="shared.js?v=40"></script>
     <script>
         const onboardingLogic = {
             step: 1,
             _studySeq: 0,
             _workSeq: 0,
 
+            // El tipo viene del perfil, que lo heredó del código de invitación.
+            // Si el perfil aún no cargó, se asume egresado: es el caso normal y
+            // el de los 68 documentos que no tienen el campo.
+            esProfe: () => esProfesor(state.profile),
+
             goToStep: (n) => {
                 onboardingLogic.step = n;
+                const profe = onboardingLogic.esProfe();
+                document.getElementById('panel-2-profesor').classList.toggle('hidden', !(profe && n === 2));
                 [1, 2, 3].forEach(i => {
-                    document.getElementById(`panel-${i}`).classList.toggle('hidden', i !== n);
+                    document.getElementById(`panel-${i}`).classList.toggle('hidden', i !== n || (profe && i === 2));
                     const dot = document.getElementById(`dot-${i}`);
                     dot.className = 'step-dot ' + (i < n ? 'done' : (i === n ? 'active' : 'pending'));
                     if (i < n) dot.innerHTML = '<i class="ph-bold ph-check"></i>'; else dot.textContent = i;
@@ -289,10 +323,14 @@
                 const lastStudy = hitos.filter(h => h.tipo === 'educacion').pop();
                 const linkedinValue = document.getElementById('ob-linkedin').value.trim();
 
+                const profe = onboardingLogic.esProfe();
                 const payload = {
                     firstName: document.getElementById('ob-name').value.trim(),
                     lastName: document.getElementById('ob-lastname').value.trim(),
-                    graduationYear: document.getElementById('ob-year').value.trim(),
+                    // Un profesor no tiene promoción. Se manda vacío en vez de
+                    // omitirlo: si el campo quedara con un valor de una edición
+                    // anterior, el directorio lo listaría en una promoción.
+                    graduationYear: profe ? '' : document.getElementById('ob-year').value.trim(),
                     location: document.getElementById('ob-location').value.trim(),
                     // phone ya NO va aqui: el doc de alumni se lista en el
                     // directorio. Se guarda aparte con saveContactoPrivado.
@@ -303,10 +341,20 @@
                     bio: document.getElementById('ob-bio').value.trim(),
                     skills: document.getElementById('ob-skills').value.split(',').map(s => s.trim()).filter(Boolean),
                     expectations: document.getElementById('ob-expectations').value.trim(),
+                    // Lo del profesor. Va SIEMPRE en el payload (vacío si es
+                    // egresado) para que cambiar el tipo desde el admin no deje
+                    // datos del rol anterior colgando en la ficha.
+                    areas: profe ? document.getElementById('ob-areas').value.trim() : '',
+                    aniosEnsenando: profe ? document.getElementById('ob-anios').value.trim() : '',
+                    formacion: profe ? document.getElementById('ob-formacion').value.trim() : '',
                     // Campos planos legados que el directorio sigue usando; se derivan de la ruta.
-                    role: currentWork ? currentWork.rol : '',
-                    studies: lastStudy ? [lastStudy.rol, lastStudy.organizacion].filter(Boolean).join(' — ') : '',
-                    hitosCount: hitos.length,
+                    role: profe ? 'Profesor' : (currentWork ? currentWork.rol : ''),
+                    studies: profe ? document.getElementById('ob-formacion').value.trim()
+                                   : (lastStudy ? [lastStudy.rol, lastStudy.organizacion].filter(Boolean).join(' — ') : ''),
+                    // Sin ruta no hay hitos, y el 0 importa: `hitosCount >= 1`
+                    // es lo que decide quién aparece en las historias y en lo
+                    // que Karla cita.
+                    hitosCount: profe ? 0 : hitos.length,
                     onboardingCompleted: true,
                     school: state.profile.school || '',
                     email: state.user.email || '',

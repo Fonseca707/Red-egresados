@@ -51,6 +51,18 @@ service cloud.firestore {
           && get(/databases/$(database)/documents/artifacts/$(appId)/public/data/codigos/$(codigo)).data.get('colegioId', '') == school
           && get(/databases/$(database)/documents/artifacts/$(appId)/public/data/codigos/$(codigo)).data.get('activo', false) == true;
       }
+      // El TIPO tiene que salir del codigo, igual que el colegio. Nacer
+      // 'egresado' no exige nada (es el valor por defecto y el de los 68
+      // documentos anteriores al 2026-08-07); nacer 'profesor' exige un codigo
+      // que diga 'profesor'. Sin esto, bastaba con mandar tipo:'profesor' en el
+      // create y la credencial no valia nada.
+      function tipoValidoAlCrear() {
+        let tipo = request.resource.data.get('tipo', 'egresado');
+        return tipo == 'egresado'
+          || (tipo == 'profesor'
+              && codigoValido(request.resource.data.get('school', ''), request.resource.data.get('codigoInvitacion', ''))
+              && get(/databases/$(database)/documents/artifacts/$(appId)/public/data/codigos/$(request.resource.data.get('codigoInvitacion', ''))).data.get('tipo', 'egresado') == 'profesor');
+      }
       // Veto de reingreso. Sustituye al borrado de la cuenta de Firebase Auth,
       // que no se puede hacer desde el cliente (exige Admin SDK). Ver el match
       // de /bloqueados mas abajo: lo escribe el superadmin al eliminar.
@@ -77,7 +89,13 @@ service cloud.firestore {
       // que un guardado normal de perfil conserva el valor y pasa igual.
       function camposDeControlIntactos() {
         return request.resource.data.get('accountStatus', 'activo') == resource.data.get('accountStatus', 'activo')
-          && request.resource.data.get('rutaDestacada', false) == resource.data.get('rutaDestacada', false);
+          && request.resource.data.get('rutaDestacada', false) == resource.data.get('rutaDestacada', false)
+          // El TIPO DE MIEMBRO es una credencial, no un dato del perfil: un
+          // profesor es alguien a quien los estudiantes van a creer. Nadie se
+          // lo cambia a si mismo desde el navegador; sale del codigo de
+          // invitacion al crear la cuenta, y despues solo lo mueve la
+          // administracion. Sin esta linea, "hazte profesor" era un update.
+          && request.resource.data.get('tipo', 'egresado') == resource.data.get('tipo', 'egresado');
       }
       // En ACTUALIZACION propia: school sin cambio, completar el default LCP
       // cuando faltaba, o cambiarse con codigo valido del colegio destino.
@@ -115,7 +133,7 @@ service cloud.firestore {
           // (borrarla exige Admin SDK, imposible desde el cliente), asi que el
           // veto se aplica AQUI: sin esto, "eliminar usuario" solo borraba el
           // documento y la persona lo regeneraba en el siguiente login.
-          || (request.auth.uid == userId && schoolValidaAlCrear() && !estaBloqueado(userId))
+          || (request.auth.uid == userId && schoolValidaAlCrear() && tipoValidoAlCrear() && !estaBloqueado(userId))
         );
         allow update: if request.auth != null && (
           isSuperAdmin()
