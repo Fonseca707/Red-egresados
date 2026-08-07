@@ -160,6 +160,24 @@
                                     <label class="input-label">¿Qué expectativas/proyecciones tiene sobre usted?</label>
                                     <textarea id="p-expectations" class="input-field h-24 resize-y" placeholder="Ej: Consolidarme en liderazgo de proyectos, emprender y aportar como mentor en la red."></textarea>
                                 </div>
+                                <!-- 🔴 Esta casilla NO existía y los correos ya
+                                     decían «desmarca la casilla en tu perfil»
+                                     (2026-08-07, lo vio Juan). O sea: no había
+                                     NINGUNA forma de darse de baja desde la web,
+                                     con los correos a punto de encenderse para 38
+                                     personas. Un mecanismo de baja no es una
+                                     mejora: es lo que se prometió en el correo y
+                                     lo que exige la ley de datos. -->
+                                <div class="md:col-span-2" id="p-newsletter-bloque">
+                                    <label class="input-label">Correos de la red</label>
+                                    <label class="flex items-start gap-3 rounded-xl border border-gray-200 bg-stone-50/60 px-4 py-3 cursor-pointer hover:border-brand-200 transition">
+                                        <input id="p-newsletter" type="checkbox" class="mt-0.5 h-4 w-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500 shrink-0">
+                                        <span class="text-sm text-gray-600 leading-relaxed">
+                                            Quiero recibir los correos de la red: la bienvenida, avisos cuando alguien me escribe y algún recordatorio para mantener mi ruta al día.
+                                            <span class="block text-xs text-gray-400 mt-1">Si la desmarcas, dejas de recibirlos. Tu perfil y tu cuenta no cambian.</span>
+                                        </span>
+                                    </label>
+                                </div>
                             </div>
                         </div>
 
@@ -286,6 +304,11 @@
                 document.getElementById('p-skills').value = p.skills || '';
                 document.getElementById('p-topics').value = p.topics || '';
                 document.getElementById('p-expectations').value = p.expectations || '';
+                const nl = document.getElementById('p-newsletter');
+                // Los perfiles del registro viejo no tienen el campo: se lee
+                // como NO marcada, que es lo prudente — nadie queda suscrito
+                // por omision.
+                if (nl) nl.checked = p.newsletterOptIn === true;
                 document.getElementById('p-phone').value = p.phone || '';
                 document.getElementById('p-linkedin').value = p.linkedin || '';
                 document.getElementById('p-school-display').textContent = p.school || 'Sin colegio';
@@ -335,6 +358,11 @@
                     skills: document.getElementById('p-skills').value.split(',').map(s => s.trim()).filter(Boolean),
                     topics: document.getElementById('p-topics').value.trim(),
                     expectations: document.getElementById('p-expectations').value.trim(),
+                    // La baja tiene que poder hacerse: es lo que promete el pie
+                    // de cada correo. Se guarda con fecha para saber cuando lo
+                    // decidio, que es lo que pide la ley de datos.
+                    newsletterOptIn: document.getElementById('p-newsletter')?.checked === true,
+                    newsletterOptInUpdatedAt: firebase.firestore.FieldValue.serverTimestamp(),
                     // OJO: `phone` YA NO va en este payload. El documento
                     // alumni/{uid} es el que lista el directorio publico, asi
                     // que el telefono se guarda aparte, en

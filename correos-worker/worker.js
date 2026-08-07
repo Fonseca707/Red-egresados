@@ -39,7 +39,7 @@ const DIA = 86400000;
 
 // Sube cada vez que cambie el aspecto o el texto de los correos. Lo devuelve
 // /estado, y sirve para saber si un despliegue ya propagó ANTES de mandar nada.
-const PLANTILLA_VERSION = 'v4-ruta-alineada';
+const PLANTILLA_VERSION = 'v5-logo';
 
 // Único destinatario posible de /radar. Fijo a propósito: ver el comentario del
 // endpoint. Cambiarlo por un parámetro convertiría este Worker en un relay abierto
@@ -217,8 +217,24 @@ function envoltura(env, titulo, cuerpo, cta) {
     </table>`;
     return `<!doctype html><html><body style="margin:0;padding:0;background:#ffffff;font-family:'Segoe UI',Helvetica,Arial,sans-serif;">
   ${centrado('#16a34a', `
-          <p style="margin:0;color:rgba(255,255,255,.85);font-size:12px;font-weight:700;letter-spacing:2px;">SINAPSIS</p>
-          <h1 style="margin:8px 0 0;color:#fff;font-size:26px;line-height:1.25;">${titulo}</h1>`, '34px 24px 30px')}
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
+            <tr>
+              <!-- PNG y no el <svg> inline de las 11 páginas: Gmail no renderiza
+                   SVG en un correo. Lo genera scripts/logo-a-png.mjs desde el
+                   mismo logo.svg, con el verde de la cabecera ya horneado — si
+                   fuera transparente, Outlook lo rellenaría de blanco y saldría
+                   un recuadro sobre el verde. Lleva alt con el nombre, porque
+                   Gmail no carga las imágenes hasta que el lector lo pide:
+                   hasta entonces, ahí donde va el logo se lee «Sinapsis». -->
+              <td width="52" valign="top" style="padding:2px 14px 0 0;">
+                <img src="${env.SITIO}/img/logo-correo.png" width="44" height="44" alt="Sinapsis" style="display:block;width:44px;height:44px;border:0;">
+              </td>
+              <td valign="middle">
+                <p style="margin:0;color:rgba(255,255,255,.85);font-size:12px;font-weight:700;letter-spacing:2px;">SINAPSIS</p>
+                <h1 style="margin:6px 0 0;color:#fff;font-size:26px;line-height:1.25;">${titulo}</h1>
+              </td>
+            </tr>
+          </table>`, '30px 24px 28px')}
   ${corte}
   ${centrado('#ffffff', `
           <div style="color:#374151;font-size:15px;line-height:1.65;">${cuerpo}</div>
@@ -228,7 +244,7 @@ function envoltura(env, titulo, cuerpo, cta) {
           <p style="margin:0 0 10px;font-size:12px;font-weight:700;letter-spacing:2px;color:#15803d;">SINAPSIS</p>
           <p style="margin:0;color:#6b7280;font-size:12px;line-height:1.6;">
             Recibes este correo porque aceptaste recibir información de la red de egresados de tu colegio.
-            Para dejar de recibirlos, desmarca la casilla en <a href="${env.SITIO}/profile.html" style="color:#15803d;">tu perfil</a>.
+            Para dejar de recibirlos, entra en <a href="${env.SITIO}/profile.html" style="color:#15803d;">tu perfil</a> y desmarca la casilla <em>«Correos de la red»</em>.
           </p>`, '24px 24px 30px')}
 </body></html>`;
 }
