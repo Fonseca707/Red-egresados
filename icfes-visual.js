@@ -102,7 +102,22 @@ const icfesVisual = {
 
     // ── Punto de entrada ────────────────────────────────────────────────────
 
-    render(v) {
+    // El material puede llegar como objeto (al escribirlo o al probarlo) o como
+    // texto JSON (al venir de Firestore). Se guarda serializado porque una tabla
+    // tiene `filas` como array de arrays y **Firestore no admite arrays
+    // anidados**: rechaza el documento entero con "Nested arrays are not
+    // allowed". Sin esto, ninguna pregunta con tabla podría guardarse, que es
+    // justo la forma más común en Matemáticas.
+    normalizar(v) {
+        if (!v) return null;
+        if (typeof v === 'string') {
+            try { return JSON.parse(v); } catch (e) { return null; }
+        }
+        return v;
+    },
+
+    render(crudo) {
+        const v = this.normalizar(crudo);
         if (!v || !v.tipo) return '';
         try {
             switch (v.tipo) {
@@ -473,8 +488,9 @@ const icfesVisual = {
     // Corre en el admin ANTES de que un ítem llegue a la cola: un gráfico mal
     // formado se ve roto, y descubrirlo revisando cuesta la atención de quien
     // revisa, que es el recurso escaso del módulo.
-    validar(v) {
+    validar(crudo) {
         const fallos = [];
+        const v = this.normalizar(crudo);
         if (!v) return fallos;
         const TIPOS = ['tabla', 'barras', 'barras_agrupadas', 'lineas', 'dispersion', 'circular'];
         if (!TIPOS.includes(v.tipo)) { fallos.push(`Tipo de material desconocido: "${v.tipo}".`); return fallos; }
@@ -510,7 +526,8 @@ const icfesVisual = {
 
     // Texto equivalente del material, para la revisión y para dejar constancia
     // de que el dato existe fuera del dibujo.
-    aTexto(v) {
+    aTexto(crudo) {
+        const v = this.normalizar(crudo);
         if (!v) return '';
         if (v.tipo === 'tabla') {
             const cols = (v.columnas || []).map(c => (typeof c === 'string' ? c : c.nombre));

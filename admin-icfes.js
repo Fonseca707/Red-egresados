@@ -413,7 +413,7 @@ Responde SOLO con este JSON, sin markdown ni explicaciones:
                 // Tabla o gráfico del texto base. Los discontinuos del ICFES
                 // (infografía, tabla, diagrama) son el 8% oficial y antes había
                 // que describirlos en palabras porque no había cómo dibujarlos.
-                visual: estimulo.visual || null,
+                visual: estimulo.visual ? JSON.stringify(estimulo.visual) : null,
                 // La fuente NO se toma del modelo: firmó un texto inventado como
                 // "Manual de la Alcaldía de Bogotá, 2023". Un texto de práctica no
                 // puede presentarse como documento de una entidad real.
@@ -435,7 +435,7 @@ Responde SOLO con este JSON, sin markdown ni explicaciones:
                 tipoTexto: it.tipoTexto || '', categoria: it.categoria || '',
                 contexto: it.contexto || '', generico: it.generico ?? null,
                 forma: it.forma || '', estimuloId,
-                visual: it.visual || null,   // tabla o gráfico propio del ítem
+                visual: it.visual ? JSON.stringify(it.visual) : null,   // serializado: ver icfesVisual.normalizar
                 enunciado: it.enunciado || '', opciones: it.opciones || [],
                 clave: Number(it.clave) || 0, justificaciones: it.justificaciones || [],
                 dificultad: it.dificultad || 2,
