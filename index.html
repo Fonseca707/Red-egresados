@@ -476,7 +476,12 @@
                 /* Número de gran formato y bajo contraste: ancla la fila sin dominarla. */
         .hp-fila-n { font-size: clamp(1.8rem, 3vw, 2.6rem); font-weight: 600; color: #86efac; letter-spacing: -.035em;
                      flex: none; width: auto; min-width: 2.6rem; line-height: 1; }
-        html.dark .hp-fila-n { color: #2a3a30; }
+        /* Estaba en #2a3a30: 1,48 de contraste sobre el fondo, o sea invisible
+           — y no era una decisión de bajo contraste, era un olvido: el 02
+           (ámbar) y el 03 (teal) de abajo se quedaron con su color claro, así
+           que de los tres números solo desaparecía uno. El «bajo contraste» de
+           esta portada tiene suelo de 3:1. */
+        html.dark .hp-fila-n { color: #4ade80; }
         .hp-fila:nth-child(2) .hp-fila-n { color: #fcd34d; }
         .hp-fila:nth-child(3) .hp-fila-n { color: #5eead4; }
         .hp-fila:nth-child(2):hover .hp-fila-icono { color: #d97706; }
@@ -826,10 +831,51 @@
             .hp-cta { transition: none; }
             html.hp-js [data-hp-sube] { opacity: 1; transform: none; transition: none; }
         }
+
+        /* ─────────────────────────────────────────────────────────────────
+           TEMA OSCURO — la portada tiene su propia temperatura
+           ─────────────────────────────────────────────────────────────────
+           El problema medido (2026-08-07): el hero se dibuja en NEGRO CÁLIDO
+           (#1c1917, familia stone) porque así se diseñó, pero todo lo demás
+           lo pintaba `theme.js` —que es de las 11 páginas— en AZUL MARINO
+           (body #0b1120, superficies #111827, familia slate). Al bajar se
+           veían bandas azules alternando con bandas verdosas: dos webs
+           pegadas. Ninguna sección "plana" tiene fondo propio, así que
+           heredaban el del <main>; por eso basta corregir el suelo.
+
+           Se corrige AQUÍ y no en theme.js a propósito: el tema global lo
+           comparten las otras 10 páginas, que sí son de gama azul y están
+           bien así. Lo que cambia es la portada, y su CSS vive en su
+           <style>, como todo lo demás de `.hp-`. */
+        html.dark body.hp-portada,
+        html.dark body.hp-portada main { background: #1c1917 !important; }
+        /* La barra pasaba de azul a cálido AL DESPLAZARSE (solo la variante
+           `-scrolled` tenía su color): el cambio de familia se veía como un
+           parpadeo de tema a mitad de scroll. */
+        html.dark body.hp-portada .glass-nav { background: rgba(28,25,23,.9) !important; border-bottom-color: rgba(68,64,60,.7) !important; }
+        html.dark body.hp-portada footer { background: transparent !important; border-color: #332f2c !important; }
+        html.dark body.hp-portada footer [class~="border-gray-100"],
+        html.dark body.hp-portada footer [class~="border-gray-200"] { border-color: #332f2c !important; }
+
+        /* Blanco sobre el verde de marca da 3,30 y AA pide 4,5 — es el mismo
+           fallo que ya se corrigió en el tema claro y que aquí se quedó sin
+           corregir. En oscuro no se arregla oscureciendo el verde (quedaría
+           un disco negro), sino invirtiéndolo: fondo profundo, letra clara. */
+        html.dark .hp-ficha-avatar,
+        html.dark .hp-historia-iniciales { background: #14532d; color: #86efac; }
+
+        /* #78716c se eligió por dar 4,59 sobre BLANCO; sobre las superficies
+           oscuras da 3,42. Sobre oscuro el gris legible es el claro. */
+        html.dark .hp-ruta-anio,
+        html.dark .hp-examen-nivel { color: #a8a29e; }
     </style>
     <link rel="stylesheet" href="tailwind.css?v=15">
 </head>
-<body class="text-stone-800 font-sans min-h-screen flex flex-col">
+<!-- `hp-portada` existe SOLO para ganarle en especificidad al tema oscuro
+     global de theme.js, que pinta el fondo con `!important` y en gama azul.
+     Con la clase, la regla de aquí mide 0,3,1 contra su 0,2,1 y gana sin
+     depender de qué <style> se inserte antes en el <head>. -->
+<body class="hp-portada text-stone-800 font-sans min-h-screen flex flex-col">
 
     <!-- La navegación (desktop + móvil) la inyecta renderNav('home') de shared.js,
          igual que en el resto del sitio (ver el bloque de script al final del body). -->
