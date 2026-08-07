@@ -32,9 +32,15 @@
 //   POST /ejecutar       → fuerza la corrida (requiere ?clave=PANEL_SECRET)
 //   POST /probar         → manda UN correo de prueba a ?para= (requiere clave)
 //   POST /mensaje-nuevo  → aviso de mensaje (lo llama la web)
+//   POST /radar          → correo del Radar IA a Juan (requiere ?clave=PANEL_SECRET)
 // ─────────────────────────────────────────────────────────────────────────────
 
 const DIA = 86400000;
+
+// Único destinatario posible de /radar. Fijo a propósito: ver el comentario del
+// endpoint. Cambiarlo por un parámetro convertiría este Worker en un relay abierto
+// para quien tenga la clave.
+const DESTINO_RADAR = 'juanda.fonsecag@gmail.com';
 const ORIGENES = [
     'https://sinapsisred.web.app', // URL oficial desde 2026-07-26
     'https://red-egresados-65a1a.web.app',
@@ -459,6 +465,41 @@ export default {
                         <p>Este correo salió de una prueba manual: <strong>el interruptor sigue como estaba</strong> y a los egresados no les llegó nada.</p>`,
                         { url: env.SITIO, texto: 'Abrir Sinapsis' }));
                 return new Response(JSON.stringify({ enviado: true, para }), { headers });
+            } catch (e) {
+                return new Response(JSON.stringify({ enviado: false, error: String(e.message || e) }), { status: 500, headers });
+            }
+        }
+
+        // Correo del Radar IA (el schedule diario de novedades de IA que corre en
+        // la nube y escribe en el vault de Obsidian). Vive aquí y no en un Worker
+        // propio porque las credenciales de Gmail ya están puestas en este: montar
+        // otro obligaría a regenerar el refresh token.
+        //
+        // NO pasa por el interruptor maestro a propósito: ese interruptor protege a
+        // los egresados, y esto va a UNA dirección fija que no depende de Sinapsis.
+        // El destinatario está quemado en el código (no se acepta ?para=), así que
+        // ni con la clave se puede usar esto para mandarle correo a un tercero.
+        //
+        // Llave PROPIA (`RADAR_SECRET`), no `PANEL_SECRET`: el schedule que llama a
+        // esto corre desatendido en la nube, y con la clave del panel podría además
+        // encender el interruptor y disparar la corrida a los 68 egresados. Su llave
+        // solo abre esta puerta.
+        //   POST /radar?clave=...  body: { asunto, cuerpo }   (cuerpo en texto plano)
+        if (url.pathname === '/radar' && request.method === 'POST') {
+            if (!env.RADAR_SECRET || claveDelPanel(request, url) !== env.RADAR_SECRET) {
+                return new Response(JSON.stringify({ error: 'Clave incorrecta' }), { status: 403, headers });
+            }
+            const { asunto, cuerpo } = await request.json().catch(() => ({}));
+            if (!asunto || !cuerpo) {
+                return new Response(JSON.stringify({ error: 'Faltan asunto o cuerpo' }), { status: 400, headers });
+            }
+            try {
+                const escapado = String(cuerpo)
+                    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                const html = `<div style="font-family:system-ui,sans-serif;font-size:15px;line-height:1.6;`
+                    + `color:#1f2937;max-width:640px;white-space:pre-wrap">${escapado}</div>`;
+                await enviarSinComprobar(env, DESTINO_RADAR, String(asunto), html);
+                return new Response(JSON.stringify({ enviado: true, para: DESTINO_RADAR }), { headers });
             } catch (e) {
                 return new Response(JSON.stringify({ enviado: false, error: String(e.message || e) }), { status: 500, headers });
             }
