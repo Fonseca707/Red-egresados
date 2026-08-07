@@ -222,12 +222,14 @@ const icfesLogic = {
                     ${mismoTexto ? 'El mismo texto de la pregunta anterior' : 'Lee el siguiente texto'}
                 </p>
                 ${estimulo.titulo ? `<h3 class="text-lg font-extrabold text-gray-900 mb-2">${sanitizeHTML(estimulo.titulo)}</h3>` : ''}
-                <div class="prose prose-sm max-w-none text-gray-700 whitespace-pre-line leading-relaxed">${sanitizeHTML(estimulo.texto || '')}</div>
+                ${estimulo.texto ? `<div class="prose prose-sm max-w-none text-gray-700 whitespace-pre-line leading-relaxed">${sanitizeHTML(estimulo.texto)}</div>` : ''}
+                ${estimulo.visual ? icfesVisual.render(estimulo.visual) : ''}
                 ${estimulo.fuente ? `<p class="text-xs text-gray-400 mt-3 italic">${sanitizeHTML(estimulo.fuente)}</p>` : ''}
             </div>` : ''}
 
             <div class="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 md:p-8">
-                <p class="text-base md:text-lg font-bold text-gray-900 mb-5 whitespace-pre-line">${sanitizeHTML(item.enunciado || '')}</p>
+                <p class="text-base md:text-lg font-bold text-gray-900 ${item.visual ? 'mb-2' : 'mb-5'} whitespace-pre-line">${sanitizeHTML(item.enunciado || '')}</p>
+                ${item.visual ? `<div class="mb-5">${icfesVisual.render(item.visual)}</div>` : ''}
                 <div class="space-y-3">${opciones}</div>
 
                 ${yaRespondida ? `
