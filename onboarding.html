@@ -22,7 +22,7 @@
         .step-dot.done { background:#dcfce7; color:#15803d; border:1px solid #bbf7d0; }
         .traj-row { background:#fafaf9; border:1px solid #e7e5e4; border-radius:1rem; padding:1rem; }
     </style>
-    <link rel="stylesheet" href="tailwind.css?v=15">
+    <link rel="stylesheet" href="tailwind.css?v=16">
 </head>
 <body class="text-stone-800 font-sans min-h-screen flex flex-col">
 
@@ -127,20 +127,34 @@
                         </select>
                     </div>
 
-                    <div>
-                        <div class="flex items-center justify-between mb-3">
-                            <label class="input-label mb-0">Estudios superiores</label>
-                            <button type="button" onclick="onboardingLogic.addStudyRow()" class="text-xs font-bold text-brand-600 hover:text-brand-700 flex items-center gap-1"><i class="ph-bold ph-plus-circle"></i> Agregar</button>
-                        </div>
-                        <div id="study-rows" class="space-y-3"></div>
-                        <p class="text-xs text-gray-400 mt-2">Universidad, técnico, tecnólogo, cursos largos… todo cuenta en tu ruta.</p>
+                <!-- Antes esto empezaba en frío con el rótulo «Estudios
+                     superiores» y un botón «Agregar». Juan: «yo lo vi y porque
+                     lo conozco, pero una persona normal no ve eso como
+                     intuitivo». El problema no era el botón: era que nadie
+                     había dicho QUÉ se está construyendo ni PARA QUÉ. Un
+                     formulario no se explica con un rótulo, se explica con un
+                     ejemplo. -->
+                    <div class="rounded-xl border border-brand-100 bg-brand-50 px-4 py-3">
+                        <p class="text-sm text-brand-900 font-semibold mb-1">Vas a armar tu camino desde que saliste del colegio.</p>
+                        <p class="text-xs text-brand-800 leading-relaxed">Cada cosa que hiciste es un paso. Un estudiante que no sabe qué estudiar va a leer esto — es lo que más se usa de toda la plataforma.</p>
+                        <p class="text-[11px] text-brand-700 mt-2 font-medium">Por ejemplo: <span class="opacity-80">Bachiller 2019 → Ingeniería en la Javeriana → Practicante en Bancolombia → Analista de datos (hoy)</span></p>
                     </div>
 
                     <div>
-                        <div class="flex items-center justify-between mb-3">
-                            <label class="input-label mb-0">Experiencia (empleos, prácticas, emprendimientos)</label>
-                            <button type="button" onclick="onboardingLogic.addWorkRow()" class="text-xs font-bold text-brand-600 hover:text-brand-700 flex items-center gap-1"><i class="ph-bold ph-plus-circle"></i> Agregar</button>
+                        <div class="flex items-center justify-between mb-1">
+                            <label class="input-label mb-0">¿Qué estudiaste después del colegio?</label>
+                            <button type="button" onclick="onboardingLogic.addStudyRow()" class="text-xs font-bold text-brand-600 hover:text-brand-700 flex items-center gap-1"><i class="ph-bold ph-plus-circle"></i> Añadir otro</button>
                         </div>
+                        <p class="text-xs text-gray-500 mb-3">Universidad, técnico, tecnólogo o un curso largo. Si no estudiaste después del colegio, sáltalo.</p>
+                        <div id="study-rows" class="space-y-3"></div>
+                    </div>
+
+                    <div>
+                        <div class="flex items-center justify-between mb-1">
+                            <label class="input-label mb-0">¿Dónde has trabajado?</label>
+                            <button type="button" onclick="onboardingLogic.addWorkRow()" class="text-xs font-bold text-brand-600 hover:text-brand-700 flex items-center gap-1"><i class="ph-bold ph-plus-circle"></i> Añadir otro</button>
+                        </div>
+                        <p class="text-xs text-gray-500 mb-3">Empleos, prácticas o tu propio emprendimiento. Marca el que tengas hoy.</p>
                         <div id="work-rows" class="space-y-3"></div>
                     </div>
                     <datalist id="org-options"></datalist>
@@ -235,7 +249,13 @@
                     const linkedin = document.getElementById('ob-linkedin').value.trim();
                     if (linkedin && !isValidLinkedInUrl(linkedin)) { feedback.textContent = 'El enlace de LinkedIn no es válido.'; return; }
                     onboardingLogic.goToStep(2);
+                    // Las DOS filas se abren solas. La de estudios ya lo hacía;
+                    // la de experiencia nacía vacía, así que quien viniera a
+                    // contar su trabajo veía un rótulo y nada debajo — y un
+                    // hueco no se lee como «pulsa Añadir», se lee como «aquí no
+                    // hay nada que hacer».
                     if (!document.querySelector('#study-rows .traj-row')) onboardingLogic.addStudyRow();
+                    if (!document.querySelector('#work-rows .traj-row')) onboardingLogic.addWorkRow();
                     return;
                 }
                 if (onboardingLogic.step === 2) { onboardingLogic.goToStep(3); return; }
@@ -355,6 +375,10 @@
                     // es lo que decide quién aparece en las historias y en lo
                     // que Karla cita.
                     hitosCount: profe ? 0 : hitos.length,
+                    // Si vuelve y la llena, deja de estar omitida. Sin esto, el
+                    // día que se use para recordárselo se lo recordaríamos a
+                    // quien ya lo hizo.
+                    rutaOmitida: false,
                     onboardingCompleted: true,
                     school: state.profile.school || '',
                     email: state.user.email || '',
@@ -392,8 +416,17 @@
             skip: async () => {
                 if (!state.user) return;
                 try {
+                    // ⚠️ Omitir marcaba `onboardingCompleted: true` y no dejaba
+                    // rastro, así que después era imposible distinguir «lo
+                    // llenó» de «se lo saltó»: los dos casos se ven idénticos
+                    // en la base. Medido el 2026-08-07 sobre el backup: 60 de
+                    // 68 perfiles están «completados» y solo 5 tienen hitos —
+                    // pero eso viene del onboarding VIEJO, no de aquí, y sin
+                    // este campo tampoco lo sabremos del próximo.
                     await alumniCollection.doc(state.user.uid).set({
                         onboardingCompleted: true,
+                        rutaOmitida: true,
+                        rutaOmitidaEn: firebase.firestore.FieldValue.serverTimestamp(),
                         school: state.profile.school || '',
                         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
                     }, { merge: true });
