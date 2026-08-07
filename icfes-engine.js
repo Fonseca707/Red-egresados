@@ -181,6 +181,28 @@ const icfesLogic = {
             </div>`);
     },
 
+    // El rótulo que el ICFES pone encima de cada texto base, con los números de
+    // las preguntas que dependen de él. Verificado en el cuadernillo oficial de
+    // Lectura Crítica 2026: "RESPONDE LAS PREGUNTAS 17 Y 18 DE ACUERDO CON LA
+    // SIGUIENTE INFORMACIÓN". Decíamos "Lee el siguiente texto", que no es la
+    // fórmula del examen y, sobre todo, no avisa de cuántas preguntas cuelgan
+    // del texto — que es justo lo que le dice al estudiante cuánto leer.
+    // Va en tuteo ("responde"), como el original.
+    rotuloBloque() {
+        const s = this.session;
+        const actual = s.items[s.indice];
+        if (!actual?.estimuloId) return '';
+        // Posiciones (1-based) de todas las preguntas de la sesión que comparten
+        // este texto. Van seguidas porque `seleccionar()` las agrupa.
+        const nums = s.items
+            .map((it, i) => (it.estimuloId === actual.estimuloId ? i + 1 : null))
+            .filter(Boolean);
+        const lista = nums.length === 1 ? `LA PREGUNTA ${nums[0]}`
+            : nums.length === 2 ? `LAS PREGUNTAS ${nums[0]} Y ${nums[1]}`
+            : `LAS PREGUNTAS ${nums[0]} A ${nums[nums.length - 1]}`;
+        return `RESPONDE ${lista} DE ACUERDO CON LA SIGUIENTE INFORMACIÓN`;
+    },
+
     renderItem() {
         const s = this.session;
         const item = s.items[s.indice];
@@ -200,25 +222,32 @@ const icfesLogic = {
             let ancla = 'bg-gray-100 text-gray-600';
             let texto = 'text-gray-900';
             let marca = '';
+            let pesoTexto = '';
+            let colorJusti = 'text-gray-500';
             if (yaRespondida) {
                 if (i === item.clave) {
-                    ancla = 'bg-green-600 text-white'; texto = 'text-green-900';
-                    marca = '<i class="ph-bold ph-check-circle text-green-600 text-lg shrink-0"></i>';
+                    // Sin caja, el color y el peso son lo único que señala la
+                    // correcta, así que tienen que verse: verde saturado en el
+                    // texto, no un verde tan oscuro que se confunda con negro.
+                    ancla = 'bg-green-600 text-white'; texto = 'text-green-700';
+                    pesoTexto = 'font-semibold'; colorJusti = 'text-green-700/80';
+                    marca = '<i class="ph-fill ph-check-circle text-green-600 text-xl shrink-0"></i>';
                 } else if (i === yaRespondida.elegida) {
-                    ancla = 'bg-red-500 text-white'; texto = 'text-red-900';
-                    marca = '<i class="ph-bold ph-x-circle text-red-500 text-lg shrink-0"></i>';
+                    ancla = 'bg-red-500 text-white'; texto = 'text-red-700';
+                    pesoTexto = 'font-semibold'; colorJusti = 'text-red-700/80';
+                    marca = '<i class="ph-fill ph-x-circle text-red-500 text-xl shrink-0"></i>';
                 } else {
                     ancla = 'bg-gray-100 text-gray-400'; texto = 'text-gray-400';
                 }
             }
             const justificacion = yaRespondida && item.justificaciones?.[i]
-                ? `<span class="block text-xs text-gray-500 mt-1 leading-relaxed">${sanitizeHTML(item.justificaciones[i])}</span>` : '';
+                ? `<span class="block text-xs ${colorJusti} mt-1 leading-relaxed">${sanitizeHTML(item.justificaciones[i])}</span>` : '';
             return `
                 <button ${yaRespondida ? 'disabled' : ''} onclick="icfesLogic.responder(${i})"
                         class="w-full text-left rounded-xl px-2 py-2.5 transition flex items-start gap-3 ${yaRespondida ? 'cursor-default' : 'hover:bg-gray-50'}">
                     <span class="w-6 h-6 rounded ${ancla} font-semibold text-xs flex items-center justify-center shrink-0 mt-px transition-colors">${letra}</span>
                     <span class="flex-1 min-w-0">
-                        <span class="block text-sm ${texto}">${sanitizeHTML(op)}</span>
+                        <span class="block text-sm ${texto} ${pesoTexto}">${sanitizeHTML(op)}</span>
                         ${justificacion}
                     </span>
                     ${marca}
@@ -229,8 +258,8 @@ const icfesLogic = {
         const cuerpo = `
             ${estimulo ? `
             <div class="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 md:p-8 mb-4">
-                <p class="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2">
-                    ${mismoTexto ? 'El mismo texto de la pregunta anterior' : 'Lee el siguiente texto'}
+                <p class="text-[11px] font-semibold text-gray-500 uppercase tracking-widest mb-2">
+                    ${this.rotuloBloque()}
                 </p>
                 ${estimulo.titulo ? `<h3 class="text-lg font-extrabold text-gray-900 mb-2">${sanitizeHTML(estimulo.titulo)}</h3>` : ''}
                 ${estimulo.texto ? `<div class="prose prose-sm max-w-none text-gray-700 whitespace-pre-line leading-relaxed">${sanitizeHTML(estimulo.texto)}</div>` : ''}

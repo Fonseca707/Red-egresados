@@ -67,12 +67,12 @@ ${tipoTexto.includes('discontinuo') ? 'Al ser discontinuo, descríbelo en palabr
 CONTEXTO: la situación debe ser real y concreta (${ICFES_CONTEXTOS[contexto]}), con datos presentados en una tabla escrita o en el enunciado. Nunca un ejercicio pelado tipo "resuelva la ecuación".
 CONTENIDO: ${ICFES_CATEGORIAS_MAT[categoria]?.nombre} — ${generico ? 'usa solo conocimientos genéricos: ' + ICFES_CATEGORIAS_MAT[categoria]?.genericos : 'puedes usar contenidos no genéricos: ' + ICFES_CATEGORIAS_MAT[categoria]?.noGenericos}.
 
-FORMA DE LA PREGUNTA (lo más importante): al menos la mitad deben ser de tipo VEREDICTO + JUSTIFICACIÓN, como el examen real. Es decir: alguien AFIRMA algo sobre la situación y el estudiante juzga si es correcto y por qué. Las opciones se ven así:
-  A. Sí, porque el promedio subió en los tres cursos.
-  B. Sí, porque la muestra es representativa.
-  C. No, porque el aumento se dio solo en un curso.
-  D. No, porque los datos no permiten comparar.
-El ICFES casi nunca pregunta "¿cuánto da?". Pregunta "¿es válido este razonamiento?".`;
+FORMA DE LA PREGUNTA (medido en el cuadernillo oficial 2026, no supuesto):
+- Aproximadamente 1 de cada 6 preguntas es de VEREDICTO + JUSTIFICACIÓN: alguien AFIRMA algo y el estudiante juzga si es correcto y por qué ("Sí, porque…" / "No, porque…"). NO abuses de esta forma: pasarse aleja el banco del examen real tanto como no usarla.
+- Las demás piden un valor, una conclusión o la lectura de una representación.
+- LAS OPCIONES SON CORTAS. En el cuadernillo la mediana es de 27 caracteres: muchas son solo una cifra ("526.000 pesos.", "Se duplica.", "15°."). Si tus cuatro opciones parecen párrafos, no se parecen al examen.
+- PROHIBIDO que una opción empiece con una expresión vaga ("cerca de", "más de", "aproximadamente", "un poco menos"): ninguna de las 344 opciones del cuadernillo lo hace. Si el resultado no da exacto, escribe "aproximadamente" EN EL ENUNCIADO y deja las opciones como cantidades concretas.
+- Ordena las opciones numéricas de menor a mayor, como el original.`;
 
         return `${comun}\n${especifico}\n
 Responde SOLO con este JSON, sin markdown ni explicaciones:
@@ -200,11 +200,29 @@ Responde SOLO con este JSON, sin markdown ni explicaciones:
         // examen real tampoco hace: el aviso saltaba en lotes correctos y
         // presionaba a deformarlos para callarlo. Una vara mal puesta no
         // protege la fidelidad, la erosiona.
-        const juzgan = items.filter(i => ['mat_argumentacion', 'mat_formulacion'].includes(i.afirmacion));
-        if (prueba === 'matematicas' && juzgan.length >= 2) {
-            const veredicto = juzgan.filter(i => i.forma === 'veredicto_justificacion').length;
-            if (veredicto / juzgan.length < ICFES_MIN_VEREDICTO_MAT) {
-                avisos.push(`De las ${juzgan.length} preguntas de argumentación y formulación, solo ${veredicto} son de "veredicto + justificación". Ahí el examen real casi siempre pregunta si un razonamiento es válido, no cuánto da.`);
+        if (prueba === 'matematicas' && items.length >= 6) {
+            const veredicto = items.filter(i => i.forma === 'veredicto_justificacion').length;
+            const proporcion = veredicto / items.length;
+            if (proporcion > ICFES_VEREDICTO_MAT.max) {
+                avisos.push(`${veredicto} de ${items.length} preguntas son de "veredicto + justificación" (${Math.round(proporcion * 100)} %). En el cuadernillo oficial son el ${Math.round(ICFES_VEREDICTO_MAT.real * 100)} %: pasarse también aleja el banco del examen real.`);
+            } else if (proporcion < ICFES_VEREDICTO_MAT.min) {
+                avisos.push(`Solo ${veredicto} de ${items.length} son de "veredicto + justificación". El examen real trae alrededor del ${Math.round(ICFES_VEREDICTO_MAT.real * 100)} %.`);
+            }
+        }
+
+        // Opciones vagas: cero de las 344 del cuadernillo empieza así.
+        const conVagas = items.filter(i => (i.opciones || []).some(o => ICFES_OPCION_VAGA.test(String(o))));
+        if (conVagas.length) {
+            avisos.push(`${conVagas.length} pregunta(s) tienen opciones que empiezan con una expresión vaga ("cerca de", "más de", "aproximadamente"). El ICFES no las usa nunca: si el resultado no es exacto, se dice "aproximadamente" en el enunciado y las opciones siguen siendo cantidades concretas.`);
+        }
+
+        // Opciones que parecen párrafos: delatan contenido generado.
+        const referencia = ICFES_LARGO_OPCION[prueba];
+        if (referencia && items.length >= 4) {
+            const largos = items.flatMap(i => (i.opciones || []).map(o => String(o).length));
+            const mediana = largos.sort((a, b) => a - b)[Math.floor(largos.length / 2)];
+            if (mediana > referencia.p90) {
+                avisos.push(`Las opciones son largas: mediana de ${mediana} caracteres, cuando en el cuadernillo oficial de ${ICFES_PRUEBAS[prueba]?.nombre || prueba} es ${referencia.mediana}. Opciones que parecen párrafos delatan contenido generado.`);
             }
         }
 

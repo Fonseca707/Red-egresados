@@ -136,10 +136,35 @@ const ICFES_FORMAS = {
     interpretacion_dato: { nombre: 'Interpretación de dato', ayuda: 'Leer una tabla, gráfica o texto y extraer o comparar información.' }
 };
 
-// Mínimo de ítems en forma veredicto+justificación dentro de una sesión de
-// Matemáticas. Es la validación que impide que el módulo derive a un cuestionario
-// de aritmética con pinta de ICFES.
-const ICFES_MIN_VEREDICTO_MAT = 0.5;
+// 🔴 CORREGIDO 2026-08-07 CONTRA EL CUADERNILLO, midiéndolo en vez de creerlo.
+//
+// Antes esto era `0.5` con el argumento de que "el ICFES casi siempre pregunta
+// así". Esa conclusión salía de mirar las TRES primeras preguntas del cuadernillo
+// —las tres de esa forma— y generalizar. Contadas las 37 preguntas con sus 4
+// opciones, la forma veredicto+justificación aparece en 6: el **16 %**, no la
+// mitad. Forzar el 50 % no protegía la fidelidad: la rompía, empujando el banco
+// hacia una forma que el examen usa poco.
+//
+// Es el mismo error que ya se había cometido con las cuotas por tipo de texto, y
+// la misma lección: una muestra de tres no es una distribución.
+const ICFES_VEREDICTO_MAT = { min: 0.10, max: 0.35, real: 0.16 };
+
+// Largo de las opciones, medido en el cuadernillo oficial (mediana / p90):
+//   Matemáticas     27 / 91 caracteres   ← muchas son solo una cifra
+//   Lectura Crítica 63 / 90 caracteres
+// Sirve para avisar cuando un lote sale con opciones que parecen párrafos: eso
+// delata contenido generado, no un examen.
+const ICFES_LARGO_OPCION = {
+    matematicas:     { mediana: 27, p90: 91 },
+    lectura_critica: { mediana: 63, p90: 90 }
+};
+
+// 🔴 CERO de las 344 opciones del cuadernillo empieza con una expresión vaga
+// ("cerca de", "más de", "aproximadamente"). El ICFES sí usa aproximaciones,
+// pero las declara en el ENUNCIADO ("¿de qué valor fue, aproximadamente, el
+// bono?") y deja las opciones como cantidades concretas. Una opción vaga
+// convierte una pregunta de matemáticas en una de intuición.
+const ICFES_OPCION_VAGA = /^\s*(cerca de|casi|alrededor de|un poco (m[áa]s|menos)|aproximadamente|m[áa]s o menos|entre .* y )/i;
 
 // Niveles de desempeño oficiales (escala 0-100 por prueba).
 // ⚠️ LOS CORTES NO SON IGUALES EN LAS DOS PRUEBAS. Verificado 2026-07-26 contra

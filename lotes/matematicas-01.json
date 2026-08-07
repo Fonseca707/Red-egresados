@@ -37,7 +37,7 @@
         {
           "forma": "interpretacion_dato",
           "evidencia": "i.1",
-          "enunciado": "Una encuesta preguntó a mil personas de un municipio por dónde se entera de las noticias locales.\n\n¿Qué parte del total representan, juntas, la radio y la prensa?",
+          "enunciado": "Una encuesta preguntó a mil personas de un municipio por dónde se entera de las noticias locales.\n\n¿Qué porcentaje del total representan, juntas, la radio y la prensa?",
           "visual": {
             "tipo": "circular",
             "titulo": "¿Por dónde se entera de las noticias locales?",
@@ -50,17 +50,17 @@
             "unidad": "personas"
           },
           "opciones": [
-            "Cerca de un tercio.",
-            "Menos de la cuarta parte.",
-            "Exactamente la mitad.",
-            "Más de dos tercios."
+            "14 %",
+            "18 %",
+            "32 %",
+            "68 %"
           ],
-          "clave": 0,
+          "clave": 2,
           "justificaciones": [
-            "Correcta. Radio y prensa suman 180 + 140 = 320 de 1.000 personas, es decir 32 %, muy cerca de un tercio.",
-            "La cuarta parte serían 250 personas y estas dos suman 320, así que la superan.",
-            "La mitad serían 500 personas; esa cifra la alcanzan redes sociales y televisión juntas, no radio y prensa.",
-            "Dos tercios serían unas 667 personas, más del doble de lo que suman estas dos."
+            "Ese es el porcentaje de la prensa sola (140 de 1.000); falta sumarle la radio.",
+            "Ese es el porcentaje de la radio sola (180 de 1.000); falta sumarle la prensa.",
+            "Correcta. Radio y prensa suman 180 + 140 = 320 de 1.000 personas, es decir 32 %.",
+            "Ese es el porcentaje de quienes NO se enteran por radio ni prensa: redes sociales y televisión."
           ],
           "dificultad": 2
         },

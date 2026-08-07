@@ -162,7 +162,7 @@ const icfesVisual = {
         return `
         <figure class="my-4">
             ${v.titulo ? `<figcaption class="text-sm font-semibold text-gray-900 mb-2">${this.esc(v.titulo)}</figcaption>` : ''}
-            <div class="overflow-x-auto rounded-2xl border border-gray-200">
+            <div class="overflow-x-auto border border-gray-200">
                 <table class="w-full border-collapse text-left">
                     <thead class="bg-gray-50"><tr>${encabezado}</tr></thead>
                     <tbody>${cuerpo}</tbody>

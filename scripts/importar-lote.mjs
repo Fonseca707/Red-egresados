@@ -75,8 +75,29 @@ async function crear(coleccion, doc) {
     return cuerpo.name.split('/').pop();
 }
 
+// Borra lo que ya se importó de ESTE archivo. Corregir una pregunta y volver a
+// importar sin esto deja las dos versiones en la cola, y la vieja se ve igual de
+// legítima que la nueva. Solo borra lo que aún no ha aprobado una persona: lo
+// aprobado ya es decisión suya y no se toca desde un script.
+async function borrarDelArchivo(nombre) {
+    let tok = null, borrados = 0, respetados = 0;
+    do {
+        const r = await fetch(`${BASE}/examItems?pageSize=300${tok ? '&pageToken=' + tok : ''}`, { headers: { Authorization: `Bearer ${TOKEN}` } });
+        const j = await r.json();
+        for (const d of (j.documents || [])) {
+            if (d.fields?.loteArchivo?.stringValue !== nombre) continue;
+            if (d.fields?.revisado?.booleanValue === true) { respetados++; continue; }
+            await fetch(`https://firestore.googleapis.com/v1/${d.name}`, { method: 'DELETE', headers: { Authorization: `Bearer ${TOKEN}` } });
+            borrados++;
+        }
+        tok = j.nextPageToken;
+    } while (tok);
+    if (borrados || respetados) console.log(`  reemplazo: ${borrados} borrada(s) sin revisar` + (respetados ? `, ${respetados} ya aprobada(s) que NO se tocaron` : ''));
+}
+
 // ── Importar ────────────────────────────────────────────────────────────────
 const nombreArchivo = ruta.split(/[\\/]/).pop();
+if (process.argv.includes('--reemplazar') && !ensayo) await borrarDelArchivo(nombreArchivo);
 const paquete = JSON.parse(readFileSync(ruta, 'utf8'));
 const lotes = Array.isArray(paquete) ? paquete : (paquete.lotes || [paquete]);
 
