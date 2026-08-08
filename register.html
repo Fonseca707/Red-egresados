@@ -181,8 +181,18 @@
                     state.guestMode = false;
                     sessionStorage.removeItem('guestMode');
                     const result = await auth.signInWithPopup(provider);
+                    // ⚠️ Con Google, este botón lo pulsa tanto quien se registra
+                    // por primera vez como quien YA tenía cuenta y vuelve a
+                    // entrar por aquí. `isNewUser` es lo único que los separa —
+                    // sin esto, un egresado de hace meses recibiría la
+                    // bienvenida cada vez que entrase con Google.
+                    const esNueva = result.additionalUserInfo?.isNewUser === true;
                     await alumniCollection.doc(result.user.uid).set({
                         email: result.user.email || '',
+                        // Solo al nacer la cuenta: si se reescribiera en cada
+                        // login, el candado de «creada hace menos de 15 min» del
+                        // Worker daría verde siempre.
+                        ...(esNueva ? { createdAt: firebase.firestore.FieldValue.serverTimestamp() } : {}),
                         // contactEmail va al doc privado, ver abajo.
                         school: invitacionColegio ? invitacionColegio.colegioId : DEFAULT_SCHOOL,
                         codigoInvitacion: invitacionColegio ? invitacionColegio.codigo : '',
@@ -197,6 +207,7 @@
                         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
                     }, { merge: true });
                     await saveContactoPrivado(result.user.uid, { contactEmail: result.user.email || '' });
+                    if (esNueva) enviarBienvenida(result.user.uid);
                     feedback.textContent = 'Preferencias guardadas correctamente.';
                     // onAuthStateChanged will redirect
                 } catch (error) {

@@ -2,7 +2,8 @@
 // Correos automáticos de Sinapsis (Cloudflare Worker + Cron + Gmail API)
 //
 // Se despierta solo cada día (cron 9:00 Colombia), lee Firestore por REST
-// (lectura pública, sin credenciales) y decide a quién le toca correo HOY.
+// (con sesión anónima: el directorio exige auth desde el 28-jul) y decide a
+// quién le toca correo HOY.
 // Los temporizadores son INDIVIDUALES: cada egresado recibe según SU fecha
 // (su registro, su último hito), no todos el mismo día.
 //
@@ -14,7 +15,7 @@
 // auth): clave `${uid}:${tipo}` = fecha ISO del envío. Evita duplicados.
 //
 // Correos:
-//   bienvenida         → 1 día después de registrarse
+//   bienvenida         → AL CREAR LA CUENTA (POST /bienvenida desde el registro)
 //   completar-perfil   → a los 3 y 10 días, si no tiene ruta (>=2 hitos)
 //   pulso              → si su hito abierto lleva >1 año sin actualizarse
 //                        (se repite máximo 1 vez al año)
@@ -31,6 +32,7 @@
 //   GET  /previsualizar  → qué se enviaría hoy, SIN enviar (para probar)
 //   POST /ejecutar       → fuerza la corrida (requiere ?clave=PANEL_SECRET)
 //   POST /probar         → manda UN correo de prueba a ?para= (requiere clave)
+//   POST /bienvenida     → bienvenida al crear la cuenta (lo llama el registro)
 //   POST /mensaje-nuevo  → aviso de mensaje (lo llama la web)
 //   POST /radar          → correo del Radar IA a Juan (requiere ?clave=PANEL_SECRET)
 // ─────────────────────────────────────────────────────────────────────────────
@@ -39,7 +41,7 @@ const DIA = 86400000;
 
 // Sube cada vez que cambie el aspecto o el texto de los correos. Lo devuelve
 // /estado, y sirve para saber si un despliegue ya propagó ANTES de mandar nada.
-const PLANTILLA_VERSION = 'v5-logo';
+const PLANTILLA_VERSION = 'v6-bienvenida-al-registrarse';
 
 // Único destinatario posible de /radar. Fijo a propósito: ver el comentario del
 // endpoint. Cambiarlo por un parámetro convertiría este Worker en un relay abierto
