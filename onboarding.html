@@ -22,7 +22,7 @@
         .step-dot.done { background:#dcfce7; color:#15803d; border:1px solid #bbf7d0; }
         .traj-row { background:#fafaf9; border:1px solid #e7e5e4; border-radius:1rem; padding:1rem; }
     </style>
-    <link rel="stylesheet" href="tailwind.css?v=18">
+    <link rel="stylesheet" href="tailwind.css?v=19">
 </head>
 <body class="text-stone-800 font-sans min-h-screen flex flex-col">
 
@@ -36,6 +36,11 @@
                 </div>
                 <h1 class="text-2xl md:text-3xl font-bold text-gray-900">¡Bienvenido a la comunidad!</h1>
                 <p class="text-gray-500 text-sm mt-2 max-w-lg mx-auto">Tu historia guía a los que vienen detrás. Cuéntanosla en 3 pasos cortos.</p>
+                <!-- Decirlo ANTES, no cuando falla. La queja de Juan no fue solo
+                     que el aviso no dijera qué faltaba: fue que en ningún sitio
+                     se sabía qué era obligatorio. Y la respuesta tranquiliza —
+                     es un campo, no veintiuno. -->
+                <p class="text-xs text-gray-400 mt-2">Solo el <strong class="text-gray-500">nombre</strong> es obligatorio. Todo lo demás lo puedes completar o cambiar después desde tu perfil.</p>
             </div>
 
             <!-- Indicador de pasos -->
@@ -56,7 +61,16 @@
                 </div>
             </div>
 
-            <form onsubmit="onboardingLogic.next(event)">
+            <!-- ⚠️ `novalidate` A PROPÓSITO. Este formulario abarca los TRES
+                 pasos, y solo uno está visible cada vez. La validación nativa
+                 revisa también los campos de los pasos ocultos, pero no puede
+                 enseñar su globo de aviso sobre algo con `display:none`: el
+                 envío se bloqueaba y el navegador soltaba un «faltan campos»
+                 sin poder decir cuál. Lo reportó Juan el 2026-08-07 —«me dijo
+                 que me faltaban campos, pero no me decía cuáles»—.
+                 La validación la hace `problemas()` aquí abajo, que además
+                 lleva al paso donde está el error y lo señala. -->
+            <form novalidate onsubmit="onboardingLogic.next(event)">
                 <!-- ===== PANEL 1: QUIÉN ERES ===== -->
                 <div id="panel-1" class="space-y-6">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -267,17 +281,45 @@
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             },
 
+            // Todo lo que puede estar mal, con SU paso y SU campo. Devolver una
+            // lista (y no un booleano) es lo que permite decir qué falta y
+            // llevar allí: un «faltan campos» a secas obliga a la persona a
+            // adivinar entre 21 casillas.
+            problemas: () => {
+                const val = id => (document.getElementById(id)?.value || '').trim();
+                const lista = [];
+                if (!hasValidFirstName(val('ob-name'))) {
+                    lista.push({ paso: 1, campo: 'ob-name', texto: 'Escribe tu nombre (al menos 2 letras). Es el único dato obligatorio.' });
+                }
+                if (val('ob-phone') && !isValidPhone(val('ob-phone'))) {
+                    lista.push({ paso: 1, campo: 'ob-phone', texto: 'El teléfono debe tener al menos 7 dígitos, o déjalo vacío.' });
+                }
+                if (val('ob-linkedin') && !isValidLinkedInUrl(val('ob-linkedin'))) {
+                    lista.push({ paso: 1, campo: 'ob-linkedin', texto: 'Ese enlace de LinkedIn no es válido, o déjalo vacío.' });
+                }
+                return lista;
+            },
+
+            // Lleva al paso del primer problema, enfoca el campo y lo enmarca
+            // en rojo. Sin esto, el aviso obliga a buscar el error a mano.
+            señalar: (p) => {
+                const feedback = document.getElementById('ob-feedback');
+                feedback.textContent = p.texto;
+                feedback.className = 'text-sm text-red-600 font-semibold text-center min-h-[20px]';
+                if (onboardingLogic.step !== p.paso) onboardingLogic.goToStep(p.paso);
+                const el = document.getElementById(p.campo);
+                if (!el) return;
+                el.classList.add('!border-red-400', 'ring-2', 'ring-red-100');
+                el.addEventListener('input', () => el.classList.remove('!border-red-400', 'ring-2', 'ring-red-100'), { once: true });
+                setTimeout(() => { el.focus(); el.scrollIntoView({ block: 'center', behavior: 'smooth' }); }, 60);
+            },
+
             next: async (e) => {
                 e.preventDefault();
                 const feedback = document.getElementById('ob-feedback');
                 if (onboardingLogic.step === 1) {
-                    if (!hasValidFirstName(document.getElementById('ob-name').value.trim())) {
-                        feedback.textContent = 'El nombre es obligatorio y debe tener al menos 2 caracteres.'; return;
-                    }
-                    const phone = document.getElementById('ob-phone').value.trim();
-                    if (phone && !isValidPhone(phone)) { feedback.textContent = 'El teléfono debe tener al menos 7 dígitos.'; return; }
-                    const linkedin = document.getElementById('ob-linkedin').value.trim();
-                    if (linkedin && !isValidLinkedInUrl(linkedin)) { feedback.textContent = 'El enlace de LinkedIn no es válido.'; return; }
+                    const malo = onboardingLogic.problemas().find(p => p.paso === 1);
+                    if (malo) { onboardingLogic.señalar(malo); return; }
                     onboardingLogic.goToStep(2);
                     // Las DOS filas se abren solas. La de estudios ya lo hacía;
                     // la de experiencia nacía vacía, así que quien viniera a
@@ -289,6 +331,11 @@
                     return;
                 }
                 if (onboardingLogic.step === 2) { onboardingLogic.goToStep(3); return; }
+                // Al FINALIZAR se revisa todo, no solo el paso visible: aquí es
+                // donde antes saltaba el aviso mudo del navegador por un campo
+                // del paso 1 que ya no está en pantalla.
+                const malo = onboardingLogic.problemas()[0];
+                if (malo) { onboardingLogic.señalar(malo); return; }
                 await onboardingLogic.save();
             },
 

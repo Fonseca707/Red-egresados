@@ -869,7 +869,7 @@
         html.dark .hp-ruta-anio,
         html.dark .hp-examen-nivel { color: #a8a29e; }
     </style>
-    <link rel="stylesheet" href="tailwind.css?v=18">
+    <link rel="stylesheet" href="tailwind.css?v=19">
 </head>
 <!-- `hp-portada` existe SOLO para ganarle en especificidad al tema oscuro
      global de theme.js, que pinta el fondo con `!important` y en gama azul.
@@ -902,9 +902,23 @@
                         Descubre las trayectorias reales de quienes salieron de tus mismas aulas, conecta con ellos y encuentra el camino que quieres recorrer.
                     </p>
 
-                    <div class="hp-acciones hp-reveal" style="--d:290ms">
+                    <!-- Dos versiones del mismo par de botones: a quien ya tiene
+                         cuenta, ofrecerle «Crear cuenta» es pedirle algo que ya
+                         hizo. Lo reportó Juan el 2026-08-07 («ya aparece mi
+                         cuenta pero al lado también aparece el botón crear
+                         cuenta»): el arreglo de la nav no alcanzaba a estos,
+                         que son del hero y no llevaban las clases. -->
+                    <div class="hp-acciones hp-reveal solo-invitado" style="--d:290ms">
                         <a href="register.html" class="hp-cta hp-cta-1">
                             Crear cuenta <i class="ph-bold ph-arrow-right" aria-hidden="true"></i>
+                        </a>
+                        <a href="directory.html" class="hp-cta hp-cta-2">
+                            Explorar el directorio
+                        </a>
+                    </div>
+                    <div class="hp-acciones hp-reveal solo-miembro hidden" style="--d:290ms">
+                        <a href="profile.html" class="hp-cta hp-cta-1">
+                            Mi ruta <i class="ph-bold ph-arrow-right" aria-hidden="true"></i>
                         </a>
                         <a href="directory.html" class="hp-cta hp-cta-2">
                             Explorar el directorio
@@ -1084,7 +1098,8 @@
                         <i class="ph ph-graduation-cap hp-card-icono" aria-hidden="true"></i>
                         <h4 class="hp-card-t">Egresados</h4>
                         <p class="hp-card-p">Reencuéntrate con tu promoción, comparte tu camino y conviértete en el referente que a ti te habría servido tener. Tu experiencia orienta a quien viene detrás.</p>
-                        <a href="register.html" class="hp-enlace">Sumar mi trayectoria <i class="ph-bold ph-arrow-right" aria-hidden="true"></i></a>
+                        <a href="register.html" class="hp-enlace solo-invitado">Sumar mi trayectoria <i class="ph-bold ph-arrow-right" aria-hidden="true"></i></a>
+                        <a href="profile.html" class="hp-enlace solo-miembro hidden">Sumar mi trayectoria <i class="ph-bold ph-arrow-right" aria-hidden="true"></i></a>
                     </div>
                     <div class="hp-columna" data-hp-sube style="--d:180ms">
                         <i class="ph ph-handshake hp-card-icono" aria-hidden="true"></i>
@@ -1281,7 +1296,8 @@
                   <div class="hp-interior">
                     <h3 class="hp-cierre-t">Tu ruta también empezó en un salón de clase</h3>
                     <p class="hp-cierre-p">Cuenta por dónde has pasado y en qué andas hoy. Para un estudiante que viene detrás, tu camino es el mapa que no tiene.</p>
-                    <a href="register.html" class="hp-cta hp-cta-blanco mt-8">Crear mi cuenta</a>
+                    <a href="register.html" class="hp-cta hp-cta-blanco mt-8 solo-invitado">Crear mi cuenta</a>
+                    <a href="profile.html" class="hp-cta hp-cta-blanco mt-8 solo-miembro hidden">Contar mi ruta</a>
                   </div>
                 </div>
             </section>
@@ -1307,7 +1323,8 @@
                         <div>
                             <p class="font-bold text-gray-900 mb-3">Sinapsis</p>
                             <ul class="space-y-2">
-                                <li><a href="register.html" class="hover:text-brand-600 transition">Crear cuenta</a></li>
+                                <li class="solo-invitado"><a href="register.html" class="hover:text-brand-600 transition">Crear cuenta</a></li>
+                                <li class="solo-miembro hidden"><a href="profile.html" class="hover:text-brand-600 transition">Mi perfil</a></li>
                                 <li><button onclick="contactoLogic.open('empresa')" class="hover:text-brand-600 transition">Contactar la red</button></li>
                                 <li><a href="terms.html" class="hover:text-brand-600 transition">Términos y datos</a></li>
                             </ul>
