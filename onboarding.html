@@ -52,7 +52,7 @@
                 <div class="w-10 h-0.5 bg-gray-200 mb-4"></div>
                 <div class="flex flex-col items-center gap-1">
                     <div id="dot-3" class="step-dot pending">3</div>
-                    <span class="text-[10px] font-bold text-gray-500 uppercase tracking-wide">Tu huella</span>
+                    <span class="text-[10px] font-bold text-gray-500 uppercase tracking-wide">Tus intereses</span>
                 </div>
             </div>
 
@@ -77,8 +77,9 @@
                             <input id="ob-location" type="text" placeholder="Ej: Bogotá, Colombia" class="input-field">
                         </div>
                         <div>
-                            <label class="input-label">Celular / WhatsApp</label>
+                            <label class="input-label">Celular / WhatsApp <span class="normal-case font-normal text-gray-400">(opcional)</span></label>
                             <input id="ob-phone" type="tel" inputmode="tel" placeholder="+57 300 123 4567" class="input-field">
+                            <p class="text-xs text-gray-400 mt-1.5">Solo lo ven los administradores del colegio. No aparece en el directorio ni en tu perfil público.</p>
                         </div>
                         <div>
                             <label class="input-label">LinkedIn (URL)</label>
@@ -160,28 +161,35 @@
                     <datalist id="org-options"></datalist>
                 </div>
 
-                <!-- ===== PANEL 3: TU HUELLA ===== -->
+                <!-- ===== PANEL 3: TUS INTERESES ===== -->
                 <div id="panel-3" class="space-y-6 hidden">
+                    <div class="rounded-2xl border border-brand-100 bg-brand-50 px-5 py-4 flex items-start gap-3">
+                        <i class="ph-duotone ph-info text-brand-600 text-xl shrink-0 mt-0.5"></i>
+                        <div>
+                            <p class="text-sm font-bold text-gray-900">Nada de esto es obligatorio</p>
+                            <p class="text-xs text-gray-600 mt-0.5">Sirve para que otros egresados te encuentren cuando busquen a alguien de tu área. Puedes entrar ya y completarlo después desde tu perfil.</p>
+                        </div>
+                    </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                            <label class="input-label">Área / Sector</label>
+                            <label class="input-label">¿En qué área trabajas?</label>
                             <input id="ob-area" type="text" placeholder="Ej: Tecnología, Salud, Finanzas" class="input-field">
                         </div>
                         <div>
-                            <label class="input-label">Intereses de conexión</label>
+                            <label class="input-label">¿Sobre qué te gustaría que te escriban?</label>
                             <input id="ob-topics" type="text" placeholder="Ej: Mentoría, Inversiones, Proyectos" class="input-field">
                         </div>
                     </div>
                     <div>
-                        <label class="input-label">Sobre ti (bio breve)</label>
+                        <label class="input-label">Cuéntanos algo de ti</label>
                         <textarea id="ob-bio" class="input-field h-28 resize-y" placeholder="Cuéntanos sobre tu experiencia y objetivos…"></textarea>
                     </div>
                     <div>
-                        <label class="input-label">Habilidades clave (separadas por comas)</label>
+                        <label class="input-label">¿En qué eres bueno? (separado por comas)</label>
                         <textarea id="ob-skills" class="input-field h-20 resize-y" placeholder="Ej: Liderazgo, Python, Negociación"></textarea>
                     </div>
                     <div>
-                        <label class="input-label">¿Qué expectativas / proyecciones tienes sobre ti?</label>
+                        <label class="input-label">¿Para dónde vas? (opcional)</label>
                         <textarea id="ob-expectations" class="input-field h-20 resize-y" placeholder="Ej: Consolidarme en liderazgo de proyectos y aportar como mentor en la red."></textarea>
                     </div>
                 </div>
@@ -197,7 +205,7 @@
                     </button>
                 </div>
                 <div class="text-center mt-4">
-                    <button type="button" onclick="onboardingLogic.skip()" class="text-xs text-gray-400 hover:text-gray-600 underline">Omitir por ahora</button>
+                    <button type="button" id="btn-omitir" onclick="onboardingLogic.skip()" class="text-xs text-gray-400 hover:text-gray-600 underline">Omitir por ahora</button>
                 </div>
             </form>
         </div>
@@ -219,8 +227,22 @@
             // el de los 68 documentos que no tienen el campo.
             esProfe: () => esProfesor(state.profile),
 
+            // Deja constancia del paso mas lejano alcanzado. Se escribe al
+            // ENTRAR a cada paso, no al salir: quien abandona no vuelve a
+            // guardar nada, y ese es justamente el caso que hay que medir.
+            marcarPaso: async (n) => {
+                if (!state.user) return;
+                try {
+                    await alumniCollection.doc(state.user.uid).set({
+                        onboardingPasoMax: n,
+                        onboardingVistoEn: firebase.firestore.FieldValue.serverTimestamp(),
+                    }, { merge: true });
+                } catch (e) { /* medir nunca puede romper el registro */ }
+            },
+
             goToStep: (n) => {
                 onboardingLogic.step = n;
+                onboardingLogic.marcarPaso(n);
                 const profe = onboardingLogic.esProfe();
                 document.getElementById('panel-2-profesor').classList.toggle('hidden', !(profe && n === 2));
                 [1, 2, 3].forEach(i => {
@@ -231,8 +253,16 @@
                 });
                 document.getElementById('btn-back').classList.toggle('hidden', n === 1);
                 document.getElementById('btn-next').innerHTML = n === 3
-                    ? 'Plantar mi ruta <i class="ph-bold ph-plant"></i>'
+                    ? 'Terminar y entrar <i class="ph-bold ph-arrow-right"></i>'
                     : 'Siguiente <i class="ph-bold ph-arrow-right"></i>';
+                // "Completar después" solo en el paso 3: en el 1 y el 2 no
+                // tendria sentido --ahi si se pide lo minimo-- y ofrecerlo
+                // antes seria invitar a saltarse la ruta, que es el contenido
+                // que sostiene la plataforma.
+                const omitir = document.getElementById('btn-omitir');
+                if (omitir) omitir.textContent = n === 3
+                    ? 'Entrar ya y completar esto después'
+                    : 'Omitir por ahora';
                 document.getElementById('ob-feedback').textContent = '';
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             },
