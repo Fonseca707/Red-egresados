@@ -297,6 +297,34 @@ const WSOLA_BUSQUEDA_MS = 10;
 const audioLogic = {
     clips: [],
 
+    // ── 🔴 El audio que no se podía parar ───────────────────────────────────
+    // Quitar un <audio> del DOM NO detiene su reproducción: el elemento queda
+    // huérfano, sigue sonando y ya no hay controles con los que pausarlo.
+    // Como cada pintar*() reemplaza su contenedor con innerHTML, aceptar una
+    // toma o generar otra dejaba sonando el clip anterior para siempre —
+    // exactamente lo que pasaba: «ese audio se continúa reproduciendo y no lo
+    // puedo pausar».
+    //
+    // Se paran TODOS los de la pestaña, no solo los del contenedor que se va a
+    // repintar: el que se quedó sonando puede estar en otro bloque, y el
+    // usuario no distingue de cuál venía el sonido. Nunca debe quedar sonando
+    // algo que no tiene un botón de pausa a la vista.
+    silenciarAudios(raiz = document.getElementById('admin-audio-tab') || document) {
+        raiz.querySelectorAll('audio').forEach(a => {
+            if (!a.paused) { a.pause(); a.currentTime = 0; }
+        });
+    },
+
+    // Toda escritura de HTML que pueda contener <audio> pasa por aquí: si se
+    // hiciera `innerHTML =` a pelo en algún sitio, el bug volvería solo por ahí.
+    pintarEn(id, html) {
+        const el = typeof id === 'string' ? document.getElementById(id) : id;
+        if (!el) return null;
+        this.silenciarAudios();
+        el.innerHTML = html;
+        return el;
+    },
+
     // ── Tomas ───────────────────────────────────────────────────────────────
     // Por qué existen (2026-07-31): el TOEFL se genera con Gemini justamente
     // porque varía mucho entre tiradas. Con un solo hueco, cada "vuelve a
@@ -967,6 +995,7 @@ const audioLogic = {
         document.getElementById('audio-tomas-resumen').textContent =
             `${this.tomas.length} tomas · se guarda la que esté marcada`;
 
+        this.silenciarAudios();
         caja.innerHTML = this.tomas.map((t, i) => {
             const r = juzga(t);
             const activa = i === this.tomaActiva;
@@ -1268,6 +1297,7 @@ const audioLogic = {
             generando: '<span class="text-amber-600">generando…</span>',
             error:     '<span class="text-red-600">falló</span>'
         };
+        this.silenciarAudios();
         caja.innerHTML = partes.map(p => {
             const r = p.ritmo;
             const color = !r ? 'border-gray-200'
@@ -1555,6 +1585,7 @@ const audioLogic = {
             return;
         }
 
+        this.silenciarAudios();
         lista.innerHTML = visibles.map(c => {
             const r = c.ritmo;
             const sello = !r ? ''
@@ -1651,7 +1682,19 @@ const audioLogic = {
                 : `<span class="text-amber-700">${est.montados} de ${est.total} documentos montados · la prueba sigue oculta para los alumnos</span>`;
         }
         const opciones = this.bancoDelf();
-        cont.innerHTML = est.docs.map(({ doc, clip, via }) => {
+        // Por qué aquí solo sale el DELF. Sin esta línea hay que deducirlo, y lo
+        // que se deduce es «se rompió», no «todavía no existe». El estudio SÍ
+        // genera audio de TOEFL —el selector lo permite y le toca Gemini—; lo
+        // que no hay es una prueba de escucha a la que engancharlo.
+        const notaToefl = `
+            <div class="border border-gray-200 border-dashed rounded-xl p-4 text-xs text-gray-500 flex items-start gap-2">
+                <i class="ph-bold ph-info text-gray-400 mt-0.5 shrink-0"></i>
+                <span><b class="text-gray-700">El TOEFL Listening todavía no aparece aquí</b>, y no es un fallo: aún no existe la prueba.
+                Este tablero lista los documentos de un examen de escucha, y el TOEFL no tiene ninguno definido —falta construir sus
+                tipos de tarea. El estudio sí puede generar audio en inglés (le toca Gemini); lo que no hay es dónde montarlo.</span>
+            </div>`;
+        this.silenciarAudios();
+        cont.innerHTML = notaToefl + est.docs.map(({ doc, clip, via }) => {
             const sello = {
                 montado:    '<span class="px-2 py-0.5 rounded-lg text-xs bg-green-100 text-green-700">montado a mano</span>',
                 transcript: '<span class="px-2 py-0.5 rounded-lg text-xs bg-green-100 text-green-700">montado</span>',
@@ -1663,6 +1706,23 @@ const audioLogic = {
                 : via === 'falta'
                 ? `<p class="text-xs text-gray-500 mt-2">Todavía no tiene audio. Pulsa «Preparar en el estudio»: carga su transcript y el generador que le toca; al guardar el clip queda montado solo.</p>`
                 : '';
+            // 🔴 «Quitar el montaje» solo salía cuando el clip estaba montado A
+            // MANO. Si emparejaba por transcript —el camino NORMAL, el que ocurre
+            // al generar el audio desde aquí— no había ningún botón para quitarlo:
+            // el documento se quedaba con ese clip y la única salida era buscar el
+            // clip en el banco de abajo y borrarlo. Por eso «no funciona para
+            // desmontar»: para el caso más común, literalmente no existía.
+            //
+            // Ahora siempre hay salida, y dice la verdad sobre lo que hace cada
+            // una: quitar un montaje manual devuelve el emparejamiento automático;
+            // quitar uno automático exige borrar el clip, porque mientras el clip
+            // exista con ese transcript va a volver a emparejarse solo.
+            const botonQuitar = via === 'montado'
+                ? `<button onclick="audioLogic.desmontar('${doc.id}')" class="px-3 py-2 text-xs font-bold text-gray-600 hover:underline">Quitar el montaje a mano</button>`
+                : (clip && (via === 'transcript' || via === 'tipo'))
+                ? `<button onclick="audioLogic.eliminar('${this.escapar(clip.id)}')" class="px-3 py-2 text-xs font-bold text-red-600 hover:underline">Borrar este audio</button>`
+                : '';
+
             const select = opciones.length ? `
                 <div class="flex items-center gap-2 flex-wrap mt-3">
                     <select id="montaje-sel-${doc.id}" class="input-field text-xs py-2 max-w-xs">
@@ -1670,7 +1730,7 @@ const audioLogic = {
                         ${opciones.map(c => `<option value="${this.escapar(c.id)}"${clip && c.id === clip.id ? ' selected' : ''}>${this.escapar(c.titulo || c.id)}</option>`).join('')}
                     </select>
                     <button onclick="audioLogic.montar('${doc.id}')" class="px-3 py-2 text-xs font-bold rounded-lg border border-gray-200 hover:bg-gray-50 transition">Montar aquí</button>
-                    ${via === 'montado' ? `<button onclick="audioLogic.desmontar('${doc.id}')" class="px-3 py-2 text-xs font-bold text-red-600 hover:underline">Quitar el montaje</button>` : ''}
+                    ${botonQuitar}
                 </div>` : '';
             return `
             <div class="border ${via === 'montado' || via === 'transcript' ? 'border-green-200 bg-green-50/40' : via === 'tipo' ? 'border-red-200 bg-red-50/40' : 'border-gray-200'} rounded-xl p-4">
