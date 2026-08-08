@@ -1,0 +1,293 @@
+{
+  "_nota": "Ciencias Naturales, tanda 1 — escrito a mano (Claude), 2026-08-07. Contrastado contra el cuadernillo oficial de la prueba: mediana de opción 68 caracteres, veredicto+justificación 7 % (la más baja de las cuatro pruebas), cero opciones vagas. La forma típica es una situación o un modelo seguido de una pregunta de razonamiento causal. Cuota oficial 30/30/40 (tabla 31), cruzada con los componentes biológico, físico, químico y CTS.",
+  "lotes": [
+    {
+      "prueba": "ciencias",
+      "afirmacion": "cn_uso",
+      "evidencia": "2.8",
+      "componente": "biologico",
+      "dificultad": 3,
+      "items": [
+        {
+          "forma": "interpretacion_dato",
+          "enunciado": "En una laguna vive una población de peces que se alimenta de larvas de insecto. Un año, una lluvia arrastró hasta la laguna fertilizantes de los cultivos vecinos: crecieron mucho las algas, el agua se volvió turbia y la cantidad de oxígeno disuelto bajó.\n\n¿Qué le ocurrirá con mayor probabilidad a la población de peces?",
+          "opciones": [
+            "Disminuirá, porque necesita el oxígeno disuelto que ahora escasea.",
+            "Aumentará, porque las algas se convierten en su nuevo alimento.",
+            "No cambiará, porque los peces no dependen del oxígeno del agua.",
+            "Aumentará, porque el agua turbia los protege de los depredadores."
+          ],
+          "clave": 0,
+          "justificaciones": [
+            "Correcta. Los peces toman oxígeno disuelto por las branquias, y su descenso limita directamente la supervivencia de la población.",
+            "Los peces del caso comen larvas, no algas; y aunque comieran algas, la falta de oxígeno seguiría siendo un límite.",
+            "Los peces sí dependen del oxígeno disuelto en el agua: es de donde respiran.",
+            "La turbidez puede afectar la visibilidad, pero eso no compensa la falta de oxígeno."
+          ],
+          "dificultad": 3
+        },
+        {
+          "forma": "interpretacion_dato",
+          "evidencia": "2.2",
+          "componente": "quimico",
+          "enunciado": "Un estudiante tiene tres frascos sin marcar: uno con agua destilada, otro con agua y sal disuelta, y otro con agua y aceite. Observa que el tercero forma dos capas visibles.\n\n¿Qué le permite concluir esa observación?",
+          "opciones": [
+            "Que el tercer frasco contiene una mezcla heterogénea de dos líquidos que no se disuelven.",
+            "Que el tercer frasco contiene un compuesto puro formado por agua y aceite.",
+            "Que el tercer frasco contiene una solución igual a la de agua con sal.",
+            "Que el tercer frasco contiene un elemento que no puede descomponerse."
+          ],
+          "clave": 0,
+          "justificaciones": [
+            "Correcta. Que se vean dos fases separadas indica una mezcla heterogénea: los componentes no se disolvieron uno en otro.",
+            "Un compuesto tiene composición fija y sus componentes no se separan a simple vista; aquí se ven dos capas.",
+            "En el agua con sal no se distinguen fases: la sal se disolvió y forma una mezcla homogénea.",
+            "Un elemento es una sustancia pura de un solo tipo de átomo; aquí hay dos sustancias distintas."
+          ],
+          "dificultad": 2
+        },
+        {
+          "forma": "interpretacion_dato",
+          "evidencia": "3.1",
+          "componente": "fisico",
+          "enunciado": "Dos cajas, una de 2 kg y otra de 6 kg, se empujan sobre el mismo piso liso aplicando a cada una la misma fuerza horizontal.\n\n¿Qué se espera de la aceleración de cada caja?",
+          "opciones": [
+            "La caja de 2 kg acelera tres veces más que la de 6 kg.",
+            "Las dos aceleran igual, porque se les aplica la misma fuerza.",
+            "La caja de 6 kg acelera más, porque tiene más masa.",
+            "Ninguna acelera, porque la fuerza aplicada es la misma."
+          ],
+          "clave": 0,
+          "justificaciones": [
+            "Correcta. Con la misma fuerza, la aceleración es inversamente proporcional a la masa: al triplicar la masa, la aceleración se reduce a la tercera parte.",
+            "La misma fuerza sobre masas distintas produce aceleraciones distintas.",
+            "Es al revés: a mayor masa, menor aceleración para una misma fuerza.",
+            "Una fuerza neta distinta de cero siempre produce aceleración."
+          ],
+          "dificultad": 2
+        },
+        {
+          "forma": "interpretacion_dato",
+          "evidencia": "1.2",
+          "componente": "cts",
+          "enunciado": "Un municipio evalúa reemplazar el alumbrado público de bombillas incandescentes por luminarias LED. Las LED consumen menos energía y duran más, pero cuestan bastante más por unidad y contienen componentes electrónicos.\n\n¿Qué efecto del cambio debe considerar el municipio además del ahorro de energía?",
+          "opciones": [
+            "La necesidad de gestionar los residuos electrónicos cuando las luminarias terminen su vida útil.",
+            "El aumento del consumo de energía que provocaría el cambio de tecnología.",
+            "La imposibilidad de iluminar las calles con una tecnología distinta a la incandescente.",
+            "La reducción del tiempo de vida útil respecto de las bombillas actuales."
+          ],
+          "clave": 0,
+          "justificaciones": [
+            "Correcta. Una tecnología con componentes electrónicos genera un residuo distinto al del vidrio y el filamento, y eso hay que preverlo.",
+            "El propio enunciado dice que las LED consumen menos: el consumo baja, no sube.",
+            "Las LED sí iluminan las calles; de hecho es la tecnología que se está evaluando.",
+            "El enunciado dice que las LED duran más, no menos."
+          ],
+          "dificultad": 2
+        }
+      ]
+    },
+    {
+      "prueba": "ciencias",
+      "afirmacion": "cn_explicacion",
+      "evidencia": "5.2",
+      "componente": "fisico",
+      "dificultad": 3,
+      "items": [
+        {
+          "forma": "interpretacion_dato",
+          "enunciado": "Una pelota de caucho se deja caer desde cierta altura, rebota y sube hasta una altura menor que la inicial. La resistencia del aire es despreciable.\n\n¿Qué explica que no alcance la altura de la que se soltó?",
+          "opciones": [
+            "Parte de la energía se transformó en calor y sonido durante el rebote.",
+            "La energía desapareció por completo en el momento del choque con el piso.",
+            "La gravedad aumentó su valor después del primer rebote de la pelota.",
+            "La pelota perdió masa al chocar y por eso no puede subir lo mismo."
+          ],
+          "clave": 0,
+          "justificaciones": [
+            "Correcta. La energía se conserva, pero parte se transforma en formas que no elevan la pelota: calor por deformación y sonido.",
+            "La energía no desaparece: se transforma. Ese es el sentido de la conservación de la energía.",
+            "La gravedad no cambia entre un rebote y otro en el mismo lugar.",
+            "La pelota no pierde masa al rebotar."
+          ],
+          "dificultad": 2
+        },
+        {
+          "forma": "interpretacion_dato",
+          "evidencia": "4.4",
+          "componente": "biologico",
+          "enunciado": "En un cultivo de plantas se aplicó durante varios años el mismo insecticida contra una plaga. Al principio moría casi toda la plaga; hoy el mismo producto, en la misma dosis, elimina muy pocos individuos.\n\n¿Qué explica mejor lo que ocurrió?",
+          "opciones": [
+            "Los individuos resistentes sobrevivieron y se reprodujeron, y hoy son la mayoría.",
+            "Cada insecto desarrolló resistencia durante su vida al estar expuesto al producto.",
+            "El insecticida perdió sus propiedades químicas por el paso de los años.",
+            "Las plantas del cultivo se volvieron inmunes y ya no atraen a la plaga."
+          ],
+          "clave": 0,
+          "justificaciones": [
+            "Correcta. La resistencia ya existía en algunos individuos; el insecticida eliminó a los demás y dejó que los resistentes dejaran descendencia.",
+            "La resistencia no se adquiere por exposición durante la vida del individuo: se hereda de sus progenitores.",
+            "Aunque el producto se degradara, eso no explicaría que la población haya cambiado de forma sostenida.",
+            "El caso habla de que la plaga sobrevive al insecticida, no de que haya dejado de llegar al cultivo."
+          ],
+          "dificultad": 3
+        },
+        {
+          "forma": "interpretacion_dato",
+          "evidencia": "4.6",
+          "componente": "quimico",
+          "enunciado": "En un recipiente cerrado se hacen reaccionar 4 g de hidrógeno con 32 g de oxígeno y se forma agua, sin que quede reactivo sobrante.\n\n¿Cuál es la masa de agua obtenida?",
+          "opciones": [
+            "28 g.",
+            "32 g.",
+            "36 g.",
+            "128 g."
+          ],
+          "clave": 2,
+          "justificaciones": [
+            "Sale de restar las masas de los reactivos, cuando en una reacción se combinan.",
+            "Es la masa del oxígeno solo, sin contar el hidrógeno que también forma parte del agua.",
+            "Correcta. Por la ley de conservación de la masa, en un recipiente cerrado la masa de los productos es igual a la de los reactivos: 4 + 32 = 36 g.",
+            "Sale de multiplicar las masas de los reactivos, que no es lo que ocurre en una reacción."
+          ],
+          "dificultad": 2
+        },
+        {
+          "forma": "veredicto_justificacion",
+          "evidencia": "5.7",
+          "componente": "cts",
+          "enunciado": "Una vereda tomaba agua de un nacimiento en la parte alta de la montaña. Desde que se taló el bosque de esa zona para sembrar pasto, el caudal baja mucho en verano. Un habitante afirma que reforestar la parte alta ayudaría a recuperar el caudal.\n\n¿Es correcta su afirmación?",
+          "opciones": [
+            "Sí, porque la vegetación ayuda al suelo a retener agua y liberarla poco a poco.",
+            "Sí, porque los árboles producen el agua que alimenta el nacimiento.",
+            "No, porque los árboles consumen agua y reducirían aún más el caudal.",
+            "No, porque el caudal de un nacimiento solo depende de la cantidad de lluvia."
+          ],
+          "clave": 0,
+          "justificaciones": [
+            "Correcta. La cobertura vegetal favorece la infiltración y la retención en el suelo, de modo que el agua se libera de forma más pareja a lo largo del año.",
+            "Los árboles no producen agua: influyen en cómo se infiltra, se retiene y se libera la que llega con la lluvia.",
+            "Los árboles sí consumen agua, pero el efecto de retención del suelo con cobertura es lo que regula el caudal en verano.",
+            "La lluvia importa, pero el estado del suelo y su cobertura determinan cuánta se infiltra y cuánta se escurre."
+          ],
+          "dificultad": 3
+        }
+      ]
+    },
+    {
+      "prueba": "ciencias",
+      "afirmacion": "cn_indagacion",
+      "evidencia": "9.2",
+      "componente": "biologico",
+      "dificultad": 3,
+      "items": [
+        {
+          "forma": "interpretacion_dato",
+          "enunciado": "Un estudiante quiere saber si la cantidad de luz afecta el crecimiento de unas plantas de fríjol. Tiene veinte materas iguales, con la misma tierra y las mismas semillas.\n\n¿Cuál diseño responde mejor a su pregunta?",
+          "opciones": [
+            "Poner la mitad de las materas al sol y la otra mitad en sombra, y regarlas igual.",
+            "Poner todas las materas al sol y regar la mitad con más agua que la otra.",
+            "Poner las materas en sitios con distinta luz, tierra y riego, y comparar al final.",
+            "Poner todas las materas en sombra y medir su altura una vez por semana."
+          ],
+          "clave": 0,
+          "justificaciones": [
+            "Correcta. Cambia solo la luz y mantiene igual todo lo demás, así que la diferencia que aparezca se le puede atribuir a la luz.",
+            "Ese diseño responde por el efecto del agua, no por el de la luz.",
+            "Al cambiar varias cosas a la vez no se puede saber cuál causó la diferencia.",
+            "Sin un grupo con más luz no hay con qué comparar."
+          ],
+          "dificultad": 2
+        },
+        {
+          "forma": "interpretacion_dato",
+          "evidencia": "8.1",
+          "componente": "fisico",
+          "enunciado": "Un grupo midió cada minuto la temperatura de una taza de café dejada sobre la mesa.\n\n¿Qué describe mejor lo que muestran los datos?",
+          "visual": {
+            "tipo": "lineas",
+            "titulo": "Temperatura del café (°C)",
+            "categorias": ["0", "2", "4", "6", "8", "10"],
+            "valores": [88, 74, 64, 57, 53, 51],
+            "ejeX": { "titulo": "Minutos" }
+          },
+          "opciones": [
+            "El café se enfría rápido al principio y cada vez más despacio.",
+            "El café se enfría siempre a la misma velocidad durante los diez minutos.",
+            "El café se enfría despacio al principio y cada vez más rápido.",
+            "La temperatura del café se mantiene constante todo el tiempo."
+          ],
+          "clave": 0,
+          "justificaciones": [
+            "Correcta. En los dos primeros minutos baja 14 °C y entre el octavo y el décimo solo 2 °C: la caída se va haciendo más lenta.",
+            "Si fuera constante, la temperatura bajaría lo mismo en cada intervalo, y no es así.",
+            "Es al revés: los descensos grandes están al principio, no al final.",
+            "La temperatura baja de 88 a 51 °C: no se mantiene."
+          ],
+          "dificultad": 2
+        },
+        {
+          "forma": "interpretacion_dato",
+          "evidencia": "7.2",
+          "componente": "quimico",
+          "enunciado": "Para saber si una pastilla efervescente se disuelve más rápido en agua caliente, un estudiante hizo una sola prueba con agua fría y una sola con agua caliente, y midió el tiempo con un cronómetro.\n\n¿Por qué sus resultados no bastan para concluir?",
+          "opciones": [
+            "Porque una sola medición de cada caso no permite descartar el azar.",
+            "Porque el tiempo de disolución no se puede medir con un cronómetro.",
+            "Porque la temperatura del agua no influye en ninguna disolución.",
+            "Porque debió usar pastillas de marcas distintas en cada prueba."
+          ],
+          "clave": 0,
+          "justificaciones": [
+            "Correcta. Con una sola medición por caso, cualquier diferencia puede deberse a una variación fortuita; hacen falta repeticiones.",
+            "El cronómetro es un instrumento adecuado para medir ese tiempo.",
+            "La temperatura sí influye en la velocidad de disolución; eso es justamente lo que quería comprobar.",
+            "Usar marcas distintas introduciría otra variable y empeoraría el experimento."
+          ],
+          "dificultad": 3
+        },
+        {
+          "forma": "interpretacion_dato",
+          "evidencia": "6.1",
+          "componente": "cts",
+          "enunciado": "Un grupo de estudiantes quiere investigar el aire de su municipio y anota varias preguntas.\n\n¿Cuál de ellas puede responderse con una investigación científica?",
+          "opciones": [
+            "¿Cambia la cantidad de material particulado del aire según la hora del día?",
+            "¿Es justo que las fábricas contaminen el aire de los municipios pequeños?",
+            "¿Debería el alcalde destinar más presupuesto a vigilar la calidad del aire?",
+            "¿Cuál es el paisaje más bonito del municipio en las mañanas despejadas?"
+          ],
+          "clave": 0,
+          "justificaciones": [
+            "Correcta. Se puede responder tomando mediciones a distintas horas y comparándolas: la respuesta sale de los datos.",
+            "Es una pregunta sobre lo justo: se responde con argumentos morales, no con mediciones.",
+            "Es una pregunta sobre una decisión política; los datos la informan, pero no la deciden.",
+            "Es una pregunta de gusto personal, y no hay medición que la resuelva."
+          ],
+          "dificultad": 2
+        },
+        {
+          "forma": "interpretacion_dato",
+          "evidencia": "7.4",
+          "componente": "biologico",
+          "enunciado": "Un grupo midió cuántas semillas germinaron a distintas temperaturas y encontró que a 10 °C germinó el 20 %, a 20 °C el 65 % y a 25 °C el 80 %.\n\nSi repitieran el experimento a 15 °C, ¿qué porcentaje es más razonable esperar?",
+          "opciones": [
+            "Un valor entre 20 % y 65 %.",
+            "Un valor menor que 20 %.",
+            "Un valor mayor que 80 %.",
+            "Exactamente el mismo 65 % de los 20 °C."
+          ],
+          "clave": 0,
+          "justificaciones": [
+            "Correcta. Los datos muestran que la germinación sube con la temperatura en ese rango, así que un punto intermedio debería dar un valor intermedio.",
+            "Sería menor que el de 10 °C, y 15 °C es una temperatura más favorable, no menos.",
+            "80 % es lo observado a 25 °C, la más favorable de las tres; a 15 °C se espera menos.",
+            "No hay razón para esperar el mismo valor a una temperatura distinta."
+          ],
+          "dificultad": 3
+        }
+      ]
+    }
+  ]
+}

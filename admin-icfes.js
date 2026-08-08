@@ -416,6 +416,7 @@ Responde SOLO con este JSON, sin markdown ni explicaciones:
                     categoria: lote.prueba === 'matematicas' ? (lote.categoria || '') : '',
                     contexto: lote.prueba === 'matematicas' ? (lote.contexto || '') : '',
                     generico: lote.prueba === 'matematicas' ? (lote.generico ?? null) : null,
+                    componente: lote.prueba === 'ciencias' ? (it.componente || lote.componente || '') : '',
                 }));
 
                 const guardados = await this.guardarPendientes(items, lote.estimulo || null, lote.prueba, lote.tipoTexto || '', 'claude', nombreArchivo);
@@ -490,6 +491,9 @@ Responde SOLO con este JSON, sin markdown ni explicaciones:
                 prueba: it.prueba, afirmacion: it.afirmacion, evidencia: it.evidencia,
                 tipoTexto: it.tipoTexto || '', categoria: it.categoria || '',
                 contexto: it.contexto || '', generico: it.generico ?? null,
+                // Solo Ciencias: la tabla 31 cruza competencia x componente
+                // (biologico/fisico/quimico/CTS), no son dos listas aparte.
+                componente: it.componente || '',
                 forma: it.forma || '', estimuloId,
                 visual: it.visual ? JSON.stringify(it.visual) : null,   // serializado: ver icfesVisual.normalizar
                 enunciado: it.enunciado || '', opciones: it.opciones || [],

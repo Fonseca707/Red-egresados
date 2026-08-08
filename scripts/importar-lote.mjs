@@ -152,6 +152,7 @@ for (const [n, lote] of lotes.entries()) {
             categoria: lote.prueba === 'matematicas' ? (lote.categoria || '') : '',
             contexto: lote.prueba === 'matematicas' ? (lote.contexto || '') : '',
             generico: lote.prueba === 'matematicas' ? (lote.generico ?? null) : null,
+            componente: lote.prueba === 'ciencias' ? (item.componente || lote.componente || '') : '',
             forma: item.forma || '',
             estimuloId,
             visual: item.visual ? JSON.stringify(item.visual) : null,
