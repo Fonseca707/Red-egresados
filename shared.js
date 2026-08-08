@@ -305,6 +305,11 @@ const examItemsCollection = artifactsRoot.collection('public').doc('data').colle
 // preguntas: embebido se duplicaría, y una sesión podría mostrar el mismo texto
 // tres veces como si fueran cosas distintas.
 const examStimuliCollection = artifactsRoot.collection('public').doc('data').collection('examStimuli');
+// Reportes de los estudiantes sobre una pregunta concreta. Decisión de Juan
+// (2026-08-07): él revisa el banco esta primera vez, y de ahí en adelante son
+// los propios estudiantes quienes señalan lo que está mal. Es el pilotaje que
+// al módulo le faltaba, hecho por quien se topa con el error.
+const examItemReportsCollection = artifactsRoot.collection('public').doc('data').collection('examItemReports');
 const hitosCollection = (uid) => alumniCollection.doc(uid).collection('hitos');
 // Contacto PRIVADO del egresado (teléfono y correo de contacto). Vive fuera del
 // documento público alumni/{uid} porque ese documento se lee (y se LISTA) desde
@@ -361,6 +366,23 @@ async function avisarMensajePorCorreo(destinatarioUid, deNombre) {
             body: JSON.stringify({ destinatarioUid, deNombre })
         });
     } catch (e) { /* el aviso es best-effort: nunca debe romper el chat */ }
+}
+// La bienvenida se manda al CREAR la cuenta, no al día siguiente por cron
+// (decisión de Juan, 2026-08-07). Se llama justo después de escribir el perfil,
+// porque el Worker lo lee de Firestore para saber a quién escribirle y solo
+// acepta cuentas creadas hace menos de 15 minutos.
+//
+// ⚠️ Sin `await` en el llamador y con el error tragado a propósito: que el
+// correo falle NO puede impedir que alguien termine de registrarse. Si el
+// Worker está pausado o caído, la cuenta se crea igual y no pasa nada más.
+async function enviarBienvenida(uid) {
+    try {
+        await fetch(`${SINAPSIS_CORREOS}/bienvenida`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ uid })
+        });
+    } catch (e) { /* best-effort: el registro manda, el correo no */ }
 }
 const USERNAME_AUTH_DOMAIN = 'users.sinapsis.app';
 const LEGACY_USERNAME_AUTH_DOMAIN = 'sinapsis.local';

@@ -289,6 +289,22 @@ service cloud.firestore {
         allow write: if isSuperAdmin();
       }
 
+      // Reportes de estudiantes sobre una pregunta. CREAR lo puede cualquiera
+      // con cuenta --es justo el punto: que quien se topa con el error lo diga
+      // sin pedir permiso-- pero LEER solo los admins: un reporte trae el juicio
+      // de una persona sobre un item y no tiene por que ser publico.
+      // No se puede editar ni borrar desde el cliente: un reporte es un hecho
+      // reportado, y quien lo atiende lo cierra desde el panel.
+      match /public/data/examItemReports/{reportId} {
+        allow create: if request.auth != null
+          && request.resource.data.itemId is string
+          && request.resource.data.itemId.size() > 0
+          && request.resource.data.uid == request.auth.uid
+          && request.resource.data.get('comentario', '').size() <= 500;
+        allow read, update: if isSuperAdmin() || isSchoolAdmin();
+        allow delete: if isSuperAdmin();
+      }
+
       // Codigos de invitacion: GET publico (validar un codigo exige conocerlo,
       // el id ES el codigo), pero LIST solo superadmin para que nadie pueda
       // enumerar los codigos vigentes.

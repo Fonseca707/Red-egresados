@@ -21,7 +21,7 @@
         .input-field:focus { border-color:#16a34a; box-shadow:0 0 0 4px rgb(34 197 94/0.15); background:#fff; }
         #profileForm .input-field { background:#fff; border-color:#dcfce7; }
     </style>
-    <link rel="stylesheet" href="tailwind.css?v=17">
+    <link rel="stylesheet" href="tailwind.css?v=18">
 </head>
 <body class="text-stone-800 font-sans min-h-screen flex flex-col">
 
@@ -35,8 +35,20 @@
                 <!-- Info Principal -->
                 <div class="px-8 pb-8">
                     <div class="relative flex flex-col md:flex-row md:items-end gap-6 -mt-12 mb-8">
-                        <div class="relative">
+                        <div class="relative group">
                             <img src="https://ui-avatars.com/api/?name=Usuario&background=9333ea&color=fff" class="w-36 h-36 rounded-[2rem] border-[6px] border-white shadow-xl bg-white object-cover" id="profile-avatar">
+                            <!-- Hasta hoy `photoURL` se leía pero nadie podía subirla: todo
+                                 el mundo salía con el avatar de iniciales. -->
+                            <label id="foto-boton" class="absolute inset-0 flex rounded-[2rem] cursor-pointer items-center justify-center bg-black/55 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition"
+                                   title="Cambiar mi foto de perfil">
+                                <span class="text-white text-xs font-bold flex flex-col items-center gap-1">
+                                    <i class="ph-bold ph-camera text-2xl"></i> Cambiar foto
+                                </span>
+                                <input type="file" accept="image/*" class="hidden" onchange="fotoPerfil.elegir(this)">
+                            </label>
+                            <div id="foto-progreso" class="hidden absolute inset-0 rounded-[2rem] flex items-center justify-center bg-black/60 text-white text-xs font-bold">
+                                <i class="ph-bold ph-circle-notch animate-spin text-2xl"></i>
+                            </div>
                         </div>
                         <div class="flex-1 mt-2 md:mt-0">
                             <h2 class="text-3xl font-bold text-gray-900" id="display-name">Tu Nombre</h2>
@@ -282,7 +294,57 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore-compat.js"></script>
-    <script src="shared.js?v=40"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-storage-compat.js"></script>
+    <script src="shared.js?v=41"></script>
+    <script>
+    // ── Foto de perfil ──────────────────────────────────────────────────────
+    // La sube el propio egresado. Antes solo existía el avatar de iniciales, así
+    // que la portada no podía apoyarse en caras reales y ningún destacado tenía
+    // foto — eso no se arreglaba «consiguiendo fotos», se arreglaba dándoles
+    // dónde subirlas.
+    const fotoPerfil = {
+        // Se redimensiona ANTES de subir. Una foto de celular son 4 MB y el
+        // avatar se ve a 144 px: subirla entera sería pagar almacenamiento y
+        // ancho de banda por píxeles que nadie va a ver, y en una conexión
+        // lenta la subida fallaría. 512 px sobra para todos los tamaños en que
+        // se muestra.
+        async redimensionar(archivo, lado = 512) {
+            const bitmap = await createImageBitmap(archivo);
+            const escala = Math.min(1, lado / Math.max(bitmap.width, bitmap.height));
+            const w = Math.round(bitmap.width * escala), h = Math.round(bitmap.height * escala);
+            const lienzo = Object.assign(document.createElement('canvas'), { width: w, height: h });
+            lienzo.getContext('2d').drawImage(bitmap, 0, 0, w, h);
+            return new Promise(r => lienzo.toBlob(r, 'image/jpeg', 0.85));
+        },
+
+        async elegir(input) {
+            const archivo = input.files?.[0];
+            input.value = '';
+            if (!archivo) return;
+            if (!archivo.type.startsWith('image/')) { alert('Elige una imagen.'); return; }
+
+            const uid = state.user?.uid;
+            if (!uid) { alert('Inicia sesión para cambiar tu foto.'); return; }
+
+            const progreso = document.getElementById('foto-progreso');
+            progreso?.classList.remove('hidden');
+            try {
+                const blob = await this.redimensionar(archivo);
+                const ref = firebase.storage().ref(`perfiles/${uid}/foto.jpg`);
+                await ref.put(blob, { contentType: 'image/jpeg' });
+                const url = await ref.getDownloadURL();
+                await alumniCollection.doc(uid).update({ photoURL: url });
+                state.profile.photoURL = url;
+                document.getElementById('profile-avatar').src = url;
+                if (typeof renderNav === 'function') renderNav('profile');
+            } catch (e) {
+                alert('No se pudo subir la foto: ' + (e?.message || e));
+            } finally {
+                progreso?.classList.add('hidden');
+            }
+        },
+    };
+    </script>
     <script src="orientadora.js?v=8"></script>
     <script>
         renderNav('profile');

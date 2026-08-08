@@ -122,6 +122,18 @@ async function coleccion(url, env) {
     return docs;
 }
 
+// Un solo perfil, con la MISMA sesión que la lectura de la colección. Estaba
+// suelto en /mensaje-nuevo con un `fetch` a pelo, así que ese endpoint también
+// devolvía 403 desde que se cerró el directorio — el mismo fallo, en el mismo
+// Worker, dos veces. Por eso ahora hay una sola puerta para leer un alumno.
+async function leerAlumno(env, uid) {
+    const res = await fetch(`${base(env)}/alumni/${uid}`, {
+        headers: { Authorization: `Bearer ${await idTokenAnonimo(env)}` }
+    });
+    if (!res.ok) return null;
+    return { _id: uid, ...campos((await res.json()).fields) };
+}
+
 // ── Destinatarios válidos ────────────────────────────────────────────────────
 const SINTETICOS = ['users.sinapsis.app', 'sinapsis.local'];
 function correoDe(a) {
@@ -512,9 +524,10 @@ async function calcular(env) {
         // 1. Bienvenida: al día siguiente de registrarse. Sin ventana de cierre:
         //    los ya registrados (que nunca la recibieron) también la reciben,
         //    y KV garantiza que sea UNA sola vez en la vida.
-        if (antiguedad !== null && antiguedad >= 1) {
-            pendientes.push({ alum: a, tipo: 'bienvenida', unaVez: true });
-        }
+        // ⛔ La bienvenida YA NO sale de aquí. La dispara el registro, en el
+        // momento de crear la cuenta (POST /bienvenida) — decisión de Juan el
+        // 2026-08-07. Si siguiera en el cron, la primera corrida les daría la
+        // bienvenida a los 38 egresados que llevan MESES en la red.
 
         // 2. Completar perfil: desde los 3 días sin ruta. Se reintenta cada 45
         //    días (recordatorio suave, no spam) hasta que agregue sus hitos.
@@ -767,6 +780,51 @@ export default {
             return new Response(JSON.stringify(r, null, 2), { headers });
         }
 
+        // ── Bienvenida: la dispara el REGISTRO, en el momento ────────────────
+        // Antes la mandaba el cron «1 día después de registrarse», y eso tenía
+        // dos problemas: llegaba cuando la persona ya no se acordaba de haberse
+        // apuntado, y —lo que decidió el cambio— se la habría mandado a los 38
+        // egresados que llevan meses en la red, como si acabaran de llegar.
+        // Decisión de Juan (2026-08-07): se manda al crear la cuenta y SOLO
+        // entonces.
+        //
+        // Tres candados, y ninguno sobra:
+        //   · Origen permitido — el mismo criterio que /mensaje-nuevo.
+        //   · El perfil tiene que ser RECIÉN creado (menos de 15 min). Sin esto,
+        //     el endpoint sería un botón para mandarle la bienvenida a cualquier
+        //     uid de la red con solo conocerlo.
+        //   · Una vez en la vida, en KV. Recargar el registro no reenvía.
+        // El correo va SIEMPRE a la dirección del perfil, nunca a una que venga
+        // en la petición: así no se puede usar para escribirle a un tercero.
+        if (url.pathname === '/bienvenida' && request.method === 'POST') {
+            if (!ORIGENES.includes(origen)) return new Response('Origen no permitido', { status: 403 });
+            if (await estaPausado(env)) {
+                return new Response(JSON.stringify({ enviado: false, motivo: 'correos automáticos pausados' }), { headers });
+            }
+            try {
+                const { uid } = await request.json();
+                if (!uid) return new Response('Falta uid', { status: 400, headers });
+                const alum = await leerAlumno(env, uid);
+                if (!alum) return new Response('Perfil no encontrado', { status: 404, headers });
+                if (!puedeRecibir(alum)) return new Response(JSON.stringify({ enviado: false, motivo: 'sin consentimiento' }), { headers });
+
+                const edadMin = alum.createdAt ? (Date.now() - new Date(alum.createdAt).getTime()) / 60000 : Infinity;
+                if (!(edadMin >= 0 && edadMin < 15)) {
+                    return new Response(JSON.stringify({ enviado: false, motivo: 'la cuenta no es de ahora mismo' }), { headers });
+                }
+                const clave = `${uid}:bienvenida`;
+                if (await env.CORREOS_ESTADO.get(clave)) {
+                    return new Response(JSON.stringify({ enviado: false, motivo: 'ya recibió la bienvenida' }), { headers });
+                }
+                const msg = plantilla('bienvenida', alum, env);
+                await enviar(env, correoDe(alum), msg.asunto, msg.html);
+                await env.CORREOS_ESTADO.put(clave, new Date().toISOString());
+                return new Response(JSON.stringify({ enviado: true }), { headers });
+            } catch (e) {
+                return new Response(JSON.stringify({ enviado: false, error: String(e.message || e) }), { status: 500, headers });
+            }
+        }
+
         // Aviso de mensaje nuevo (lo llama la web al enviar un chat)
         if (url.pathname === '/mensaje-nuevo' && request.method === 'POST') {
             if (!ORIGENES.includes(origen)) return new Response('Origen no permitido', { status: 403 });
@@ -776,9 +834,8 @@ export default {
             try {
                 const { destinatarioUid, deNombre } = await request.json();
                 if (!destinatarioUid) return new Response('Falta destinatarioUid', { status: 400, headers });
-                const res = await fetch(`${base(env)}/alumni/${destinatarioUid}`);
-                if (!res.ok) return new Response('Perfil no encontrado', { status: 404, headers });
-                const alum = { _id: destinatarioUid, ...campos((await res.json()).fields) };
+                const alum = await leerAlumno(env, destinatarioUid);
+                if (!alum) return new Response('Perfil no encontrado', { status: 404, headers });
                 if (!puedeRecibir(alum)) return new Response(JSON.stringify({ enviado: false, motivo: 'sin consentimiento' }), { headers });
 
                 // Máximo un aviso por día por persona (no spamear)

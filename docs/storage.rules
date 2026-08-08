@@ -22,6 +22,23 @@ service firebase.storage {
         && request.resource.contentType.matches('audio/.*');
     }
 
+    // Foto de perfil del egresado. Cada quien sube la suya y nadie mas: la
+    // carpeta es su propio uid, asi que no hace falta comprobar nada mas.
+    // Lectura publica porque el directorio y la portada las muestran.
+    //
+    // Limite de 2 MB y solo imagenes. La pagina ademas la redimensiona ANTES de
+    // subir --una foto de celular son 4 MB y aqui no cabria-- pero el tope se
+    // pone tambien en la regla: lo que valida el navegador no es una frontera,
+    // se salta con una peticion directa.
+    match /perfiles/{userId}/{archivo} {
+      allow read: if true;
+      allow write: if request.auth != null
+        && request.auth.uid == userId
+        && request.resource.size < 2 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+      allow delete: if request.auth != null && request.auth.uid == userId;
+    }
+
     // Todo lo demás, cerrado.
     match /{allPaths=**} {
       allow read, write: if false;

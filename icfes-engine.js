@@ -588,11 +588,86 @@ const icfesLogic = {
                     <button onclick="icfesLogic.siguiente()" class="px-6 py-3 bg-amber-600 text-white font-bold rounded-xl hover:bg-amber-700 transition">
                         ${s.indice + 1 >= s.items.length ? 'Ver mi resultado' : 'Siguiente pregunta'}
                     </button>
-                </div>` : ''}
+                </div>
+                ${this.renderReporte(item, (s.reportados || []).includes(item.id))}` : ''}
             </div>`;
 
         const progreso = `<span class="text-xs font-bold text-gray-500">${s.indice + 1} / ${s.items.length}</span>`;
         this.root().innerHTML = this.shell(ICFES_PRUEBAS[s.prueba].nombre + ' · Entrenamiento', cuerpo, progreso);
+    },
+
+    // ── Reportar una pregunta ───────────────────────────────────────────────
+    // Decisión de Juan (2026-08-07): la revisión una por una la hace él esta
+    // primera vez; de ahí en adelante son los estudiantes quienes señalan lo
+    // que está mal. Esto es, de hecho, la mitad empírica que al módulo le
+    // faltaba —el ICFES la hace con pilotaje— pero por el camino más barato:
+    // quien se topa con el error lo dice en el momento, no un panel de expertos.
+    //
+    // Solo aparece DESPUÉS de responder. Antes sería una vía de escape para no
+    // contestar, y además el estudiante todavía no sabe si el problema es la
+    // pregunta o que no la supo.
+    MOTIVOS_REPORTE: {
+        clave: 'La respuesta marcada como correcta no lo es',
+        enunciado: 'El enunciado o los datos están mal o incompletos',
+        varias: 'Hay más de una opción correcta',
+        confusa: 'No se entiende qué se pregunta',
+        otro: 'Otra cosa',
+    },
+
+    abrirReporte() { this.session.reportando = true; this.render(); },
+    cerrarReporte() { this.session.reportando = false; this.render(); },
+
+    async enviarReporte() {
+        const s = this.session;
+        const item = s.items[s.indice];
+        const motivo = document.getElementById('icfes-reporte-motivo')?.value || 'otro';
+        const comentario = (document.getElementById('icfes-reporte-texto')?.value || '').trim().slice(0, 500);
+        s.reportando = false;
+        // Se marca como enviado antes de que responda el servidor: si falla la
+        // red, el estudiante no tiene por qué quedarse esperando en mitad de su
+        // entrenamiento. El reporte se pierde, la sesión no.
+        s.reportados = s.reportados || [];
+        s.reportados.push(item.id);
+        this.render();
+        try {
+            await examItemReportsCollection.add({
+                itemId: item.id, prueba: item.prueba,
+                afirmacion: item.afirmacion || '', evidencia: item.evidencia || '',
+                motivo, comentario,
+                uid: state.user?.uid || '',
+                school: state.profile?.school || '',
+                atendido: false,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+            });
+        } catch (e) { /* best-effort: nunca romper el entrenamiento */ }
+    },
+
+    renderReporte(item, yaReportada) {
+        const s = this.session;
+        if (yaReportada) {
+            return `<p class="text-xs text-green-700 mt-4 flex items-center gap-1.5">
+                <i class="ph-fill ph-check-circle"></i> Gracias: revisaremos esta pregunta.
+            </p>`;
+        }
+        if (!s.reportando) {
+            return `<button onclick="icfesLogic.abrirReporte()"
+                        class="text-xs text-gray-400 hover:text-gray-700 mt-4 transition flex items-center gap-1.5">
+                    <i class="ph-bold ph-flag"></i> Reportar un problema con esta pregunta
+                </button>`;
+        }
+        const opciones = Object.entries(this.MOTIVOS_REPORTE)
+            .map(([k, t]) => `<option value="${k}">${sanitizeHTML(t)}</option>`).join('');
+        return `
+            <div class="mt-4 pt-4 border-t border-gray-100">
+                <p class="text-xs font-semibold text-gray-600 mb-2">¿Qué problema tiene esta pregunta?</p>
+                <select id="icfes-reporte-motivo" class="input-field text-sm mb-2">${opciones}</select>
+                <textarea id="icfes-reporte-texto" rows="2" maxlength="500"
+                          class="input-field text-sm" placeholder="Cuéntanos qué viste (opcional)"></textarea>
+                <div class="flex gap-2 justify-end mt-2">
+                    <button onclick="icfesLogic.enviarReporte()" class="px-4 py-2 bg-gray-900 text-white text-xs font-bold rounded-lg hover:bg-gray-800 transition">Enviar reporte</button>
+                    <button onclick="icfesLogic.cerrarReporte()" class="px-3 py-2 text-gray-500 text-xs font-bold rounded-lg hover:bg-gray-100 transition">Cancelar</button>
+                </div>
+            </div>`;
     },
 
     responder(indice) {

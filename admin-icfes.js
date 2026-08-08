@@ -676,6 +676,77 @@ Responde SOLO con este JSON, sin markdown ni explicaciones:
 
     filtrarPorOrigen(valor) { this.filtroOrigen = valor; this.pintarPropuestas(); },
 
+    // ── Preguntas que reportaron los estudiantes ────────────────────────────
+    // Sin esta pantalla, el botón de reportar sería un buzón sin destinatario:
+    // el estudiante avisa y nadie se entera. Aquí es donde el reporte se
+    // convierte en una corrección — o en un descarte.
+    async cargarReportes() {
+        const caja = document.getElementById('icfes-reportes');
+        if (!caja) return;
+        caja.innerHTML = '<p class="text-sm text-gray-400">Cargando…</p>';
+        let reportes = [];
+        try {
+            const snap = await examItemReportsCollection.where('atendido', '==', false).get();
+            reportes = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        } catch (e) {
+            caja.innerHTML = `<p class="text-sm text-red-600">No se pudo leer: ${this.escapar(e.message)}</p>`;
+            return;
+        }
+        if (!reportes.length) {
+            caja.innerHTML = '<p class="text-sm text-gray-500">Ningún estudiante ha reportado una pregunta.</p>';
+            return;
+        }
+
+        // Agrupadas por pregunta: tres reportes sobre el mismo ítem son una
+        // señal mucho más fuerte que tres sobre ítems distintos, y así se ve.
+        const porItem = {};
+        reportes.forEach(r => { (porItem[r.itemId] = porItem[r.itemId] || []).push(r); });
+        const orden = Object.entries(porItem).sort((a, b) => b[1].length - a[1].length);
+
+        const enunciadoDe = (id) => {
+            const p = this.propuestas.find(x => x.id === id) || (this.banco || []).find(x => x.id === id);
+            return p ? p.enunciado : '(la pregunta ya no está en el banco)';
+        };
+
+        caja.innerHTML = orden.map(([itemId, rs]) => `
+            <div class="border ${rs.length > 1 ? 'border-amber-300 bg-amber-50/40' : 'border-gray-200'} rounded-2xl p-4 mb-3">
+                <div class="flex items-start justify-between gap-3 flex-wrap">
+                    <p class="text-sm text-gray-900 flex-1 min-w-[240px]">${this.escapar(String(enunciadoDe(itemId)).slice(0, 140))}…</p>
+                    <span class="text-xs font-bold ${rs.length > 1 ? 'text-amber-700' : 'text-gray-500'} shrink-0">
+                        ${rs.length} reporte${rs.length === 1 ? '' : 's'}
+                    </span>
+                </div>
+                <ul class="mt-2 space-y-1">
+                    ${rs.map(r => `<li class="text-xs text-gray-600">
+                        · <strong>${this.escapar(icfesLogic.MOTIVOS_REPORTE?.[r.motivo] || r.motivo || '')}</strong>
+                        ${r.comentario ? '— ' + this.escapar(r.comentario) : ''}
+                    </li>`).join('')}
+                </ul>
+                <div class="flex gap-2 justify-end mt-3">
+                    <button onclick="icfesAdmin.irAPregunta('${this.escapar(itemId)}')" class="px-3 py-1.5 bg-white border border-gray-200 text-gray-700 text-xs font-bold rounded-lg hover:border-gray-300 transition">Ver la pregunta</button>
+                    <button onclick="icfesAdmin.atenderReportes('${this.escapar(itemId)}')" class="px-3 py-1.5 bg-gray-900 text-white text-xs font-bold rounded-lg hover:bg-gray-800 transition">Marcar como atendido</button>
+                </div>
+            </div>`).join('');
+    },
+
+    irAPregunta(itemId) {
+        const p = this.propuestas.find(x => x.id === itemId);
+        if (!p) { this.aviso('Esa pregunta ya no está en la cola de revisión: puede estar aprobada o descartada.', 'info'); return; }
+        this.filtroOrigen = 'todas';
+        this.editandoId = itemId;
+        this.pintarPropuestas();
+        document.getElementById('icfes-propuestas')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    },
+
+    async atenderReportes(itemId) {
+        try {
+            const snap = await examItemReportsCollection.where('itemId', '==', itemId).get();
+            for (const d of snap.docs) await d.ref.update({ atendido: true, atendidoPor: state.user?.email || '' });
+            await this.cargarReportes();
+            this.aviso('Reportes marcados como atendidos.', 'ok');
+        } catch (e) { this.aviso('No se pudo actualizar: ' + e.message, 'error'); }
+    },
+
     editar(id) { this.editandoId = id; this.pintarPropuestas(); },
     cancelarEdicion() { this.editandoId = null; this.pintarPropuestas(); },
 
