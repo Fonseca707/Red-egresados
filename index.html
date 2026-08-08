@@ -1834,6 +1834,16 @@
                 await ensureDefaultSchool(user.uid);
                 await loadAdminRole(user.uid);
                 updateAdminNavVisibility();
+                // 🔴 Faltaba, y solo aquí: la nav se pinta en modo invitado
+                // (todavía no se sabe si hay sesión) y se completa cuando auth
+                // responde. Las otras 10 páginas pasan por `watchAuth`, que la
+                // llama; la portada tiene su propio `onAuthStateChanged` y se
+                // quedó sin ella. Resultado: entrabas a sinapsisred.web.app con
+                // la sesión abierta y seguías viendo «Entrar / Crear cuenta»
+                // —con tu avatar ya cargado al lado, porque `loadProfile` sí
+                // refresca la foto—. Es lo que reportó Juan el 2026-08-07.
+                updateMemberNavVisibility();
+                refreshHeaderIdentity();
 
                 if (!state.profile.onboardingCompleted) {
                     goto('onboarding');
@@ -1847,6 +1857,9 @@
                 checkPulsoRuta();
             } else {
                 updateAdminNavVisibility();
+                // Y al revés también: si se cierra sesión, la nav tiene que
+                // volver a modo invitado sin recargar la página.
+                updateMemberNavVisibility();
                 state.data.alumni = [];
                 state.data.chats = [];
                 state.activeChatId = null;
