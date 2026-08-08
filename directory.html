@@ -32,12 +32,32 @@
         .detail-row:last-child { border-bottom:0; }
         .detail-icon { width:2.5rem; height:2.5rem; border-radius:0.75rem; background:#f0fdf4; color:#16a34a; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:1.25rem; }
     </style>
-    <link rel="stylesheet" href="tailwind.css?v=18">
+    <link rel="stylesheet" href="tailwind.css?v=19">
 </head>
 <body class="text-stone-800 font-sans min-h-screen flex flex-col">
 
     <main class="flex-1 pt-20 pb-24 md:pb-8 px-4 bg-stone-50/60">
         <div class="max-w-7xl mx-auto animate-slide-up pb-10">
+
+            <!-- Aviso de foto: aparece solo a quien no tiene una subida. Va en el
+                 DIRECTORIO y no en el perfil porque aquí es donde se nota: se está
+                 viendo las caras de los demás, y la propia falta. Decisión de Juan
+                 (2026-08-07): un aviso y ya, sin pedírselo a nadie uno por uno y
+                 sin gastar un correo en esto. -->
+            <div id="aviso-foto" class="hidden mb-6 rounded-2xl border border-brand-100 bg-brand-50 px-5 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div class="flex items-start gap-3">
+                    <i class="ph-duotone ph-camera text-brand-600 text-2xl shrink-0"></i>
+                    <div>
+                        <p class="text-sm font-bold text-gray-900">Te falta tu foto de perfil</p>
+                        <p class="text-xs text-gray-600 mt-0.5">Los egresados con foto reciben más mensajes, y tu promoción te reconoce antes.</p>
+                    </div>
+                </div>
+                <div class="flex gap-2 shrink-0">
+                    <a href="profile.html" class="px-4 py-2 bg-brand-600 text-white text-xs font-bold rounded-lg hover:bg-brand-700 transition">Subir mi foto</a>
+                    <button onclick="avisoFoto.ocultar()" class="px-3 py-2 text-gray-500 text-xs font-bold rounded-lg hover:bg-white transition">Ahora no</button>
+                </div>
+            </div>
+
             <div class="flex flex-col md:flex-row justify-between items-end mb-8 gap-4 px-2">
                 <div>
                     <h2 class="text-3xl font-bold text-gray-900 tracking-tight">Directorio</h2>
@@ -170,6 +190,33 @@
     <script src="orientadora.js?v=8"></script>
     <script>
         renderNav('directory');
+
+        // Aviso de foto de perfil. Se guarda el descarte en `localStorage` y no en
+        // el perfil: es una preferencia de esta persona en este aparato, no un
+        // dato de la red — no vale una escritura en Firestore ni tiene por qué
+        // viajar. Y vuelve a los 30 días, porque «ahora no» no es «nunca»: quien
+        // lo pospuso en enero puede tener foto lista en febrero.
+        const avisoFoto = {
+            CLAVE: 'sinapsis_aviso_foto_hasta',
+            DIAS: 30,
+
+            mostrarSiHaceFalta() {
+                const caja = document.getElementById('aviso-foto');
+                if (!caja) return;
+                const hasta = Number(localStorage.getItem(this.CLAVE) || 0);
+                const pospuesto = Date.now() < hasta;
+                // Solo a miembros de verdad: al invitado anónimo no se le pide
+                // una foto de un perfil que no tiene.
+                const esMiembro = typeof state !== 'undefined' && state.profile && !state.guestMode;
+                const sinFoto = esMiembro && !state.profile.photoURL;
+                caja.classList.toggle('hidden', !(sinFoto && !pospuesto));
+            },
+
+            ocultar() {
+                localStorage.setItem(this.CLAVE, String(Date.now() + this.DIAS * 864e5));
+                document.getElementById('aviso-foto')?.classList.add('hidden');
+            },
+        };
 
         const directoryLogic = {
             _currentItems: [],
@@ -534,6 +581,11 @@
                     refreshHeaderIdentity();
                     updateAdminNavVisibility();
                 }
+                // Después de hidratar el perfil, no antes: si se evaluara al
+                // cargar la página, `state.profile` estaría vacío y el aviso no
+                // saldría nunca — justo a quien le falta la foto.
+                avisoFoto.mostrarSiHaceFalta();
+
                 // Primer bloque, no la colección entera: lo que cabe en la pantalla.
                 await loadAlumniBloque();
                 directoryLogic.render();
